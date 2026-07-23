@@ -8,11 +8,11 @@ import json
 from pathlib import Path
 
 from card_duel_engine import GameEngine
-from card_duel_engine.domain.enums import MatchStatus
 from card_duel_engine.persistence import (
     dump_replay, dump_snapshot, load_snapshot, replay_from_log, state_digest,
 )
-from card_duel_engine.simulation import PhaseProgressAgent, run_headless
+from card_duel_engine.controllers.base import DecisionRequest
+from card_duel_engine.simulation import PhaseProgressAgent
 
 from verify_headless_simulations import COMMANDS_PER_SIMULATION, deck
 
@@ -23,13 +23,21 @@ def verify() -> dict[str, int | str]:
     for seed in range(ROUNDTRIPS):
         engine = GameEngine()
         engine.new_match({"A": deck("A"), "B": deck("B")}, seed=seed)
-        run_headless(
-            engine, {"A": PhaseProgressAgent(), "B": PhaseProgressAgent()},
-            max_commands=COMMANDS_PER_SIMULATION,
-        )
-        # BLOCKED es una marca del límite del runner, no un comando reproducible.
-        assert engine.state is not None
-        engine.state.status = MatchStatus.RUNNING
+        agents = {"A": PhaseProgressAgent(), "B": PhaseProgressAgent()}
+        # Se ejecuta la misma carga de comandos sin usar el límite del runner:
+        # BLOCKED es una señal operacional y no forma parte del replay.
+        for _ in range(COMMANDS_PER_SIMULATION):
+            state = engine.state
+            assert state is not None
+            if state.combat is not None and not state.combat.blockers_declared and not state.stack:
+                player_id = state.combat.defending_player_id
+            elif state.phase_priority_complete and not state.stack:
+                player_id = state.active_player_id
+            else:
+                assert state.priority_player_id is not None
+                player_id = state.priority_player_id
+            actions = engine.legal_actions(player_id)
+            engine.execute(agents[player_id].choose_action(DecisionRequest(engine.observe(player_id), actions)))
         expected = state_digest(engine)
         snapshot_digest = state_digest(load_snapshot(dump_snapshot(engine)))
         replay_digest = state_digest(replay_from_log(dump_replay(engine)))

@@ -1,5 +1,13 @@
 # Historial de versiones
 
+## 0.16.0
+
+- Verificador integral y fail-fast para lockfile, tipado, compilación, cobertura,
+  carga determinista, persistencia, wheel reproducible e instalación multiversión.
+- Auditoría del wheel mediante manifiesto cerrado, orden ZIP canónico e integridad RECORD.
+- Las rondas de persistencia ejecutan comandos reproducibles sin mutar el estado interno.
+- CI unificada en el verificador común para Python 3.11–3.13.
+
 ## 0.15.0
 
 - `mypy` refuerza igualdad, genéricos y definiciones incompletas en los 31 módulos.

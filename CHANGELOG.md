@@ -1,5 +1,14 @@
 # Historial de versiones
 
+## 0.15.0
+
+- `mypy` refuerza igualdad, genéricos y definiciones incompletas en los 31 módulos.
+- Validaciones multiplataforma para 300 simulaciones, 54.000 comandos, 84.000
+  eventos y 30 pares snapshot/replay con huellas idénticas.
+- Cobertura de ramas con umbral anti-regresión y dependencia solo de desarrollo.
+- Auditoría integral y reproducible del wheel, con informe JSON y SHA-256.
+- CI con acciones fijadas por SHA, permisos mínimos, límites y trabajos separados.
+
 ## 0.14.0
 
 - Tipado estricto de los 31 módulos del paquete y validación del runner sin partida.

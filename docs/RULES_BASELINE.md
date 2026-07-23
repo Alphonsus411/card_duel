@@ -180,7 +180,7 @@ La verificación estática y la encapsulación del cursor de replay no alteran r
 formatos. Se conservan la fase Legendaria, los documentos v2, las migraciones v1 y el
 orden determinista de las sustituciones.
 
-## Compatibilidad 0.14.0
+## Compatibilidad 0.15.0
 
 La ampliación del tipado y la construcción reproducible no cambian reglas, fase
 Legendaria, formatos v2, migraciones v1, replays ni determinismo de partidas.

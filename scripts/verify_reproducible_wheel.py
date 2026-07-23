@@ -1,17 +1,28 @@
 #!/usr/bin/env python3
-"""Construye dos wheels aislados y exige identidad binaria y metadatos válidos."""
+"""Construye y audita dos wheels aislados, seguros y binariamente idénticos."""
 
 from __future__ import annotations
 
+import base64
+import csv
 import hashlib
+import io
+import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
+import re
+import shutil
 import subprocess
 import sys
 import tempfile
-from zipfile import ZipFile
+from zipfile import ZipFile, ZipInfo
 
-WHEEL_NAME = "card_duel_engine-0.14.0-py3-none-any.whl"
+VERSION = "0.15.0"
+WHEEL_NAME = f"card_duel_engine-{VERSION}-py3-none-any.whl"
+DIST_INFO = f"card_duel_engine-{VERSION}.dist-info"
+FORBIDDEN_SUFFIXES = {".db", ".sqlite", ".sqlite3", ".pyc", ".pyo", ".pem", ".key"}
+FORBIDDEN_PARTS = {"tests", "test", "__pycache__", ".git", ".github", ".idea"}
+SECRET_PATTERN = re.compile(rb"(BEGIN (RSA |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{16})")
 
 
 def sha256(path: Path) -> str:
@@ -22,8 +33,7 @@ def build(root: Path, output: Path, epoch: str) -> Path:
     env = {**os.environ, "SOURCE_DATE_EPOCH": epoch}
     subprocess.run(
         [sys.executable, "-m", "build", "--wheel", "--outdir", str(output), str(root)],
-        check=True,
-        env=env,
+        check=True, env=env,
     )
     wheel = output / WHEEL_NAME
     if not wheel.is_file():
@@ -31,34 +41,85 @@ def build(root: Path, output: Path, epoch: str) -> Path:
     return wheel
 
 
+def metadata_signature(info: ZipInfo) -> tuple[object, ...]:
+    return (info.filename, info.date_time, info.compress_type, info.external_attr, info.flag_bits)
+
+
+def audit(wheel: Path) -> dict[str, object]:
+    with ZipFile(wheel) as archive:
+        infos = archive.infolist()
+        names = [info.filename for info in infos]
+        if len(names) != len(set(names)):
+            raise SystemExit("El ZIP contiene rutas duplicadas")
+        for info in infos:
+            path = PurePosixPath(info.filename)
+            if (path.is_absolute() or ".." in path.parts or "\\" in info.filename
+                    or any(part.lower() in FORBIDDEN_PARTS for part in path.parts)
+                    or path.suffix.lower() in FORBIDDEN_SUFFIXES):
+                raise SystemExit(f"Ruta peligrosa o ajena: {info.filename}")
+            if not (info.filename.startswith("card_duel_engine/") or info.filename.startswith(f"{DIST_INFO}/")):
+                raise SystemExit(f"Archivo ajeno al paquete: {info.filename}")
+            mode = (info.external_attr >> 16) & 0o777
+            if mode not in {0, 0o644, 0o664}:
+                raise SystemExit(f"Permisos no deterministas: {info.filename} ({mode:o})")
+            if SECRET_PATTERN.search(archive.read(info)):
+                raise SystemExit(f"Posible secreto en {info.filename}")
+
+        metadata = archive.read(f"{DIST_INFO}/METADATA").decode("utf-8")
+        wheel_metadata = archive.read(f"{DIST_INFO}/WHEEL").decode("utf-8")
+        if f"Version: {VERSION}" not in metadata or "License-Expression: Apache-2.0" not in metadata:
+            raise SystemExit("Versión o licencia incorrectas")
+        if any(line.startswith("Requires-Dist:") and 'extra == "dev"' not in line for line in metadata.splitlines()):
+            raise SystemExit("El wheel declara dependencias de ejecución")
+        if "Tag: py3-none-any" not in wheel_metadata or "Root-Is-Purelib: true" not in wheel_metadata:
+            raise SystemExit("El wheel no es universal purelib")
+
+        record_name = f"{DIST_INFO}/RECORD"
+        rows = list(csv.reader(io.StringIO(archive.read(record_name).decode("utf-8"))))
+        if len(rows) != len(names) or {row[0] for row in rows} != set(names):
+            raise SystemExit("RECORD no enumera exactamente todo el wheel")
+        for name, digest, size in rows:
+            data = archive.read(name)
+            if name == record_name:
+                if digest or size:
+                    raise SystemExit("La entrada RECORD debe carecer de hash y tamaño")
+                continue
+            expected = base64.urlsafe_b64encode(hashlib.sha256(data).digest()).rstrip(b"=").decode()
+            if digest != f"sha256={expected}" or size != str(len(data)):
+                raise SystemExit(f"RECORD corrupto para {name}")
+
+        return {
+            "filename": wheel.name, "sha256": sha256(wheel), "files": len(infos),
+            "version": VERSION, "license": "Apache-2.0", "tag": "py3-none-any",
+            "root_is_purelib": True, "runtime_dependencies": 0,
+            "record_integrity": True,
+            "zip_order": names,
+            "zip_entries": [metadata_signature(info) for info in infos],
+        }
+
+
 def main() -> None:
     root = Path(__file__).resolve().parents[1]
-    epoch = subprocess.check_output(
-        ["git", "show", "-s", "--format=%ct", "HEAD"], cwd=root, text=True
-    ).strip()
+    epoch = subprocess.check_output(["git", "show", "-s", "--format=%ct", "HEAD"], cwd=root, text=True).strip()
+    destination = root / "dist"
+    destination.mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="card-duel-wheel-") as temporary:
         base = Path(temporary)
         first = build(root, base / "first", epoch)
         second = build(root, base / "second", epoch)
-        hashes = (sha256(first), sha256(second))
-        print(f"SOURCE_DATE_EPOCH={epoch}")
-        print(f"first  {hashes[0]}  {WHEEL_NAME}")
-        print(f"second {hashes[1]}  {WHEEL_NAME}")
-        if hashes[0] != hashes[1] or first.read_bytes() != second.read_bytes():
-            raise SystemExit("Los wheels no son reproducibles")
-        with ZipFile(first) as archive:
-            metadata = archive.read(
-                "card_duel_engine-0.14.0.dist-info/METADATA"
-            ).decode("utf-8")
-        required = ("Version: 0.14.0", "License-Expression: Apache-2.0")
-        if not all(item in metadata for item in required):
-            raise SystemExit("Los metadatos de versión o licencia son incorrectos")
-        runtime_requirements = [
-            line for line in metadata.splitlines()
-            if line.startswith("Requires-Dist:") and 'extra == "dev"' not in line
-        ]
-        if runtime_requirements:
-            raise SystemExit("El wheel declara dependencias de ejecución")
+        first_report, second_report = audit(first), audit(second)
+        if first.read_bytes() != second.read_bytes():
+            raise SystemExit("Los wheels o sus SHA-256 no son reproducibles")
+        if first_report["zip_entries"] != second_report["zip_entries"]:
+            raise SystemExit("Timestamps, permisos, contenido u orden ZIP divergentes")
+        final_wheel = destination / WHEEL_NAME
+        shutil.copyfile(first, final_wheel)
+        digest = sha256(final_wheel)
+        (destination / "SHA256SUMS").write_text(f"{digest}  {WHEEL_NAME}\n", encoding="utf-8")
+        public_report = {key: value for key, value in first_report.items() if key != "zip_entries"}
+        public_report.update({"binary_identical_builds": 2, "source_date_epoch": int(epoch)})
+        (destination / "wheel-audit.json").write_text(json.dumps(public_report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        print(json.dumps(public_report, sort_keys=True))
 
 
 if __name__ == "__main__":

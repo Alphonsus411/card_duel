@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "card-duel-engine"
-version = "0.14.0"
+version = "0.15.0"
 description = "Motor headless y extensible para el nuevo juego basado en las reglas universales de Fantasy Tokens."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -13,7 +13,7 @@ authors = [{name = "Adolfo González Hernández"}]
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["build>=1.2", "mypy>=1.15"]
+dev = ["build>=1.2", "coverage>=7.8", "mypy>=1.15"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -27,3 +27,15 @@ no_implicit_optional = true
 warn_return_any = true
 warn_unused_ignores = true
 warn_unused_configs = true
+strict_equality = true
+disallow_any_generics = true
+disallow_incomplete_defs = true
+
+[tool.coverage.run]
+branch = true
+source = ["card_duel_engine"]
+
+[tool.coverage.report]
+fail_under = 81
+show_missing = true
+skip_covered = true

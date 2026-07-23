@@ -1,0 +1,72 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from threading import RLock
+
+from ..engine.game import GameEngine
+from ..persistence.snapshot import dump_snapshot, load_snapshot
+
+
+class MatchNotFound(KeyError):
+    pass
+
+
+class VersionConflict(RuntimeError):
+    pass
+
+
+@dataclass(frozen=True)
+class StoredMatch:
+    match_id: str
+    version: int
+    engine: GameEngine
+
+
+def validate_match_id(match_id: str) -> None:
+    if not match_id or len(match_id) > 128:
+        raise ValueError("El identificador de partida debe contener entre 1 y 128 caracteres")
+
+
+class InMemoryMatchStore:
+    """Repositorio de pruebas con la misma semántica CAS que SQLite."""
+
+    def __init__(self) -> None:
+        self._lock = RLock()
+        self._records: dict[str, tuple[int, str]] = {}
+
+    def create(self, match_id: str, engine: GameEngine) -> int:
+        validate_match_id(match_id)
+        payload = dump_snapshot(engine, indent=None)
+        with self._lock:
+            if match_id in self._records:
+                raise VersionConflict("La partida ya existe")
+            self._records[match_id] = (1, payload)
+            return 1
+
+    def load(self, match_id: str) -> StoredMatch:
+        validate_match_id(match_id)
+        with self._lock:
+            try:
+                version, payload = self._records[match_id]
+            except KeyError as exc:
+                raise MatchNotFound(match_id) from exc
+        return StoredMatch(match_id, version, load_snapshot(payload))
+
+    def save(
+        self, match_id: str, engine: GameEngine, *, expected_version: int
+    ) -> int:
+        validate_match_id(match_id)
+        if expected_version < 1:
+            raise ValueError("La versión esperada debe ser positiva")
+        payload = dump_snapshot(engine, indent=None)
+        with self._lock:
+            if match_id not in self._records:
+                raise MatchNotFound(match_id)
+            current_version, _ = self._records[match_id]
+            if current_version != expected_version:
+                raise VersionConflict(
+                    f"Versión esperada {expected_version}; actual {current_version}"
+                )
+            new_version = current_version + 1
+            self._records[match_id] = (new_version, payload)
+            return new_version

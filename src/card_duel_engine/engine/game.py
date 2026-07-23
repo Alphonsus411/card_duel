@@ -7,6 +7,10 @@ from dataclasses import replace
 from itertools import combinations, islice, permutations, product
 
 from ..catalog import CardCatalog
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..content.registry import CollectionRegistry
 from ..controllers.base import PlayerObservation
 from ..domain.enums import (
     CardKind,
@@ -78,9 +82,16 @@ from .commands import (
 class GameEngine:
     """Autoridad única sobre una partida; ninguna interfaz modifica el estado."""
 
-    def __init__(self, rules: RuleSet | None = None, catalog: CardCatalog | None = None):
+    def __init__(self, rules: RuleSet | None = None, catalog: CardCatalog | CollectionRegistry | None = None):
         self.rules = rules or RuleSet()
-        self.catalog = catalog if catalog is not None else CardCatalog()
+        self.registry: CollectionRegistry | None = (
+            catalog if catalog is not None and not isinstance(catalog, CardCatalog) else None
+        )
+        self.catalog: CardCatalog = (
+            self.registry.catalog
+            if self.registry is not None
+            else catalog if isinstance(catalog, CardCatalog) else CardCatalog()
+        )
         self.state: GameState | None = None
         self._next_instance = 1
         self._next_stack_item = 1

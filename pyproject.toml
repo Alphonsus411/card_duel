@@ -8,7 +8,7 @@ version = "0.11.0"
 description = "Motor headless y extensible para el nuevo juego basado en las reglas universales de Fantasy Tokens."
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "Proprietary - prototype"}
+license = "Apache-2.0"
 authors = [{name = "Adolfo González Hernández"}]
 dependencies = []
 

@@ -199,8 +199,10 @@ testigo de asignación estática garantiza que `GameEngine` satisface los tres. 
 de zonas no conoce la secuencia ni el cursor internos del replay: solicita la siguiente
 elección mediante `_consume_replacement_replay_choice`, que devuelve `None` al agotarse.
 
-## Construcción reproducible (0.14.0)
+## Construcción reproducible y validación (0.15.0)
 
 El lockfile de `uv` es la fuente única para desarrollo y CI. El wheel se construye
 con un `SOURCE_DATE_EPOCH` obtenido del commit y `scripts/verify_reproducible_wheel.py`
 exige dos artefactos idénticos, sin alterar los contratos del motor o persistencia.
+La auditoría valida además metadatos, `RECORD`, seguridad y determinismo del ZIP;
+los scripts de verificación reúnen simulaciones y rondas snapshot/replay repetibles.

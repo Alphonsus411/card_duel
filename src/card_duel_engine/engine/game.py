@@ -2563,7 +2563,7 @@ class GameEngine:
         event_type: str,
         player_id: str | None = None,
         card_id: str | None = None,
-        payload: dict | None = None,
+        payload: dict[str, object] | None = None,
     ) -> None:
         state = self._require_state()
         state.event_log.append(

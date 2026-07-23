@@ -8,7 +8,7 @@ from ..domain.enums import Phase
 @dataclass(frozen=True)
 class RuleSet:
     ruleset_id: str = "universal"
-    version: str = "0.14.0"
+    version: str = "0.15.0"
     initial_hand_size: int = 6
     hand_limit: int = 6
     wound_limit: int = 50

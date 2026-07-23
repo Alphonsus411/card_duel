@@ -5,11 +5,15 @@ on:
   push:
   pull_request:
 
+env:
+  UV_VERSION: "0.7.22"
+
 jobs:
   test:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
     steps:
@@ -17,9 +21,46 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e '.[dev]'
-      - run: python -m mypy
-      - run: python -m compileall -q src tests
-      - run: python -m unittest discover -s tests -v
-      - run: python -m build --wheel
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+      - run: uv sync --locked --extra dev
+      - run: uv run python -m mypy
+      - run: uv run python -m compileall -q src tests
+      - run: uv run python -m unittest discover -s tests -v
+
+  package:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+      - run: uv sync --locked --extra dev
+      - run: echo "SOURCE_DATE_EPOCH=$(git show -s --format=%ct HEAD)" >> "$GITHUB_ENV"
+      - run: uv run python -m build --wheel
+      - run: uv run python scripts/verify_reproducible_wheel.py
+      - name: Inspect and install wheel
+        run: |
+          uv run python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          wheel = Path("dist/card_duel_engine-0.14.0-py3-none-any.whl")
+          assert wheel.is_file()
+          with ZipFile(wheel) as archive:
+              data = archive.read("card_duel_engine-0.14.0.dist-info/METADATA").decode()
+          assert "Version: 0.14.0" in data
+          assert "License-Expression: Apache-2.0" in data
+          runtime = [line for line in data.splitlines() if line.startswith("Requires-Dist:") and 'extra == "dev"' not in line]
+          assert not runtime
+          PY
+          for version in 3.11 3.12 3.13; do
+            uv python install "$version"
+            uv venv --python "$version" ".wheel-venv-$version"
+            uv pip install --python ".wheel-venv-$version/bin/python" --no-deps dist/*.whl
+            ".wheel-venv-$version/bin/python" -c 'import card_duel_engine; assert card_duel_engine.__version__ == "0.14.0"'
+          done

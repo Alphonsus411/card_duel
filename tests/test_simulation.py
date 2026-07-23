@@ -8,6 +8,12 @@ from fixtures import test_deck
 
 
 class SimulationTests(unittest.TestCase):
+    def test_headless_runner_rejects_an_uninitialized_engine(self):
+        with self.assertRaisesRegex(
+            ValueError, "No se puede simular un motor sin una partida iniciada"
+        ):
+            run_headless(GameEngine(), {})
+
     def test_headless_runner_advances_without_an_interface(self):
         engine = GameEngine()
         engine.new_match({"A": test_deck("A"), "B": test_deck("B")}, seed=11)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import random
 from copy import deepcopy
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import replace
 from itertools import combinations, islice, permutations, product
 
@@ -29,8 +29,10 @@ from ..domain.models import (
     CombatState,
     CompositeCost,
     ControlChange,
+    ContinuousEffectDefinition,
     EffectDefinition,
     DynamicCostDefinition,
+    MoveReplacementDefinition,
     PendingMoveReplacement,
     GameEvent,
     GameState,
@@ -40,6 +42,7 @@ from ..domain.models import (
     StackItem,
     TimedModifier,
     TargetAllocation,
+    TextPatchDefinition,
     ZoneTarget,
     XCostDefinition,
 )
@@ -844,7 +847,9 @@ class GameEngine:
                         return tuple(results)
         return tuple(results)
 
-    def _positive_compositions(self, total: int, parts: int):
+    def _positive_compositions(
+        self, total: int, parts: int
+    ) -> Iterator[tuple[int, ...]]:
         if parts == 1:
             if total >= 1:
                 yield (total,)
@@ -2233,7 +2238,9 @@ class GameEngine:
             + equipment,
         )
 
-    def _continuous_effects_for(self, target_card_id: str):
+    def _continuous_effects_for(
+        self, target_card_id: str
+    ) -> Iterator[tuple[str, ContinuousEffectDefinition]]:
         state = self._require_state()
         target = state.cards[target_card_id]
         target_definition = self._definition(target_card_id)
@@ -2349,13 +2356,15 @@ class GameEngine:
     @staticmethod
     def _replacement_definitions(
         definition: CardDefinition,
-    ) -> tuple:
+    ) -> tuple[MoveReplacementDefinition, ...]:
         return ZoneManager._replacement_definitions(definition)
 
     def _set_replacement_order(self, command: SetReplacementOrder) -> None:
         return self._zones._set_replacement_order(command)
 
-    def _ordered_replacements(self, card_id: str, definition: CardDefinition) -> tuple:
+    def _ordered_replacements(
+        self, card_id: str, definition: CardDefinition
+    ) -> tuple[MoveReplacementDefinition, ...]:
         return self._zones._ordered_replacements(card_id, definition)
 
     def _move_card(
@@ -2373,7 +2382,9 @@ class GameEngine:
         )
 
     @staticmethod
-    def _apply_text_patch_to_definition(definition, patch):
+    def _apply_text_patch_to_definition(
+        definition: CardDefinition, patch: TextPatchDefinition
+    ) -> CardDefinition:
         return apply_text_patch(definition, patch)
 
     def _definition(self, card_id: str) -> CardDefinition:

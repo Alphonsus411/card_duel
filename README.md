@@ -4,7 +4,7 @@ Primera estructura del backend headless para el futuro juego de cartas. El
 paquete implementa el armazón de las reglas universales de Fantasy Tokens sin
 incluir ninguna carta, personaje ni colección antigua.
 
-## Alcance de la versión 0.13.0
+## Alcance de la versión 0.14.0
 
 - Catálogo de cartas vacío y extensible.
 - Contratos pequeños de gestores verificados por `mypy` y dobles mínimos independientes.
@@ -89,6 +89,24 @@ incluir ninguna carta, personaje ni colección antigua.
 
 Las únicas cartas utilizadas están en `tests/fixtures.py` y sirven para probar
 el motor. El catálogo de producción comienza vacío.
+
+## Desarrollo reproducible
+
+`uv` 0.7.22 y `uv.lock` constituyen la única estrategia para resolver las
+dependencias de desarrollo y CI. La instalación de usuario continúa siendo un
+wheel estándar sin dependencias de ejecución.
+
+```bash
+uv sync --locked --extra dev
+uv run python -m mypy
+uv run python -m compileall -q src tests
+uv run python -m unittest discover -s tests -v
+uv run python scripts/verify_reproducible_wheel.py
+```
+
+El verificador obtiene `SOURCE_DATE_EPOCH` de la fecha del commit `HEAD`, construye
+dos veces en directorios temporales limpios y compara nombre, bytes, SHA-256 y
+metadatos.
 
 ## Ejecutar las pruebas
 

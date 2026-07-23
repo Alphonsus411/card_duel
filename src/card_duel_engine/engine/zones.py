@@ -11,7 +11,14 @@ from .commands import GameCommand, ResolveMoveReplacement, SetReplacementOrder
 
 
 class MoveReplacementChoiceRequired(Exception):
-    def __init__(self, chooser_id, card_id, reason, candidate_indices, candidate_destinations):
+    def __init__(
+        self,
+        chooser_id: str,
+        card_id: str,
+        reason: MoveReason,
+        candidate_indices: tuple[int, ...],
+        candidate_destinations: tuple[Zone, ...],
+    ) -> None:
         self.chooser_id = chooser_id
         self.card_id = card_id
         self.reason = reason

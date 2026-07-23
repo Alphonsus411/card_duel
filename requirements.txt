@@ -1,7 +1,0 @@
-# Card Duel Engine 0.10.0 no requiere dependencias externas en ejecución.
-# Requiere Python 3.11 o posterior.
-#
-# Instalación del proyecto en modo editable:
-#   python -m pip install -e .
-#
-# Las dependencias de construcción están declaradas en pyproject.toml.

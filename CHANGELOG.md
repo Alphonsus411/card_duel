@@ -1,5 +1,12 @@
 # Historial de versiones
 
+## 0.14.0
+
+- Tipado estricto de los 31 módulos del paquete y validación del runner sin partida.
+- Dependencias de desarrollo reproducibles con `uv sync --locked --extra dev`.
+- Wheels deterministas mediante `SOURCE_DATE_EPOCH`, con verificación doble.
+- CI matricial en Python 3.11–3.13 y trabajo único de empaquetado.
+
 ## 0.13.0
 
 - Verificación estática con `mypy` de motor, servicio, almacenamiento y persistencia.

@@ -4,6 +4,8 @@ import json
 from dataclasses import fields, is_dataclass
 from enum import Enum
 from functools import lru_cache
+from collections.abc import Callable
+from types import ModuleType
 from types import UnionType
 from typing import Any, Union, get_args, get_origin, get_type_hints
 
@@ -13,7 +15,7 @@ from ..engine import commands as command_module
 from ..rules.config import RuleSet
 
 
-def _registry(module, predicate) -> dict[str, type]:
+def _registry(module: ModuleType, predicate: Callable[[type], bool]) -> dict[str, type]:
     return {
         name: value
         for name, value in vars(module).items()

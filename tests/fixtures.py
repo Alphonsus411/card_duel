@@ -16,6 +16,10 @@ def test_deck(prefix: str, size: int = 12) -> list[CardDefinition]:
     ]
 
 
+# Fábrica compartida; el nombre histórico no representa una prueba pytest.
+test_deck.__test__ = False
+
+
 def legendary_fixture(card_id: str = "TEST-LEGENDARY") -> CardDefinition:
     return CardDefinition(
         card_id=card_id,

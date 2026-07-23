@@ -45,6 +45,9 @@ from ..domain.models import (
 )
 from ..rules.config import RuleSet
 from ..rules.resolvers import apply_text_patch, resolve_dynamic_cost, resolve_x_cost
+from .combat import CombatManager
+from .stack import StackManager
+from .zones import MoveReplacementChoiceRequired, ZoneManager
 from .commands import (
     AdvancePhase,
     ActivateAbility,
@@ -68,22 +71,6 @@ from .commands import (
 )
 
 
-class _MoveReplacementChoiceRequired(Exception):
-    def __init__(
-        self,
-        chooser_id: str,
-        card_id: str,
-        reason: MoveReason,
-        candidate_indices: tuple[int, ...],
-        candidate_destinations: tuple[Zone, ...],
-    ) -> None:
-        self.chooser_id = chooser_id
-        self.card_id = card_id
-        self.reason = reason
-        self.candidate_indices = candidate_indices
-        self.candidate_destinations = candidate_destinations
-
-
 class GameEngine:
     """Autoridad única sobre una partida; ninguna interfaz modifica el estado."""
 
@@ -95,6 +82,9 @@ class GameEngine:
         self._next_stack_item = 1
         self._replacement_replay_choices: tuple[int, ...] = ()
         self._replacement_replay_cursor = 0
+        self._combat = CombatManager(self)
+        self._stack = StackManager(self)
+        self._zones = ZoneManager(self)
 
     def new_match(
         self,
@@ -205,7 +195,7 @@ class GameEngine:
             self._execute_command(command)
             if self._replacement_replay_cursor != len(replay_choices):
                 raise InvariantViolation("La reproducción dejó elecciones sin consumir")
-        except _MoveReplacementChoiceRequired as request:
+        except MoveReplacementChoiceRequired as request:
             if snapshot is None:
                 raise InvariantViolation(
                     "Se solicitó una sustitución sin respaldo transaccional"
@@ -1501,168 +1491,19 @@ class GameEngine:
         )
 
     def _pass_priority(self, player_id: str) -> None:
-        state = self._require_running_state()
-        if player_id != state.priority_player_id:
-            raise IllegalAction("El jugador no posee prioridad")
-        state.consecutive_passes += 1
-        self._emit("PRIORITY_PASSED", player_id)
-        if state.consecutive_passes < len(state.turn_order):
-            state.priority_player_id = self._next_player(player_id)
-            return
-
-        state.consecutive_passes = 0
-        if state.stack:
-            self._resolve_top_stack()
-            state.phase_priority_complete = False
-        else:
-            state.phase_priority_complete = True
-            self._emit("PRIORITY_WINDOW_CLOSED", state.active_player_id)
-        if not state.pending_triggers and state.pending_search is None:
-            state.priority_player_id = state.active_player_id
+        return self._stack._pass_priority(player_id)
 
     def _resolve_top_stack(self) -> None:
-        state = self._require_running_state()
-        item = state.stack.pop()
-        self._continue_stack_resolution(item, 0)
+        return self._stack._resolve_top_stack()
 
     def _continue_stack_resolution(self, item: StackItem, start_index: int) -> None:
-        state = self._require_running_state()
-        for effect_index in range(start_index, len(item.effects)):
-            effect = item.effects[effect_index]
-            if effect.kind is EffectKind.SEARCH_ZONE:
-                if len(item.chosen_zone_targets) != 1:
-                    self._emit(
-                        "EFFECT_FIZZLED",
-                        item.controller_id,
-                        item.source_card_id,
-                        {"reason": "search_requires_one_zone"},
-                    )
-                    continue
-                zone_target = item.chosen_zone_targets[0]
-                eligible = tuple(
-                    card_id
-                    for card_id in state.players[zone_target.player_id].zones[
-                        zone_target.zone
-                    ]
-                    if effect.search_filter is None
-                    or effect.search_filter.matches(self._definition(card_id))
-                )
-                maximum = min(effect.selection_maximum, len(eligible))
-                if maximum < effect.selection_minimum:
-                    self._emit(
-                        "SEARCH_FAILED",
-                        item.controller_id,
-                        item.source_card_id,
-                        {"reason": "not_enough_eligible_cards"},
-                    )
-                    if effect.shuffle_after_search:
-                        self._shuffle_zone(zone_target)
-                    continue
-                state.pending_search = PendingSearch(
-                    stack_item=item,
-                    next_effect_index=effect_index + 1,
-                    chooser_id=item.controller_id,
-                    zone_target=zone_target,
-                    eligible_card_ids=eligible,
-                    minimum=effect.selection_minimum,
-                    maximum=maximum,
-                    destination_zone=effect.destination_zone,
-                    shuffle_after=effect.shuffle_after_search,
-                    reveal_selection=effect.reveal_search_selection,
-                )
-                state.priority_player_id = item.controller_id
-                self._emit(
-                    "SEARCH_CHOICE_REQUESTED",
-                    item.controller_id,
-                    item.source_card_id,
-                    {"minimum": effect.selection_minimum, "maximum": maximum},
-                )
-                return
-            targets: tuple[object, ...]
-            if effect.target is TargetMode.CHOSEN_PLAYER:
-                targets = item.chosen_player_ids
-            elif effect.target is TargetMode.CHOSEN_PERMANENT:
-                targets = item.chosen_card_ids
-            elif effect.target is TargetMode.CHOSEN_ZONE:
-                targets = item.chosen_zone_targets
-            elif effect.target is TargetMode.CHOSEN_ENTITY:
-                targets = item.allocations
-            else:
-                targets = (None,)
-            for target_id in targets:
-                self._apply_effect(effect, item, target_id)
-        if item.destination_on_resolve is not None:
-            instance = state.cards[item.source_card_id]
-            destination_player = (
-                item.controller_id
-                if item.destination_on_resolve is Zone.BATTLEFIELD
-                else instance.owner_id
-            )
-            self._move_card(item.source_card_id, item.destination_on_resolve, destination_player)
-            if item.destination_on_resolve is Zone.BATTLEFIELD:
-                self._queue_triggered_abilities(
-                    item.source_card_id, TriggerKind.ON_ENTER_BATTLEFIELD
-                )
-        self._run_state_based_actions()
-        self._emit(
-            "STACK_ITEM_RESOLVED",
-            item.controller_id,
-            item.source_card_id,
-            {"remaining": len(state.stack)},
-        )
+        return self._stack._continue_stack_resolution(item, start_index)
 
     def _resolve_search_choice(self, command: ResolveSearchChoice) -> None:
-        state = self._require_running_state()
-        search = state.pending_search
-        if search is None or command.player_id != search.chooser_id:
-            raise IllegalAction("No existe una búsqueda propia pendiente")
-        if len(command.selected_card_ids) != len(set(command.selected_card_ids)):
-            raise IllegalAction("Una carta no puede elegirse dos veces")
-        if not search.minimum <= len(command.selected_card_ids) <= search.maximum:
-            raise IllegalAction("El número de cartas elegidas no es válido")
-        if any(card_id not in search.eligible_card_ids for card_id in command.selected_card_ids):
-            raise IllegalAction("La búsqueda contiene una carta no elegible")
-        source_zone = state.players[search.zone_target.player_id].zones[
-            search.zone_target.zone
-        ]
-        if any(card_id not in source_zone for card_id in command.selected_card_ids):
-            raise IllegalAction("La zona cambió y una carta elegida ya no está disponible")
-        for card_id in command.selected_card_ids:
-            self._move_card(
-                card_id,
-                search.destination_zone,
-                search.zone_target.player_id,
-                reason=MoveReason.RULE,
-            )
-        if search.shuffle_after:
-            self._shuffle_zone(search.zone_target)
-        state.pending_search = None
-        self._emit(
-            "SEARCH_COMPLETED",
-            command.player_id,
-            search.stack_item.source_card_id,
-            (
-                {"selected_card_ids": command.selected_card_ids}
-                if search.reveal_selection
-                else {"selected_count": len(command.selected_card_ids)}
-            ),
-        )
-        self._continue_stack_resolution(search.stack_item, search.next_effect_index)
-        if state.pending_search is None and not state.pending_triggers:
-            state.priority_player_id = state.active_player_id
-            state.phase_priority_complete = False
+        return self._stack._resolve_search_choice(command)
 
     def _shuffle_zone(self, target: ZoneTarget) -> None:
-        state = self._require_running_state()
-        cards = state.players[target.player_id].zones[target.zone]
-        random.Random(
-            state.random_seed + state.turn_serial * 10_000 + len(state.event_log)
-        ).shuffle(cards)
-        self._emit(
-            "ZONE_SHUFFLED",
-            target.player_id,
-            payload={"zone": target.zone.name, "count": len(cards)},
-        )
+        return self._stack._shuffle_zone(target)
 
     def _apply_effect(
         self,
@@ -2321,176 +2162,16 @@ class GameEngine:
         state.cards[command.card_id].controller_id = state.cards[command.card_id].owner_id
 
     def _declare_challenge(self, command: DeclareChallenge) -> None:
-        state = self._require_running_state()
-        if command.player_id != state.active_player_id or state.phase is not Phase.COMBAT:
-            raise IllegalAction("Desafío solo puede declararse en la Fase de Combate propia")
-        if state.stack or not state.phase_priority_complete or state.combat is not None:
-            raise IllegalAction("Desafío sustituye a un combate todavía no declarado")
-        if (
-            command.defending_player_id == command.player_id
-            or command.defending_player_id not in state.players
-        ):
-            raise IllegalAction("Jugador desafiado inválido")
-        if command.challenger_id not in state.players[command.player_id].zones[Zone.BATTLEFIELD]:
-            raise IllegalAction("El desafiante debe estar en el campo propio")
-        if command.challenged_id not in state.players[command.defending_player_id].zones[
-            Zone.BATTLEFIELD
-        ]:
-            raise IllegalAction("La criatura desafiada debe pertenecer al oponente indicado")
-        if not self._is_ready_creature(
-            command.challenger_id
-        ) or not self._is_lord_creature(command.challenger_id):
-            raise IllegalAction("Solo un Señor criatura enderezado puede iniciar Desafío")
-        if not self._is_creature(command.challenged_id):
-            raise IllegalAction("Desafío requiere otra criatura")
-        state.combat = CombatState(
-            attacking_player_id=command.player_id,
-            defending_player_id=command.defending_player_id,
-            attackers=(command.challenger_id,),
-            blockers={command.challenger_id: (command.challenged_id,)},
-            blockers_declared=True,
-            is_challenge=True,
-        )
-        state.priority_player_id = command.defending_player_id
-        state.phase_priority_complete = False
-        state.consecutive_passes = 0
-        self._emit(
-            "CHALLENGE_DECLARED",
-            command.player_id,
-            command.challenger_id,
-            {"challenged_id": command.challenged_id, "defender": command.defending_player_id},
-        )
+        return self._combat._declare_challenge(command)
 
     def _declare_attackers(self, command: DeclareAttackers) -> None:
-        state = self._require_running_state()
-        if command.player_id != state.active_player_id or state.phase is not Phase.COMBAT:
-            raise IllegalAction("Los atacantes solo se declaran durante el Combate propio")
-        if state.stack or not state.phase_priority_complete or state.combat is not None:
-            raise IllegalAction("No puede declararse ahora un nuevo combate")
-        if (
-            command.defending_player_id == command.player_id
-            or command.defending_player_id not in state.players
-        ):
-            raise IllegalAction("Defensor inválido")
-        if not command.attacker_ids or len(set(command.attacker_ids)) != len(command.attacker_ids):
-            raise IllegalAction("La declaración de atacantes no es válida")
-        for card_id in command.attacker_ids:
-            if card_id not in state.players[command.player_id].zones[Zone.BATTLEFIELD]:
-                raise IllegalAction("Atacante fuera del campo propio")
-            if not self._is_ready_creature(card_id):
-                raise IllegalAction("Solo una criatura enderezada puede atacar")
-        for card_id in command.attacker_ids:
-            state.cards[card_id].exhausted = True
-        state.combat = CombatState(
-            attacking_player_id=command.player_id,
-            defending_player_id=command.defending_player_id,
-            attackers=command.attacker_ids,
-        )
-        state.priority_player_id = command.defending_player_id
-        state.phase_priority_complete = False
-        state.consecutive_passes = 0
-        self._emit(
-            "ATTACKERS_DECLARED",
-            command.player_id,
-            payload={"attackers": command.attacker_ids, "defender": command.defending_player_id},
-        )
+        return self._combat._declare_attackers(command)
 
     def _declare_blockers(self, command: DeclareBlockers) -> None:
-        state = self._require_running_state()
-        combat = state.combat
-        if state.phase is not Phase.COMBAT or combat is None or combat.blockers_declared:
-            raise IllegalAction("No hay una declaración de bloqueadores pendiente")
-        if command.player_id != combat.defending_player_id or state.stack:
-            raise IllegalAction("Solo el defensor puede declarar bloqueadores")
-        assignments = dict(command.assignments)
-        if len(assignments) != len(command.assignments):
-            raise IllegalAction("Un atacante aparece duplicado en los bloqueos")
-        if set(assignments) - set(combat.attackers):
-            raise IllegalAction("Se ha asignado un atacante inexistente")
-        used: list[str] = []
-        for blocker_ids in assignments.values():
-            used.extend(blocker_ids)
-        if len(used) != len(set(used)):
-            raise IllegalAction("Una criatura no puede bloquear a dos atacantes")
-        defender = state.players[combat.defending_player_id]
-        for blocker_id in used:
-            if blocker_id not in defender.zones[Zone.BATTLEFIELD] or not self._is_ready_creature(blocker_id):
-                raise IllegalAction("Solo una criatura enderezada propia puede bloquear")
-        for blocker_id in used:
-            state.cards[blocker_id].exhausted = True
-        combat.blockers = {attacker: tuple(blockers) for attacker, blockers in assignments.items()}
-        combat.blockers_declared = True
-        state.priority_player_id = combat.attacking_player_id
-        state.phase_priority_complete = False
-        state.consecutive_passes = 0
-        self._emit("BLOCKERS_DECLARED", command.player_id, payload={"assignments": assignments})
+        return self._combat._declare_blockers(command)
 
     def _resolve_combat(self, player_id: str) -> None:
-        state = self._require_running_state()
-        combat = state.combat
-        if combat is None or player_id != combat.attacking_player_id:
-            raise IllegalAction("No existe un combate propio pendiente")
-        if not combat.blockers_declared or combat.resolved or state.stack:
-            raise IllegalAction("El combate todavía no puede resolverse")
-        if not state.phase_priority_complete:
-            raise IllegalAction("Debe cerrarse la ventana de respuestas del combate")
-
-        for attacker_id in combat.attackers:
-            if attacker_id not in state.cards or state.cards[attacker_id].zone is not Zone.BATTLEFIELD:
-                continue
-            attack_strength = self._current_strength(attacker_id)
-            blocker_ids = [
-                blocker_id
-                for blocker_id in combat.blockers.get(attacker_id, ())
-                if state.cards[blocker_id].zone is Zone.BATTLEFIELD
-            ]
-            if combat.is_challenge:
-                if blocker_ids:
-                    challenged_id = blocker_ids[0]
-                    self._deal_damage(challenged_id, attack_strength, attacker_id)
-                    self._deal_damage(
-                        attacker_id,
-                        self._current_strength(challenged_id),
-                        challenged_id,
-                    )
-                continue
-            if not blocker_ids:
-                self._deal_wounds(combat.defending_player_id, attack_strength, attacker_id)
-                self._emit(
-                    "COMBAT_WOUNDS",
-                    combat.attacking_player_id,
-                    attacker_id,
-                    {"target": combat.defending_player_id, "amount": attack_strength},
-                )
-                continue
-
-            remaining = attack_strength
-            for blocker_id in blocker_ids:
-                if remaining <= 0:
-                    break
-                assigned = min(remaining, self._current_strength(blocker_id))
-                self._deal_damage(blocker_id, assigned, attacker_id)
-                remaining -= assigned
-            self._deal_damage(
-                attacker_id,
-                sum(self._current_strength(blocker_id) for blocker_id in blocker_ids),
-            )
-            if remaining > 0:
-                self._deal_wounds(combat.defending_player_id, remaining, attacker_id)
-                self._emit(
-                    "COMBAT_WOUNDS",
-                    combat.attacking_player_id,
-                    attacker_id,
-                    {"target": combat.defending_player_id, "amount": remaining},
-                )
-
-        self._run_state_based_actions()
-        for instance in state.cards.values():
-            if instance.zone is Zone.BATTLEFIELD:
-                instance.damage = 0
-        combat.resolved = True
-        state.phase_priority_complete = True
-        self._emit("COMBAT_RESOLVED", combat.attacking_player_id)
+        return self._combat._resolve_combat(player_id)
 
     def _is_ready_creature(self, card_id: str) -> bool:
         state = self._require_state()
@@ -2655,76 +2336,19 @@ class GameEngine:
         self._emit("PLAYER_CONCEDED", player_id, payload={"winners": winners})
 
     def _draw(self, player_id: str, amount: int) -> None:
-        state = self._require_state()
-        player = state.players[player_id]
-        for _ in range(amount):
-            if not player.zones[Zone.DECK]:
-                if (
-                    self.rules.recycle_discard
-                    and not player.discard_recycling_blocked
-                    and player.zones[Zone.DISCARD]
-                ):
-                    for card_id in tuple(player.zones[Zone.DISCARD]):
-                        self._move_card(card_id, Zone.DECK, player_id)
-                    random.Random(state.random_seed + state.turn_number).shuffle(
-                        player.zones[Zone.DECK]
-                    )
-                    self._emit("DISCARD_RECYCLED", player_id)
-                else:
-                    self._emit("DRAW_FAILED", player_id)
-                    return
-            card_id = player.zones[Zone.DECK][-1]
-            self._move_card(card_id, Zone.HAND, player_id)
-            self._emit("CARD_DRAWN", player_id, card_id)
+        return self._zones._draw(player_id, amount)
 
     @staticmethod
     def _replacement_definitions(
         definition: CardDefinition,
     ) -> tuple:
-        return (
-            *((definition.move_replacement,) if definition.move_replacement else ()),
-            *definition.move_replacements,
-        )
+        return ZoneManager._replacement_definitions(definition)
 
     def _set_replacement_order(self, command: SetReplacementOrder) -> None:
-        state = self._require_running_state()
-        if command.player_id != state.priority_player_id:
-            raise IllegalAction("El jugador no posee prioridad")
-        if command.card_id not in state.players[command.player_id].zones[Zone.BATTLEFIELD]:
-            raise IllegalAction("Solo pueden ordenarse sustituciones de un permanente propio")
-        definition = self._definition(command.card_id)
-        replacements = self._replacement_definitions(definition)
-        if not definition.player_orders_replacements or len(replacements) < 2:
-            raise IllegalAction("La carta no admite ordenar sustituciones")
-        expected = tuple(range(len(replacements)))
-        if len(command.ordered_indices) != len(replacements) or set(
-            command.ordered_indices
-        ) != set(expected):
-            raise IllegalAction("El orden de sustituciones no es una permutación completa")
-        state.cards[command.card_id].replacement_order = command.ordered_indices
-        self._emit(
-            "REPLACEMENT_ORDER_SET",
-            command.player_id,
-            command.card_id,
-            {"ordered_indices": command.ordered_indices},
-        )
+        return self._zones._set_replacement_order(command)
 
     def _ordered_replacements(self, card_id: str, definition: CardDefinition) -> tuple:
-        replacements = self._replacement_definitions(definition)
-        instance = self._require_state().cards[card_id]
-        if (
-            definition.player_orders_replacements
-            and len(instance.replacement_order) == len(replacements)
-            and set(instance.replacement_order) == set(range(len(replacements)))
-        ):
-            return tuple(replacements[index] for index in instance.replacement_order)
-        return tuple(
-            replacement
-            for _, replacement in sorted(
-                enumerate(replacements),
-                key=lambda item: (-item[1].priority, item[0]),
-            )
-        )
+        return self._zones._ordered_replacements(card_id, definition)
 
     def _move_card(
         self,
@@ -2735,153 +2359,10 @@ class GameEngine:
         reason: MoveReason = MoveReason.RULE,
         allow_replacement: bool = True,
     ) -> Zone:
-        state = self._require_state()
-        instance = state.cards[card_id]
-        definition = self._definition(card_id)
-        all_replacements = self._replacement_definitions(definition)
-        applicable = tuple(
-            (index, item)
-            for index, item in enumerate(all_replacements)
-            if allow_replacement
-            and instance.zone is Zone.BATTLEFIELD
-            and destination is Zone.DISCARD
-            and reason in item.applies_to
-            and (
-                item.minimum_strength_after is None
-                or self._current_strength(card_id) + item.strength_delta
-                >= item.minimum_strength_after
-            )
+        return self._zones._move_card(
+            card_id, destination, destination_player,
+            reason=reason, allow_replacement=allow_replacement,
         )
-        if definition.deferred_replacement_choice and len(applicable) > 1:
-            if self._replacement_replay_cursor < len(self._replacement_replay_choices):
-                selected_index = self._replacement_replay_choices[
-                    self._replacement_replay_cursor
-                ]
-                self._replacement_replay_cursor += 1
-                by_index = dict(applicable)
-                if selected_index not in by_index:
-                    raise InvariantViolation(
-                        "La sustitución reproducida ya no resulta aplicable"
-                    )
-                replacement = by_index[selected_index]
-            else:
-                raise _MoveReplacementChoiceRequired(
-                    instance.controller_id,
-                    card_id,
-                    reason,
-                    tuple(index for index, _ in applicable),
-                    tuple(item.destination for _, item in applicable),
-                )
-        elif definition.player_orders_replacements:
-            ordered = self._ordered_replacements(card_id, definition)
-            replacement = next(
-                (item for item in ordered if item in {entry[1] for entry in applicable}),
-                None,
-            )
-        else:
-            replacement = next(
-                (
-                    item
-                    for item in self._ordered_replacements(card_id, definition)
-                    if item in {entry[1] for entry in applicable}
-                ),
-                None,
-            )
-        if (
-            allow_replacement
-            and instance.zone is Zone.BATTLEFIELD
-            and destination is Zone.DISCARD
-            and replacement is not None
-        ):
-            after_strength = self._current_strength(card_id) + replacement.strength_delta
-            if (
-                replacement.minimum_strength_after is None
-                or after_strength >= replacement.minimum_strength_after
-            ):
-                if replacement.destination is Zone.BATTLEFIELD:
-                    instance.strength_modifier += replacement.strength_delta
-                    instance.exhausted = replacement.enters_exhausted
-                    if replacement.clear_damage:
-                        instance.damage = 0
-                    self._emit(
-                        "MOVE_REPLACED",
-                        instance.controller_id,
-                        card_id,
-                        {
-                            "reason": reason.name,
-                            "destination": Zone.BATTLEFIELD.name,
-                        },
-                    )
-                    return Zone.BATTLEFIELD
-                destination = replacement.destination
-                destination_player = instance.owner_id
-                self._emit(
-                    "MOVE_REPLACED",
-                    instance.controller_id,
-                    card_id,
-                    {"reason": reason.name, "destination": destination.name},
-                )
-        if instance.zone is Zone.BATTLEFIELD and destination is not Zone.BATTLEFIELD:
-            for other in state.cards.values():
-                if other.attached_to == card_id:
-                    other.attached_to = None
-                    if state.status is MatchStatus.RUNNING:
-                        self._emit("EQUIPMENT_DETACHED", card_id=other.instance_id,
-                                   payload={"former_target": card_id})
-            state.timed_modifiers = [
-                modifier
-                for modifier in state.timed_modifiers
-                if modifier.target_card_id != card_id
-            ]
-            state.text_patches = [
-                patch for patch in state.text_patches if patch.target_card_id != card_id
-            ]
-        found = False
-        for player in state.players.values():
-            for zone_cards in player.zones.values():
-                if card_id in zone_cards:
-                    zone_cards.remove(card_id)
-                    found = True
-                    break
-            if found:
-                break
-        if card_id in state.resolution:
-            state.resolution.remove(card_id)
-            found = True
-        if card_id in state.void:
-            state.void.remove(card_id)
-            found = True
-        if not found:
-            raise InvariantViolation(f"La carta {card_id} no estaba en ninguna zona")
-
-        instance.zone = destination
-        if destination is Zone.RESOLUTION:
-            state.resolution.append(card_id)
-        elif destination is Zone.VOID:
-            state.void.append(card_id)
-        elif destination in state.players[destination_player].zones:
-            state.players[destination_player].zones[destination].append(card_id)
-        else:
-            raise ValueError(f"Zona de destino no almacenable: {destination.name}")
-        if destination is not Zone.BATTLEFIELD:
-            instance.controller_id = instance.owner_id
-            instance.attached_to = None
-            instance.exhausted = False
-            instance.damage = 0
-            instance.strength_modifier = 0
-            instance.damage_prevention = 0
-            instance.activated_this_turn.clear()
-            instance.transformed_as_creature = False
-            instance.creature_form_expires_turn_serial = None
-            instance.regeneration_shields = 0
-            instance.regeneration_blocked_until_state_check = False
-            instance.overridden_definition_id = None
-            instance.definition_override_expires_turn_serial = None
-            instance.replacement_order = ()
-            state.control_changes = [
-                change for change in state.control_changes if change.card_id != card_id
-            ]
-        return destination
 
     @staticmethod
     def _apply_text_patch_to_definition(definition, patch):

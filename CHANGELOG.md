@@ -1,5 +1,13 @@
 # Historial de versiones
 
+## 0.11.0
+
+- Combate, pila y zonas extraídos a componentes especializados.
+- `GameEngine` sigue coordinando y `GameState` conserva la autoridad.
+- `MatchService` crea, recupera, observa y ejecuta comandos con CAS.
+- Contratos `MatchStore` y `CommandSource` desacoplados de AGIX.
+- Compatibilidad con documentos v2 y migraciones desde v1.
+
 ## 0.10.0
 
 - Extracción de costes y parches de texto a resolutores puros sin estado mutable.

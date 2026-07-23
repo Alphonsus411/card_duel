@@ -4,7 +4,7 @@ Primera estructura del backend headless para el futuro juego de cartas. El
 paquete implementa el armazón de las reglas universales de Fantasy Tokens sin
 incluir ninguna carta, personaje ni colección antigua.
 
-## Alcance de la versión 0.10.0
+## Alcance de la versión 0.11.0
 
 - Catálogo de cartas vacío y extensible.
 - Definiciones e instancias de cartas separadas.
@@ -82,6 +82,8 @@ incluir ninguna carta, personaje ni colección antigua.
 - Almacén SQLite multiproceso con modo WAL y transacciones atómicas.
 - Control optimista de versiones para impedir actualizaciones perdidas.
 - Pruebas generativas deterministas de fórmulas y secuencias de comandos.
+- Componentes aislados para combate, pila y movimiento entre zonas.
+- `MatchService` headless con persistencia CAS y contrato futuro para AGIX.
 
 Las únicas cartas utilizadas están en `tests/fixtures.py` y sirven para probar
 el motor. El catálogo de producción comienza vacío.

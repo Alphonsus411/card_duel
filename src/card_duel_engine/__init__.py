@@ -5,12 +5,17 @@ from .content import CollectionManifest, load_manifest
 from .engine.game import GameEngine
 from .persistence import dump_replay, dump_snapshot, load_snapshot, replay_from_log
 from .rules.config import RuleSet
-from .storage import SQLiteMatchStore, VersionConflict
+from .service import CommandSource, MatchService, MatchView
+from .storage import InMemoryMatchStore, SQLiteMatchStore, VersionConflict
 
 __all__ = [
     "CardCatalog",
     "CollectionManifest",
     "GameEngine",
+    "InMemoryMatchStore",
+    "MatchService",
+    "MatchView",
+    "CommandSource",
     "RuleSet",
     "SQLiteMatchStore",
     "VersionConflict",
@@ -20,4 +25,4 @@ __all__ = [
     "load_snapshot",
     "replay_from_log",
 ]
-__version__ = "0.10.0"
+__version__ = "0.11.0"

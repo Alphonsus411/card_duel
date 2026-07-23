@@ -159,3 +159,9 @@ Edición Mítica. No incluye textos de cartas antiguas.
 - Registro formal de las contradicciones entre reglamento base y Mítica.
 
 Nada de lo anterior debe completarse mediante suposiciones silenciosas.
+
+## Compatibilidad 0.11
+
+La extracción no modifica reglas. La fase Legendaria conserva posición,
+disparos, pila y prioridad. Ante ambigüedades se mantiene el comportamiento
+observable de 0.10.0: esta entrega cambia arquitectura, no reglamento.

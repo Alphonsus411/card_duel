@@ -25,4 +25,4 @@ __all__ = [
     "load_snapshot",
     "replay_from_log",
 ]
-__version__ = "0.12.0"
+__version__ = "0.13.0"

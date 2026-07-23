@@ -1,5 +1,13 @@
 # Historial de versiones
 
+## 0.13.0
+
+- Verificación estática con `mypy` de motor, servicio, almacenamiento y persistencia.
+- `GameEngine` se comprueba estructuralmente contra los tres protocolos independientes.
+- Estado de reproducción de sustituciones encapsulado tras una operación de consumo.
+- Dobles mínimos de prueba para combate, pila y zonas sin construir un motor completo.
+- CI endurecida en Python 3.11–3.13, con compilación, pruebas y construcción del wheel.
+
 ## 0.12.0
 
 - Contratos `Protocol` específicos para combate, pila y zonas, inyectados por el coordinador.

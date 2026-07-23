@@ -5,7 +5,7 @@ from dataclasses import replace
 from typing import Protocol
 from ..domain.enums import CardKind, ControllerScope, MatchStatus, MoveReason, TriggerKind, Zone
 from ..domain.errors import IllegalAction, InvariantViolation
-from ..domain.models import CardDefinition, GameState, PendingMoveReplacement
+from ..domain.models import CardDefinition, GameState, MoveReplacementDefinition, PendingMoveReplacement
 from ..rules.config import RuleSet
 from .commands import GameCommand, ResolveMoveReplacement, SetReplacementOrder
 
@@ -23,13 +23,11 @@ class ZoneContext(Protocol):
     """Estado y servicios mínimos requeridos para movimientos y sustituciones."""
 
     rules: RuleSet
-    _replacement_replay_choices: tuple[int, ...]
-    _replacement_replay_cursor: int
-
     def _require_state(self) -> GameState: ...
     def _require_running_state(self) -> GameState: ...
     def _definition(self, card_id: str) -> CardDefinition: ...
     def _current_strength(self, card_id: str) -> int: ...
+    def _consume_replacement_replay_choice(self) -> int | None: ...
     def _execute_transaction(self, command: GameCommand, replay_choices: tuple[int, ...]) -> None: ...
     def _emit(self, event_type: str, player_id: str | None = None, card_id: str | None = None, payload: dict[str, object] | None = None) -> None: ...
 
@@ -64,7 +62,7 @@ class ZoneManager:
     @staticmethod
     def _replacement_definitions(
         definition: CardDefinition,
-    ) -> tuple:
+    ) -> tuple[MoveReplacementDefinition, ...]:
         return (
             *((definition.move_replacement,) if definition.move_replacement else ()),
             *definition.move_replacements,
@@ -93,7 +91,7 @@ class ZoneManager:
             {"ordered_indices": command.ordered_indices},
         )
 
-    def _ordered_replacements(self, card_id: str, definition: CardDefinition) -> tuple:
+    def _ordered_replacements(self, card_id: str, definition: CardDefinition) -> tuple[MoveReplacementDefinition, ...]:
         replacements = self._replacement_definitions(definition)
         instance = self._context._require_state().cards[card_id]
         if (
@@ -136,12 +134,10 @@ class ZoneManager:
                 >= item.minimum_strength_after
             )
         )
+        replacement: MoveReplacementDefinition | None
         if definition.deferred_replacement_choice and len(applicable) > 1:
-            if self._context._replacement_replay_cursor < len(self._context._replacement_replay_choices):
-                selected_index = self._context._replacement_replay_choices[
-                    self._context._replacement_replay_cursor
-                ]
-                self._context._replacement_replay_cursor += 1
+            selected_index = self._context._consume_replacement_replay_choice()
+            if selected_index is not None:
                 by_index = dict(applicable)
                 if selected_index not in by_index:
                     raise InvariantViolation(

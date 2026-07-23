@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "card-duel-engine"
-version = "0.12.0"
+version = "0.13.0"
 description = "Motor headless y extensible para el nuevo juego basado en las reglas universales de Fantasy Tokens."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -12,5 +12,20 @@ license = "Apache-2.0"
 authors = [{name = "Adolfo González Hernández"}]
 dependencies = []
 
+[project.optional-dependencies]
+dev = ["build>=1.2", "mypy>=1.15"]
+
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.mypy]
+python_version = "3.11"
+files = [
+    "src/card_duel_engine/engine",
+    "src/card_duel_engine/service.py",
+    "src/card_duel_engine/storage",
+    "src/card_duel_engine/persistence",
+    "tests/test_manager_contracts_v0130.py",
+]
+check_untyped_defs = true
+warn_unused_configs = true

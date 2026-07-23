@@ -83,6 +83,7 @@ class StackManager:
                     if effect.shuffle_after_search:
                         self._shuffle_zone(zone_target)
                     continue
+                assert effect.destination_zone is not None
                 state.pending_search = PendingSearch(
                     stack_item=item,
                     next_effect_index=effect_index + 1,

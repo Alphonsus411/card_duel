@@ -127,7 +127,7 @@ def decode_value(value: Any) -> Any:
         if enum_type is None:
             raise ValueError(f"Enum no autorizado: {value['$enum']}")
         try:
-            return enum_type[value["name"]]
+            return getattr(enum_type, value["name"])
         except KeyError as exc:
             raise ValueError("Miembro de enum desconocido") from exc
     if "$type" in value:

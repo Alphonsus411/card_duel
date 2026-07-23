@@ -191,3 +191,10 @@ necesita. No existe delegación mediante `Any`, `__getattr__` o `__setattr__`: l
 llamadas al contexto son visibles y comprobables. `GameEngine` implementa esos
 contratos estructuralmente y conserva la coordinación; el único objeto de estado
 mutable sigue siendo `GameState`, por lo que no hay sincronización ni estado espejo.
+
+## Contratos verificables (0.13.0)
+
+`mypy` comprueba por separado `CombatContext`, `StackContext` y `ZoneContext`, y un
+testigo de asignación estática garantiza que `GameEngine` satisface los tres. El gestor
+de zonas no conoce la secuencia ni el cursor internos del replay: solicita la siguiente
+elección mediante `_consume_replacement_replay_choice`, que devuelve `None` al agotarse.

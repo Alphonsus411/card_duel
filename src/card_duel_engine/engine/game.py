@@ -45,9 +45,9 @@ from ..domain.models import (
 )
 from ..rules.config import RuleSet
 from ..rules.resolvers import apply_text_patch, resolve_dynamic_cost, resolve_x_cost
-from .combat import CombatManager
-from .stack import StackManager
-from .zones import MoveReplacementChoiceRequired, ZoneManager
+from .combat import CombatContext, CombatManager
+from .stack import StackContext, StackManager
+from .zones import MoveReplacementChoiceRequired, ZoneContext, ZoneManager
 from .commands import (
     AdvancePhase,
     ActivateAbility,
@@ -85,6 +85,14 @@ class GameEngine:
         self._combat = CombatManager(self)
         self._stack = StackManager(self)
         self._zones = ZoneManager(self)
+
+    def _consume_replacement_replay_choice(self) -> int | None:
+        """Consume una elección grabada sin exponer el cursor al gestor de zonas."""
+        if self._replacement_replay_cursor >= len(self._replacement_replay_choices):
+            return None
+        choice = self._replacement_replay_choices[self._replacement_replay_cursor]
+        self._replacement_replay_cursor += 1
+        return choice
 
     def new_match(
         self,
@@ -202,6 +210,7 @@ class GameEngine:
                 )
             self.state = snapshot
             self._next_stack_item = next_stack_item
+            assert snapshot.priority_player_id is not None
             self.state.pending_move_replacement = PendingMoveReplacement(
                 original_command=command,
                 chooser_id=request.chooser_id,
@@ -1520,6 +1529,7 @@ class GameEngine:
                 return
             if effect.kind is EffectKind.SEARCH_ZONE:
                 return
+            assert effect.destination_zone is not None
             source_cards = state.players[selected_target_id.player_id].zones[
                 selected_target_id.zone
             ]
@@ -1569,20 +1579,18 @@ class GameEngine:
             )
             return
         if effect.target in {TargetMode.SELF, TargetMode.CHOSEN_PLAYER}:
-            target_id = (
-                item.controller_id
-                if effect.target is TargetMode.SELF
-                else selected_target_id
-            )
-            assert target_id is not None
+            if effect.target is TargetMode.SELF:
+                target_id = item.controller_id
+            else:
+                assert isinstance(selected_target_id, str)
+                target_id = selected_target_id
             player = state.players[target_id]
         else:
-            target_id = (
-                item.source_card_id
-                if effect.target is TargetMode.SOURCE
-                else selected_target_id
-            )
-            assert target_id is not None
+            if effect.target is TargetMode.SOURCE:
+                target_id = item.source_card_id
+            else:
+                assert isinstance(selected_target_id, str)
+                target_id = selected_target_id
             if target_id not in state.cards or state.cards[target_id].zone is not Zone.BATTLEFIELD:
                 self._emit("EFFECT_FIZZLED", item.controller_id, item.source_card_id,
                            {"target": target_id, "reason": "invalid_target"})
@@ -2567,3 +2575,11 @@ class GameEngine:
         if state.status is not MatchStatus.RUNNING:
             raise IllegalAction("La partida no está en ejecución")
         return state
+
+
+def _verify_manager_contexts(engine: GameEngine) -> None:
+    """Testigo estático: el coordinador satisface cada contrato por separado."""
+    combat: CombatContext = engine
+    stack: StackContext = engine
+    zones: ZoneContext = engine
+    _ = (combat, stack, zones)

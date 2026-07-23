@@ -173,3 +173,9 @@ La extracción de contratos es exclusivamente arquitectónica. No cambia la secu
 de fases (incluida Legendaria), la prioridad, el combate, los movimientos, las
 sustituciones ni la reproducción determinista. Los snapshots, replays y manifiestos
 continúan en esquema v2 y mantienen las migraciones desde v1.
+
+## Compatibilidad 0.13.0
+
+La verificación estática y la encapsulación del cursor de replay no alteran reglas ni
+formatos. Se conservan la fase Legendaria, los documentos v2, las migraciones v1 y el
+orden determinista de las sustituciones.

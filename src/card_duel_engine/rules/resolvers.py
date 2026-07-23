@@ -125,6 +125,7 @@ def apply_text_patch(
             ),
         )
         if effect_patch.ability_id is not None:
+            assert ability_index is not None
             abilities = list(definition.abilities)
             abilities[ability_index] = replace(
                 abilities[ability_index], effects=tuple(effects)

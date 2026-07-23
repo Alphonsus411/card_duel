@@ -165,3 +165,11 @@ Nada de lo anterior debe completarse mediante suposiciones silenciosas.
 La extracción no modifica reglas. La fase Legendaria conserva posición,
 disparos, pila y prioridad. Ante ambigüedades se mantiene el comportamiento
 observable de 0.10.0: esta entrega cambia arquitectura, no reglamento.
+
+
+## Compatibilidad 0.12.0
+
+La extracción de contratos es exclusivamente arquitectónica. No cambia la secuencia
+de fases (incluida Legendaria), la prioridad, el combate, los movimientos, las
+sustituciones ni la reproducción determinista. Los snapshots, replays y manifiestos
+continúan en esquema v2 y mantienen las migraciones desde v1.

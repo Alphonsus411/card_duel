@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "card-duel-engine"
-version = "0.11.0"
+version = "0.12.0"
 description = "Motor headless y extensible para el nuevo juego basado en las reglas universales de Fantasy Tokens."
 readme = "README.md"
 requires-python = ">=3.11"

@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import random
 from dataclasses import replace
-from typing import Any
+from typing import Protocol
 from ..domain.enums import CardKind, ControllerScope, MatchStatus, MoveReason, TriggerKind, Zone
 from ..domain.errors import IllegalAction, InvariantViolation
-from ..domain.models import CardDefinition, PendingMoveReplacement
-from .commands import ResolveMoveReplacement, SetReplacementOrder
+from ..domain.models import CardDefinition, GameState, PendingMoveReplacement
+from ..rules.config import RuleSet
+from .commands import GameCommand, ResolveMoveReplacement, SetReplacementOrder
 
 
 class MoveReplacementChoiceRequired(Exception):
@@ -18,26 +19,32 @@ class MoveReplacementChoiceRequired(Exception):
         self.candidate_destinations = candidate_destinations
 
 
-class _EngineComponent:
-    """Componente ligado a un motor; GameState sigue siendo la única autoridad."""
-    def __init__(self, engine: Any) -> None:
-        object.__setattr__(self, "_engine", engine)
+class ZoneContext(Protocol):
+    """Estado y servicios mínimos requeridos para movimientos y sustituciones."""
 
-    def __getattr__(self, name: str) -> Any:
-        return getattr(self._engine, name)
+    rules: RuleSet
+    _replacement_replay_choices: tuple[int, ...]
+    _replacement_replay_cursor: int
 
-    def __setattr__(self, name: str, value: Any) -> None:
-        setattr(self._engine, name, value)
+    def _require_state(self) -> GameState: ...
+    def _require_running_state(self) -> GameState: ...
+    def _definition(self, card_id: str) -> CardDefinition: ...
+    def _current_strength(self, card_id: str) -> int: ...
+    def _execute_transaction(self, command: GameCommand, replay_choices: tuple[int, ...]) -> None: ...
+    def _emit(self, event_type: str, player_id: str | None = None, card_id: str | None = None, payload: dict[str, object] | None = None) -> None: ...
 
 
-class ZoneManager(_EngineComponent):
+class ZoneManager:
+    def __init__(self, context: ZoneContext) -> None:
+        self._context = context
+
     def _draw(self, player_id: str, amount: int) -> None:
-        state = self._require_state()
+        state = self._context._require_state()
         player = state.players[player_id]
         for _ in range(amount):
             if not player.zones[Zone.DECK]:
                 if (
-                    self.rules.recycle_discard
+                    self._context.rules.recycle_discard
                     and not player.discard_recycling_blocked
                     and player.zones[Zone.DISCARD]
                 ):
@@ -46,13 +53,13 @@ class ZoneManager(_EngineComponent):
                     random.Random(state.random_seed + state.turn_number).shuffle(
                         player.zones[Zone.DECK]
                     )
-                    self._emit("DISCARD_RECYCLED", player_id)
+                    self._context._emit("DISCARD_RECYCLED", player_id)
                 else:
-                    self._emit("DRAW_FAILED", player_id)
+                    self._context._emit("DRAW_FAILED", player_id)
                     return
             card_id = player.zones[Zone.DECK][-1]
             self._move_card(card_id, Zone.HAND, player_id)
-            self._emit("CARD_DRAWN", player_id, card_id)
+            self._context._emit("CARD_DRAWN", player_id, card_id)
 
     @staticmethod
     def _replacement_definitions(
@@ -64,12 +71,12 @@ class ZoneManager(_EngineComponent):
         )
 
     def _set_replacement_order(self, command: SetReplacementOrder) -> None:
-        state = self._require_running_state()
+        state = self._context._require_running_state()
         if command.player_id != state.priority_player_id:
             raise IllegalAction("El jugador no posee prioridad")
         if command.card_id not in state.players[command.player_id].zones[Zone.BATTLEFIELD]:
             raise IllegalAction("Solo pueden ordenarse sustituciones de un permanente propio")
-        definition = self._definition(command.card_id)
+        definition = self._context._definition(command.card_id)
         replacements = self._replacement_definitions(definition)
         if not definition.player_orders_replacements or len(replacements) < 2:
             raise IllegalAction("La carta no admite ordenar sustituciones")
@@ -79,7 +86,7 @@ class ZoneManager(_EngineComponent):
         ) != set(expected):
             raise IllegalAction("El orden de sustituciones no es una permutación completa")
         state.cards[command.card_id].replacement_order = command.ordered_indices
-        self._emit(
+        self._context._emit(
             "REPLACEMENT_ORDER_SET",
             command.player_id,
             command.card_id,
@@ -88,7 +95,7 @@ class ZoneManager(_EngineComponent):
 
     def _ordered_replacements(self, card_id: str, definition: CardDefinition) -> tuple:
         replacements = self._replacement_definitions(definition)
-        instance = self._require_state().cards[card_id]
+        instance = self._context._require_state().cards[card_id]
         if (
             definition.player_orders_replacements
             and len(instance.replacement_order) == len(replacements)
@@ -112,9 +119,9 @@ class ZoneManager(_EngineComponent):
         reason: MoveReason = MoveReason.RULE,
         allow_replacement: bool = True,
     ) -> Zone:
-        state = self._require_state()
+        state = self._context._require_state()
         instance = state.cards[card_id]
-        definition = self._definition(card_id)
+        definition = self._context._definition(card_id)
         all_replacements = self._replacement_definitions(definition)
         applicable = tuple(
             (index, item)
@@ -125,16 +132,16 @@ class ZoneManager(_EngineComponent):
             and reason in item.applies_to
             and (
                 item.minimum_strength_after is None
-                or self._current_strength(card_id) + item.strength_delta
+                or self._context._current_strength(card_id) + item.strength_delta
                 >= item.minimum_strength_after
             )
         )
         if definition.deferred_replacement_choice and len(applicable) > 1:
-            if self._replacement_replay_cursor < len(self._replacement_replay_choices):
-                selected_index = self._replacement_replay_choices[
-                    self._replacement_replay_cursor
+            if self._context._replacement_replay_cursor < len(self._context._replacement_replay_choices):
+                selected_index = self._context._replacement_replay_choices[
+                    self._context._replacement_replay_cursor
                 ]
-                self._replacement_replay_cursor += 1
+                self._context._replacement_replay_cursor += 1
                 by_index = dict(applicable)
                 if selected_index not in by_index:
                     raise InvariantViolation(
@@ -170,7 +177,7 @@ class ZoneManager(_EngineComponent):
             and destination is Zone.DISCARD
             and replacement is not None
         ):
-            after_strength = self._current_strength(card_id) + replacement.strength_delta
+            after_strength = self._context._current_strength(card_id) + replacement.strength_delta
             if (
                 replacement.minimum_strength_after is None
                 or after_strength >= replacement.minimum_strength_after
@@ -180,7 +187,7 @@ class ZoneManager(_EngineComponent):
                     instance.exhausted = replacement.enters_exhausted
                     if replacement.clear_damage:
                         instance.damage = 0
-                    self._emit(
+                    self._context._emit(
                         "MOVE_REPLACED",
                         instance.controller_id,
                         card_id,
@@ -192,7 +199,7 @@ class ZoneManager(_EngineComponent):
                     return Zone.BATTLEFIELD
                 destination = replacement.destination
                 destination_player = instance.owner_id
-                self._emit(
+                self._context._emit(
                     "MOVE_REPLACED",
                     instance.controller_id,
                     card_id,
@@ -203,7 +210,7 @@ class ZoneManager(_EngineComponent):
                 if other.attached_to == card_id:
                     other.attached_to = None
                     if state.status is MatchStatus.RUNNING:
-                        self._emit("EQUIPMENT_DETACHED", card_id=other.instance_id,
+                        self._context._emit("EQUIPMENT_DETACHED", card_id=other.instance_id,
                                    payload={"former_target": card_id})
             state.timed_modifiers = [
                 modifier

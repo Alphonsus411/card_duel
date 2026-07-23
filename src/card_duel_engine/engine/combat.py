@@ -1,27 +1,32 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Protocol
 from ..domain.enums import Phase, Zone
 from ..domain.errors import IllegalAction
-from ..domain.models import CombatState
+from ..domain.models import CombatState, GameState
 from .commands import DeclareAttackers, DeclareBlockers, DeclareChallenge
 
 
-class _EngineComponent:
-    """Componente ligado a un motor; GameState sigue siendo la única autoridad."""
-    def __init__(self, engine: Any) -> None:
-        object.__setattr__(self, "_engine", engine)
+class CombatContext(Protocol):
+    """Operaciones del coordinador que necesita exclusivamente el combate."""
 
-    def __getattr__(self, name: str) -> Any:
-        return getattr(self._engine, name)
+    def _require_running_state(self) -> GameState: ...
+    def _is_ready_creature(self, card_id: str) -> bool: ...
+    def _is_lord_creature(self, card_id: str) -> bool: ...
+    def _is_creature(self, card_id: str) -> bool: ...
+    def _current_strength(self, card_id: str) -> int: ...
+    def _deal_damage(self, card_id: str, amount: int, source_card_id: str | None = None) -> None: ...
+    def _deal_wounds(self, player_id: str, amount: int, source_card_id: str | None = None) -> None: ...
+    def _run_state_based_actions(self) -> None: ...
+    def _emit(self, event_type: str, player_id: str | None = None, card_id: str | None = None, payload: dict[str, object] | None = None) -> None: ...
 
-    def __setattr__(self, name: str, value: Any) -> None:
-        setattr(self._engine, name, value)
 
+class CombatManager:
+    def __init__(self, context: CombatContext) -> None:
+        self._context = context
 
-class CombatManager(_EngineComponent):
     def _declare_challenge(self, command: DeclareChallenge) -> None:
-        state = self._require_running_state()
+        state = self._context._require_running_state()
         if command.player_id != state.active_player_id or state.phase is not Phase.COMBAT:
             raise IllegalAction("Desafío solo puede declararse en la Fase de Combate propia")
         if state.stack or not state.phase_priority_complete or state.combat is not None:
@@ -37,11 +42,11 @@ class CombatManager(_EngineComponent):
             Zone.BATTLEFIELD
         ]:
             raise IllegalAction("La criatura desafiada debe pertenecer al oponente indicado")
-        if not self._is_ready_creature(
+        if not self._context._is_ready_creature(
             command.challenger_id
-        ) or not self._is_lord_creature(command.challenger_id):
+        ) or not self._context._is_lord_creature(command.challenger_id):
             raise IllegalAction("Solo un Señor criatura enderezado puede iniciar Desafío")
-        if not self._is_creature(command.challenged_id):
+        if not self._context._is_creature(command.challenged_id):
             raise IllegalAction("Desafío requiere otra criatura")
         state.combat = CombatState(
             attacking_player_id=command.player_id,
@@ -54,7 +59,7 @@ class CombatManager(_EngineComponent):
         state.priority_player_id = command.defending_player_id
         state.phase_priority_complete = False
         state.consecutive_passes = 0
-        self._emit(
+        self._context._emit(
             "CHALLENGE_DECLARED",
             command.player_id,
             command.challenger_id,
@@ -62,7 +67,7 @@ class CombatManager(_EngineComponent):
         )
 
     def _declare_attackers(self, command: DeclareAttackers) -> None:
-        state = self._require_running_state()
+        state = self._context._require_running_state()
         if command.player_id != state.active_player_id or state.phase is not Phase.COMBAT:
             raise IllegalAction("Los atacantes solo se declaran durante el Combate propio")
         if state.stack or not state.phase_priority_complete or state.combat is not None:
@@ -77,7 +82,7 @@ class CombatManager(_EngineComponent):
         for card_id in command.attacker_ids:
             if card_id not in state.players[command.player_id].zones[Zone.BATTLEFIELD]:
                 raise IllegalAction("Atacante fuera del campo propio")
-            if not self._is_ready_creature(card_id):
+            if not self._context._is_ready_creature(card_id):
                 raise IllegalAction("Solo una criatura enderezada puede atacar")
         for card_id in command.attacker_ids:
             state.cards[card_id].exhausted = True
@@ -89,14 +94,14 @@ class CombatManager(_EngineComponent):
         state.priority_player_id = command.defending_player_id
         state.phase_priority_complete = False
         state.consecutive_passes = 0
-        self._emit(
+        self._context._emit(
             "ATTACKERS_DECLARED",
             command.player_id,
             payload={"attackers": command.attacker_ids, "defender": command.defending_player_id},
         )
 
     def _declare_blockers(self, command: DeclareBlockers) -> None:
-        state = self._require_running_state()
+        state = self._context._require_running_state()
         combat = state.combat
         if state.phase is not Phase.COMBAT or combat is None or combat.blockers_declared:
             raise IllegalAction("No hay una declaración de bloqueadores pendiente")
@@ -114,7 +119,7 @@ class CombatManager(_EngineComponent):
             raise IllegalAction("Una criatura no puede bloquear a dos atacantes")
         defender = state.players[combat.defending_player_id]
         for blocker_id in used:
-            if blocker_id not in defender.zones[Zone.BATTLEFIELD] or not self._is_ready_creature(blocker_id):
+            if blocker_id not in defender.zones[Zone.BATTLEFIELD] or not self._context._is_ready_creature(blocker_id):
                 raise IllegalAction("Solo una criatura enderezada propia puede bloquear")
         for blocker_id in used:
             state.cards[blocker_id].exhausted = True
@@ -123,10 +128,10 @@ class CombatManager(_EngineComponent):
         state.priority_player_id = combat.attacking_player_id
         state.phase_priority_complete = False
         state.consecutive_passes = 0
-        self._emit("BLOCKERS_DECLARED", command.player_id, payload={"assignments": assignments})
+        self._context._emit("BLOCKERS_DECLARED", command.player_id, payload={"assignments": assignments})
 
     def _resolve_combat(self, player_id: str) -> None:
-        state = self._require_running_state()
+        state = self._context._require_running_state()
         combat = state.combat
         if combat is None or player_id != combat.attacking_player_id:
             raise IllegalAction("No existe un combate propio pendiente")
@@ -138,7 +143,7 @@ class CombatManager(_EngineComponent):
         for attacker_id in combat.attackers:
             if attacker_id not in state.cards or state.cards[attacker_id].zone is not Zone.BATTLEFIELD:
                 continue
-            attack_strength = self._current_strength(attacker_id)
+            attack_strength = self._context._current_strength(attacker_id)
             blocker_ids = [
                 blocker_id
                 for blocker_id in combat.blockers.get(attacker_id, ())
@@ -147,16 +152,16 @@ class CombatManager(_EngineComponent):
             if combat.is_challenge:
                 if blocker_ids:
                     challenged_id = blocker_ids[0]
-                    self._deal_damage(challenged_id, attack_strength, attacker_id)
-                    self._deal_damage(
+                    self._context._deal_damage(challenged_id, attack_strength, attacker_id)
+                    self._context._deal_damage(
                         attacker_id,
-                        self._current_strength(challenged_id),
+                        self._context._current_strength(challenged_id),
                         challenged_id,
                     )
                 continue
             if not blocker_ids:
-                self._deal_wounds(combat.defending_player_id, attack_strength, attacker_id)
-                self._emit(
+                self._context._deal_wounds(combat.defending_player_id, attack_strength, attacker_id)
+                self._context._emit(
                     "COMBAT_WOUNDS",
                     combat.attacking_player_id,
                     attacker_id,
@@ -168,26 +173,26 @@ class CombatManager(_EngineComponent):
             for blocker_id in blocker_ids:
                 if remaining <= 0:
                     break
-                assigned = min(remaining, self._current_strength(blocker_id))
-                self._deal_damage(blocker_id, assigned, attacker_id)
+                assigned = min(remaining, self._context._current_strength(blocker_id))
+                self._context._deal_damage(blocker_id, assigned, attacker_id)
                 remaining -= assigned
-            self._deal_damage(
+            self._context._deal_damage(
                 attacker_id,
-                sum(self._current_strength(blocker_id) for blocker_id in blocker_ids),
+                sum(self._context._current_strength(blocker_id) for blocker_id in blocker_ids),
             )
             if remaining > 0:
-                self._deal_wounds(combat.defending_player_id, remaining, attacker_id)
-                self._emit(
+                self._context._deal_wounds(combat.defending_player_id, remaining, attacker_id)
+                self._context._emit(
                     "COMBAT_WOUNDS",
                     combat.attacking_player_id,
                     attacker_id,
                     {"target": combat.defending_player_id, "amount": remaining},
                 )
 
-        self._run_state_based_actions()
+        self._context._run_state_based_actions()
         for instance in state.cards.values():
             if instance.zone is Zone.BATTLEFIELD:
                 instance.damage = 0
         combat.resolved = True
         state.phase_priority_complete = True
-        self._emit("COMBAT_RESOLVED", combat.attacking_player_id)
+        self._context._emit("COMBAT_RESOLVED", combat.attacking_player_id)

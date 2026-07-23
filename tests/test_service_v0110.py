@@ -4,6 +4,8 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from card_duel_engine import InMemoryMatchStore, MatchService, SQLiteMatchStore, VersionConflict
+from card_duel_engine.domain.errors import IllegalAction
+from card_duel_engine.engine.commands import PassPriority
 from card_duel_engine.persistence.snapshot import state_digest
 from fixtures import test_deck
 
@@ -54,6 +56,45 @@ class MatchServiceV0110Tests(unittest.TestCase):
                 return False
         with ThreadPoolExecutor(max_workers=2) as pool:
             self.assertEqual(sum(pool.map(lambda _: submit(), range(2))), 1)
+
+
+    def test_submit_from_and_wrong_player_source(self):
+        class Source:
+            def __init__(self, wrong=False): self.wrong = wrong
+            def choose_action(self, observation, legal_actions):
+                action = legal_actions[0]
+                return PassPriority("B") if self.wrong else action
+        service = MatchService(InMemoryMatchStore())
+        service.create_match("source", self.decks())
+        self.assertEqual(service.submit_from("source", "A", Source()).version, 2)
+        with self.assertRaises(ValueError):
+            service.submit_from("source", "A", Source(True))
+        self.assertEqual(service.get_match("source").version, 2)
+
+    def test_invalid_command_never_persists_partial_state_for_both_stores(self):
+        with tempfile.TemporaryDirectory() as directory:
+            for index, store in enumerate((InMemoryMatchStore(), SQLiteMatchStore(Path(directory) / "invalid.db"))):
+                service = MatchService(store)
+                match_id = f"invalid-{index}"
+                service.create_match(match_id, self.decks(), seed=4)
+                before = state_digest(service.get_match(match_id).engine)
+                with self.assertRaises(IllegalAction):
+                    service.submit(match_id, PassPriority("B"), expected_version=1)
+                stored = service.get_match(match_id)
+                self.assertEqual(stored.version, 1)
+                self.assertEqual(state_digest(stored.engine), before)
+
+    def test_memory_and_sqlite_have_equivalent_submit_semantics(self):
+        with tempfile.TemporaryDirectory() as directory:
+            digests = []
+            for index, store in enumerate((InMemoryMatchStore(), SQLiteMatchStore(Path(directory) / "equivalent.db"))):
+                service = MatchService(store)
+                match_id = f"equivalent-{index}"
+                service.create_match(match_id, self.decks(), seed=23)
+                view = service.view(match_id, "A")
+                service.submit(match_id, view.legal_actions[0], expected_version=view.version)
+                digests.append(state_digest(service.get_match(match_id).engine))
+            self.assertEqual(digests[0], digests[1])
 
 
 if __name__ == "__main__":

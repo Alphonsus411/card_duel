@@ -1,34 +1,38 @@
 from __future__ import annotations
 
 import random
-from typing import Any
+from typing import Protocol
 from ..domain.enums import EffectKind, MoveReason, TargetMode, TriggerKind, Zone
 from ..domain.errors import IllegalAction
-from ..domain.models import PendingSearch, StackItem, ZoneTarget
+from ..domain.models import CardDefinition, EffectDefinition, GameState, PendingSearch, StackItem, TargetAllocation, ZoneTarget
 from .commands import ResolveSearchChoice
 
 
-class _EngineComponent:
-    """Componente ligado a un motor; GameState sigue siendo la única autoridad."""
-    def __init__(self, engine: Any) -> None:
-        object.__setattr__(self, "_engine", engine)
+class StackContext(Protocol):
+    """Colaboradores explícitos para prioridad, pila y búsquedas pausables."""
 
-    def __getattr__(self, name: str) -> Any:
-        return getattr(self._engine, name)
+    def _require_running_state(self) -> GameState: ...
+    def _next_player(self, player_id: str) -> str: ...
+    def _definition(self, card_id: str) -> CardDefinition: ...
+    def _move_card(self, card_id: str, destination: Zone, destination_player: str, *, reason: MoveReason = MoveReason.RULE, allow_replacement: bool = True) -> Zone: ...
+    def _queue_triggered_abilities(self, source_card_id: str, trigger: TriggerKind) -> None: ...
+    def _run_state_based_actions(self) -> None: ...
+    def _apply_effect(self, effect: EffectDefinition, item: StackItem, selected_target_id: str | ZoneTarget | TargetAllocation | None = None) -> None: ...
+    def _emit(self, event_type: str, player_id: str | None = None, card_id: str | None = None, payload: dict[str, object] | None = None) -> None: ...
 
-    def __setattr__(self, name: str, value: Any) -> None:
-        setattr(self._engine, name, value)
 
+class StackManager:
+    def __init__(self, context: StackContext) -> None:
+        self._context = context
 
-class StackManager(_EngineComponent):
     def _pass_priority(self, player_id: str) -> None:
-        state = self._require_running_state()
+        state = self._context._require_running_state()
         if player_id != state.priority_player_id:
             raise IllegalAction("El jugador no posee prioridad")
         state.consecutive_passes += 1
-        self._emit("PRIORITY_PASSED", player_id)
+        self._context._emit("PRIORITY_PASSED", player_id)
         if state.consecutive_passes < len(state.turn_order):
-            state.priority_player_id = self._next_player(player_id)
+            state.priority_player_id = self._context._next_player(player_id)
             return
 
         state.consecutive_passes = 0
@@ -37,22 +41,22 @@ class StackManager(_EngineComponent):
             state.phase_priority_complete = False
         else:
             state.phase_priority_complete = True
-            self._emit("PRIORITY_WINDOW_CLOSED", state.active_player_id)
+            self._context._emit("PRIORITY_WINDOW_CLOSED", state.active_player_id)
         if not state.pending_triggers and state.pending_search is None:
             state.priority_player_id = state.active_player_id
 
     def _resolve_top_stack(self) -> None:
-        state = self._require_running_state()
+        state = self._context._require_running_state()
         item = state.stack.pop()
         self._continue_stack_resolution(item, 0)
 
     def _continue_stack_resolution(self, item: StackItem, start_index: int) -> None:
-        state = self._require_running_state()
+        state = self._context._require_running_state()
         for effect_index in range(start_index, len(item.effects)):
             effect = item.effects[effect_index]
             if effect.kind is EffectKind.SEARCH_ZONE:
                 if len(item.chosen_zone_targets) != 1:
-                    self._emit(
+                    self._context._emit(
                         "EFFECT_FIZZLED",
                         item.controller_id,
                         item.source_card_id,
@@ -66,11 +70,11 @@ class StackManager(_EngineComponent):
                         zone_target.zone
                     ]
                     if effect.search_filter is None
-                    or effect.search_filter.matches(self._definition(card_id))
+                    or effect.search_filter.matches(self._context._definition(card_id))
                 )
                 maximum = min(effect.selection_maximum, len(eligible))
                 if maximum < effect.selection_minimum:
-                    self._emit(
+                    self._context._emit(
                         "SEARCH_FAILED",
                         item.controller_id,
                         item.source_card_id,
@@ -92,7 +96,7 @@ class StackManager(_EngineComponent):
                     reveal_selection=effect.reveal_search_selection,
                 )
                 state.priority_player_id = item.controller_id
-                self._emit(
+                self._context._emit(
                     "SEARCH_CHOICE_REQUESTED",
                     item.controller_id,
                     item.source_card_id,
@@ -111,7 +115,7 @@ class StackManager(_EngineComponent):
             else:
                 targets = (None,)
             for target_id in targets:
-                self._apply_effect(effect, item, target_id)
+                self._context._apply_effect(effect, item, target_id)
         if item.destination_on_resolve is not None:
             instance = state.cards[item.source_card_id]
             destination_player = (
@@ -119,13 +123,13 @@ class StackManager(_EngineComponent):
                 if item.destination_on_resolve is Zone.BATTLEFIELD
                 else instance.owner_id
             )
-            self._move_card(item.source_card_id, item.destination_on_resolve, destination_player)
+            self._context._move_card(item.source_card_id, item.destination_on_resolve, destination_player)
             if item.destination_on_resolve is Zone.BATTLEFIELD:
-                self._queue_triggered_abilities(
+                self._context._queue_triggered_abilities(
                     item.source_card_id, TriggerKind.ON_ENTER_BATTLEFIELD
                 )
-        self._run_state_based_actions()
-        self._emit(
+        self._context._run_state_based_actions()
+        self._context._emit(
             "STACK_ITEM_RESOLVED",
             item.controller_id,
             item.source_card_id,
@@ -133,7 +137,7 @@ class StackManager(_EngineComponent):
         )
 
     def _resolve_search_choice(self, command: ResolveSearchChoice) -> None:
-        state = self._require_running_state()
+        state = self._context._require_running_state()
         search = state.pending_search
         if search is None or command.player_id != search.chooser_id:
             raise IllegalAction("No existe una búsqueda propia pendiente")
@@ -149,7 +153,7 @@ class StackManager(_EngineComponent):
         if any(card_id not in source_zone for card_id in command.selected_card_ids):
             raise IllegalAction("La zona cambió y una carta elegida ya no está disponible")
         for card_id in command.selected_card_ids:
-            self._move_card(
+            self._context._move_card(
                 card_id,
                 search.destination_zone,
                 search.zone_target.player_id,
@@ -158,7 +162,7 @@ class StackManager(_EngineComponent):
         if search.shuffle_after:
             self._shuffle_zone(search.zone_target)
         state.pending_search = None
-        self._emit(
+        self._context._emit(
             "SEARCH_COMPLETED",
             command.player_id,
             search.stack_item.source_card_id,
@@ -174,12 +178,12 @@ class StackManager(_EngineComponent):
             state.phase_priority_complete = False
 
     def _shuffle_zone(self, target: ZoneTarget) -> None:
-        state = self._require_running_state()
+        state = self._context._require_running_state()
         cards = state.players[target.player_id].zones[target.zone]
         random.Random(
             state.random_seed + state.turn_serial * 10_000 + len(state.event_log)
         ).shuffle(cards)
-        self._emit(
+        self._context._emit(
             "ZONE_SHUFFLED",
             target.player_id,
             payload={"zone": target.zone.name, "count": len(cards)},

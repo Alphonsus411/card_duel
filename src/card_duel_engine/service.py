@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from .catalog import CardCatalog
+from .content.registry import CollectionRegistry
 from .controllers.base import PlayerObservation
 from .domain.models import CardDefinition
 from .engine.commands import GameCommand
@@ -47,9 +48,12 @@ class MatchService:
         store: MatchStore,
         *,
         engine_factory: Callable[[], GameEngine] | None = None,
+        catalog: CardCatalog | CollectionRegistry | None = None,
     ) -> None:
         self.store = store
-        self._engine_factory = engine_factory or GameEngine
+        if engine_factory is not None and catalog is not None:
+            raise ValueError("No se puede combinar engine_factory y catalog")
+        self._engine_factory = engine_factory or (lambda: GameEngine(catalog=catalog))
 
     def create_match(
         self,

@@ -7,6 +7,10 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import base64
+import csv
+import hashlib
+import io
 from unittest.mock import patch
 from zipfile import ZIP_DEFLATED, ZipFile
 
@@ -38,7 +42,7 @@ class ReleaseVerifierTests(unittest.TestCase):
              patch.object(self.release, "_package", return_value={"status": "ok"}):
             result = self.release.verify("full")
         self.assertEqual(result["status"], "ok")
-        self.assertEqual(result["version"], "0.17.0")
+        self.assertEqual(result["version"], "0.18.0")
         self.assertEqual(self.release.render(result), self.release.render(json.loads(self.release.render(result))))
 
     def test_runtime_profile_skips_expensive_stages(self):
@@ -51,6 +55,19 @@ class ReleaseVerifierTests(unittest.TestCase):
         self.assertEqual(result["profile"], "runtime")
         self.assertEqual(result["executed_stages"], ["lockfile", "quality"])
         simulations.assert_not_called(); persistence.assert_not_called(); package.assert_not_called()
+
+    def test_runtime_never_invokes_build_or_wheel_auditor(self):
+        commands = []
+        def runner(command, **kwargs):
+            commands.append(command)
+            output = "90" if "--format=total" in command else ""
+            return subprocess.CompletedProcess(command, 0, output, "")
+        with patch.object(self.release, "verify_simulations"), \
+             patch.object(self.release, "verify_persistence"):
+            self.release.verify("runtime", runner=runner)
+        flattened = [part for command in commands for part in command]
+        self.assertNotIn("build", flattened)
+        self.assertNotIn("scripts/verify_reproducible_wheel.py", flattened)
 
     def test_command_errors_propagate(self):
         def failing(*args, **kwargs):
@@ -67,9 +84,41 @@ class WheelAuditTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.wheel = load("wheel_audit_tests", "verify_reproducible_wheel.py")
-        subprocess.run(["uv", "run", "python", "scripts/verify_reproducible_wheel.py"], cwd=ROOT, check=True, capture_output=True)
-        cls.original = ROOT / "dist" / cls.wheel.WHEEL_NAME
+        temporary = tempfile.NamedTemporaryFile(suffix=".whl", delete=False)
+        temporary.close()
+        cls.original = Path(temporary.name)
+        content = {}
+        for name in cls.wheel.CANONICAL_ORDER:
+            if name == f"{cls.wheel.DIST_INFO}/METADATA":
+                data = f"Metadata-Version: 2.4\nName: card-duel-engine\nVersion: {cls.wheel.VERSION}\nLicense-Expression: Apache-2.0\n".encode()
+            elif name == f"{cls.wheel.DIST_INFO}/WHEEL":
+                data = b"Wheel-Version: 1.0\nRoot-Is-Purelib: true\nTag: py3-none-any\n"
+            elif name == f"{cls.wheel.DIST_INFO}/top_level.txt":
+                data = b"card_duel_engine\n"
+            elif name.endswith("/RECORD"):
+                continue
+            else:
+                data = (ROOT / "src" / name).read_bytes()
+            content[name] = data
+        record = io.StringIO(newline="")
+        writer = csv.writer(record, lineterminator="\n")
+        for name in cls.wheel.CANONICAL_ORDER:
+            if name.endswith("/RECORD"):
+                writer.writerow((name, "", "")); continue
+            data = content[name]
+            digest = base64.urlsafe_b64encode(hashlib.sha256(data).digest()).rstrip(b"=").decode()
+            writer.writerow((name, f"sha256={digest}", len(data)))
+        content[f"{cls.wheel.DIST_INFO}/RECORD"] = record.getvalue().encode()
+        with ZipFile(cls.original, "w", ZIP_DEFLATED) as archive:
+            for name in cls.wheel.CANONICAL_ORDER:
+                from zipfile import ZipInfo
+                info = ZipInfo(name); info.external_attr = 0o644 << 16
+                archive.writestr(info, content[name])
         cls.wheel.audit(cls.original)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.original.unlink(missing_ok=True)
 
     def mutate(self, transform):
         temporary = tempfile.NamedTemporaryFile(suffix=".whl", delete=False)

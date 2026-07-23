@@ -190,3 +190,7 @@ Legendaria, formatos v2, migraciones v1, replays ni determinismo de partidas.
 La extracción y los perfiles no cambian reglas observables. Se conservan fase
 Legendaria, documentos v2, migraciones v1 y ambigüedades. La trazabilidad en
 `RULES_TRACEABILITY.md` no añade interpretaciones normativas.
+
+## Compatibilidad 0.18.0
+
+La línea base de reglas, incluida la fase Legendaria, permanece sin cambios respecto de 0.17.0. El catálogo de producción continúa vacío; el registro solo añade procedencia y transacciones a la carga explícita de colecciones.

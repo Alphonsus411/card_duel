@@ -22,3 +22,7 @@ No convierte normalizaciones ni pendientes en reglas nuevas.
 - Precedencia Mítica para la inmunidad de Divinos.
 - Firma de colecciones, esquemas 3+, red/autenticación y registro formal de
   contradicciones siguen siendo pendientes, no reglas.
+
+## Trazabilidad 0.18.0
+
+El registro de colecciones es infraestructura de contenido y no modifica reglas observables. Los manifiestos, snapshots y replays continúan en esquema v2 y las migraciones v1 a v2 permanecen vigentes. La igualdad exacta entre una definición del mazo y la registrada se comprueba antes de crear la partida.

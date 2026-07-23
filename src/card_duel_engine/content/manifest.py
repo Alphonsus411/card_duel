@@ -132,8 +132,7 @@ def load_manifest_file(
 
 
 def register_manifest(catalog: CardCatalog, manifest: CollectionManifest) -> None:
-    conflicts = tuple(card.card_id for card in manifest.cards if card.card_id in catalog)
-    if conflicts:
-        raise ValueError(f"La colección colisiona con el catálogo: {conflicts}")
-    for card in manifest.cards:
-        catalog.register(card)
+    """API histórica; delega en el registro transaccional."""
+    from .registry import CollectionRegistry
+
+    CollectionRegistry(catalog).register(manifest)

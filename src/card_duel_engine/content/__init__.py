@@ -7,6 +7,7 @@ from .manifest import (
     register_manifest,
     save_manifest_file,
 )
+from .registry import CollectionProvenance, CollectionRegistry, CollectionTrustPolicy
 
 __all__ = [
     "CollectionManifest",
@@ -15,4 +16,7 @@ __all__ = [
     "load_manifest_file",
     "register_manifest",
     "save_manifest_file",
+    "CollectionProvenance",
+    "CollectionRegistry",
+    "CollectionTrustPolicy",
 ]

@@ -17,7 +17,7 @@ import sys
 import tempfile
 from zipfile import ZipFile, ZipInfo
 
-VERSION = "0.17.0"
+VERSION = "0.18.0"
 WHEEL_NAME = f"card_duel_engine-{VERSION}-py3-none-any.whl"
 DIST_INFO = f"card_duel_engine-{VERSION}.dist-info"
 FORBIDDEN_SUFFIXES = {".db", ".sqlite", ".sqlite3", ".pyc", ".pyo", ".pem", ".key"}
@@ -29,6 +29,7 @@ ALLOWED_CONTENT = {
     "card_duel_engine/catalog.py",
     "card_duel_engine/content/__init__.py",
     "card_duel_engine/content/manifest.py",
+    "card_duel_engine/content/registry.py",
     "card_duel_engine/controllers/__init__.py",
     "card_duel_engine/controllers/base.py",
     "card_duel_engine/domain/__init__.py",

@@ -61,8 +61,8 @@ def _quality(runner: CommandRunner) -> dict[str, object]:
     _run([sys.executable, "-m", "coverage", "erase"], stage="quality:coverage", runner=runner)
     _run([sys.executable, "-m", "coverage", "run", "--branch", "-m", "unittest", "discover", "-s", "tests", "-v"], stage="quality:tests", runner=runner)
     coverage = float(_run([sys.executable, "-m", "coverage", "report", "--format=total"], stage="quality:coverage", runner=runner))
-    if coverage < 85:
-        raise VerificationStageError("quality:coverage", ["coverage", "report"], 1, str(coverage), "Cobertura inferior al 85%")
+    if coverage < 86:
+        raise VerificationStageError("quality:coverage", ["coverage", "report"], 1, str(coverage), "Cobertura inferior al 86%")
     return {"status": "ok", "mypy": True, "compileall": True, "coverage_percent": coverage}
 
 

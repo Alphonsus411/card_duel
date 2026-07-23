@@ -176,3 +176,10 @@
 ## 0.1.0
 
 - Dominio, zonas, fases, Transmutación, preparación y simulación inicial.
+
+## 0.18.0
+
+- Añadido registro transaccional de colecciones con dependencias deterministas, revisiones y procedencia SHA-256.
+- Añadida política externa opcional de confianza e inyección del registro en motor y servicio.
+- El perfil runtime ya no prepara ni audita wheels; la auditoría usa fixtures ZIP sintéticos.
+- Cobertura de ramas mínima elevada al 86%, sin alterar los esquemas persistentes v2.

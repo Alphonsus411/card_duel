@@ -218,3 +218,7 @@ normalización de objetivos, el despacho y la ejecución pasan al gestor.
 El verificador ofrece `runtime` y `full`, manteniendo `full` como predeterminado.
 CI usa la matriz sólo para runtime y reserva simulaciones, persistencia y wheel
 reproducible con instalaciones multiversión para una ejecución en Python 3.13.
+
+## Registro de colecciones (0.18.0)
+
+`CollectionRegistry` coordina un único `CardCatalog` vacío por defecto. Valida primero el lote completo, ordena su grafo de dependencias topológicamente con desempate lexicográfico y solo entonces incorpora cartas y procedencia inmutable. Una excepción de validación o confianza no deja estado parcial. El contenido canónico del manifiesto v2 se identifica con SHA-256; este digest aporta integridad, no autenticidad. Las firmas y decisiones de confianza pertenecen a una capa externa mediante `CollectionTrustPolicy`; el motor no carga módulos ni ejecuta contenido de colecciones.

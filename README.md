@@ -4,7 +4,7 @@ Primera estructura del backend headless para el futuro juego de cartas. El
 paquete implementa el armazón de las reglas universales de Fantasy Tokens sin
 incluir ninguna carta, personaje ni colección antigua.
 
-## Alcance de la versión 0.17.0
+## Alcance de la versión 0.18.0
 
 - Catálogo de cartas vacío y extensible.
 - Contratos pequeños de gestores verificados por `mypy` y dobles mínimos independientes.
@@ -126,3 +126,7 @@ contrato.
 
 Consulta `docs/ARCHITECTURE.md` y `docs/RULES_BASELINE.md` para conocer las
 decisiones de esta primera versión.
+
+### Registro autoritativo de colecciones
+
+`CollectionRegistry` permite cargar manifiestos v2 individualmente o por lotes atómicos, resuelve dependencias de forma determinista y conserva revisión, dependencias y digest canónico. El catálogo de producción sigue vacío. SHA-256 detecta alteraciones, pero **no autentica** al autor; para firmas o confianza se inyecta una `CollectionTrustPolicy` externa. Los manifiestos son datos y nunca código ejecutable.

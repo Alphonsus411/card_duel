@@ -206,3 +206,15 @@ con un `SOURCE_DATE_EPOCH` obtenido del commit y `scripts/verify_reproducible_wh
 exige dos artefactos idénticos, sin alterar los contratos del motor o persistencia.
 La auditoría valida además metadatos, `RECORD`, seguridad y determinismo del ZIP;
 los scripts de verificación reúnen simulaciones y rondas snapshot/replay repetibles.
+
+## Resolución y entrega (0.17.0)
+
+`EffectManager` recibe un `EffectContext` estructural y despacha cada `EffectKind`
+mediante un registro cerrado. No conserva una copia de `GameState`: `GameEngine`
+sigue siendo coordinador y autoridad única. `engine/game.py` baja de 2.596 a
+2.331 líneas (265 líneas, 10,2 %) sin comprimir artificialmente el código; la
+normalización de objetivos, el despacho y la ejecución pasan al gestor.
+
+El verificador ofrece `runtime` y `full`, manteniendo `full` como predeterminado.
+CI usa la matriz sólo para runtime y reserva simulaciones, persistencia y wheel
+reproducible con instalaciones multiversión para una ejecución en Python 3.13.

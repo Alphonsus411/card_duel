@@ -49,6 +49,7 @@ from ..domain.models import (
 from ..rules.config import RuleSet
 from ..rules.resolvers import apply_text_patch, resolve_dynamic_cost, resolve_x_cost
 from .combat import CombatContext, CombatManager
+from .effects import EffectContext, EffectManager
 from .stack import StackContext, StackManager
 from .zones import MoveReplacementChoiceRequired, ZoneContext, ZoneManager
 from .commands import (
@@ -88,6 +89,7 @@ class GameEngine:
         self._combat = CombatManager(self)
         self._stack = StackManager(self)
         self._zones = ZoneManager(self)
+        self._effects = EffectManager(self)
 
     def _consume_replacement_replay_choice(self) -> int | None:
         """Consume una elección grabada sin exponer el cursor al gestor de zonas."""
@@ -1525,275 +1527,7 @@ class GameEngine:
         item: StackItem,
         selected_target_id: str | ZoneTarget | TargetAllocation | None = None,
     ) -> None:
-        state = self._require_running_state()
-        amount = self._effect_amount(effect, item.x_value)
-        if effect.target is TargetMode.CHOSEN_ZONE:
-            assert isinstance(selected_target_id, ZoneTarget)
-            if effect.kind is EffectKind.SHUFFLE_ZONE:
-                self._shuffle_zone(selected_target_id)
-                return
-            if effect.kind is EffectKind.SEARCH_ZONE:
-                return
-            assert effect.destination_zone is not None
-            source_cards = state.players[selected_target_id.player_id].zones[
-                selected_target_id.zone
-            ]
-            moved_cards = tuple(source_cards[-amount:])
-            for card_id in moved_cards:
-                assert effect.destination_zone is not None
-                self._move_card(
-                    card_id,
-                    effect.destination_zone,
-                    selected_target_id.player_id,
-                    reason=MoveReason.RULE,
-                )
-            self._emit(
-                "ZONE_CARDS_MOVED",
-                item.controller_id,
-                item.source_card_id,
-                {
-                    "target_player": selected_target_id.player_id,
-                    "source_zone": selected_target_id.zone.name,
-                    "destination_zone": effect.destination_zone.name,
-                    "count": len(moved_cards),
-                },
-            )
-            return
-        if effect.target is TargetMode.CHOSEN_ENTITY:
-            assert isinstance(selected_target_id, TargetAllocation)
-            target_id = selected_target_id.target_id
-            if target_id in state.players:
-                self._deal_wounds(target_id, selected_target_id.amount, item.source_card_id)
-                return
-            if target_id not in state.cards or state.cards[target_id].zone is not Zone.BATTLEFIELD:
-                self._emit("EFFECT_FIZZLED", item.controller_id, item.source_card_id,
-                           {"target": target_id, "reason": "invalid_target"})
-                return
-            source_definition = self._definition(item.source_card_id)
-            if not self._card_can_be_targeted(
-                source_definition, target_id, item.ability_id is not None
-            ):
-                self._emit("EFFECT_FIZZLED", item.controller_id, item.source_card_id,
-                           {"target": target_id, "reason": "immune"})
-                return
-            self._deal_damage(
-                target_id,
-                selected_target_id.amount,
-                item.source_card_id,
-                allows_regeneration=effect.allows_regeneration,
-            )
-            return
-        if effect.target in {TargetMode.SELF, TargetMode.CHOSEN_PLAYER}:
-            if effect.target is TargetMode.SELF:
-                target_id = item.controller_id
-            else:
-                assert isinstance(selected_target_id, str)
-                target_id = selected_target_id
-            player = state.players[target_id]
-        else:
-            if effect.target is TargetMode.SOURCE:
-                target_id = item.source_card_id
-            else:
-                assert isinstance(selected_target_id, str)
-                target_id = selected_target_id
-            if target_id not in state.cards or state.cards[target_id].zone is not Zone.BATTLEFIELD:
-                self._emit("EFFECT_FIZZLED", item.controller_id, item.source_card_id,
-                           {"target": target_id, "reason": "invalid_target"})
-                return
-            if effect.target is TargetMode.CHOSEN_PERMANENT:
-                source_definition = self._definition(item.source_card_id)
-                if not self._card_can_be_targeted(
-                    source_definition, target_id, item.ability_id is not None
-                ):
-                    self._emit("EFFECT_FIZZLED", item.controller_id, item.source_card_id,
-                               {"target": target_id, "reason": "immune"})
-                    return
-            player = None
-        if effect.kind is EffectKind.DEAL_WOUNDS:
-            self._deal_wounds(target_id, amount, item.source_card_id)
-        elif effect.kind is EffectKind.HEAL_WOUNDS:
-            assert player is not None
-            actual = min(player.wounds, amount)
-            player.wounds -= actual
-            self._emit("WOUNDS_HEALED", target_id, payload={"amount": actual})
-        elif effect.kind is EffectKind.GAIN_STEPS:
-            assert player is not None
-            player.steps += amount
-            self._emit("STEPS_GAINED", target_id, payload={"amount": amount})
-        elif effect.kind is EffectKind.DRAW_CARDS:
-            self._draw(target_id, amount)
-        elif effect.kind is EffectKind.PREVENT_WOUNDS:
-            assert player is not None
-            player.wound_prevention += amount
-            self._emit("WOUND_PREVENTION_ADDED", target_id, payload={"amount": amount})
-        elif effect.kind is EffectKind.DEAL_DAMAGE:
-            self._deal_damage(
-                target_id,
-                amount,
-                item.source_card_id,
-                allows_regeneration=effect.allows_regeneration,
-            )
-        elif effect.kind is EffectKind.PREVENT_DAMAGE:
-            state.cards[target_id].damage_prevention += amount
-            self._emit("DAMAGE_PREVENTION_ADDED", card_id=target_id,
-                       payload={"amount": amount})
-        elif effect.kind is EffectKind.ADD_REGENERATION:
-            state.cards[target_id].regeneration_shields += amount
-            self._emit(
-                "REGENERATION_ADDED",
-                card_id=target_id,
-                payload={"amount": amount},
-            )
-        elif effect.kind is EffectKind.MODIFY_STRENGTH:
-            if effect.duration is EffectDuration.END_OF_TURN:
-                state.timed_modifiers.append(
-                    TimedModifier(
-                        modifier_id=f"modifier-{len(state.event_log) + 1:06d}",
-                        target_card_id=target_id,
-                        strength_delta=amount,
-                        expires_at_turn_serial=state.turn_serial,
-                    )
-                )
-            else:
-                state.cards[target_id].strength_modifier += amount
-            self._emit("STRENGTH_MODIFIED", card_id=target_id,
-                       payload={"amount": amount, "duration": effect.duration.name})
-        elif effect.kind is EffectKind.TAP:
-            state.cards[target_id].exhausted = True
-            self._emit("PERMANENT_TAPPED", card_id=target_id)
-        elif effect.kind is EffectKind.UNTAP:
-            state.cards[target_id].exhausted = False
-            self._emit("PERMANENT_UNTAPPED", card_id=target_id)
-        elif effect.kind is EffectKind.DESTROY:
-            self._destroy_permanent(
-                target_id,
-                MoveReason.DESTROY,
-                allows_regeneration=effect.allows_regeneration,
-            )
-        elif effect.kind is EffectKind.BECOME_CREATURE:
-            instance = state.cards[target_id]
-            instance.transformed_as_creature = True
-            instance.creature_form_expires_turn_serial = (
-                state.turn_serial
-                if effect.duration is EffectDuration.END_OF_TURN
-                else None
-            )
-            self._emit(
-                "PERMANENT_BECAME_CREATURE",
-                card_id=target_id,
-                payload={"duration": effect.duration.name},
-            )
-        elif effect.kind is EffectKind.CHANGE_CONTROL:
-            previous = state.cards[target_id].controller_id
-            self._set_controller(target_id, item.controller_id)
-            if effect.duration is EffectDuration.END_OF_TURN:
-                state.control_changes.append(
-                    ControlChange(target_id, previous, state.turn_serial)
-                )
-            self._emit(
-                "CONTROL_CHANGED",
-                item.controller_id,
-                target_id,
-                {"previous_controller": previous, "duration": effect.duration.name},
-            )
-        elif effect.kind is EffectKind.COPY_DEFINITION:
-            source = state.cards[item.source_card_id]
-            source.overridden_definition_id = self._definition(target_id).card_id
-            source.replacement_order = ()
-            source.definition_override_expires_turn_serial = (
-                state.turn_serial
-                if effect.duration is EffectDuration.END_OF_TURN
-                else None
-            )
-            self._emit(
-                "DEFINITION_COPIED",
-                item.controller_id,
-                item.source_card_id,
-                {"copied_from": target_id, "duration": effect.duration.name},
-            )
-        elif effect.kind is EffectKind.TRANSFORM_DEFINITION:
-            assert effect.transform_definition_id is not None
-            if effect.transform_definition_id not in self.catalog:
-                self._emit(
-                    "EFFECT_FIZZLED",
-                    item.controller_id,
-                    item.source_card_id,
-                    {"reason": "unknown_transform_definition"},
-                )
-                return
-            target = state.cards[target_id]
-            target.overridden_definition_id = effect.transform_definition_id
-            target.replacement_order = ()
-            target.definition_override_expires_turn_serial = (
-                state.turn_serial
-                if effect.duration is EffectDuration.END_OF_TURN
-                else None
-            )
-            self._emit(
-                "PERMANENT_TRANSFORMED",
-                item.controller_id,
-                target_id,
-                {
-                    "definition_id": effect.transform_definition_id,
-                    "duration": effect.duration.name,
-                },
-            )
-        elif effect.kind is EffectKind.MODIFY_TEXT:
-            assert effect.text_patch is not None
-            try:
-                self._apply_text_patch_to_definition(
-                    self._definition(target_id), effect.text_patch
-                )
-            except (IndexError, ValueError):
-                self._emit(
-                    "EFFECT_FIZZLED",
-                    item.controller_id,
-                    item.source_card_id,
-                    {"target": target_id, "reason": "invalid_text_patch"},
-                )
-                return
-            state.text_patches.append(
-                AppliedTextPatch(
-                    patch_id=f"text-patch-{len(state.event_log) + 1:06d}",
-                    target_card_id=target_id,
-                    patch=effect.text_patch,
-                    expires_at_turn_serial=(
-                        state.turn_serial
-                        if effect.duration is EffectDuration.END_OF_TURN
-                        else None
-                    ),
-                )
-            )
-            self._emit(
-                "CARD_TEXT_MODIFIED",
-                item.controller_id,
-                target_id,
-                {"duration": effect.duration.name},
-            )
-        elif effect.kind is EffectKind.SKIP_PHASE:
-            assert player is not None and effect.phase is not None
-            state.phase_suppressions.append(
-                PhaseSuppression(
-                    player_id=target_id,
-                    phase=effect.phase,
-                    expires_at_turn_serial=(
-                        state.turn_serial
-                        if effect.duration is EffectDuration.END_OF_TURN
-                        else None
-                    ),
-                    remaining_occurrences=(
-                        1 if effect.duration is EffectDuration.NEXT_OCCURRENCE else None
-                    ),
-                )
-            )
-            self._emit(
-                "PHASE_SUPPRESSION_ADDED",
-                target_id,
-                payload={"phase": effect.phase.name, "duration": effect.duration.name},
-            )
-        else:
-            raise NotImplementedError(effect.kind)
-
+        return self._effects.apply(effect, item, selected_target_id)
     def _deal_wounds(self, player_id: str, amount: int, source_card_id: str | None = None) -> None:
         player = self._require_running_state().players[player_id]
         prevented = min(player.wound_prevention, amount)
@@ -2593,4 +2327,5 @@ def _verify_manager_contexts(engine: GameEngine) -> None:
     combat: CombatContext = engine
     stack: StackContext = engine
     zones: ZoneContext = engine
-    _ = (combat, stack, zones)
+    effects: EffectContext = engine
+    _ = (combat, stack, zones, effects)

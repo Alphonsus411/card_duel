@@ -15,7 +15,7 @@ env:
   UV_VERSION: "0.7.22"
 
 jobs:
-  verify-release:
+  runtime:
     timeout-minutes: 30
     runs-on: ubuntu-latest
     strategy:
@@ -31,13 +31,31 @@ jobs:
         with:
           version: ${{ env.UV_VERSION }}
       - run: uv sync --locked --extra dev
-      - run: uv run python scripts/verify_release.py --json release-verification.json
+      - run: uv run python scripts/verify_release.py --profile runtime --json runtime-${{ matrix.python-version }}.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        if: matrix.python-version == '3.13'
         with:
-          name: card-duel-engine-0.16.0-release
+          name: runtime-${{ matrix.python-version }}
+          path: runtime-${{ matrix.python-version }}.json
+          if-no-files-found: error
+
+  full:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          version: ${{ env.UV_VERSION }}
+      - run: uv sync --locked --extra dev
+      - run: uv run python scripts/verify_release.py --profile full --json release-verification.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: card-duel-engine-0.17.0-release
           path: |
-            dist/card_duel_engine-0.16.0-py3-none-any.whl
+            dist/card_duel_engine-0.17.0-py3-none-any.whl
             dist/SHA256SUMS
             dist/wheel-audit.json
             release-verification.json

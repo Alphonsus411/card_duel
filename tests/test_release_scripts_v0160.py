@@ -36,18 +36,31 @@ class ReleaseVerifierTests(unittest.TestCase):
              patch.object(self.release, "verify_simulations", return_value={"simulations": 300}), \
              patch.object(self.release, "verify_persistence", return_value={"roundtrips": 30}), \
              patch.object(self.release, "_package", return_value={"status": "ok"}):
-            result = self.release.verify()
+            result = self.release.verify("full")
         self.assertEqual(result["status"], "ok")
-        self.assertEqual(result["version"], "0.16.0")
+        self.assertEqual(result["version"], "0.17.0")
         self.assertEqual(self.release.render(result), self.release.render(json.loads(self.release.render(result))))
 
+    def test_runtime_profile_skips_expensive_stages(self):
+        with patch.object(self.release, "_lockfile", return_value={"status": "ok"}), \
+             patch.object(self.release, "_quality", return_value={"status": "ok"}), \
+             patch.object(self.release, "verify_simulations") as simulations, \
+             patch.object(self.release, "verify_persistence") as persistence, \
+             patch.object(self.release, "_package") as package:
+            result = self.release.verify("runtime")
+        self.assertEqual(result["profile"], "runtime")
+        self.assertEqual(result["executed_stages"], ["lockfile", "quality"])
+        simulations.assert_not_called(); persistence.assert_not_called(); package.assert_not_called()
+
     def test_command_errors_propagate(self):
-        error = subprocess.CalledProcessError(2, ["mypy"])
         def failing(*args, **kwargs):
-            raise error
-        with self.assertRaises(subprocess.CalledProcessError) as raised:
-            self.release._run(["mypy"], runner=failing)
-        self.assertIs(raised.exception, error)
+            return subprocess.CompletedProcess(["mypy"], 2, "type output", "type error")
+        with self.assertRaises(self.release.VerificationStageError) as raised:
+            self.release._run(["mypy"], stage="quality:mypy", runner=failing)
+        self.assertEqual(raised.exception.returncode, 2)
+        self.assertIn("quality:mypy", raised.exception.diagnostic())
+        self.assertIn("type output", raised.exception.diagnostic())
+        self.assertIn("type error", raised.exception.diagnostic())
 
 
 class WheelAuditTests(unittest.TestCase):

@@ -1,5 +1,13 @@
 # Historial de versiones
 
+## 0.17.0
+
+- Resolución extraída a `EffectManager`, con `EffectContext` tipado, registro
+  cerrado de `EffectKind` y error de dominio para efectos no soportados.
+- Perfiles `runtime` y `full`, JSON determinista y diagnóstico por etapa.
+- Matriz runtime 3.11–3.13 y una única entrega full en 3.13.
+- Trazabilidad de reglas y cobertura mínima elevada al 85%.
+
 ## 0.16.0
 
 - Verificador integral y fail-fast para lockfile, tipado, compilación, cobertura,

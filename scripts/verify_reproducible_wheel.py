@@ -17,12 +17,58 @@ import sys
 import tempfile
 from zipfile import ZipFile, ZipInfo
 
-VERSION = "0.15.0"
+VERSION = "0.16.0"
 WHEEL_NAME = f"card_duel_engine-{VERSION}-py3-none-any.whl"
 DIST_INFO = f"card_duel_engine-{VERSION}.dist-info"
 FORBIDDEN_SUFFIXES = {".db", ".sqlite", ".sqlite3", ".pyc", ".pyo", ".pem", ".key"}
 FORBIDDEN_PARTS = {"tests", "test", "__pycache__", ".git", ".github", ".idea"}
 SECRET_PATTERN = re.compile(rb"(BEGIN (RSA |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{16})")
+
+ALLOWED_CONTENT = {
+    "card_duel_engine/__init__.py",
+    "card_duel_engine/catalog.py",
+    "card_duel_engine/content/__init__.py",
+    "card_duel_engine/content/manifest.py",
+    "card_duel_engine/controllers/__init__.py",
+    "card_duel_engine/controllers/base.py",
+    "card_duel_engine/domain/__init__.py",
+    "card_duel_engine/domain/enums.py",
+    "card_duel_engine/domain/errors.py",
+    "card_duel_engine/domain/models.py",
+    "card_duel_engine/engine/__init__.py",
+    "card_duel_engine/engine/combat.py",
+    "card_duel_engine/engine/commands.py",
+    "card_duel_engine/engine/game.py",
+    "card_duel_engine/engine/stack.py",
+    "card_duel_engine/engine/zones.py",
+    "card_duel_engine/persistence/__init__.py",
+    "card_duel_engine/persistence/codec.py",
+    "card_duel_engine/persistence/migrations.py",
+    "card_duel_engine/persistence/replay.py",
+    "card_duel_engine/persistence/snapshot.py",
+    "card_duel_engine/rules/__init__.py",
+    "card_duel_engine/rules/config.py",
+    "card_duel_engine/rules/resolvers.py",
+    "card_duel_engine/service.py",
+    "card_duel_engine/simulation/__init__.py",
+    "card_duel_engine/simulation/agents.py",
+    "card_duel_engine/simulation/runner.py",
+    "card_duel_engine/storage/__init__.py",
+    "card_duel_engine/storage/base.py",
+    "card_duel_engine/storage/sqlite.py",
+    f"{DIST_INFO}/METADATA",
+    f"{DIST_INFO}/WHEEL",
+    f"{DIST_INFO}/top_level.txt",
+    f"{DIST_INFO}/RECORD",
+}
+CANONICAL_ORDER = (
+    tuple(sorted(
+        (name for name in ALLOWED_CONTENT if name.startswith("card_duel_engine/")),
+        key=lambda name: (name.count("/"), name),
+    ))
+    + tuple(sorted(name for name in ALLOWED_CONTENT if name.startswith(f"{DIST_INFO}/") and not name.endswith("/RECORD")))
+    + (f"{DIST_INFO}/RECORD",)
+)
 
 
 def sha256(path: Path) -> str:
@@ -49,6 +95,12 @@ def audit(wheel: Path) -> dict[str, object]:
     with ZipFile(wheel) as archive:
         infos = archive.infolist()
         names = [info.filename for info in infos]
+        if set(names) != ALLOWED_CONTENT:
+            missing = sorted(ALLOWED_CONTENT - set(names))
+            unexpected = sorted(set(names) - ALLOWED_CONTENT)
+            raise SystemExit(f"Contenido divergente; faltan={missing}, sobran={unexpected}")
+        if tuple(names) != CANONICAL_ORDER:
+            raise SystemExit("Orden ZIP divergente del orden canónico")
         if len(names) != len(set(names)):
             raise SystemExit("El ZIP contiene rutas duplicadas")
         for info in infos:

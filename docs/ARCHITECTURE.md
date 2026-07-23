@@ -168,3 +168,15 @@ Las pruebas generativas utilizan semillas fijas para conservar reproducción.
 Exploran fórmulas con coeficientes positivos y negativos y secuencias aleatorias
 de comandos legales, comprobando invariantes, instantáneas y replay durante el
 recorrido.
+
+## Servicios y componentes 0.11
+
+`GameEngine` conserva la transacción, la máquina de fases y la coordinación. La
+implementación de combate vive en `CombatManager`; prioridad y resolución en
+`StackManager`; y movimiento y sustituciones en `ZoneManager`. Los componentes
+operan sobre el mismo `GameState`: no mantienen una segunda copia del estado.
+
+`MatchService` crea partidas, entrega observaciones y acciones legales, valida
+comandos mediante el motor y persiste con versión esperada. `MatchStore` alterna
+memoria y SQLite; `CommandSource` permite conectar humanos, simuladores o un
+futuro adaptador AGIX sin incorporar AGIX al dominio.

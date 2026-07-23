@@ -184,3 +184,9 @@ orden determinista de las sustituciones.
 
 La ampliación del tipado y la construcción reproducible no cambian reglas, fase
 Legendaria, formatos v2, migraciones v1, replays ni determinismo de partidas.
+
+## Compatibilidad 0.17.0
+
+La extracción y los perfiles no cambian reglas observables. Se conservan fase
+Legendaria, documentos v2, migraciones v1 y ambigüedades. La trazabilidad en
+`RULES_TRACEABILITY.md` no añade interpretaciones normativas.

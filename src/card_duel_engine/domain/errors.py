@@ -13,3 +13,6 @@ class InvariantViolation(GameRuleError):
 class PaymentError(IllegalAction):
     """El jugador no puede pagar un coste completo."""
 
+
+class UnsupportedEffectError(GameRuleError):
+    """La resolución recibió un tipo de efecto fuera del registro cerrado."""

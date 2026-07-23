@@ -4,10 +4,11 @@ Primera estructura del backend headless para el futuro juego de cartas. El
 paquete implementa el armazón de las reglas universales de Fantasy Tokens sin
 incluir ninguna carta, personaje ni colección antigua.
 
-## Alcance de la versión 0.16.0
+## Alcance de la versión 0.17.0
 
 - Catálogo de cartas vacío y extensible.
 - Contratos pequeños de gestores verificados por `mypy` y dobles mínimos independientes.
+- Resolución mediante un registro cerrado en `EffectManager`, sin estado duplicado.
 - Elecciones de sustitución reproducidas mediante una operación encapsulada de consumo.
 - Definiciones e instancias de cartas separadas.
 - Zonas privadas y públicas.
@@ -101,6 +102,8 @@ uv sync --locked --extra dev
 uv run python -m mypy
 uv run python -m compileall -q src tests
 uv run python -m unittest discover -s tests -v
+uv run python scripts/verify_release.py --profile runtime
+uv run python scripts/verify_release.py --profile full --json release-verification.json
 uv run python scripts/verify_reproducible_wheel.py
 ```
 

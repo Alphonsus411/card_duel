@@ -180,3 +180,14 @@ operan sobre el mismo `GameState`: no mantienen una segunda copia del estado.
 comandos mediante el motor y persiste con versión esperada. `MatchStore` alterna
 memoria y SQLite; `CommandSource` permite conectar humanos, simuladores o un
 futuro adaptador AGIX sin incorporar AGIX al dominio.
+
+
+## Contratos de componentes (0.12.0)
+
+`CombatManager`, `StackManager` y `ZoneManager` reciben un contexto estructural
+tipado y específico (`CombatContext`, `StackContext` y `ZoneContext`). Los contratos
+enumeran solamente las consultas y operaciones coordinadas que cada componente
+necesita. No existe delegación mediante `Any`, `__getattr__` o `__setattr__`: las
+llamadas al contexto son visibles y comprobables. `GameEngine` implementa esos
+contratos estructuralmente y conserva la coordinación; el único objeto de estado
+mutable sigue siendo `GameState`, por lo que no hay sincronización ni estado espejo.

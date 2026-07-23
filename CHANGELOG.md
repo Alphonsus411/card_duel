@@ -1,5 +1,13 @@
 # Historial de versiones
 
+## 0.12.0
+
+- Contratos `Protocol` específicos para combate, pila y zonas, inyectados por el coordinador.
+- Eliminada la delegación dinámica y las copias de `_EngineComponent`, sin duplicar `GameState`.
+- Pruebas directas de gestores, atomicidad y paridad de `MatchService` entre memoria y SQLite.
+- Validación continua en Python 3.11, 3.12 y 3.13, incluida compilación, pruebas y wheel.
+- Compatibilidad conservada con API 0.11.0, documentos v2 y migraciones v1.
+
 ## 0.11.0
 
 - Combate, pila y zonas extraídos a componentes especializados.

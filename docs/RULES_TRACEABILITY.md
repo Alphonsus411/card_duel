@@ -17,6 +17,19 @@ No convierte normalizaciones ni pendientes en reglas nuevas.
 
 ## Ambigüedades y deuda normativa conservadas
 
+- El reglamento sí contempla más de dos participantes: presenta el objetivo
+  como enfrentarse a «uno o más adversarios» (PDF, p. 3) y su regla básica 2
+  se refiere expresamente a «ambos jugadores o todos los participantes» al
+  acordar el mismo límite de Heridas (PDF, p. 5).
+- El mismo texto no define cómo termina una partida de tres o más participantes.
+  La concesión abandona el juego y otorga la victoria a «su oponente» (PDF,
+  p. 3), alcanzar el límite de Heridas hace perder «al que» llega a él (PDF,
+  p. 4), y la única regla de derrota simultánea describe un empate entre «el
+  jugador pasivo» y «el otro jugador» (regla básica 18, PDF, pp. 7–8).
+  No se especifica si una concesión o derrota individual termina toda la
+  partida, si continúan los supervivientes, ni cómo seleccionar u ordenar
+  ganadores. Hasta que exista aclaración normativa, no se eleva a regla ninguna
+  de esas posibles mecánicas multijugador.
 - Reparto entre bloqueadores en orden declarado, pendiente de aclaración.
 - Regeneración como escudo consumible, sin inferir un procedimiento ausente.
 - Precedencia Mítica para la inmunidad de Divinos.
@@ -34,3 +47,12 @@ rechazan ahora durante la construcción de un `RuleSet` inválido. La validació
 previa de mazos y el arreglo del SQLite en memoria son garantías de atomicidad e
 infraestructura; no incorporan texto de cartas ni resuelven las ambigüedades
 normativas pendientes.
+
+## Trazabilidad 0.18.2
+
+La revisión directa de `Fantasy Tokens.pdf` confirma que el formato admite uno
+o más adversarios y que todos los participantes comparten el límite de Heridas.
+No resuelve la concesión, la continuidad tras una derrota, las derrotas
+simultáneas ni la selección y el orden de ganadores cuando participan más de dos;
+esas cuestiones quedan registradas como deuda normativa, sin convertir el
+comportamiento actual del motor en una regla fuente.

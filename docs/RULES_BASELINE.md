@@ -150,6 +150,12 @@ Edición Mítica. No incluye textos de cartas antiguas.
 
 ## Pendientes explícitos
 
+- El reglamento permite enfrentarse a uno o más adversarios y exige que todos
+  los participantes acuerden el mismo límite de Heridas (`Fantasy Tokens.pdf`,
+  pp. 3 y 5). Sin embargo, solo formula concesión, derrota por Heridas y empate
+  simultáneo en singular o para dos jugadores (pp. 3–4 y regla 18, pp. 7–8).
+  Quedan sin definir la continuidad de una partida multijugador y la selección
+  y orden de sus ganadores; no debe inferirse una condición terminal.
 - La versión 0.2 distribuye el daño entre bloqueadores en el orden declarado;
   esta normalización debe revisarse si aparece una aclaración normativa.
 - Firma de colecciones distribuidas por terceros y política de confianza.
@@ -201,3 +207,10 @@ Se valida que toda configuración conserve los dos participantes mínimos y la
 secuencia normativa Robo, Mantenimiento, Efectos, Combate, Legendaria y
 Descarte. El endurecimiento transaccional de mazos y el soporte SQLite en memoria
 no añaden cartas ni interpretaciones a las reglas vigentes.
+
+## Compatibilidad 0.18.2
+
+Se conserva el mínimo de dos participantes porque el reglamento permite
+explícitamente enfrentarse a uno o más adversarios. La versión solo registra esa
+evidencia y la ausencia de una condición terminal multijugador completa: no
+normaliza concesiones, eliminaciones, empates ni ganadores para tres o más.

@@ -69,7 +69,7 @@ estén verdes y descargar el artefacto para cotejar su SHA-256.
 ## 7. Publicación manual posterior
 
 - Abrir únicamente un **Draft PR**, sin autofusión, y revisarlo sin fusionar.
-- Tras aprobación humana, crear manualmente un tag firmado `v0.18.1` sobre el
+- Tras aprobación humana, crear manualmente un tag firmado `v0.18.2` sobre el
   commit definitivo.
 - Volver a construir desde ese tag, registrar el hash definitivo del wheel y
   contrastarlo con `SHA256SUMS` antes de cualquier publicación manual.

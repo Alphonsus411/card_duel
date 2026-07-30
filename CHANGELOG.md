@@ -1,5 +1,13 @@
 # Historial de versiones
 
+## 0.18.2
+
+- Documentada la autorización expresa del reglamento para enfrentarse a uno o
+  más adversarios y compartir entre todos el límite acordado de Heridas.
+- Registrada, sin inferir una mecánica, la ausencia de reglas multijugador para
+  concesión, continuidad tras derrotas, simultaneidad y selección u orden de
+  ganadores.
+
 ## 0.18.1
 
 - La creación de partidas valida por completo las definiciones antes de mutar el

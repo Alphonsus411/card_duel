@@ -181,6 +181,42 @@ comandos mediante el motor y persiste con versión esperada. `MatchStore` altern
 memoria y SQLite; `CommandSource` permite conectar humanos, simuladores o un
 futuro adaptador AGIX sin incorporar AGIX al dominio.
 
+## R-06 — Frontera de red aprobada
+
+Esta especificación se aprueba antes de implementar un adaptador HTTP concreto:
+
+- **Transporte:** HTTPS 1.1 o superior con cuerpos JSON UTF-8 y una API REST
+  versionada. TLS termina en infraestructura de confianza; no se admiten
+  credenciales ni datos privados sobre texto claro. El adaptador limita tamaño,
+  tipos y campos antes de construir objetos de aplicación.
+- **Autenticación:** OAuth 2.0 Bearer con tokens JWT emitidos mediante OpenID
+  Connect. El adaptador verifica firma, algoritmo permitido, `iss`, `aud`, `exp`
+  y `nbf` contra configuración local antes de crear una identidad. El motor, los
+  modelos de dominio y `MatchService` nunca reciben ni almacenan tokens, cookies
+  o sesiones.
+- **Identidad externa:** la clave estable es el par exacto (`iss`, `sub`) del
+  token validado. Un nombre, correo, IP o valor `player_id` enviado por el cliente
+  no es identidad y no participa en la autorización.
+- **Asociación:** una tabla o política externa relaciona (`iss`, `sub`,
+  `match_id`, capacidad) con un único `player_id`. La capa de aplicación resuelve
+  esa asociación para observar o enviar; sus operaciones públicas no aceptan un
+  `player_id` elegible por el cliente y rechazan comandos cuyo autor difiera.
+- **Autorización:** `create_match` es una capacidad global; `observe` y
+  `submit_command` son capacidades de jugador y partida independientes;
+  `administer` es una capacidad de partida separada y no concede implícitamente
+  observación privada ni juego. Denegar una capacidad no consulta ni muta la
+  partida.
+- **Concurrencia y errores:** toda escritura requiere `expected_version` y llega
+  al CAS de `InMemoryMatchStore` o `SQLiteMatchStore`. La frontera convierte
+  partida ausente, conflicto de versión y acción ilegal en códigos públicos
+  estables, sin incluir excepciones internas, snapshots, acciones legales u
+  observaciones privadas.
+
+`AuthenticatedMatchApplication` materializa estos casos de uso en una capa
+separada y agnóstica del transporte. Un futuro router HTTPS solo debe decodificar
+JSON, autenticar, invocarla y serializar su resultado seguro; no decide reglas
+del juego ni accede directamente a `GameEngine` o al almacén.
+
 
 ## Contratos de componentes (0.12.0)
 

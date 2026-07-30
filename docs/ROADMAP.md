@@ -48,9 +48,25 @@ La fuente normativa continúa siendo `Fantasy Tokens.pdf`, interpretada mediante
 
 ### R-06 — Frontera de red del servicio
 
-- Incorporar red, autenticación y autorización sobre `MatchService` y el almacén.
-- Conservar comandos validados, observaciones privadas y persistencia CAS como
-  frontera autoritativa.
+- **Decisiones aprobadas:** HTTPS/JSON REST versionado, OAuth 2.0 Bearer con JWT
+  validado según OpenID Connect, identidad estable (`iss`, `sub`) y asociación
+  externa por partida, jugador y capacidad. El detalle normativo está en
+  `ARCHITECTURE.md`; estas son decisiones de infraestructura, no reglas del juego.
+- **Criterios de salida:**
+  1. existe una capa de aplicación fuera de `GameEngine`, los modelos de dominio
+     y `MatchService`, sin red, tokens ni sesiones en esos componentes;
+  2. ninguna operación de observación o comando permite al cliente escoger el
+     `player_id`: se deriva de identidad autenticada, partida y capacidad;
+  3. creación, observación, comandos y administración se autorizan por separado;
+  4. toda escritura exige `expected_version` y mantiene la semántica CAS idéntica
+     en memoria y SQLite;
+  5. los rechazos públicos de partida ausente, versión obsoleta y acción ilegal
+     no filtran instantáneas, observaciones privadas ni detalles internos;
+  6. pruebas del adaptador cubren identidad ausente o inválida, cruces de jugador
+     y partida, atribución falsa, versión obsoleta y ausencia de mutación, y se
+     conservan las pruebas directas de `MatchService` y la paridad de almacenes.
+- **Fuera de alcance:** estas decisiones no alteran prioridad, legalidad de
+  comandos, información visible, fases, victoria ni ninguna otra regla del juego.
 
 ### R-07 — Continuar separando el coordinador
 

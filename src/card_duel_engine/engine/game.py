@@ -434,7 +434,11 @@ class GameEngine:
         )
 
     def legal_actions(self, player_id: str) -> tuple[GameCommand, ...]:
-        state = self._require_running_state()
+        state = self._require_state()
+        if state.status in (MatchStatus.FINISHED, MatchStatus.BLOCKED):
+            return ()
+        if state.status is not MatchStatus.RUNNING:
+            raise IllegalAction("La partida no está en ejecución")
         if player_id not in state.players:
             return ()
         actions: list[GameCommand] = []

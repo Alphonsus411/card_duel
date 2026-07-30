@@ -5,7 +5,8 @@ from pathlib import Path
 
 from card_duel_engine import InMemoryMatchStore, MatchService, SQLiteMatchStore, VersionConflict
 from card_duel_engine.domain.errors import IllegalAction
-from card_duel_engine.engine.commands import PassPriority
+from card_duel_engine.domain.enums import MatchStatus
+from card_duel_engine.engine.commands import Concede, PassPriority
 from card_duel_engine.persistence.snapshot import state_digest
 from fixtures import test_deck
 
@@ -107,6 +108,34 @@ class MatchServiceV0110Tests(unittest.TestCase):
                 service.submit(match_id, view.legal_actions[0], expected_version=view.version)
                 digests.append(state_digest(service.get_match(match_id).engine))
             self.assertEqual(digests[0], digests[1])
+
+    def test_terminal_submit_and_later_view_for_both_stores(self):
+        with tempfile.TemporaryDirectory() as directory:
+            stores = (
+                InMemoryMatchStore(),
+                SQLiteMatchStore(Path(directory) / "terminal.db"),
+            )
+            for index, store in enumerate(stores):
+                with self.subTest(store=type(store).__name__):
+                    service = MatchService(store)
+                    match_id = f"terminal-{index}"
+                    service.create_match(match_id, self.decks(), seed=31)
+
+                    terminal = service.submit(
+                        match_id, Concede("A"), expected_version=1
+                    )
+
+                    self.assertEqual(terminal.version, 2)
+                    self.assertEqual(terminal.legal_actions, ())
+                    stored = service.get_match(match_id)
+                    self.assertEqual(stored.version, 2)
+                    self.assertIs(stored.engine.state.status, MatchStatus.FINISHED)
+                    self.assertEqual(stored.engine.state.winner_ids, ("B",))
+
+                    later = service.view(match_id, "A")
+                    self.assertEqual(later.version, 2)
+                    self.assertEqual(later.observation, terminal.observation)
+                    self.assertEqual(later.legal_actions, ())
 
 
 if __name__ == "__main__":

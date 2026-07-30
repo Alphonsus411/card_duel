@@ -63,7 +63,7 @@ wheels = [
 
 [[package]]
 name = "card-duel-engine"
-version = "0.18.2"
+version = "0.18.3"
 source = { editable = "." }
 
 [package.optional-dependencies]

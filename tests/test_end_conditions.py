@@ -40,3 +40,36 @@ class EndConditionTests(unittest.TestCase):
         self.assertEqual(engine.state.winner_ids, ("B",))
         self.assertEqual(engine.legal_actions("A"), ())
         self.assertEqual(engine.legal_actions("B"), ())
+
+    def test_multiplayer_concession_blocks_without_inventing_winners(self):
+        engine = GameEngine()
+        engine.new_match(
+            {player_id: test_deck(player_id) for player_id in ("A", "B", "C")}
+        )
+
+        engine.execute(Concede("B"))
+
+        self.assertIs(engine.state.status, MatchStatus.BLOCKED)
+        self.assertTrue(engine.state.players["B"].conceded)
+        self.assertEqual(engine.state.winner_ids, ())
+        self.assertEqual(engine.state.event_log[-1].event_type, "MULTIPLAYER_END_UNDEFINED")
+        self.assertEqual(
+            engine.state.event_log[-1].payload,
+            {"affected_player_ids": ("B",), "cause": "concession"},
+        )
+
+    def test_multiplayer_wound_limit_blocks_without_inventing_winners(self):
+        engine = GameEngine(RuleSet(wound_limit=25))
+        engine.new_match(
+            {player_id: test_deck(player_id) for player_id in ("A", "B", "C")}
+        )
+
+        engine.add_wounds("C", 25)
+
+        self.assertIs(engine.state.status, MatchStatus.BLOCKED)
+        self.assertEqual(engine.state.winner_ids, ())
+        self.assertEqual(engine.state.event_log[-1].event_type, "MULTIPLAYER_END_UNDEFINED")
+        self.assertEqual(
+            engine.state.event_log[-1].payload,
+            {"affected_player_ids": ("C",), "cause": "wound_limit"},
+        )

@@ -17,7 +17,7 @@ import sys
 import tempfile
 from zipfile import ZipFile, ZipInfo
 
-VERSION = "0.18.2"
+VERSION = "0.18.3"
 WHEEL_NAME = f"card_duel_engine-{VERSION}-py3-none-any.whl"
 DIST_INFO = f"card_duel_engine-{VERSION}.dist-info"
 FORBIDDEN_SUFFIXES = {".db", ".sqlite", ".sqlite3", ".pyc", ".pyo", ".pem", ".key"}

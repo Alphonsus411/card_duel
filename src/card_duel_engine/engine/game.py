@@ -2116,6 +2116,9 @@ class GameEngine:
     def _concede(self, player_id: str) -> None:
         state = self._require_running_state()
         state.players[player_id].conceded = True
+        if len(state.players) > 2:
+            self._block_undefined_multiplayer_end((player_id,), "concession")
+            return
         winners = tuple(pid for pid in state.turn_order if pid != player_id)
         state.winner_ids = winners
         state.status = MatchStatus.FINISHED
@@ -2180,10 +2183,25 @@ class GameEngine:
         )
         if not defeated:
             return
+        if len(state.players) > 2:
+            self._block_undefined_multiplayer_end(defeated, "wound_limit")
+            return
         winners = tuple(player_id for player_id in state.turn_order if player_id not in defeated)
         state.winner_ids = winners
         state.status = MatchStatus.FINISHED
         self._emit("MATCH_FINISHED", payload={"defeated": defeated, "winners": winners})
+
+    def _block_undefined_multiplayer_end(
+        self, affected_player_ids: tuple[str, ...], cause: str
+    ) -> None:
+        """Stop before inferring an end condition absent from the source rules."""
+        state = self._require_running_state()
+        state.winner_ids = ()
+        state.status = MatchStatus.BLOCKED
+        self._emit(
+            "MULTIPLAYER_END_UNDEFINED",
+            payload={"affected_player_ids": affected_player_ids, "cause": cause},
+        )
 
     def validate_invariants(self) -> None:
         state = self._require_state()

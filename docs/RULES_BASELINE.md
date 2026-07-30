@@ -194,3 +194,10 @@ Legendaria, documentos v2, migraciones v1 y ambigüedades. La trazabilidad en
 ## Compatibilidad 0.18.0
 
 La línea base de reglas, incluida la fase Legendaria, permanece sin cambios respecto de 0.17.0. El catálogo de producción continúa vacío; el registro solo añade procedencia y transacciones a la carga explícita de colecciones.
+
+## Compatibilidad 0.18.1
+
+Se valida que toda configuración conserve los dos participantes mínimos y la
+secuencia normativa Robo, Mantenimiento, Efectos, Combate, Legendaria y
+Descarte. El endurecimiento transaccional de mazos y el soporte SQLite en memoria
+no añaden cartas ni interpretaciones a las reglas vigentes.

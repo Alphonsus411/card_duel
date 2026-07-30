@@ -222,3 +222,16 @@ reproducible con instalaciones multiversión para una ejecución en Python 3.13.
 ## Registro de colecciones (0.18.0)
 
 `CollectionRegistry` coordina un único `CardCatalog` vacío por defecto. Valida primero el lote completo, ordena su grafo de dependencias topológicamente con desempate lexicográfico y solo entonces incorpora cartas y procedencia inmutable. Una excepción de validación o confianza no deja estado parcial. El contenido canónico del manifiesto v2 se identifica con SHA-256; este digest aporta integridad, no autenticidad. Las firmas y decisiones de confianza pertenecen a una capa externa mediante `CollectionTrustPolicy`; el motor no carga módulos ni ejecuta contenido de colecciones.
+
+## Endurecimiento transaccional (0.18.1)
+
+La preparación de una partida materializa y valida todos los mazos antes de
+registrar definiciones o sustituir el estado vigente. Cuando se inyecta un
+`CollectionRegistry`, el motor solo admite las definiciones exactas que ya
+pertenecen a su catálogo autoritativo; no existe una vía lateral de registro a
+través de un mazo. Esta corrección no cambia ninguna mecánica del reglamento.
+
+El almacén SQLite conserva el modelo de conexiones cortas. Para `:memory:` usa
+una base compartida identificada de forma privada y una conexión de
+mantenimiento, liberable mediante `close()`, porque una conexión independiente a
+`:memory:` representaría otra base vacía.

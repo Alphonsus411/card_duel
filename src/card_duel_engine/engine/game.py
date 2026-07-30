@@ -120,6 +120,34 @@ class GameEngine:
         if len(decks) < self.rules.minimum_players:
             raise ValueError(f"Se necesitan al menos {self.rules.minimum_players} jugadores")
 
+        # Materializar y validar todo antes de tocar el catalogo o reemplazar una
+        # partida existente. Ademas de aceptar generadores, esta fase evita que un
+        # error tardio deje definiciones registradas parcialmente.
+        prepared_decks = {
+            player_id: tuple(definitions) for player_id, definitions in decks.items()
+        }
+        incoming_definitions: dict[str, CardDefinition] = {}
+        for definitions in prepared_decks.values():
+            for definition in definitions:
+                if definition.card_id in self.catalog:
+                    if self.catalog.get(definition.card_id) != definition:
+                        raise ValueError(
+                            f"La definición {definition.card_id} no coincide con el catálogo"
+                        )
+                elif self.registry is not None:
+                    raise ValueError(
+                        f"La definición {definition.card_id} no está registrada"
+                    )
+                previous = incoming_definitions.setdefault(definition.card_id, definition)
+                if previous != definition:
+                    raise ValueError(
+                        f"Definiciones incompatibles para {definition.card_id}"
+                    )
+
+        for definition in incoming_definitions.values():
+            if definition.card_id not in self.catalog:
+                self.catalog.register(definition)
+
         self._next_instance = 1
         self._next_stack_item = 1
         self._replacement_replay_choices = ()
@@ -129,16 +157,10 @@ class GameEngine:
         cards: dict[str, CardInstance] = {}
         initial_decks: dict[str, tuple[str, ...]] = {}
 
-        for player_id, definitions in decks.items():
+        for player_id, definitions in prepared_decks.items():
             definition_ids: list[str] = []
             for definition in definitions:
                 definition_ids.append(definition.card_id)
-                if definition.card_id not in self.catalog:
-                    self.catalog.register(definition)
-                elif self.catalog.get(definition.card_id) != definition:
-                    raise ValueError(
-                        f"La definición {definition.card_id} no coincide con el catálogo"
-                    )
                 instance_id = f"card-{self._next_instance:06d}"
                 self._next_instance += 1
                 cards[instance_id] = CardInstance(

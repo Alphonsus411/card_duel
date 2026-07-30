@@ -64,3 +64,7 @@ todos los jugadores no derrotados son ganadores. Ante concesión o límite de
 Heridas conserva los afectados, no asigna ganadores y usa `BLOCKED` como parada
 técnica pendiente de aclaración. `test_end_conditions.py` verifica ambos caminos
 y conserva las condiciones terminales existentes para exactamente dos jugadores.
+Esta protección se registra como entrega completada en la hoja de ruta. R-04 es
+la única tarea siguiente; R-02 y R-03 permanecen bloqueadas por aclaraciones
+normativas, R-05 por la falta de un esquema 3 definido, y R-06 y R-07 continúan
+como pendientes técnicos sin promover.

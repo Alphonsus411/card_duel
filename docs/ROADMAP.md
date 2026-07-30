@@ -5,7 +5,7 @@ separadas. No completa ambigüedades del reglamento ni añade cartas o mecánica
 La fuente normativa continúa siendo `Fantasy Tokens.pdf`, interpretada mediante
 `RULES_BASELINE.md` y su matriz `RULES_TRACEABILITY.md`.
 
-## En curso
+## Entregas completadas
 
 ### R-01 — Proteger las condiciones terminales multijugador
 
@@ -16,6 +16,13 @@ La fuente normativa continúa siendo `Fantasy Tokens.pdf`, interpretada mediante
   causa y los participantes afectados.
 - **Criterio de salida:** sustituir este bloqueo solo cuando exista una
   aclaración normativa trazable.
+
+## Siguiente tarea
+
+### R-04 — Política de confianza para colecciones
+
+- Diseñar firmas y confianza fuera del digest de integridad existente.
+- Mantener la política inyectable y evitar ejecutar código de manifiestos.
 
 ## Pendientes normativos bloqueados
 
@@ -29,17 +36,14 @@ La fuente normativa continúa siendo `Fantasy Tokens.pdf`, interpretada mediante
 - Registrar cada contradicción, las páginas fuente y la precedencia aplicada.
 - Mantener mientras tanto la precedencia Mítica ya declarada para Divinos.
 
-## Pendientes técnicos
-
-### R-04 — Política de confianza para colecciones
-
-- Diseñar firmas y confianza fuera del digest de integridad existente.
-- Mantener la política inyectable y evitar ejecutar código de manifiestos.
+## Pendientes técnicos bloqueados
 
 ### R-05 — Evolución de formatos persistentes
 
 - Añadir migraciones únicamente cuando exista un esquema 3 o posterior definido.
 - Rechazar rutas desconocidas sin completar datos mediante suposiciones.
+
+## Pendientes técnicos
 
 ### R-06 — Frontera de red del servicio
 

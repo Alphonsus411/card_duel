@@ -42,7 +42,7 @@ class ReleaseVerifierTests(unittest.TestCase):
              patch.object(self.release, "_package", return_value={"status": "ok"}):
             result = self.release.verify("full")
         self.assertEqual(result["status"], "ok")
-        self.assertEqual(result["version"], "0.18.2")
+        self.assertEqual(result["version"], "0.18.3")
         self.assertEqual(self.release.render(result), self.release.render(json.loads(self.release.render(result))))
 
     def test_runtime_profile_skips_expensive_stages(self):

@@ -214,3 +214,10 @@ Se conserva el mínimo de dos participantes porque el reglamento permite
 explícitamente enfrentarse a uno o más adversarios. La versión solo registra esa
 evidencia y la ausencia de una condición terminal multijugador completa: no
 normaliza concesiones, eliminaciones, empates ni ganadores para tres o más.
+
+## Compatibilidad 0.18.3
+
+Una concesión o la llegada al límite de Heridas en una partida de tres o más
+participantes bloquea la ejecución sin declarar ganadores. `BLOCKED` expresa que
+falta una decisión normativa y no constituye una condición terminal nueva. Las
+partidas de dos jugadores conservan exactamente sus condiciones de victoria.

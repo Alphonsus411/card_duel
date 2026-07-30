@@ -1,5 +1,13 @@
 # Historial de versiones
 
+## 0.18.3
+
+- Las partidas de tres o más participantes dejan de declarar como ganadores a
+  todos los no derrotados ante una concesión o el límite de Heridas: se bloquean
+  con diagnóstico explícito hasta que exista una regla normativa.
+- Añadida una hoja de ruta con tareas separadas y sin convertir deuda normativa
+  en mecánicas nuevas.
+
 ## 0.18.2
 
 - Documentada la autorización expresa del reglamento para enfrentarse a uno o

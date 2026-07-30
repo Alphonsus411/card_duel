@@ -56,3 +56,11 @@ No resuelve la concesión, la continuidad tras una derrota, las derrotas
 simultáneas ni la selección y el orden de ganadores cuando participan más de dos;
 esas cuestiones quedan registradas como deuda normativa, sin convertir el
 comportamiento actual del motor en una regla fuente.
+
+## Trazabilidad 0.18.3
+
+`engine/game.py` deja de aplicar a tres o más participantes la inferencia de que
+todos los jugadores no derrotados son ganadores. Ante concesión o límite de
+Heridas conserva los afectados, no asigna ganadores y usa `BLOCKED` como parada
+técnica pendiente de aclaración. `test_end_conditions.py` verifica ambos caminos
+y conserva las condiciones terminales existentes para exactamente dos jugadores.

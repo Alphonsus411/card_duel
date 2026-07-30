@@ -4,7 +4,7 @@ Primera estructura del backend headless para el futuro juego de cartas. El
 paquete implementa el armazón de las reglas universales de Fantasy Tokens sin
 incluir ninguna carta, personaje ni colección antigua.
 
-## Alcance de la versión 0.18.2
+## Alcance de la versión 0.18.3
 
 - Catálogo de cartas vacío y extensible.
 - Contratos pequeños de gestores verificados por `mypy` y dobles mínimos independientes.
@@ -94,6 +94,9 @@ incluir ninguna carta, personaje ni colección antigua.
 - SQLite en memoria funcional entre las conexiones cortas del servicio.
 - Ciclo de vida explícito para SQLite: `close()` es idempotente y, también al
   salir de un bloque `with`, el almacén rechaza cualquier operación posterior.
+- Bloqueo explícito de finales multijugador no definidos, sin inferir ganadores
+  ante una concesión o al alcanzar el límite de Heridas.
+- Hoja de ruta estructurada exclusivamente a partir de pendientes documentados.
 
 Las únicas cartas utilizadas están en `tests/fixtures.py` y sirven para probar
 el motor. El catálogo de producción comienza vacío.

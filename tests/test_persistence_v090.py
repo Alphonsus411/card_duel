@@ -1,3 +1,4 @@
+import hashlib
 import json
 import unittest
 
@@ -11,13 +12,16 @@ from card_duel_engine.content import (
 )
 from card_duel_engine.domain import (
     CardDefinition,
+    CardFilter,
     CardKind,
     EffectDefinition,
     EffectKind,
     MoveReplacementDefinition,
     TargetMode,
     Zone,
+    ZoneTarget,
 )
+from card_duel_engine.domain.errors import InvariantViolation
 from card_duel_engine.engine import (
     PassPriority,
     PlayCard,
@@ -30,6 +34,7 @@ from card_duel_engine.persistence import (
     replay_from_log,
     state_digest,
 )
+from card_duel_engine.persistence.codec import canonical_json
 
 from fixtures import test_deck
 
@@ -53,7 +58,60 @@ def force_zone(engine, definition_id, player_id, zone):
     return card_id
 
 
+def recalculate_snapshot_fingerprints(envelope):
+    body = envelope["body"]
+    body["state_digest"] = hashlib.sha256(
+        canonical_json(body["state"]).encode("utf-8")
+    ).hexdigest()
+    envelope["sha256"] = hashlib.sha256(
+        canonical_json(body).encode("utf-8")
+    ).hexdigest()
+
+
 class PersistenceV090Tests(unittest.TestCase):
+    def make_pending_search_snapshot(self):
+        prize = CardDefinition(
+            "SNAP_SEARCH_PRIZE", "Objetivo", CardKind.CREATURE, 2, base_strength=2
+        )
+        searcher = CardDefinition(
+            "SNAP_SEARCHER",
+            "Búsqueda persistida",
+            CardKind.QUICK_RESOURCE,
+            0,
+            permanent=False,
+            transmutable=False,
+            effects=(
+                EffectDefinition(
+                    EffectKind.SEARCH_ZONE,
+                    0,
+                    TargetMode.CHOSEN_ZONE,
+                    destination_zone=Zone.HAND,
+                    search_filter=CardFilter(
+                        definition_ids=frozenset({"SNAP_SEARCH_PRIZE"})
+                    ),
+                ),
+            ),
+        )
+        engine = GameEngine()
+        engine.new_match(
+            {
+                "A": [searcher, prize, *test_deck("PSA", 12)],
+                "B": test_deck("PSB", 14),
+            },
+            seed=903,
+        )
+        spell = force_zone(engine, "SNAP_SEARCHER", "A", Zone.HAND)
+        force_zone(engine, "SNAP_SEARCH_PRIZE", "A", Zone.DECK)
+        engine.execute(
+            PlayCard(
+                "A", spell, chosen_zone_targets=(ZoneTarget("A", Zone.DECK),)
+            )
+        )
+        engine.execute(PassPriority("B"))
+        engine.execute(PassPriority("A"))
+        self.assertIsNotNone(engine.state.pending_search)
+        return json.loads(dump_snapshot(engine))
+
     def test_snapshot_restores_a_pending_replacement_and_continues_identically(self):
         resilient = CardDefinition(
             "SNAP_RESILIENT",
@@ -116,6 +174,30 @@ class PersistenceV090Tests(unittest.TestCase):
         envelope = json.loads(dump_snapshot(engine))
         envelope["sha256"] = "0" * 64
         with self.assertRaisesRegex(ValueError, "huella"):
+            load_snapshot(envelope)
+
+    def test_snapshot_rejects_pending_search_with_unknown_chooser(self):
+        envelope = self.make_pending_search_snapshot()
+        pending_search = envelope["body"]["state"]["fields"]["pending_search"]
+        pending_search["fields"]["chooser_id"] = "DESCONOCIDO"
+        recalculate_snapshot_fingerprints(envelope)
+
+        with self.assertRaisesRegex(
+            InvariantViolation, "Búsqueda asignada a un jugador inexistente"
+        ):
+            load_snapshot(envelope)
+
+    def test_snapshot_rejects_pending_search_with_unknown_zone_owner(self):
+        envelope = self.make_pending_search_snapshot()
+        pending_search = envelope["body"]["state"]["fields"]["pending_search"]
+        pending_search["fields"]["zone_target"]["fields"][
+            "player_id"
+        ] = "DESCONOCIDO"
+        recalculate_snapshot_fingerprints(envelope)
+
+        with self.assertRaisesRegex(
+            InvariantViolation, "Búsqueda dirigida a un jugador inexistente"
+        ):
             load_snapshot(envelope)
 
     def test_command_log_replays_to_the_exact_final_digest(self):

@@ -2288,11 +2288,14 @@ class GameEngine:
             raise InvariantViolation("Cambio de control temporal incoherente")
         if state.pending_search is not None:
             search = state.pending_search
-            source_zone = state.players[search.zone_target.player_id].zones[
-                search.zone_target.zone
-            ]
             if search.chooser_id not in state.players:
                 raise InvariantViolation("Búsqueda asignada a un jugador inexistente")
+            if search.zone_target.player_id not in state.players:
+                raise InvariantViolation("Búsqueda dirigida a un jugador inexistente")
+            target_player = state.players[search.zone_target.player_id]
+            if search.zone_target.zone not in target_player.zones:
+                raise InvariantViolation("Búsqueda dirigida a una zona inexistente")
+            source_zone = target_player.zones[search.zone_target.zone]
             if len(search.eligible_card_ids) != len(set(search.eligible_card_ids)):
                 raise InvariantViolation("Búsqueda con candidatos duplicados")
             if any(card_id not in source_zone for card_id in search.eligible_card_ids):

@@ -7,6 +7,10 @@
   con diagnóstico explícito hasta que exista una regla normativa.
 - Añadida una hoja de ruta con tareas separadas y sin convertir deuda normativa
   en mecánicas nuevas.
+- Marcada como completada la protección de condiciones terminales multijugador
+  entregada en 0.18.3 y seleccionada R-04 como única tarea siguiente. R-02 y
+  R-03 siguen bloqueadas por aclaraciones normativas, y R-05 por la ausencia de
+  un esquema 3 definido.
 
 ## 0.18.2
 

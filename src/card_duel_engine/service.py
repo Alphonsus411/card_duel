@@ -73,11 +73,19 @@ class MatchService:
 
     def view(self, match_id: str, player_id: str) -> MatchView:
         stored = self.store.load(match_id)
+        return self._view_for(
+            match_id, stored.version, stored.engine, player_id
+        )
+
+    @staticmethod
+    def _view_for(
+        match_id: str, version: int, engine: GameEngine, player_id: str
+    ) -> MatchView:
         return MatchView(
             match_id,
-            stored.version,
-            stored.engine.observe(player_id),
-            stored.engine.legal_actions(player_id),
+            version,
+            engine.observe(player_id),
+            engine.legal_actions(player_id),
         )
 
     def submit(
@@ -99,11 +107,8 @@ class MatchService:
         version = self.store.save(
             match_id, stored.engine, expected_version=expected_version
         )
-        return MatchView(
-            match_id,
-            version,
-            stored.engine.observe(command.player_id),
-            stored.engine.legal_actions(command.player_id),
+        return self._view_for(
+            match_id, version, stored.engine, command.player_id
         )
 
     def submit_from(

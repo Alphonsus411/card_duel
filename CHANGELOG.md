@@ -1,5 +1,14 @@
 # Historial de versiones
 
+## 0.18.1
+
+- La creación de partidas valida por completo las definiciones antes de mutar el
+  catálogo y rechaza cartas ajenas a un registro de colecciones inyectado.
+- `RuleSet` rechaza configuraciones que romperían el mínimo de participantes o la
+  secuencia normativa de fases.
+- `SQLiteMatchStore(":memory:")` conserva sus datos entre conexiones cortas y
+  ofrece cierre explícito de la conexión de mantenimiento.
+
 ## 0.17.0
 
 - Resolución extraída a `EffectManager`, con `EffectContext` tipado, registro

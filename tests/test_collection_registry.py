@@ -96,6 +96,21 @@ class CollectionRegistryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "no coincide"):
             engine.new_match({"a": [item.cards[0]] * 6, "b": [altered] * 6})
 
+        unknown = CardDefinition("unknown", "Unknown", CardKind.CREATURE, 0, base_strength=1)
+        with self.assertRaisesRegex(ValueError, "no está registrada"):
+            engine.new_match({"a": [item.cards[0]] * 6, "b": [unknown] * 6})
+        self.assertNotIn("unknown", registry.catalog)
+
+    def test_failed_match_preflight_does_not_partially_mutate_catalog_or_state(self):
+        first = CardDefinition("first", "First", CardKind.CREATURE, 0, base_strength=1)
+        conflicting = CardDefinition("same", "One", CardKind.CREATURE, 0, base_strength=1)
+        altered = CardDefinition("same", "Two", CardKind.CREATURE, 0, base_strength=2)
+        engine = GameEngine()
+        with self.assertRaisesRegex(ValueError, "incompatibles"):
+            engine.new_match({"a": [first, conflicting], "b": [altered]})
+        self.assertEqual(engine.catalog.definitions(), ())
+        self.assertIsNone(engine.state)
+
     def test_seeded_small_dags(self):
         for seed in range(12):
             rng = random.Random(seed); nodes = [f"n{i}" for i in range(6)]

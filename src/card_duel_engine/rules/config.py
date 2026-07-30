@@ -8,7 +8,7 @@ from ..domain.enums import Phase
 @dataclass(frozen=True)
 class RuleSet:
     ruleset_id: str = "universal"
-    version: str = "0.18.0"
+    version: str = "0.18.1"
     initial_hand_size: int = 6
     hand_limit: int = 6
     wound_limit: int = 50
@@ -32,7 +32,17 @@ class RuleSet:
             raise ValueError("Los límites deben ser positivos")
         if self.steps_per_maintenance < 0:
             raise ValueError("Los Pasos de mantenimiento no pueden ser negativos")
+        if self.minimum_players < 2:
+            raise ValueError("Una partida requiere al menos dos jugadores")
         if self.legal_action_enumeration_limit < 1:
             raise ValueError("El límite de acciones generadas debe ser positivo")
-        if len(set(self.phase_sequence)) != len(self.phase_sequence):
-            raise ValueError("La secuencia de fases contiene duplicados")
+        expected_phases = (
+            Phase.DRAW,
+            Phase.MAINTENANCE,
+            Phase.EFFECTS,
+            Phase.COMBAT,
+            Phase.LEGENDARY,
+            Phase.DISCARD,
+        )
+        if self.phase_sequence != expected_phases:
+            raise ValueError("La secuencia de fases no coincide con el reglamento")

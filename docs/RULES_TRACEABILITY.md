@@ -26,3 +26,11 @@ No convierte normalizaciones ni pendientes en reglas nuevas.
 ## Trazabilidad 0.18.0
 
 El registro de colecciones es infraestructura de contenido y no modifica reglas observables. Los manifiestos, snapshots y replays continúan en esquema v2 y las migraciones v1 a v2 permanecen vigentes. La igualdad exacta entre una definición del mazo y la registrada se comprueba antes de crear la partida.
+
+## Trazabilidad 0.18.1
+
+La secuencia de fases y el mínimo de dos participantes ya documentados se
+rechazan ahora durante la construcción de un `RuleSet` inválido. La validación
+previa de mazos y el arreglo del SQLite en memoria son garantías de atomicidad e
+infraestructura; no incorporan texto de cartas ni resuelven las ambigüedades
+normativas pendientes.

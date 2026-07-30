@@ -43,6 +43,18 @@ class MatchServiceV0110Tests(unittest.TestCase):
                 state_digest(service.get_match("two").engine),
             )
 
+    def test_sqlite_in_memory_database_survives_short_connections(self):
+        store = SQLiteMatchStore(":memory:")
+        self.addCleanup(store.close)
+        service = MatchService(store)
+        self.assertEqual(service.create_match("memory", self.decks(), seed=19), 1)
+        view = service.view("memory", "A")
+        updated = service.submit(
+            "memory", view.legal_actions[0], expected_version=view.version
+        )
+        self.assertEqual(updated.version, 2)
+        self.assertEqual(service.get_match("memory").version, 2)
+
     def test_concurrent_writers_have_one_winner(self):
         service = MatchService(InMemoryMatchStore())
         service.create_match("race", self.decks())

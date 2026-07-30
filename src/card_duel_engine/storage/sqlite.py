@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sqlite3
 from pathlib import Path
+from uuid import uuid4
 
 from ..engine.game import GameEngine
 from ..persistence.snapshot import dump_snapshot, load_snapshot
@@ -14,6 +15,15 @@ class SQLiteMatchStore:
     def __init__(self, path: str | Path, *, timeout: float = 5.0) -> None:
         self.path = str(path)
         self.timeout = timeout
+        self._uri = False
+        self._keeper: sqlite3.Connection | None = None
+        if self.path == ":memory:":
+            # Cada conexion a ``:memory:`` crea una base distinta. El almacen usa
+            # conexiones cortas, asi que necesita una URI compartida y una conexion
+            # viva que conserve la base entre operaciones.
+            self.path = f"file:card-duel-{uuid4().hex}?mode=memory&cache=shared"
+            self._uri = True
+            self._keeper = self._connect()
         with self._connect() as connection:
             connection.execute("PRAGMA journal_mode=WAL")
             connection.execute(
@@ -28,7 +38,13 @@ class SQLiteMatchStore:
             )
 
     def _connect(self) -> sqlite3.Connection:
-        return sqlite3.connect(self.path, timeout=self.timeout)
+        return sqlite3.connect(self.path, timeout=self.timeout, uri=self._uri)
+
+    def close(self) -> None:
+        """Libera la conexion que mantiene viva una base en memoria compartida."""
+        if self._keeper is not None:
+            self._keeper.close()
+            self._keeper = None
 
     def create(self, match_id: str, engine: GameEngine) -> int:
         validate_match_id(match_id)

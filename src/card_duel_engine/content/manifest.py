@@ -14,6 +14,41 @@ from ..rules.config import RuleSet
 MANIFEST_SCHEMA_VERSION = "2"
 
 
+def _validate_manifest_document(data: Mapping[str, Any]) -> None:
+    """Valida la forma JSON del manifiesto antes de convertir sus valores."""
+
+    expected = {
+        "schema_version",
+        "collection_id",
+        "name",
+        "revision",
+        "engine_min_version",
+        "cards",
+        "metadata",
+        "dependencies",
+    }
+    if set(data) != expected:
+        raise ValueError("La estructura del manifiesto no es válida")
+    text_fields = ("schema_version", "collection_id", "name", "engine_min_version")
+    if any(not isinstance(data[field], str) for field in text_fields):
+        raise ValueError("Los campos de texto del manifiesto deben ser cadenas")
+    if type(data["revision"]) is not int:
+        raise ValueError("La revisión de colección debe ser un entero")
+    if type(data["cards"]) is not list:
+        raise ValueError("Las cartas del manifiesto deben ser una lista JSON")
+    if type(data["dependencies"]) is not list:
+        raise ValueError("Las dependencias del manifiesto deben ser una lista JSON")
+    if any(not isinstance(item, str) for item in data["dependencies"]):
+        raise ValueError("Las dependencias del manifiesto deben ser cadenas")
+    if type(data["metadata"]) is not dict:
+        raise ValueError("Los metadatos del manifiesto deben ser un objeto JSON")
+    if any(
+        not isinstance(key, str) or not isinstance(value, str)
+        for key, value in data["metadata"].items()
+    ):
+        raise ValueError("Los metadatos de colección deben ser pares de texto")
+
+
 def _version_tuple(value: str) -> tuple[int, ...]:
     try:
         return tuple(int(part) for part in value.split("."))
@@ -84,19 +119,11 @@ def load_manifest(
         payload = payload.decode("utf-8")
     raw = json.loads(payload) if isinstance(payload, str) else dict(payload)
     data = migrate_document("manifest", raw, MANIFEST_SCHEMA_VERSION)
-    expected = {
-        "schema_version",
-        "collection_id",
-        "name",
-        "revision",
-        "engine_min_version",
-        "cards",
-        "metadata",
-        "dependencies",
-    }
-    if set(data) != expected or not isinstance(data["cards"], list):
-        raise ValueError("La estructura del manifiesto no es válida")
-    cards = tuple(decode_value(item) for item in data["cards"])
+    _validate_manifest_document(data)
+    try:
+        cards = tuple(decode_value(item) for item in data["cards"])
+    except (AttributeError, KeyError, TypeError) as exc:
+        raise ValueError("El manifiesto contiene cartas no válidas") from exc
     if not all(isinstance(card, CardDefinition) for card in cards):
         raise ValueError("El manifiesto contiene elementos que no son cartas")
     manifest = CollectionManifest(

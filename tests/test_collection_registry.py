@@ -178,6 +178,56 @@ class CollectionRegistryTests(unittest.TestCase):
         raw = __import__("json").loads(dump_manifest(item)); raw["extra"] = True
         with self.assertRaisesRegex(ValueError, "estructura"): load_manifest(raw)
 
+    def test_manifest_document_rejects_wrong_json_types_atomically(self):
+        item = manifest("valid", card_id="valid-card")
+        valid = __import__("json").loads(dump_manifest(item))
+        invalid_values = (
+            ("schema_version", 2),
+            ("collection_id", None),
+            ("name", {"text": "name"}),
+            ("engine_min_version", 1),
+            ("revision", True),
+            ("revision", "1"),
+            ("cards", "cards"),
+            ("cards", {}),
+            ("cards", None),
+            ("cards", 7),
+            ("dependencies", "base"),
+            ("dependencies", {"base": True}),
+            ("dependencies", None),
+            ("dependencies", 7),
+            ("dependencies", ["base", 7]),
+            ("metadata", []),
+            ("metadata", None),
+            ("metadata", "author"),
+            ("metadata", {"author": 7}),
+            ("metadata", {7: "author"}),
+        )
+        registry = CollectionRegistry()
+        registry.register(item)
+        original_collections = dict(registry.collections)
+        original_cards = registry.catalog.definitions()
+        for field, value in invalid_values:
+            with self.subTest(field=field, value=value):
+                malformed = {**valid, field: value}
+                with self.assertRaises(ValueError):
+                    registry.register(load_manifest(malformed))
+                self.assertEqual(dict(registry.collections), original_collections)
+                self.assertEqual(registry.catalog.definitions(), original_cards)
+
+    def test_manifest_v2_round_trip_remains_valid(self):
+        item = CollectionManifest(
+            "round-trip",
+            "Formato v2",
+            2,
+            "0.1.0",
+            (),
+            metadata={"author": "tests"},
+            dependencies=("base",),
+        )
+        serialized = dump_manifest(item, indent=None)
+        self.assertEqual(load_manifest(serialized), item)
+
     def test_engine_accepts_registry_and_enforces_exact_definition(self):
         registry = CollectionRegistry(); item = manifest("set", card_id="card"); registry.register(item)
         engine = GameEngine(catalog=registry); self.assertIs(engine.catalog, registry.catalog)

@@ -4,7 +4,7 @@ Primera estructura del backend headless para el futuro juego de cartas. El
 paquete implementa el armazón de las reglas universales de Fantasy Tokens sin
 incluir ninguna carta, personaje ni colección antigua.
 
-## Alcance de la versión 0.18.1
+## Alcance de la versión 0.18.2
 
 - Catálogo de cartas vacío y extensible.
 - Contratos pequeños de gestores verificados por `mypy` y dobles mínimos independientes.
@@ -13,6 +13,9 @@ incluir ninguna carta, personaje ni colección antigua.
 - Definiciones e instancias de cartas separadas.
 - Zonas privadas y públicas.
 - Jugadores activo y pasivos.
+- Preparación para dos o más participantes, autorizada expresamente por el
+  reglamento fuente; sus condiciones terminales multijugador siguen sin estar
+  definidas y no se presentan como mecánica normativa.
 - Secuencia Robo, Mantenimiento, Efectos, Combate, Legendaria y Descarte.
 - Mano inicial, mulligan decreciente y reciclaje del descarte.
 - Reserva de Pasos y pago atómico.

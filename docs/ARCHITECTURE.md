@@ -223,6 +223,14 @@ reproducible con instalaciones multiversión para una ejecución en Python 3.13.
 
 `CollectionRegistry` coordina un único `CardCatalog` vacío por defecto. Valida primero el lote completo, ordena su grafo de dependencias topológicamente con desempate lexicográfico y solo entonces incorpora cartas y procedencia inmutable. Una excepción de validación o confianza no deja estado parcial. El contenido canónico del manifiesto v2 se identifica con SHA-256; este digest aporta integridad, no autenticidad. Las firmas y decisiones de confianza pertenecen a una capa externa mediante `CollectionTrustPolicy`; el motor no carga módulos ni ejecuta contenido de colecciones.
 
+El formato de versión que admite el manifiesto v2 es exclusivamente
+`MAJOR.MINOR.PATCH`, con exactamente tres componentes decimales enteros no
+negativos (por ejemplo, `0.1.0` o `2.0.3`). Tanto `engine_min_version` como la
+versión del motor de la aplicación deben usar ese formato. No se admiten
+espacios, componentes ausentes o adicionales, signos, prereleases ni metadatos
+de compilación de SemVer; los productores de colecciones deben omitir esos
+sufijos.
+
 ## Endurecimiento transaccional (0.18.1)
 
 La preparación de una partida materializa y valida todos los mazos antes de

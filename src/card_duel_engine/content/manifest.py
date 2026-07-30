@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Mapping
@@ -49,11 +50,20 @@ def _validate_manifest_document(data: Mapping[str, Any]) -> None:
         raise ValueError("Los metadatos de colección deben ser pares de texto")
 
 
-def _version_tuple(value: str) -> tuple[int, ...]:
-    try:
-        return tuple(int(part) for part in value.split("."))
-    except ValueError as exc:
-        raise ValueError(f"Versión semántica no válida: {value}") from exc
+_VERSION_PATTERN = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+")
+_INVALID_VERSION_MESSAGE = (
+    "Versión semántica no válida: se requiere exactamente "
+    "MAJOR.MINOR.PATCH con enteros no negativos"
+)
+
+
+def _version_tuple(value: str) -> tuple[int, int, int]:
+    """Valida y convierte el subconjunto MAJOR.MINOR.PATCH admitido."""
+
+    if not isinstance(value, str) or _VERSION_PATTERN.fullmatch(value) is None:
+        raise ValueError(_INVALID_VERSION_MESSAGE)
+    major, minor, patch = value.split(".")
+    return int(major), int(minor), int(patch)
 
 
 @dataclass(frozen=True)
@@ -136,7 +146,7 @@ def load_manifest(
         metadata=data["metadata"],
         dependencies=tuple(data["dependencies"]),
     )
-    current = engine_version or RuleSet().version
+    current = RuleSet().version if engine_version is None else engine_version
     if _version_tuple(current) < _version_tuple(manifest.engine_min_version):
         raise ValueError(
             f"La colección requiere motor {manifest.engine_min_version} o posterior"

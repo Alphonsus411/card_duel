@@ -178,6 +178,49 @@ class CollectionRegistryTests(unittest.TestCase):
         raw = __import__("json").loads(dump_manifest(item)); raw["extra"] = True
         with self.assertRaisesRegex(ValueError, "estructura"): load_manifest(raw)
 
+    def test_manifest_engine_versions_compare_three_non_negative_components(self):
+        item = replace(manifest("versions"), engine_min_version="1.2.3")
+
+        self.assertEqual(load_manifest(dump_manifest(item), engine_version="1.2.3"), item)
+        self.assertEqual(load_manifest(dump_manifest(item), engine_version="1.2.4"), item)
+        self.assertEqual(
+            load_manifest(
+                dump_manifest(replace(item, engine_min_version="0.0.0")),
+                engine_version="999.999.999",
+            ).engine_min_version,
+            "0.0.0",
+        )
+        with self.assertRaisesRegex(ValueError, "requiere motor 1.2.3"):
+            load_manifest(dump_manifest(item), engine_version="1.2.2")
+
+    def test_manifest_rejects_unsupported_minimum_and_application_versions(self):
+        invalid_versions = (
+            "",
+            " ",
+            "1.2",
+            "1..2",
+            "-1.2.3",
+            "1.-2.3",
+            "1.2.-3",
+            "1.2.3.4",
+            "1.2.3-alpha",
+            "1.2.3+build",
+            " 1.2.3",
+            "1.2.3 ",
+        )
+        message = (
+            "Versión semántica no válida: se requiere exactamente "
+            "MAJOR.MINOR.PATCH con enteros no negativos"
+        )
+        valid = manifest("version-format")
+        for invalid in invalid_versions:
+            with self.subTest(field="engine_min_version", version=invalid):
+                with self.assertRaisesRegex(ValueError, f"^{message}$"):
+                    replace(valid, engine_min_version=invalid)
+            with self.subTest(field="engine_version", version=invalid):
+                with self.assertRaisesRegex(ValueError, f"^{message}$"):
+                    load_manifest(dump_manifest(valid), engine_version=invalid)
+
     def test_manifest_document_rejects_wrong_json_types_atomically(self):
         item = manifest("valid", card_id="valid-card")
         valid = __import__("json").loads(dump_manifest(item))

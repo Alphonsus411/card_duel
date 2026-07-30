@@ -89,6 +89,8 @@ incluir ninguna carta, personaje ni colección antigua.
 - `MatchService` headless con persistencia CAS y contrato futuro para AGIX.
 - Preparación atómica de mazos y aplicación estricta del registro autoritativo.
 - SQLite en memoria funcional entre las conexiones cortas del servicio.
+- Ciclo de vida explícito para SQLite: `close()` es idempotente y, también al
+  salir de un bloque `with`, el almacén rechaza cualquier operación posterior.
 
 Las únicas cartas utilizadas están en `tests/fixtures.py` y sirven para probar
 el motor. El catálogo de producción comienza vacío.

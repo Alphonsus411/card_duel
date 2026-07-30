@@ -56,6 +56,36 @@ class MatchServiceV0110Tests(unittest.TestCase):
         self.assertEqual(updated.version, 2)
         self.assertEqual(service.get_match("memory").version, 2)
 
+    def test_sqlite_rejects_all_operations_after_close(self):
+        store = SQLiteMatchStore(":memory:")
+        service = MatchService(store)
+        service.create_match("closed", self.decks(), seed=19)
+        stored = store.load("closed")
+
+        store.close()
+        store.close()
+
+        operations = (
+            lambda: store.create("another", stored.engine),
+            lambda: store.load("closed"),
+            lambda: store.save("closed", stored.engine, expected_version=stored.version),
+        )
+        for operation in operations:
+            with self.subTest(operation=operation):
+                with self.assertRaisesRegex(
+                    RuntimeError, "^SQLiteMatchStore está cerrado$"
+                ):
+                    operation()
+
+    def test_sqlite_context_manager_closes_store_on_exit(self):
+        with SQLiteMatchStore(":memory:") as store:
+            service = MatchService(store)
+            self.assertEqual(service.create_match("context", self.decks(), seed=19), 1)
+            self.assertEqual(store.load("context").version, 1)
+
+        with self.assertRaisesRegex(RuntimeError, "^SQLiteMatchStore está cerrado$"):
+            store.load("context")
+
     def test_concurrent_writers_have_one_winner(self):
         service = MatchService(InMemoryMatchStore())
         service.create_match("race", self.decks())

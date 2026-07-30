@@ -1,5 +1,16 @@
 # Historial de versiones
 
+## 0.19.0
+
+- Añadido un sobre de firma v1 separado que conserva el manifiesto v2 y su
+  digest canónico sin cambios.
+- Incorporada una política de confianza inyectable con resolución de claves,
+  revocación, lista cerrada de algoritmos y verificación HMAC-SHA256.
+- El registro verifica por completo firmas, dependencias y colisiones antes de
+  modificar el catálogo o la procedencia; no carga ni ejecuta código externo.
+- Documentadas integridad, autenticidad, compatibilidad y la finalización de
+  R-04, sin alterar reglas ni añadir cartas.
+
 ## 0.18.3
 
 - Las partidas de tres o más participantes dejan de declarar como ganadores a

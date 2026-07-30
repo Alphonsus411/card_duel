@@ -1,7 +1,15 @@
 """Motor headless y extensible del nuevo juego de cartas."""
 
 from .catalog import CardCatalog
-from .content import CollectionManifest, CollectionRegistry, CollectionTrustPolicy, load_manifest
+from .content import (
+    CollectionManifest,
+    CollectionRegistry,
+    CollectionSignatureEnvelope,
+    CollectionTrustPolicy,
+    PermissiveCollectionTrustPolicy,
+    TrustedKey,
+    load_manifest,
+)
 from .engine.game import GameEngine
 from .persistence import dump_replay, dump_snapshot, load_snapshot, replay_from_log
 from .rules.config import RuleSet
@@ -13,6 +21,9 @@ __all__ = [
     "CollectionManifest",
     "CollectionRegistry",
     "CollectionTrustPolicy",
+    "CollectionSignatureEnvelope",
+    "PermissiveCollectionTrustPolicy",
+    "TrustedKey",
     "GameEngine",
     "InMemoryMatchStore",
     "MatchService",
@@ -27,4 +38,4 @@ __all__ = [
     "load_snapshot",
     "replay_from_log",
 ]
-__version__ = "0.18.3"
+__version__ = "0.19.0"

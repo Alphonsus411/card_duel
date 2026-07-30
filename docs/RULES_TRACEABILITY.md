@@ -68,3 +68,12 @@ Esta protección se registra como entrega completada en la hoja de ruta. R-04 es
 la única tarea siguiente; R-02 y R-03 permanecen bloqueadas por aclaraciones
 normativas, R-05 por la falta de un esquema 3 definido, y R-06 y R-07 continúan
 como pendientes técnicos sin promover.
+
+## Trazabilidad 0.19.0
+
+El sobre de firma v1 y la política de claves son infraestructura de distribución,
+no reglas del juego: no cambian fases, acciones, cartas ni resultados. El
+manifiesto permanece en esquema v2 y conserva sus bytes canónicos y su SHA-256;
+el sobre separado añade autenticidad cuando una aplicación exige una firma de
+una clave confiable. Los formatos persistentes de partidas continúan en v2 y no
+se añade ninguna migración. R-04 queda completada sin resolver deuda normativa.

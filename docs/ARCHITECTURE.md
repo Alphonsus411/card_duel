@@ -235,3 +235,29 @@ El almacén SQLite conserva el modelo de conexiones cortas. Para `:memory:` usa
 una base compartida identificada de forma privada y una conexión de
 mantenimiento, liberable mediante `close()`, porque una conexión independiente a
 `:memory:` representaría otra base vacía.
+
+## Autenticidad de colecciones (0.19.0)
+
+El manifiesto v2 continúa siendo el documento de contenido compatible y su única
+representación canónica es `dump_manifest(manifest, indent=None)`. Esos bytes se
+usan tanto para `manifest_sha256` como para la firma. El digest demuestra
+**integridad** (identidad de los bytes), pero cualquiera puede recalcularlo; una
+firma válida aporta **autenticidad** respecto de una clave que la aplicación haya
+decidido confiar.
+
+`CollectionSignatureEnvelope` es un formato separado, versión 1, con exactamente
+cinco campos de texto: versión, manifiesto canónico completo, identificador de
+clave, algoritmo y firma. La firma queda fuera del manifiesto, por lo que cambiar
+el sobre no cambia su digest. El lector rechaza campos extra, ausentes, de otro
+tipo, versiones desconocidas y manifiestos no canónicos. El esquema v2 del
+manifiesto no cambia y los manifiestos sin sobre siguen pudiendo leerse y, bajo
+una política explícitamente permisiva o sin política por compatibilidad, cargarse.
+
+La política estricta incluida admite únicamente algoritmos configurados (por
+defecto `hmac-sha256`), resuelve `TrustedKey` por `key_id` mediante un objeto
+inyectado y rechaza ausencia de firma, algoritmos desconocidos, claves ausentes o
+revocadas y firmas inválidas. Ni el sobre ni el manifiesto pueden indicar módulos,
+resolutores o código: las claves y toda decisión de confianza proceden de objetos
+creados por la aplicación. El registro termina la validación de firmas,
+dependencias y colisiones de todo el lote antes de tocar el catálogo o la
+procedencia.

@@ -11,18 +11,92 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Mapping, Protocol
 import hashlib
+import hmac
 
 from ..catalog import CardCatalog
 from .manifest import CollectionManifest, dump_manifest
+from .signature import CollectionSignatureEnvelope
 
 
-class CollectionTrustPolicy(Protocol):
-    """Punto de extensión de confianza, sin cargar ni ejecutar código externo."""
+@dataclass(frozen=True)
+class TrustedKey:
+    """Material de clave entregado por la aplicación, nunca por el contenido."""
+
+    key_id: str
+    material: bytes
+    revoked: bool = False
+
+
+class TrustedKeyResolver(Protocol):
+    def resolve(self, key_id: str) -> TrustedKey | None:
+        """Devuelve una clave configurada por la aplicación, si existe."""
+
+
+class TrustPolicy(Protocol):
+    """Contrato para políticas alternativas proporcionadas por la aplicación."""
 
     def validate(
-        self, manifest: CollectionManifest, canonical_content: bytes, digest: str
+        self,
+        manifest: CollectionManifest,
+        canonical_content: bytes,
+        digest: str,
+        envelope: CollectionSignatureEnvelope | None,
     ) -> None:
-        """Acepta el manifiesto o lanza una excepción para rechazarlo."""
+        """Acepta el contenido o lanza ``ValueError`` sin producir efectos."""
+
+
+class CollectionTrustPolicy:
+    """Política HMAC inyectable con lista cerrada de algoritmos."""
+
+    def __init__(
+        self,
+        key_resolver: TrustedKeyResolver,
+        *,
+        require_signature: bool = True,
+        allowed_algorithms: frozenset[str] = frozenset({"hmac-sha256"}),
+    ) -> None:
+        self._key_resolver = key_resolver
+        self._require_signature = require_signature
+        self._allowed_algorithms = allowed_algorithms
+
+    def validate(
+        self,
+        manifest: CollectionManifest,
+        canonical_content: bytes,
+        digest: str,
+        envelope: CollectionSignatureEnvelope | None,
+    ) -> None:
+        del manifest, digest
+        if envelope is None:
+            if self._require_signature:
+                raise ValueError("La política exige una colección firmada")
+            return
+        if (
+            envelope.algorithm != "hmac-sha256"
+            or envelope.algorithm not in self._allowed_algorithms
+        ):
+            raise ValueError(f"Algoritmo de firma no permitido: {envelope.algorithm}")
+        key = self._key_resolver.resolve(envelope.key_id)
+        if key is None or key.key_id != envelope.key_id:
+            raise ValueError(f"Clave de firma desconocida: {envelope.key_id}")
+        if key.revoked:
+            raise ValueError(f"Clave de firma revocada: {envelope.key_id}")
+        expected = hmac.new(key.material, canonical_content, hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(expected, envelope.signature):
+            raise ValueError("Firma de colección inválida")
+
+
+class PermissiveCollectionTrustPolicy:
+    """Política explícita que admite contenido firmado o sin firma sin autenticarlo."""
+
+    def validate(
+        self,
+        manifest: CollectionManifest,
+        canonical_content: bytes,
+        digest: str,
+        envelope: CollectionSignatureEnvelope | None,
+    ) -> None:
+        del manifest, canonical_content, digest, envelope
 
 
 @dataclass(frozen=True)
@@ -42,7 +116,7 @@ class CollectionRegistry:
         self,
         catalog: CardCatalog | None = None,
         *,
-        trust_policy: CollectionTrustPolicy | None = None,
+        trust_policy: TrustPolicy | None = None,
     ) -> None:
         self._catalog = catalog if catalog is not None else CardCatalog()
         self._trust_policy = trust_policy
@@ -61,15 +135,32 @@ class CollectionRegistry:
     def provenance(self, collection_id: str) -> CollectionProvenance:
         return self._collections[collection_id]
 
-    def register(self, manifest: CollectionManifest) -> CollectionProvenance:
-        return self.register_batch((manifest,))[manifest.collection_id]
+    def register(
+        self, item: CollectionManifest | CollectionSignatureEnvelope
+    ) -> CollectionProvenance:
+        manifest = (
+            item.collection_manifest()
+            if isinstance(item, CollectionSignatureEnvelope)
+            else item
+        )
+        return self.register_batch((item,))[manifest.collection_id]
 
     def register_batch(
-        self, manifests: tuple[CollectionManifest, ...] | list[CollectionManifest]
+        self,
+        manifests: tuple[CollectionManifest | CollectionSignatureEnvelope, ...]
+        | list[CollectionManifest | CollectionSignatureEnvelope],
     ) -> Mapping[str, CollectionProvenance]:
         """Valida y aplica un lote completo en orden topológico determinista."""
-        pending: dict[str, CollectionManifest] = {}
-        for manifest in manifests:
+        pending: dict[
+            str, tuple[CollectionManifest, CollectionSignatureEnvelope | None]
+        ] = {}
+        for item in manifests:
+            if isinstance(item, CollectionSignatureEnvelope):
+                envelope: CollectionSignatureEnvelope | None = item
+                manifest = item.collection_manifest()
+            else:
+                envelope = None
+                manifest = item
             if manifest.collection_id in pending:
                 raise ValueError(f"Colección duplicada en el lote: {manifest.collection_id}")
             existing = self._collections.get(manifest.collection_id)
@@ -82,16 +173,17 @@ class CollectionRegistry:
                 if manifest.revision > existing.revision:
                     raise ValueError("La revisión es incompatible con el registro inmutable")
                 raise ValueError(f"Colección ya registrada: {manifest.collection_id}")
-            pending[manifest.collection_id] = manifest
+            pending[manifest.collection_id] = (manifest, envelope)
 
-        order = self._topological_order(pending)
+        manifest_map = {key: value[0] for key, value in pending.items()}
+        order = self._topological_order(manifest_map)
         staged: dict[str, CollectionProvenance] = {}
         seen_cards = set(card.card_id for card in self._catalog.definitions())
         for collection_id in order:
-            manifest = pending[collection_id]
+            manifest, envelope = pending[collection_id]
             canonical, digest = self._identity(manifest)
             if self._trust_policy is not None:
-                self._trust_policy.validate(manifest, canonical, digest)
+                self._trust_policy.validate(manifest, canonical, digest, envelope)
             for card in manifest.cards:
                 if card.card_id in seen_cards:
                     raise ValueError(f"La colección colisiona con el catálogo: {card.card_id}")
@@ -102,7 +194,7 @@ class CollectionRegistry:
 
         # No puede fallar: todas las colisiones y políticas se validaron antes.
         for collection_id in order:
-            for card in pending[collection_id].cards:
+            for card in pending[collection_id][0].cards:
                 self._catalog.register(card)
             self._collections[collection_id] = staged[collection_id]
         return MappingProxyType(dict(staged))

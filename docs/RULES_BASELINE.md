@@ -221,3 +221,9 @@ Una concesión o la llegada al límite de Heridas en una partida de tres o más
 participantes bloquea la ejecución sin declarar ganadores. `BLOCKED` expresa que
 falta una decisión normativa y no constituye una condición terminal nueva. Las
 partidas de dos jugadores conservan exactamente sus condiciones de victoria.
+
+## Compatibilidad 0.19.0
+
+La autenticación de colecciones es infraestructura y no modifica ninguna regla,
+carta ni resultado. El manifiesto y los documentos persistentes permanecen en
+esquema v2; el sobre de firma usa su propio esquema v1 separado.

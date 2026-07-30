@@ -17,12 +17,13 @@ La fuente normativa continúa siendo `Fantasy Tokens.pdf`, interpretada mediante
 - **Criterio de salida:** sustituir este bloqueo solo cuando exista una
   aclaración normativa trazable.
 
-## Siguiente tarea
-
 ### R-04 — Política de confianza para colecciones
 
-- Diseñar firmas y confianza fuera del digest de integridad existente.
-- Mantener la política inyectable y evitar ejecutar código de manifiestos.
+- **Entrega 0.19.0:** sobre de firma v1 separado del manifiesto v2, bytes
+  canónicos únicos, resolución inyectada de claves y política estricta o
+  permisiva elegida por la aplicación.
+- **Garantía:** la autenticación de un lote completo se resuelve antes de
+  modificar catálogo o procedencia, sin cargar módulos ni ejecutar contenido.
 
 ## Pendientes normativos bloqueados
 

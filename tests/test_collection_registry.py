@@ -1,13 +1,19 @@
 from __future__ import annotations
 
 import random
+import hashlib
+import hmac
+from dataclasses import replace
 import tempfile
 from pathlib import Path
 import unittest
 
 from card_duel_engine import CollectionRegistry, GameEngine
-from card_duel_engine.content import (CollectionManifest, dump_manifest, load_manifest,
-                                      load_manifest_file, save_manifest_file)
+from card_duel_engine.content import (
+    CollectionManifest, CollectionSignatureEnvelope, CollectionTrustPolicy,
+    PermissiveCollectionTrustPolicy, TrustedKey, dump_manifest, load_manifest,
+    load_manifest_file, load_signature_envelope, save_manifest_file,
+)
 from card_duel_engine.domain.enums import CardKind
 from card_duel_engine.domain.models import CardDefinition
 
@@ -19,12 +25,95 @@ def manifest(name: str, dependencies=(), card_id: str | None = None, revision: i
 
 class Policy:
     def __init__(self, accept=True): self.accept = accept; self.calls = []
-    def validate(self, item, canonical, digest):
+    def validate(self, item, canonical, digest, envelope):
         self.calls.append((item, canonical, digest))
         if not self.accept: raise ValueError("confianza rechazada")
 
 
 class CollectionRegistryTests(unittest.TestCase):
+    @staticmethod
+    def signed(item, key_id="release", key=b"trusted", algorithm="hmac-sha256"):
+        canonical = dump_manifest(item, indent=None)
+        signature = hmac.new(key, canonical.encode(), hashlib.sha256).hexdigest()
+        return CollectionSignatureEnvelope(canonical, key_id, algorithm, signature)
+
+    @staticmethod
+    def strict(keys=None):
+        class Resolver:
+            def resolve(self, key_id):
+                return (keys or {}).get(key_id)
+        return CollectionTrustPolicy(Resolver())
+
+    def test_valid_signature_and_envelope_does_not_change_manifest_digest(self):
+        item = manifest("signed", card_id="signed-card")
+        envelope = self.signed(item)
+        registry = CollectionRegistry(trust_policy=self.strict({
+            "release": TrustedKey("release", b"trusted")
+        }))
+        provenance = registry.register(envelope)
+        expected = hashlib.sha256(dump_manifest(item, indent=None).encode()).hexdigest()
+        self.assertEqual(provenance.manifest_sha256, expected)
+
+    def test_tampered_content_signature_and_unknown_or_revoked_key_are_rejected(self):
+        trusted = {"release": TrustedKey("release", b"trusted")}
+        original = self.signed(manifest("changed"))
+        changed_content = replace(
+            original, manifest=dump_manifest(manifest("changed", revision=2), indent=None)
+        )
+        cases = [
+            (changed_content, "inválida", trusted),
+            (CollectionSignatureEnvelope(dump_manifest(manifest("signature"), indent=None),
+                                         "release", "hmac-sha256", "0" * 64), "inválida", trusted),
+            (self.signed(manifest("unknown"), key_id="missing"), "desconocida", trusted),
+            (self.signed(manifest("revoked")), "revocada",
+             {"release": TrustedKey("release", b"trusted", revoked=True)}),
+            (self.signed(manifest("algorithm"), algorithm="future-signature"),
+             "no permitido", trusted),
+        ]
+        for envelope, message, keys in cases:
+            registry = CollectionRegistry(trust_policy=self.strict(keys))
+            with self.assertRaisesRegex(ValueError, message):
+                registry.register(envelope)
+            self.assertEqual(dict(registry.collections), {})
+
+    def test_mixed_signed_batch_is_rejected_before_any_mutation(self):
+        registry = CollectionRegistry(trust_policy=self.strict({
+            "release": TrustedKey("release", b"trusted")
+        }))
+        valid = self.signed(manifest("a", card_id="a-card"))
+        invalid = self.signed(manifest("b", ("a",), "b-card"), key=b"wrong")
+        with self.assertRaisesRegex(ValueError, "inválida"):
+            registry.register_batch([valid, invalid])
+        self.assertEqual(len(registry.catalog), 0)
+        self.assertEqual(dict(registry.collections), {})
+
+    def test_explicit_permissive_policy_accepts_unsigned_collection(self):
+        registry = CollectionRegistry(trust_policy=PermissiveCollectionTrustPolicy())
+        registry.register(manifest("unsigned", card_id="unsigned-card"))
+        self.assertIn("unsigned-card", registry.catalog)
+
+    def test_strict_policy_rejects_unsigned_collection(self):
+        registry = CollectionRegistry(trust_policy=self.strict({}))
+        with self.assertRaisesRegex(ValueError, "exige"):
+            registry.register(manifest("unsigned"))
+
+    def test_signature_envelope_rejects_unknown_missing_and_wrong_typed_fields(self):
+        envelope = self.signed(manifest("strict-envelope"))
+        raw = {
+            "schema_version": envelope.schema_version,
+            "manifest": envelope.manifest,
+            "key_id": envelope.key_id,
+            "algorithm": envelope.algorithm,
+            "signature": envelope.signature,
+        }
+        for changed in (
+            {**raw, "extra": "no"},
+            {key: value for key, value in raw.items() if key != "signature"},
+            {**raw, "key_id": 7},
+        ):
+            with self.assertRaisesRegex(ValueError, "estructura|texto"):
+                load_signature_envelope(changed)
+
     def test_unordered_branched_graph_has_deterministic_provenance(self):
         registry = CollectionRegistry()
         result = registry.register_batch([manifest("d", ("b", "c")), manifest("c", ("a",)), manifest("a"), manifest("b", ("a",))])

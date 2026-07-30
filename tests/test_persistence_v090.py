@@ -21,7 +21,7 @@ from card_duel_engine.domain import (
     Zone,
     ZoneTarget,
 )
-from card_duel_engine.domain.errors import InvariantViolation
+from card_duel_engine.domain.errors import IllegalAction, InvariantViolation
 from card_duel_engine.engine import (
     PassPriority,
     PlayCard,
@@ -232,6 +232,128 @@ class PersistenceV090Tests(unittest.TestCase):
         self.assertEqual(replayed.state.turn_order, ("Z", "A"))
         self.assertEqual(replayed.state.players["A"].wounds, 2)
         self.assertEqual(len(replayed.state.command_history), 3)
+
+    def test_replay_restores_chained_deferred_replacement_choices(self):
+        replacement_pair = (
+            MoveReplacementDefinition(Zone.HAND),
+            MoveReplacementDefinition(Zone.EXILE),
+        )
+        first = CardDefinition(
+            "REPLAY_DEFERRED_A",
+            "Primer destino diferido",
+            CardKind.QUICK_RESOURCE,
+            0,
+            base_strength=3,
+            move_replacements=replacement_pair,
+            deferred_replacement_choice=True,
+        )
+        second = CardDefinition(
+            "REPLAY_DEFERRED_B",
+            "Segundo destino diferido",
+            CardKind.QUICK_RESOURCE,
+            0,
+            base_strength=3,
+            move_replacements=replacement_pair,
+            deferred_replacement_choice=True,
+        )
+        destroy = CardDefinition(
+            "REPLAY_DOUBLE_DESTROY",
+            "Destrucción doble reproducible",
+            CardKind.QUICK_RESOURCE,
+            0,
+            permanent=False,
+            transmutable=False,
+            effects=(
+                EffectDefinition(
+                    EffectKind.DESTROY,
+                    0,
+                    TargetMode.CHOSEN_PERMANENT,
+                    minimum_targets=2,
+                    maximum_targets=2,
+                ),
+            ),
+        )
+        engine = GameEngine()
+        engine.new_match(
+            {
+                "B": [first] * 7 + [second] * 7,
+                "A": [destroy] * 14,
+            },
+            seed=904,
+        )
+        target_a = next(
+            card_id
+            for card_id in engine.state.players["B"].zones[Zone.HAND]
+            if engine.state.cards[card_id].definition_id == "REPLAY_DEFERRED_A"
+        )
+        target_b = next(
+            card_id
+            for card_id in engine.state.players["B"].zones[Zone.HAND]
+            if engine.state.cards[card_id].definition_id == "REPLAY_DEFERRED_B"
+        )
+        spell = engine.state.players["A"].zones[Zone.HAND][0]
+        setup_commands = (
+            PlayCard("B", target_a),
+            PassPriority("A"),
+            PassPriority("B"),
+            PlayCard("B", target_b),
+            PassPriority("A"),
+            PassPriority("B"),
+            PassPriority("B"),
+        )
+        for command in setup_commands:
+            engine.execute(command)
+
+        play_destroy = PlayCard(
+            "A", spell, chosen_card_ids=(target_a, target_b)
+        )
+        engine.execute(play_destroy)
+        engine.execute(PassPriority("B"))
+        original_command = PassPriority("A")
+        engine.execute(original_command)
+        self.assertIsNotNone(engine.state.pending_move_replacement)
+        self.assertEqual(engine.state.pending_move_replacement.card_id, target_a)
+        history_before_rejection = tuple(engine.state.command_history)
+        with self.assertRaises(IllegalAction):
+            engine.execute(ResolveMoveReplacement("A", 0))
+        self.assertEqual(tuple(engine.state.command_history), history_before_rejection)
+
+        first_choice = ResolveMoveReplacement("B", 0)
+        engine.execute(first_choice)
+        self.assertIsNotNone(engine.state.pending_move_replacement)
+        self.assertEqual(engine.state.pending_move_replacement.card_id, target_b)
+        self.assertEqual(engine.state.pending_move_replacement.replay_choices, (0,))
+
+        second_choice = ResolveMoveReplacement("B", 1)
+        engine.execute(second_choice)
+        self.assertIsNone(engine.state.pending_move_replacement)
+        self.assertIn(target_a, engine.state.players["B"].zones[Zone.HAND])
+        self.assertIn(target_b, engine.state.players["B"].zones[Zone.EXILE])
+
+        expected_history = (
+            *setup_commands,
+            play_destroy,
+            PassPriority("B"),
+            original_command,
+            first_choice,
+            second_choice,
+        )
+        self.assertEqual(tuple(engine.state.command_history), expected_history)
+        replay_document = json.loads(dump_replay(engine))
+        self.assertEqual(
+            replay_document["body"]["command_count"], len(expected_history)
+        )
+
+        replayed = replay_from_log(replay_document)
+        self.assertEqual(state_digest(replayed), state_digest(engine))
+        self.assertEqual(
+            replayed.state.players["A"].zones, engine.state.players["A"].zones
+        )
+        self.assertEqual(
+            replayed.state.players["B"].zones, engine.state.players["B"].zones
+        )
+        self.assertIsNone(replayed.state.pending_move_replacement)
+        self.assertEqual(tuple(replayed.state.command_history), expected_history)
 
     def test_setup_mulligans_are_part_of_replay(self):
         engine = GameEngine()

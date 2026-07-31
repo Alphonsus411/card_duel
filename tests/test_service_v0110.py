@@ -3,12 +3,84 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from card_duel_engine import InMemoryMatchStore, MatchService, SQLiteMatchStore, VersionConflict
+from card_duel_engine import (
+    InMemoryMatchStore,
+    MatchService,
+    SQLiteMatchStore,
+    VersionConflict,
+)
 from card_duel_engine.domain.errors import IllegalAction
 from card_duel_engine.domain.enums import MatchStatus
 from card_duel_engine.engine.commands import Concede, PassPriority
 from card_duel_engine.persistence.snapshot import state_digest
 from fixtures import test_deck
+
+
+class MatchIdValidationContract:
+    """Contrato común de claves para todos los almacenes de partidas."""
+
+    store_kind = ""
+
+    def setUp(self):
+        self.temporary_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary_directory.cleanup)
+        if self.store_kind == "memory":
+            self.store = InMemoryMatchStore()
+        elif self.store_kind == "sqlite":
+            self.store = SQLiteMatchStore(
+                Path(self.temporary_directory.name) / "match-ids.db"
+            )
+            self.addCleanup(self.store.close)
+        else:  # pragma: no cover
+            raise AssertionError("La batería necesita un almacén")
+
+        service = MatchService(self.store)
+        service.create_match(
+            "existing", {"A": test_deck("id-A"), "B": test_deck("id-B")}
+        )
+        self.engine = self.store.load("existing").engine
+
+    def test_create_load_and_save_reject_the_same_invalid_ids(self):
+        invalid_ids = (
+            "",
+            "   ",
+            " leading",
+            "trailing ",
+            "line\nbreak",
+            "nul\0",
+            "x" * 129,
+        )
+        for match_id in invalid_ids:
+            for operation in (
+                lambda value=match_id: self.store.create(value, self.engine),
+                lambda value=match_id: self.store.load(value),
+                lambda value=match_id: self.store.save(
+                    value, self.engine, expected_version=1
+                ),
+            ):
+                with self.subTest(match_id=repr(match_id), operation=operation):
+                    with self.assertRaises(ValueError):
+                        operation()
+
+        self.assertEqual(self.store.load("existing").version, 1)
+
+    def test_unicode_without_control_characters_preserves_exact_identity(self):
+        match_id = "partida-Ñ-棋-🙂"
+        self.assertEqual(self.store.create(match_id, self.engine), 1)
+        stored = self.store.load(match_id)
+        self.assertEqual(stored.match_id, match_id)
+        self.assertEqual(
+            self.store.save(match_id, stored.engine, expected_version=stored.version), 2
+        )
+        self.assertEqual(self.store.load(match_id).match_id, match_id)
+
+
+class InMemoryMatchIdValidationTests(MatchIdValidationContract, unittest.TestCase):
+    store_kind = "memory"
+
+
+class SQLiteMatchIdValidationTests(MatchIdValidationContract, unittest.TestCase):
+    store_kind = "sqlite"
 
 
 class MatchServiceV0110Tests(unittest.TestCase):
@@ -68,7 +140,9 @@ class MatchServiceV0110Tests(unittest.TestCase):
         operations = (
             lambda: store.create("another", stored.engine),
             lambda: store.load("closed"),
-            lambda: store.save("closed", stored.engine, expected_version=stored.version),
+            lambda: store.save(
+                "closed", stored.engine, expected_version=stored.version
+            ),
         )
         for operation in operations:
             with self.subTest(operation=operation):
@@ -91,22 +165,26 @@ class MatchServiceV0110Tests(unittest.TestCase):
         service.create_match("race", self.decks())
         view = service.view("race", "A")
         action = view.legal_actions[0]
+
         def submit():
             try:
                 service.submit("race", action, expected_version=1)
                 return True
             except VersionConflict:
                 return False
+
         with ThreadPoolExecutor(max_workers=2) as pool:
             self.assertEqual(sum(pool.map(lambda _: submit(), range(2))), 1)
 
-
     def test_submit_from_and_wrong_player_source(self):
         class Source:
-            def __init__(self, wrong=False): self.wrong = wrong
+            def __init__(self, wrong=False):
+                self.wrong = wrong
+
             def choose_action(self, observation, legal_actions):
                 action = legal_actions[0]
                 return PassPriority("B") if self.wrong else action
+
         service = MatchService(InMemoryMatchStore())
         service.create_match("source", self.decks())
         self.assertEqual(service.submit_from("source", "A", Source()).version, 2)
@@ -116,7 +194,9 @@ class MatchServiceV0110Tests(unittest.TestCase):
 
     def test_invalid_command_never_persists_partial_state_for_both_stores(self):
         with tempfile.TemporaryDirectory() as directory:
-            for index, store in enumerate((InMemoryMatchStore(), SQLiteMatchStore(Path(directory) / "invalid.db"))):
+            for index, store in enumerate(
+                (InMemoryMatchStore(), SQLiteMatchStore(Path(directory) / "invalid.db"))
+            ):
                 service = MatchService(store)
                 match_id = f"invalid-{index}"
                 service.create_match(match_id, self.decks(), seed=4)
@@ -130,12 +210,19 @@ class MatchServiceV0110Tests(unittest.TestCase):
     def test_memory_and_sqlite_have_equivalent_submit_semantics(self):
         with tempfile.TemporaryDirectory() as directory:
             digests = []
-            for index, store in enumerate((InMemoryMatchStore(), SQLiteMatchStore(Path(directory) / "equivalent.db"))):
+            for index, store in enumerate(
+                (
+                    InMemoryMatchStore(),
+                    SQLiteMatchStore(Path(directory) / "equivalent.db"),
+                )
+            ):
                 service = MatchService(store)
                 match_id = f"equivalent-{index}"
                 service.create_match(match_id, self.decks(), seed=23)
                 view = service.view(match_id, "A")
-                service.submit(match_id, view.legal_actions[0], expected_version=view.version)
+                service.submit(
+                    match_id, view.legal_actions[0], expected_version=view.version
+                )
                 digests.append(state_digest(service.get_match(match_id).engine))
             self.assertEqual(digests[0], digests[1])
 

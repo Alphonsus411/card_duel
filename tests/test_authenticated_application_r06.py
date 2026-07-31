@@ -11,6 +11,7 @@ import tempfile
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from unittest.mock import patch
 
 from card_duel_engine import (
     AccessDenied,
@@ -21,6 +22,7 @@ from card_duel_engine import (
     InMemoryIdentityAuthorization,
     InMemoryMatchStore,
     InvalidIdentity,
+    InvalidMatchId,
     MatchService,
     ResourceNotFound,
     SQLiteMatchStore,
@@ -98,6 +100,72 @@ class AuthenticatedApplicationR06Contract:
             self.assertEqual(set(stored.engine.state.players), {"A", "B"})
             self.assertEqual(stored.version, 1)
 
+    def test_malformed_match_ids_have_stable_public_error_without_side_effects(self):
+        alice = self.identities["alice"]
+        self.authorization.grant_global(alice, Capability.CREATE_MATCH)
+        self.authorization.grant_match(alice, "one", Capability.ADMINISTER)
+        invalid_ids = (
+            "",
+            "   ",
+            " leading",
+            "trailing ",
+            "line\nbreak",
+            "nul\0",
+            "x" * 129,
+        )
+
+        for match_id in invalid_ids:
+            operations = (
+                lambda value=match_id: self.app.create_match(
+                    alice,
+                    value,
+                    {"A": test_deck("bad-A"), "B": test_deck("bad-B")},
+                ),
+                lambda value=match_id: self.app.view(alice, value),
+                lambda value=match_id: self.app.submit(
+                    alice, value, PassPriority("A"), expected_version=1
+                ),
+                lambda value=match_id: self.app.administrative_version(alice, value),
+            )
+            for operation in operations:
+                with self.subTest(match_id=repr(match_id), operation=operation):
+                    with (
+                        patch.object(
+                            self.store, "create", wraps=self.store.create
+                        ) as create,
+                        patch.object(self.store, "load", wraps=self.store.load) as load,
+                        patch.object(
+                            self.authorization,
+                            "allows_global",
+                            wraps=self.authorization.allows_global,
+                        ) as allows_global,
+                        patch.object(
+                            self.authorization,
+                            "player_for",
+                            wraps=self.authorization.player_for,
+                        ) as player_for,
+                        patch.object(
+                            self.authorization,
+                            "allows_match",
+                            wraps=self.authorization.allows_match,
+                        ) as allows_match,
+                    ):
+                        with self.assertRaises(InvalidMatchId) as caught:
+                            operation()
+                    self.assertEqual(caught.exception.code, "invalid_match_id")
+                    self.assertEqual(
+                        caught.exception.args, (InvalidMatchId.public_message,)
+                    )
+                    if match_id:
+                        self.assertNotIn(match_id, str(caught.exception))
+                    create.assert_not_called()
+                    load.assert_not_called()
+                    allows_global.assert_not_called()
+                    player_for.assert_not_called()
+                    allows_match.assert_not_called()
+
+        self.assertEqual(self.fingerprint("one")[0], 1)
+
     def test_missing_revoked_and_invalid_credentials_do_not_mutate(self):
         credentials = (
             (AuthenticationRequired, None),
@@ -161,12 +229,15 @@ class AuthenticatedApplicationR06Contract:
                     if allowed
                     else Concede(author)
                 )
-                operation = lambda: self.app.submit(
-                    identity,
-                    match_id,
-                    command,
-                    expected_version=before[0],
-                )
+
+                def operation():
+                    return self.app.submit(
+                        identity,
+                        match_id,
+                        command,
+                        expected_version=before[0],
+                    )
+
                 if allowed:
                     response = operation()
                     self.assertEqual(response.observation.player_id, resolved_player)
@@ -178,10 +249,12 @@ class AuthenticatedApplicationR06Contract:
 
     def test_player_cannot_be_selected_on_view_or_submit(self):
         self.assertNotIn(
-            "player_id", inspect.signature(AuthenticatedMatchApplication.view).parameters
+            "player_id",
+            inspect.signature(AuthenticatedMatchApplication.view).parameters,
         )
         self.assertNotIn(
-            "player_id", inspect.signature(AuthenticatedMatchApplication.submit).parameters
+            "player_id",
+            inspect.signature(AuthenticatedMatchApplication.submit).parameters,
         )
         self.assertEqual(
             self.app.view(self.identities["alice"], "one").observation.player_id,
@@ -278,9 +351,7 @@ class AuthenticatedApplicationR06Contract:
         bob = self.identities["bob"]
         self.assert_rejected_without_mutation(
             CommandRejected,
-            lambda: self.app.submit(
-                bob, "one", PassPriority("B"), expected_version=1
-            ),
+            lambda: self.app.submit(bob, "one", PassPriority("B"), expected_version=1),
             "one",
         )
         command = self.service.view("one", "A").legal_actions[0]

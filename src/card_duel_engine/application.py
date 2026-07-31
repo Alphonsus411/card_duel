@@ -16,7 +16,7 @@ from .domain.errors import IllegalAction
 from .domain.models import CardDefinition
 from .engine.commands import GameCommand
 from .service import CommandSource, MatchService, MatchView
-from .storage.base import MatchNotFound, VersionConflict
+from .storage.base import MatchNotFound, VersionConflict, validate_match_id
 
 if TYPE_CHECKING:
     from .controllers.base import PlayerObservation
@@ -119,7 +119,8 @@ class PublicMatchView:
             # Del comando solo se publica su discriminador. Sus campos pueden
             # representar elecciones privadas y no pertenecen a un DTO remoto.
             legal_actions=tuple(
-                PublicLegalAction(type(action).__name__) for action in view.legal_actions
+                PublicLegalAction(type(action).__name__)
+                for action in view.legal_actions
             ),
         )
 
@@ -174,10 +175,19 @@ class CommandRejected(ApplicationError):
     public_message = "El comando fue rechazado"
 
 
+class InvalidMatchId(ApplicationError):
+    """Entrada pública inválida, identificada por el código ``invalid_match_id``."""
+
+    code = "invalid_match_id"
+    public_message = "El identificador de partida no es válido"
+
+
 class IdentityAuthorization(Protocol):
     """Resolución externa de capacidades y asociaciones de jugadores."""
 
-    def allows_global(self, identity: ExternalIdentity, capability: Capability) -> bool: ...
+    def allows_global(
+        self, identity: ExternalIdentity, capability: Capability
+    ) -> bool: ...
 
     def player_for(
         self, identity: ExternalIdentity, match_id: str, capability: Capability
@@ -219,7 +229,9 @@ class InMemoryIdentityAuthorization:
     ) -> None:
         for capability in capabilities:
             if capability not in (Capability.OBSERVE, Capability.SUBMIT_COMMAND):
-                raise ValueError("Una asociación de jugador solo admite observar o enviar")
+                raise ValueError(
+                    "Una asociación de jugador solo admite observar o enviar"
+                )
             self._players[(self._key(identity), match_id, capability)] = player_id
 
     def grant_match(
@@ -271,6 +283,14 @@ class AuthenticatedMatchApplication:
         return identity
 
     @staticmethod
+    def _match_id(match_id: str) -> None:
+        """Valida antes de consultar autorización o persistencia."""
+        try:
+            validate_match_id(match_id)
+        except ValueError:
+            raise InvalidMatchId from None
+
+    @staticmethod
     def _translate(operation: Callable[[], T]) -> T:
         try:
             return operation()
@@ -291,6 +311,7 @@ class AuthenticatedMatchApplication:
         auto_start: bool = True,
     ) -> int:
         principal = self._identity(identity)
+        self._match_id(match_id)
         if not self._authorization.allows_global(principal, Capability.CREATE_MATCH):
             raise AccessDenied
         return self._translate(
@@ -301,6 +322,7 @@ class AuthenticatedMatchApplication:
 
     def view(self, identity: ExternalIdentity | None, match_id: str) -> PublicMatchView:
         principal = self._identity(identity)
+        self._match_id(match_id)
         player_id = self._authorization.player_for(
             principal, match_id, Capability.OBSERVE
         )
@@ -318,6 +340,7 @@ class AuthenticatedMatchApplication:
         expected_version: int,
     ) -> PublicMatchView:
         principal = self._identity(identity)
+        self._match_id(match_id)
         player_id = self._authorization.player_for(
             principal, match_id, Capability.SUBMIT_COMMAND
         )
@@ -339,6 +362,7 @@ class AuthenticatedMatchApplication:
         expected_version: int,
     ) -> PublicMatchView:
         principal = self._identity(identity)
+        self._match_id(match_id)
         player_id = self._authorization.player_for(
             principal, match_id, Capability.SUBMIT_COMMAND
         )
@@ -362,6 +386,7 @@ class AuthenticatedMatchApplication:
     ) -> int:
         """Consulta administrativa mínima sin devolver una instantánea."""
         principal = self._identity(identity)
+        self._match_id(match_id)
         if not self._authorization.allows_match(
             principal, match_id, Capability.ADMINISTER
         ):

@@ -94,4 +94,6 @@ La fuente normativa continúa siendo `Fantasy Tokens.pdf`, interpretada mediante
 - Añadir migraciones únicamente cuando exista un esquema 3 o posterior definido.
 - Rechazar rutas desconocidas sin completar datos mediante suposiciones.
 
-## Pendientes técnicos
+No hay incrementos técnicos habilitados por las fuentes vigentes. R-02, R-03 y
+R-05 conservan los bloqueos indicados y no se promoverá una tarea nueva sin
+respaldo explícito del reglamento, la línea base y la arquitectura.

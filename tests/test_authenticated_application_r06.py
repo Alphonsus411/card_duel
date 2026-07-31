@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -17,6 +18,9 @@ from card_duel_engine import (
     SQLiteMatchStore,
     WriteConflict,
 )
+from card_duel_engine.domain.enums import Zone
+from card_duel_engine.domain.models import GameState
+from card_duel_engine.engine.game import GameEngine
 from card_duel_engine.engine.commands import PassPriority
 from card_duel_engine.persistence.snapshot import state_digest
 from fixtures import test_deck
@@ -82,15 +86,59 @@ class AuthenticatedApplicationR06Tests(unittest.TestCase):
 
     def test_stale_version_is_translated_without_mutation(self):
         view = self.app.view(self.alice, "one")
+        command = self.service.view("one", "A").legal_actions[0]
         self.app.submit(
-            self.alice, "one", view.legal_actions[0], expected_version=view.version
+            self.alice, "one", command, expected_version=view.version
         )
         self.assert_rejected_without_mutation(
             WriteConflict,
             lambda: self.app.submit(
-                self.alice, "one", view.legal_actions[0], expected_version=view.version
+                self.alice, "one", command, expected_version=view.version
             ),
         )
+
+    def test_public_dto_serialization_recursively_excludes_internal_state(self):
+        response = self.app.view(self.alice, "one")
+        payload = response.to_dict()
+        encoded = json.dumps(payload)
+
+        forbidden_keys = {
+            "engine", "state", "snapshot", "deck", "opponent_hand",
+            "chosen_card_ids", "discard_card_ids", "sacrifice_card_ids",
+        }
+
+        def inspect(value):
+            self.assertNotIsInstance(value, (GameEngine, GameState))
+            if isinstance(value, dict):
+                self.assertTrue(forbidden_keys.isdisjoint(value))
+                for nested in value.values():
+                    inspect(nested)
+            elif isinstance(value, (list, tuple)):
+                for nested in value:
+                    inspect(nested)
+
+        inspect(payload)
+        stored = self.service.get_match("one")
+        opponent_hidden = {
+            *stored.engine.state.players["B"].zones[Zone.HAND],
+            *stored.engine.state.players["B"].zones[Zone.DECK],
+        }
+        self.assertTrue(opponent_hidden)
+        self.assertTrue(all(card_id not in encoded for card_id in opponent_hidden))
+
+    def test_each_identity_receives_only_its_own_private_observation(self):
+        alice_view = self.app.view(self.alice, "one")
+        bob_view = self.app.view(self.bob, "one")
+        stored = self.service.get_match("one")
+        alice_hand = tuple(stored.engine.state.players["A"].zones[Zone.HAND])
+        bob_hand = tuple(stored.engine.state.players["B"].zones[Zone.HAND])
+
+        self.assertEqual(alice_view.observation.own_hand, alice_hand)
+        self.assertEqual(bob_view.observation.own_hand, bob_hand)
+        self.assertTrue(set(alice_hand).isdisjoint(bob_view.observation.own_hand))
+        self.assertTrue(set(bob_hand).isdisjoint(alice_view.observation.own_hand))
+        self.assertEqual(alice_view.observation.opponent_hand_sizes, {"B": len(bob_hand)})
+        self.assertEqual(bob_view.observation.opponent_hand_sizes, {"A": len(alice_hand)})
 
     def test_illegal_action_is_safe_and_does_not_mutate(self):
         self.assert_rejected_without_mutation(

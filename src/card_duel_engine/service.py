@@ -68,7 +68,14 @@ class MatchService:
         return self.store.create(match_id, engine)
 
     def get_match(self, match_id: str) -> StoredMatch:
-        """Devuelve una copia deserializada; modificarla no altera el almacén."""
+        """Carga una partida para administración/persistencia dentro del proceso.
+
+        El resultado contiene un ``GameEngine`` deserializado. Por ello esta es una
+        operación interna: nunca debe usarse como respuesta de un adaptador remoto
+        ni atravesar la frontera R-06. Los clientes reciben exclusivamente los DTO
+        seguros construidos por ``AuthenticatedMatchApplication`` desde ``MatchView``.
+        Modificar la copia retornada no altera el almacén.
+        """
         return self.store.load(match_id)
 
     def view(self, match_id: str, player_id: str) -> MatchView:

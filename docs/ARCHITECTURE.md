@@ -217,6 +217,23 @@ separada y agnóstica del transporte. Un futuro router HTTPS solo debe decodific
 JSON, autenticar, invocarla y serializar su resultado seguro; no decide reglas
 del juego ni accede directamente a `GameEngine` o al almacén.
 
+### Contrato de salida y confinamiento del motor
+
+`MatchService.get_match()` es una operación **exclusivamente interna** de
+administración y persistencia. Devuelve un `StoredMatch` con el `GameEngine`
+deserializado para uso dentro del proceso; jamás es una respuesta para clientes
+remotos ni puede serializarse en R-06. El acceso al motor deserializado queda
+confinado a la aplicación y a las implementaciones de `MatchStore`.
+
+Las respuestas de observación y escritura de R-06 son `PublicMatchView`,
+`PublicPlayerObservation` y `PublicLegalAction`. Se construyen únicamente desde
+el `MatchView` ya autorizado y su `PlayerObservation`: contienen primitivas JSON,
+la mano propia, tamaños de manos rivales y zonas públicas. Nunca contienen
+`GameEngine`, `GameState`, snapshots, mazos o manos rivales, ni los campos de una
+acción que puedan codificar elecciones privadas. La aplicación solo publica el
+discriminador de cada acción legal; el comando recibido se valida por separado
+contra la identidad autenticada.
+
 
 ## Contratos de componentes (0.12.0)
 

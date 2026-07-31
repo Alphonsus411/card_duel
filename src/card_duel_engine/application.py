@@ -10,13 +10,16 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from enum import Enum
-from typing import Protocol, TypeVar
+from typing import TYPE_CHECKING, Any, Protocol, TypeVar
 
 from .domain.errors import IllegalAction
 from .domain.models import CardDefinition
 from .engine.commands import GameCommand
 from .service import CommandSource, MatchService, MatchView
 from .storage.base import MatchNotFound, VersionConflict
+
+if TYPE_CHECKING:
+    from .controllers.base import PlayerObservation
 
 
 class Capability(Enum):
@@ -35,6 +38,100 @@ class ExternalIdentity:
     issuer: str
     subject: str
     authenticated: bool = True
+
+
+@dataclass(frozen=True)
+class PublicPlayerObservation:
+    """DTO serializable con la observación autorizada de una sola identidad."""
+
+    player_id: str
+    active_player_id: str
+    phase: str
+    own_hand: tuple[str, ...]
+    own_steps: int
+    own_wounds: int
+    opponent_hand_sizes: dict[str, int]
+    public_event_count: int
+    own_battlefield: tuple[str, ...]
+    opponent_battlefields: dict[str, tuple[str, ...]]
+    stack_size: int
+
+    @classmethod
+    def from_observation(
+        cls, observation: "PlayerObservation"
+    ) -> "PublicPlayerObservation":
+        """Copia solo campos observables; nunca inspecciona motor ni estado."""
+        return cls(
+            player_id=observation.player_id,
+            active_player_id=observation.active_player_id,
+            phase=observation.phase.name,
+            own_hand=observation.own_hand,
+            own_steps=observation.own_steps,
+            own_wounds=observation.own_wounds,
+            opponent_hand_sizes=dict(observation.opponent_hand_sizes),
+            public_event_count=observation.public_event_count,
+            own_battlefield=observation.own_battlefield,
+            opponent_battlefields=dict(observation.opponent_battlefields or {}),
+            stack_size=observation.stack_size,
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "player_id": self.player_id,
+            "active_player_id": self.active_player_id,
+            "phase": self.phase,
+            "own_hand": list(self.own_hand),
+            "own_steps": self.own_steps,
+            "own_wounds": self.own_wounds,
+            "opponent_hand_sizes": dict(self.opponent_hand_sizes),
+            "public_event_count": self.public_event_count,
+            "own_battlefield": list(self.own_battlefield),
+            "opponent_battlefields": {
+                player_id: list(cards)
+                for player_id, cards in self.opponent_battlefields.items()
+            },
+            "stack_size": self.stack_size,
+        }
+
+
+@dataclass(frozen=True)
+class PublicLegalAction:
+    """Descripción no ejecutable de una acción, sin elecciones ni objetos internos."""
+
+    action: str
+
+
+@dataclass(frozen=True)
+class PublicMatchView:
+    """DTO de salida R-06 construido exclusivamente desde ``MatchView``."""
+
+    match_id: str
+    version: int
+    observation: PublicPlayerObservation
+    legal_actions: tuple[PublicLegalAction, ...]
+
+    @classmethod
+    def from_view(cls, view: MatchView) -> "PublicMatchView":
+        return cls(
+            match_id=view.match_id,
+            version=view.version,
+            observation=PublicPlayerObservation.from_observation(view.observation),
+            # Del comando solo se publica su discriminador. Sus campos pueden
+            # representar elecciones privadas y no pertenecen a un DTO remoto.
+            legal_actions=tuple(
+                PublicLegalAction(type(action).__name__) for action in view.legal_actions
+            ),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "match_id": self.match_id,
+            "version": self.version,
+            "observation": self.observation.to_dict(),
+            "legal_actions": [
+                {"action": action.action} for action in self.legal_actions
+            ],
+        }
 
 
 class ApplicationError(RuntimeError):
@@ -193,14 +290,15 @@ class AuthenticatedMatchApplication:
             )
         )
 
-    def view(self, identity: ExternalIdentity | None, match_id: str) -> MatchView:
+    def view(self, identity: ExternalIdentity | None, match_id: str) -> PublicMatchView:
         principal = self._identity(identity)
         player_id = self._authorization.player_for(
             principal, match_id, Capability.OBSERVE
         )
         if player_id is None:
             raise AccessDenied
-        return self._translate(lambda: self._service.view(match_id, player_id))
+        view = self._translate(lambda: self._service.view(match_id, player_id))
+        return PublicMatchView.from_view(view)
 
     def submit(
         self,
@@ -209,18 +307,19 @@ class AuthenticatedMatchApplication:
         command: GameCommand,
         *,
         expected_version: int,
-    ) -> MatchView:
+    ) -> PublicMatchView:
         principal = self._identity(identity)
         player_id = self._authorization.player_for(
             principal, match_id, Capability.SUBMIT_COMMAND
         )
         if player_id is None or command.player_id != player_id:
             raise AccessDenied
-        return self._translate(
+        view = self._translate(
             lambda: self._service.submit(
                 match_id, command, expected_version=expected_version
             )
         )
+        return PublicMatchView.from_view(view)
 
     def submit_from(
         self,
@@ -229,7 +328,7 @@ class AuthenticatedMatchApplication:
         source: CommandSource,
         *,
         expected_version: int,
-    ) -> MatchView:
+    ) -> PublicMatchView:
         principal = self._identity(identity)
         player_id = self._authorization.player_for(
             principal, match_id, Capability.SUBMIT_COMMAND
@@ -242,11 +341,12 @@ class AuthenticatedMatchApplication:
         command = source.choose_action(view.observation, view.legal_actions)
         if command.player_id != player_id:
             raise AccessDenied
-        return self._translate(
+        submitted = self._translate(
             lambda: self._service.submit(
                 match_id, command, expected_version=expected_version
             )
         )
+        return PublicMatchView.from_view(submitted)
 
     def administrative_version(
         self, identity: ExternalIdentity | None, match_id: str

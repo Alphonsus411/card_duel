@@ -95,3 +95,13 @@ siendo autoritativa aunque una acción no aparezca en el prefijo enumerado. La
 paridad cubre dos y más jugadores y huellas de estado, eventos, historial y
 contadores. R-07.1 queda completada y el siguiente incremento permitido es
 R-07.2, limitado a movimientos y sustituciones.
+
+## Trazabilidad de R-07.2
+
+La consolidación de movimientos es exclusivamente arquitectónica. Robo,
+reciclaje, movimiento, separación de Equipo, limpieza de instancia y
+sustituciones conservan los resultados anteriores y tienen una sola autoridad
+en `ZoneManager`; `GameEngine` conserva coordinación, transacción y replay. La
+paridad de `test_zone_parity_r072.py` compara todas las observaciones
+deterministas mediante un `ZoneContext` mínimo independiente. R-07.2 queda
+cerrada sin resolver ambigüedades ni cambiar reglas del juego.

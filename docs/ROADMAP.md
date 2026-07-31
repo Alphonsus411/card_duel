@@ -33,6 +33,18 @@ La fuente normativa continúa siendo `Fantasy Tokens.pdf`, interpretada mediante
   de comandos explícitos. Despacho, snapshot/rollback, avance de fases e
   invariantes permanecen en `GameEngine`.
 
+### R-07.2 — Consolidar movimientos y sustituciones
+
+- **Entrega incremental completada:** `ZoneManager` es la única implementación de
+  robo, ordenación y aplicación de sustituciones y movimiento entre zonas. Los
+  cuatro métodos homónimos de `GameEngine` son exclusivamente adaptadores.
+- **Frontera verificada:** `ZoneContext` contiene solo estado y colaboradores de
+  movimiento; transacción, despacho, historial, elecciones pendientes y
+  contadores deterministas continúan perteneciendo al coordinador.
+- **Paridad cerrada:** un contexto mínimo independiente compara estado, eventos,
+  historial, semilla, replay, elección pendiente y contadores, incluidos rechazo
+  y excepción sin mutación parcial. No se modifica ninguna regla.
+
 ### R-01 — Proteger las condiciones terminales multijugador
 
 - **Evidencia:** el reglamento permite uno o más adversarios, pero no define la
@@ -83,10 +95,3 @@ La fuente normativa continúa siendo `Fantasy Tokens.pdf`, interpretada mediante
 - Rechazar rutas desconocidas sin completar datos mediante suposiciones.
 
 ## Pendientes técnicos
-
-### R-07 — Continuar separando el coordinador
-
-- **R-07.2 — Movimientos (habilitada como siguiente):** extraer robo, orden de
-  sustituciones y movimiento, sin alterar el replay de elecciones diferidas.
-- **Criterio común:** paridad observable, tipado estricto, identificadores
-  deterministas y pruebas de atomicidad para cada entrega por separado.

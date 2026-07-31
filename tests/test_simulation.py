@@ -8,7 +8,11 @@ from card_duel_engine.engine.commands import (
     DeclareBlockers,
     PassPriority,
 )
-from card_duel_engine.simulation import PhaseProgressAgent, run_headless
+from card_duel_engine.simulation import (
+    PhaseProgressAgent,
+    SimulationStopReason,
+    run_headless,
+)
 
 from fixtures import test_deck
 from test_stack_and_priority import force_zone
@@ -54,6 +58,17 @@ class SimulationTests(unittest.TestCase):
         ):
             run_headless(GameEngine(), {})
 
+    def test_headless_runner_rejects_a_nonpositive_command_limit(self):
+        engine = GameEngine()
+        engine.new_match({"A": test_deck("A"), "B": test_deck("B")}, seed=11)
+
+        for max_commands in (0, -1):
+            with self.subTest(max_commands=max_commands):
+                with self.assertRaisesRegex(
+                    ValueError, "max_commands debe ser un entero positivo"
+                ):
+                    run_headless(engine, {}, max_commands=max_commands)
+
     def test_headless_runner_advances_without_an_interface(self):
         engine = GameEngine()
         engine.new_match({"A": test_deck("A"), "B": test_deck("B")}, seed=11)
@@ -63,6 +78,16 @@ class SimulationTests(unittest.TestCase):
             max_commands=80,
         )
         self.assertEqual(report.commands_executed, 80)
-        self.assertIn(report.status, {MatchStatus.BLOCKED, MatchStatus.FINISHED})
+        self.assertIs(report.stop_reason, SimulationStopReason.COMMAND_LIMIT_REACHED)
+        self.assertIs(report.status, MatchStatus.RUNNING)
+        self.assertIs(engine.state.status, MatchStatus.RUNNING)
+        self.assertNotIn(
+            "ALL_PHASES_SUPPRESSED",
+            (event.event_type for event in engine.state.event_log),
+        )
+        self.assertNotIn(
+            "MULTIPLAYER_END_UNDEFINED",
+            (event.event_type for event in engine.state.event_log),
+        )
         self.assertGreaterEqual(report.turn_reached, 2)
         self.assertGreater(report.event_count, 15)

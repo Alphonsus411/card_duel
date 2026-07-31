@@ -168,6 +168,85 @@ class PersistenceV090Tests(unittest.TestCase):
         self.assertEqual(state_digest(restored), state_digest(engine))
         self.assertIn(target, restored.state.players["B"].zones[Zone.EXILE])
 
+    def test_failed_replacement_choice_remains_persistable_and_resolvable(self):
+        resilient = CardDefinition(
+            "SNAP_FAILED_CHOICE",
+            "Elección recuperable",
+            CardKind.CREATURE,
+            3,
+            base_strength=3,
+            move_replacements=(
+                MoveReplacementDefinition(Zone.HAND),
+                MoveReplacementDefinition(Zone.EXILE),
+            ),
+            deferred_replacement_choice=True,
+        )
+        destroy = CardDefinition(
+            "SNAP_FAILED_DESTROY",
+            "Destrucción recuperable",
+            CardKind.QUICK_RESOURCE,
+            0,
+            permanent=False,
+            transmutable=False,
+            effects=(
+                EffectDefinition(EffectKind.DESTROY, 0, TargetMode.CHOSEN_PERMANENT),
+            ),
+        )
+        engine = GameEngine()
+        engine.new_match(
+            {
+                "A": [destroy, *test_deck("SFA", 14)],
+                "B": [resilient, *test_deck("SFB", 14)],
+            },
+            seed=905,
+        )
+        spell = force_zone(engine, "SNAP_FAILED_DESTROY", "A", Zone.HAND)
+        target = force_zone(engine, "SNAP_FAILED_CHOICE", "B", Zone.BATTLEFIELD)
+        engine.execute(PlayCard("A", spell, chosen_card_ids=(target,)))
+        engine.execute(PassPriority("B"))
+        engine.execute(PassPriority("A"))
+
+        snapshot_before = dump_snapshot(engine, indent=None)
+        history_before = tuple(engine.state.command_history)
+        events_before = tuple(engine.state.event_log)
+        check_wound_limits = engine._check_wound_limits
+
+        def fail_after_replacement():
+            raise RuntimeError("fallo persistible simulado")
+
+        engine._check_wound_limits = fail_after_replacement
+        try:
+            with self.assertRaisesRegex(RuntimeError, "fallo persistible simulado"):
+                engine.execute(ResolveMoveReplacement("B", 1))
+        finally:
+            engine._check_wound_limits = check_wound_limits
+
+        self.assertEqual(dump_snapshot(engine, indent=None), snapshot_before)
+        self.assertEqual(tuple(engine.state.command_history), history_before)
+        self.assertEqual(tuple(engine.state.event_log), events_before)
+
+        restored = load_snapshot(dump_snapshot(engine))
+        self.assertIsNotNone(restored.state.pending_move_replacement)
+        restored.execute(ResolveMoveReplacement("B", 1))
+
+        self.assertIsNone(restored.state.pending_move_replacement)
+        self.assertIn(target, restored.state.players["B"].zones[Zone.EXILE])
+        self.assertEqual(len(restored.state.command_history), len(history_before) + 1)
+        self.assertEqual(
+            sum(
+                event.event_type == "MOVE_REPLACEMENT_CHOSEN"
+                for event in restored.state.event_log
+            ),
+            1,
+        )
+        self.assertEqual(
+            sum(
+                event.event_type == "MOVE_REPLACEMENT_CHOICE_REQUESTED"
+                for event in restored.state.event_log
+            ),
+            1,
+        )
+
     def test_snapshot_rejects_tampering(self):
         engine = GameEngine()
         engine.new_match({"A": test_deck("TA"), "B": test_deck("TB")}, seed=9)

@@ -1,6 +1,6 @@
 import unittest
 
-from card_duel_engine import GameEngine
+from card_duel_engine import GameEngine, RuleSet
 from card_duel_engine.domain.enums import CardKind, Phase, Zone
 from card_duel_engine.domain.models import CardDefinition
 from card_duel_engine.engine.commands import (
@@ -27,6 +27,53 @@ def advance_to(engine: GameEngine, phase: Phase) -> None:
 
 
 class CombatAndLegendaryTests(unittest.TestCase):
+    def _attacker_actions(
+        self, engine: GameEngine, attacker_definition_ids: tuple[str, ...]
+    ) -> tuple[tuple[str, ...], list[DeclareAttackers]]:
+        attacker_ids = tuple(
+            force_zone(engine, definition_id, "A", Zone.BATTLEFIELD)
+            for definition_id in attacker_definition_ids
+        )
+        advance_to(engine, Phase.COMBAT)
+        close_priority(engine)
+        declarations = [
+            action
+            for action in engine.legal_actions("A")
+            if isinstance(action, DeclareAttackers)
+        ]
+        return attacker_ids, declarations
+
+    def test_legal_actions_include_every_nonempty_attacker_subset(self):
+        engine = GameEngine()
+        engine.new_match({"A": test_deck("A"), "B": test_deck("B")}, seed=13)
+
+        (first, second), declarations = self._attacker_actions(
+            engine, ("A-001", "A-002")
+        )
+
+        self.assertEqual(
+            [declaration.attacker_ids for declaration in declarations],
+            [(first,), (second,), (first, second)],
+        )
+        self.assertTrue(
+            all(declaration.defending_player_id == "B" for declaration in declarations)
+        )
+
+    def test_attacker_enumeration_limit_is_stable_and_bounds_declarations(self):
+        engine = GameEngine(RuleSet(legal_action_enumeration_limit=2))
+        engine.new_match({"A": test_deck("A"), "B": test_deck("B")}, seed=14)
+
+        (first, second), declarations = self._attacker_actions(
+            engine, ("A-002", "A-001")
+        )
+
+        self.assertEqual(
+            [declaration.attacker_ids for declaration in declarations],
+            [(first,), (second,)],
+        )
+        engine.execute(DeclareAttackers("A", (first, second), "B"))
+        self.assertEqual(engine.state.combat.attackers, (first, second))
+
     def _engine_with_small_blocker(self, seed: int) -> tuple[GameEngine, str, str]:
         small_blocker = CardDefinition(
             card_id="SMALL-BLOCKER",

@@ -544,9 +544,23 @@ class GameEngine:
                     if self._is_ready_creature(card_id)
                 )
                 if ready:
-                    for defender in state.turn_order:
-                        if defender != player_id:
-                            actions.append(DeclareAttackers(player_id, ready, defender))
+                    defenders = tuple(
+                        defender
+                        for defender in state.turn_order
+                        if defender != player_id
+                    )
+                    actions.extend(
+                        DeclareAttackers(player_id, tuple(attackers), defender)
+                        for attackers, defender in islice(
+                            (
+                                (attackers, defender)
+                                for size in range(1, len(ready) + 1)
+                                for attackers in combinations(ready, size)
+                                for defender in defenders
+                            ),
+                            self.rules.legal_action_enumeration_limit,
+                        )
+                    )
                     for challenger_id in ready:
                         if self._is_lord_creature(challenger_id):
                             for defender_id in state.turn_order:

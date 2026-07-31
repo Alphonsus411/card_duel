@@ -8,9 +8,13 @@ import json
 from pathlib import Path
 
 from card_duel_engine import GameEngine
-from card_duel_engine.domain.enums import CardKind
+from card_duel_engine.domain.enums import CardKind, MatchStatus
 from card_duel_engine.domain.models import CardDefinition
-from card_duel_engine.simulation import PhaseProgressAgent, run_headless
+from card_duel_engine.simulation import (
+    PhaseProgressAgent,
+    SimulationStopReason,
+    run_headless,
+)
 
 SIMULATIONS = 300
 COMMANDS_PER_SIMULATION = 180
@@ -37,6 +41,14 @@ def verify() -> dict[str, int | str]:
             engine, {"A": PhaseProgressAgent(), "B": PhaseProgressAgent()},
             max_commands=COMMANDS_PER_SIMULATION,
         )
+        if (
+            report.stop_reason is not SimulationStopReason.COMMAND_LIMIT_REACHED
+            or report.status is not MatchStatus.RUNNING
+        ):
+            raise SystemExit(
+                f"Simulación {seed} terminó inesperadamente: "
+                f"motivo={report.stop_reason.name}, estado={report.status.name}"
+            )
         commands += report.commands_executed
         events += report.event_count
     if (commands, events) != (EXPECTED_COMMANDS, EXPECTED_EVENTS):

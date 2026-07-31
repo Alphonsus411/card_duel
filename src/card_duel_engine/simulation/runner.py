@@ -1,11 +1,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum, auto
 from typing import Mapping
 
 from ..controllers.base import DecisionRequest, PlayerController
 from ..domain.enums import MatchStatus
 from ..engine.game import GameEngine
+
+
+class SimulationStopReason(Enum):
+    """Motivo, propio del runner, por el que terminó una simulación."""
+
+    MATCH_ENDED = auto()
+    COMMAND_LIMIT_REACHED = auto()
 
 
 @dataclass(frozen=True)
@@ -15,6 +23,7 @@ class SimulationReport:
     status: MatchStatus
     winner_ids: tuple[str, ...]
     event_count: int
+    stop_reason: SimulationStopReason
 
 
 def run_headless(
@@ -24,6 +33,11 @@ def run_headless(
     max_commands: int = 1_000,
 ) -> SimulationReport:
     """Ejecuta decisiones sin interfaz y conserva el registro para depuración."""
+
+    if isinstance(max_commands, bool) or not isinstance(max_commands, int):
+        raise TypeError("max_commands debe ser un entero positivo")
+    if max_commands <= 0:
+        raise ValueError("max_commands debe ser un entero positivo")
 
     state = engine.state
     if state is None:
@@ -49,8 +63,11 @@ def run_headless(
         engine.execute(controller.choose_action(request))
         executed += 1
 
-    if state.status is MatchStatus.RUNNING:
-        state.status = MatchStatus.BLOCKED
+    stop_reason = (
+        SimulationStopReason.COMMAND_LIMIT_REACHED
+        if state.status is MatchStatus.RUNNING
+        else SimulationStopReason.MATCH_ENDED
+    )
 
     return SimulationReport(
         commands_executed=executed,
@@ -58,4 +75,5 @@ def run_headless(
         status=state.status,
         winner_ids=state.winner_ids,
         event_count=len(state.event_log),
+        stop_reason=stop_reason,
     )

@@ -2,6 +2,12 @@
 
 ## Sin publicar
 
+- Cerrada R-07.1 al trasladar a `CombatManager` la construcción determinista de
+  atacantes, Desafíos, bloqueadores y `ResolveCombat`, conservando el límite de
+  enumeración y la aceptación autoritativa de comandos válidos no enumerados.
+- Ampliada la paridad de combate para comparar acceso público y gestor directo
+  con dos y más jugadores, éxito, rechazo, excepción y huellas que incluyen
+  estado, eventos, historial y contadores; R-07.2 queda habilitada.
 - Cerrada R-06 al alinear la hoja de ruta con la frontera autenticada ya
   implementada y verificar por separado las capacidades de creación,
   observación, envío y administración sobre memoria y SQLite.

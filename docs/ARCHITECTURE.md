@@ -281,12 +281,12 @@ El inventario estático separa las responsabilidades actuales así:
 | Responsabilidad | Propietario actual y final |
 | --- | --- |
 | Despacho de `DeclareChallenge`, `DeclareAttackers`, `DeclareBlockers` y `ResolveCombat` | `GameEngine._execute_command`; sus cuatro adaptadores privados solo encaminan la llamada a `CombatManager`. |
-| Enumeración de acciones | Actualmente `GameEngine.legal_actions` y `GameEngine._blocker_declarations`; es la coordinación de combate que todavía debe trasladarse, sin cambiar su orden ni límite determinista. |
+| Enumeración de acciones | `CombatManager.legal_actions`: construye subconjuntos de atacantes, Desafíos, declaraciones de bloqueadores y la oferta de `ResolveCombat`; `GameEngine.legal_actions` integra y ordena el resultado público. |
 | Transacción | `GameEngine.execute` y `_execute_transaction`: crean snapshot cuando corresponde, restauran estado y contador de pila y administran el replay de sustituciones. |
 | Fases y prioridad general | `GameEngine` avanza y entra en fases; `CombatManager` solo actualiza la prioridad y las banderas exigidas por una declaración o resolución concreta. |
 | Invariantes y final de comando | `GameEngine._execute_command` comprueba límites de Heridas y ejecuta `validate_invariants` después de la operación delegada. |
 | Validación y mutación propias del combate | `CombatManager`: legalidad de participantes y criaturas, creación y actualización de `CombatState`, agotamiento, daño, Heridas, acciones basadas en estado y eventos de combate. |
-| Operaciones delegadas por combate | El `CombatContext` ofrece estado en ejecución, consultas de criatura/Fuerza, daño, Heridas, acciones basadas en estado y emisión; estas operaciones siguen coordinadas por `GameEngine` sobre el mismo estado. |
+| Operaciones delegadas por combate | El `CombatContext` ofrece estado en ejecución, el límite de enumeración, consultas de criatura/Fuerza, daño, Heridas, acciones basadas en estado y emisión; estas operaciones siguen coordinadas por `GameEngine` sobre el mismo estado. |
 
 El límite final mantiene a `GameEngine` como dueño del despacho, el
 snapshot/rollback, el avance de fases y las invariantes. `CombatManager` es dueño
@@ -301,6 +301,11 @@ de éxito, comando ilegal y excepción comparan el estado completo, `event_log`,
 después de una mutación y, con snapshot transaccional activo, demuestra rollback
 sin residuos; el comando ilegal demuestra que la validación tampoco produce una
 mutación parcial.
+
+La enumeración pública se compara también con el gestor directo en partidas de
+dos y más jugadores. El límite conserva el prefijo y orden históricos, mientras
+que `execute` continúa aceptando una declaración válida ausente de ese prefijo.
+Con esta frontera cerrada, R-07.2 (movimientos) queda inequívocamente habilitada.
 
 ## Construcción reproducible y validación (0.16.0)
 

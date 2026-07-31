@@ -84,5 +84,14 @@ La frontera autenticada es infraestructura y no modifica reglas observables.
 `AuthenticatedMatchApplication` deriva el jugador de (`iss`, `sub`), partida y
 capacidad; entrega DTO públicos y conserva la escritura CAS de `MatchService`.
 La batería compartida de memoria y SQLite verifica además que crear, observar,
-enviar y administrar son permisos independientes. R-06 queda completada; el
-siguiente incremento permitido es R-07.1, limitado a la extracción de combate.
+enviar y administrar son permisos independientes. R-06 queda completada.
+
+## Trazabilidad de R-07.1
+
+La extracción de combate no modifica reglas: `CombatManager` reproduce la
+enumeración determinista de atacantes, Desafíos y bloqueadores y la oferta de
+resolución, incluido su límite configurable. La validación de `execute` sigue
+siendo autoritativa aunque una acción no aparezca en el prefijo enumerado. La
+paridad cubre dos y más jugadores y huellas de estado, eventos, historial y
+contadores. R-07.1 queda completada y el siguiente incremento permitido es
+R-07.2, limitado a movimientos y sustituciones.

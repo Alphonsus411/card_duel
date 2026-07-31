@@ -111,12 +111,24 @@ class AuthenticatedApplicationR06Contract:
             ),
             (InvalidIdentity, ExternalIdentity("", "alice")),
             (InvalidIdentity, ExternalIdentity("https://issuer.example", "")),
+            (InvalidIdentity, ExternalIdentity("https://issuer.example", "alice", 1)),
+            (
+                InvalidIdentity,
+                ExternalIdentity("https://issuer.example", "alice", "true"),
+            ),
+            (InvalidIdentity, ExternalIdentity(None, "alice")),
+            (InvalidIdentity, ExternalIdentity("https://issuer.example", None)),
+            (InvalidIdentity, ExternalIdentity(123, "alice")),
+            (InvalidIdentity, ExternalIdentity("https://issuer.example", 123)),
         )
         for error, credential in credentials:
             with self.subTest(error=error.__name__, credential=credential):
-                self.assert_rejected_without_mutation(
-                    error, lambda c=credential: self.app.view(c, "one"), "one"
-                )
+                before = self.fingerprint("one")
+                with self.assertRaises(error) as caught:
+                    self.app.view(credential, "one")
+                self.assertEqual(self.fingerprint("one"), before)
+                self.assertEqual(caught.exception.args, (error.public_message,))
+                self.assertIsNone(caught.exception.__cause__)
 
     def test_identity_match_resolved_player_and_command_author_matrix(self):
         # La columna resolved_player documenta el jugador obtenido de la política;

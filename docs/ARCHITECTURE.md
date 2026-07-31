@@ -274,6 +274,34 @@ continúa siendo la única frontera con el replay de movimientos reemplazables.
 Por tanto, la extracción no modifica legalidad, eventos, historial, elecciones
 pendientes, rollback, identificadores ni ninguna otra regla observable.
 
+## Límite de combate (R-07.1)
+
+El inventario estático separa las responsabilidades actuales así:
+
+| Responsabilidad | Propietario actual y final |
+| --- | --- |
+| Despacho de `DeclareChallenge`, `DeclareAttackers`, `DeclareBlockers` y `ResolveCombat` | `GameEngine._execute_command`; sus cuatro adaptadores privados solo encaminan la llamada a `CombatManager`. |
+| Enumeración de acciones | Actualmente `GameEngine.legal_actions` y `GameEngine._blocker_declarations`; es la coordinación de combate que todavía debe trasladarse, sin cambiar su orden ni límite determinista. |
+| Transacción | `GameEngine.execute` y `_execute_transaction`: crean snapshot cuando corresponde, restauran estado y contador de pila y administran el replay de sustituciones. |
+| Fases y prioridad general | `GameEngine` avanza y entra en fases; `CombatManager` solo actualiza la prioridad y las banderas exigidas por una declaración o resolución concreta. |
+| Invariantes y final de comando | `GameEngine._execute_command` comprueba límites de Heridas y ejecuta `validate_invariants` después de la operación delegada. |
+| Validación y mutación propias del combate | `CombatManager`: legalidad de participantes y criaturas, creación y actualización de `CombatState`, agotamiento, daño, Heridas, acciones basadas en estado y eventos de combate. |
+| Operaciones delegadas por combate | El `CombatContext` ofrece estado en ejecución, consultas de criatura/Fuerza, daño, Heridas, acciones basadas en estado y emisión; estas operaciones siguen coordinadas por `GameEngine` sobre el mismo estado. |
+
+El límite final mantiene a `GameEngine` como dueño del despacho, el
+snapshot/rollback, el avance de fases y las invariantes. `CombatManager` es dueño
+de la validación y mutación específicas del combate. Ambos operan sobre el único
+`GameState`; el gestor no conserva estado espejo, historial, contadores ni una
+transacción propia.
+
+La paridad R-07.1 se evalúa entrando por `GameEngine.execute` tanto con el contexto
+normal como con un adaptador que implementa únicamente `CombatContext`. Los casos
+de éxito, comando ilegal y excepción comparan el estado completo, `event_log`,
+`command_history`, `_next_instance` y `_next_stack_item`. La excepción se inyecta
+después de una mutación y, con snapshot transaccional activo, demuestra rollback
+sin residuos; el comando ilegal demuestra que la validación tampoco produce una
+mutación parcial.
+
 ## Construcción reproducible y validación (0.16.0)
 
 El lockfile de `uv` es la fuente única para desarrollo y CI. El wheel se construye

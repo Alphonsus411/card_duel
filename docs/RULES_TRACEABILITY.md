@@ -77,3 +77,12 @@ manifiesto permanece en esquema v2 y conserva sus bytes canónicos y su SHA-256;
 el sobre separado añade autenticidad cuando una aplicación exige una firma de
 una clave confiable. Los formatos persistentes de partidas continúan en v2 y no
 se añade ninguna migración. R-04 queda completada sin resolver deuda normativa.
+
+## Trazabilidad de R-06
+
+La frontera autenticada es infraestructura y no modifica reglas observables.
+`AuthenticatedMatchApplication` deriva el jugador de (`iss`, `sub`), partida y
+capacidad; entrega DTO públicos y conserva la escritura CAS de `MatchService`.
+La batería compartida de memoria y SQLite verifica además que crear, observar,
+enviar y administrar son permisos independientes. R-06 queda completada; el
+siguiente incremento permitido es R-07.1, limitado a la extracción de combate.

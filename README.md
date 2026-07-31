@@ -96,9 +96,9 @@ incluir ninguna carta, personaje ni colección antigua.
   salir de un bloque `with`, el almacén rechaza cualquier operación posterior.
 - Bloqueo explícito de finales multijugador no definidos, sin inferir ganadores
   ante una concesión o al alcanzar el límite de Heridas.
-- Hoja de ruta con R-04 (política de confianza para colecciones) completada;
-  R-06 y R-07 continúan pendientes técnicos, mientras que R-02, R-03 y R-05
-  permanecen bloqueadas.
+- Hoja de ruta con R-04 (confianza de colecciones) y R-06 (frontera autenticada)
+  completadas; R-07.1 continúa con la extracción aislada de combate, mientras
+  que R-02, R-03 y R-05 permanecen bloqueadas.
 
 Las únicas cartas utilizadas están en `tests/fixtures.py` y sirven para probar
 el motor. El catálogo de producción comienza vacío.

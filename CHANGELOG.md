@@ -2,6 +2,11 @@
 
 ## Sin publicar
 
+- Cerrada R-06 al alinear la hoja de ruta con la frontera autenticada ya
+  implementada y verificar por separado las capacidades de creación,
+  observación, envío y administración sobre memoria y SQLite.
+- Dividida la continuación de R-07 en extracciones consecutivas de combate y
+  movimientos, sin promover deuda normativa ni mezclar cambios de reglas.
 - Extraída únicamente la coordinación de creación y lotes de disparos a
   `StackManager`, ampliando `StackContext` con operaciones tipadas explícitas.
 - Añadidos dobles mínimos, testigo estructural y paridad de éxito, acción ilegal,

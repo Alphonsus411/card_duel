@@ -34,6 +34,18 @@ La fuente normativa continúa siendo `Fantasy Tokens.pdf`, interpretada mediante
 - **Garantía:** la autenticación de un lote completo se resuelve antes de
   modificar catálogo o procedencia, sin cargar módulos ni ejecutar contenido.
 
+### R-06 — Frontera autenticada de aplicación
+
+- **Entrega incremental:** creada una capa de aplicación agnóstica del
+  transporte, con identidad externa estable, asociaciones por partida y
+  capacidades independientes para crear, observar, enviar y administrar.
+- **Garantía:** el jugador se deriva de la identidad autenticada; las respuestas
+  usan DTO públicos, todas las escrituras de comandos conservan CAS y los errores
+  públicos no exponen el motor, instantáneas ni información privada.
+- **Comprobación:** la misma batería de contrato cubre memoria y SQLite,
+  incluidas atribución falsa, cruces entre partidas, capacidades independientes,
+  conflictos concurrentes y ausencia de mutación ante rechazos.
+
 ## Pendientes normativos bloqueados
 
 ### R-02 — Revisar el reparto de daño entre bloqueadores
@@ -55,30 +67,13 @@ La fuente normativa continúa siendo `Fantasy Tokens.pdf`, interpretada mediante
 
 ## Pendientes técnicos
 
-### R-06 — Frontera de red del servicio
-
-- **Decisiones aprobadas:** HTTPS/JSON REST versionado, OAuth 2.0 Bearer con JWT
-  validado según OpenID Connect, identidad estable (`iss`, `sub`) y asociación
-  externa por partida, jugador y capacidad. El detalle normativo está en
-  `ARCHITECTURE.md`; estas son decisiones de infraestructura, no reglas del juego.
-- **Criterios de salida:**
-  1. existe una capa de aplicación fuera de `GameEngine`, los modelos de dominio
-     y `MatchService`, sin red, tokens ni sesiones en esos componentes;
-  2. ninguna operación de observación o comando permite al cliente escoger el
-     `player_id`: se deriva de identidad autenticada, partida y capacidad;
-  3. creación, observación, comandos y administración se autorizan por separado;
-  4. toda escritura exige `expected_version` y mantiene la semántica CAS idéntica
-     en memoria y SQLite;
-  5. los rechazos públicos de partida ausente, versión obsoleta y acción ilegal
-     no filtran instantáneas, observaciones privadas ni detalles internos;
-  6. pruebas del adaptador cubren identidad ausente o inválida, cruces de jugador
-     y partida, atribución falsa, versión obsoleta y ausencia de mutación, y se
-     conservan las pruebas directas de `MatchService` y la paridad de almacenes.
-- **Fuera de alcance:** estas decisiones no alteran prioridad, legalidad de
-  comandos, información visible, fases, victoria ni ninguna otra regla del juego.
-
 ### R-07 — Continuar separando el coordinador
 
-- Extraer en entregas posteriores otras responsabilidades restantes de combate
-  o movimientos, siempre como un único grupo y sin duplicar `GameState`.
-- Exigir paridad observable, tipado estricto y pruebas de atomicidad en cada paso.
+- **R-07.1 — Combate (siguiente):** inventariar y extraer solo declaración de
+  Desafío, atacantes, bloqueadores y resolución de combate; conservar transacción,
+  fases e invariantes en `GameEngine` y el único `GameState` compartido.
+- **R-07.2 — Movimientos (posterior):** extraer robo, orden de sustituciones y
+  movimiento únicamente después de cerrar R-07.1, sin alterar el replay de
+  elecciones diferidas.
+- **Criterio común:** paridad observable, tipado estricto, identificadores
+  deterministas y pruebas de atomicidad para cada entrega por separado.

@@ -26,6 +26,7 @@ from card_duel_engine import (
     SQLiteMatchStore,
     WriteConflict,
 )
+from card_duel_engine.application import Capability
 from card_duel_engine.domain.enums import Zone
 from card_duel_engine.domain.models import GameState
 from card_duel_engine.engine.commands import Concede, PassPriority
@@ -173,6 +174,65 @@ class AuthenticatedApplicationR06Contract:
         self.assertEqual(
             self.app.view(self.identities["alice"], "one").observation.player_id,
             "A",
+        )
+
+    def test_capabilities_are_independent_and_denials_do_not_mutate(self):
+        alice = self.identities["alice"]
+        before = self.fingerprint("one")
+
+        # La asociación inicial concede observar y enviar, pero no las
+        # capacidades global y administrativa, que son independientes.
+        with self.assertRaises(AccessDenied):
+            self.app.create_match(
+                alice,
+                "three",
+                {"A": test_deck("three-A"), "B": test_deck("three-B")},
+            )
+        with self.assertRaises(AccessDenied):
+            self.app.administrative_version(alice, "one")
+        self.assertEqual(self.fingerprint("one"), before)
+
+        self.authorization.grant_match(alice, "one", Capability.ADMINISTER)
+        self.assertEqual(self.app.administrative_version(alice, "one"), before[0])
+        # Administrar no concede observación en otra partida.
+        self.authorization.grant_match(alice, "two", Capability.ADMINISTER)
+        with self.assertRaises(AccessDenied):
+            self.app.view(alice, "two")
+
+        self.authorization.grant_global(alice, Capability.CREATE_MATCH)
+        self.assertEqual(
+            self.app.create_match(
+                alice,
+                "three",
+                {"A": test_deck("three-A"), "B": test_deck("three-B")},
+            ),
+            1,
+        )
+
+    def test_observe_and_submit_bindings_are_independent(self):
+        observer = ExternalIdentity("https://issuer.example", "observer")
+        sender = ExternalIdentity("https://issuer.example", "sender")
+        self.authorization.bind_player(
+            observer, "one", "A", capabilities=(Capability.OBSERVE,)
+        )
+        self.authorization.bind_player(
+            sender, "one", "A", capabilities=(Capability.SUBMIT_COMMAND,)
+        )
+        self.assertEqual(self.app.view(observer, "one").observation.player_id, "A")
+        with self.assertRaises(AccessDenied):
+            self.app.submit(
+                observer,
+                "one",
+                self.service.view("one", "A").legal_actions[0],
+                expected_version=1,
+            )
+        with self.assertRaises(AccessDenied):
+            self.app.view(sender, "one")
+
+        command = self.service.view("one", "A").legal_actions[0]
+        self.assertEqual(
+            self.app.submit(sender, "one", command, expected_version=1).version,
+            2,
         )
 
     def test_unauthorized_existing_and_missing_match_are_indistinguishable(self):

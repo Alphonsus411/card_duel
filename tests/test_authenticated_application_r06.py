@@ -1,13 +1,21 @@
+"""Pruebas de contrato del adaptador de aplicación autenticado de R-06.
+
+Estas pruebas viven deliberadamente fuera de ``test_service_v0110.py``: la
+autorización es responsabilidad de la frontera de aplicación, no del motor ni
+del servicio interno.
+"""
+
+import inspect
 import json
 import tempfile
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from card_duel_engine import (
     AccessDenied,
     AuthenticatedMatchApplication,
     AuthenticationRequired,
-    Capability,
     CommandRejected,
     ExternalIdentity,
     InMemoryIdentityAuthorization,
@@ -20,104 +28,239 @@ from card_duel_engine import (
 )
 from card_duel_engine.domain.enums import Zone
 from card_duel_engine.domain.models import GameState
+from card_duel_engine.engine.commands import Concede, PassPriority
 from card_duel_engine.engine.game import GameEngine
-from card_duel_engine.engine.commands import PassPriority
 from card_duel_engine.persistence.snapshot import state_digest
 from fixtures import test_deck
 
 
-class AuthenticatedApplicationR06Tests(unittest.TestCase):
-    def setUp(self):
-        self.store = InMemoryMatchStore()
-        self.service = MatchService(self.store)
-        self.auth = InMemoryIdentityAuthorization()
-        self.app = AuthenticatedMatchApplication(self.service, self.auth)
-        self.creator = ExternalIdentity("https://issuer.example", "operator")
-        self.alice = ExternalIdentity("https://issuer.example", "alice")
-        self.bob = ExternalIdentity("https://issuer.example", "bob")
-        self.auth.grant_global(self.creator, Capability.CREATE_MATCH)
-        self.service.create_match(
-            "one", {"A": test_deck("A"), "B": test_deck("B")}, seed=8
-        )
-        self.service.create_match(
-            "two", {"A": test_deck("A2"), "B": test_deck("B2")}, seed=9
-        )
-        self.auth.bind_player(self.alice, "one", "A")
-        self.auth.bind_player(self.bob, "one", "B")
+class AuthenticatedApplicationR06Contract:
+    """Batería común ejecutada sin cambios sobre ambos almacenes CAS."""
 
-    def fingerprint(self, match_id="one"):
+    store_kind = ""
+
+    def setUp(self):
+        self.temporary_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary_directory.cleanup)
+        if self.store_kind == "memory":
+            self.store = InMemoryMatchStore()
+        elif self.store_kind == "sqlite":
+            path = Path(self.temporary_directory.name) / "r06.db"
+            self.store = SQLiteMatchStore(path)
+            self.addCleanup(self.store.close)
+        else:  # pragma: no cover - protege nuevas subclases mal configuradas
+            raise AssertionError("La batería R-06 necesita un almacén")
+
+        self.service = MatchService(self.store)
+        self.authorization = InMemoryIdentityAuthorization()
+        self.app = AuthenticatedMatchApplication(self.service, self.authorization)
+        self.identities = {
+            "alice": ExternalIdentity("https://issuer.example", "alice"),
+            "bob": ExternalIdentity("https://issuer.example", "bob"),
+            "carol": ExternalIdentity("https://issuer.example", "carol"),
+            "dave": ExternalIdentity("https://issuer.example", "dave"),
+        }
+        # Fixture mínima exigida: dos partidas y dos participantes distintos en
+        # cada una. Las asociaciones tampoco se comparten entre partidas.
+        for index, match_id in enumerate(("one", "two"), start=1):
+            self.service.create_match(
+                match_id,
+                {
+                    "A": test_deck(f"{match_id}-A"),
+                    "B": test_deck(f"{match_id}-B"),
+                },
+                seed=index,
+            )
+        for identity, match_id, player_id in (
+            ("alice", "one", "A"),
+            ("bob", "one", "B"),
+            ("carol", "two", "A"),
+            ("dave", "two", "B"),
+        ):
+            self.authorization.bind_player(
+                self.identities[identity], match_id, player_id
+            )
+
+    def fingerprint(self, match_id):
         stored = self.service.get_match(match_id)
         return stored.version, state_digest(stored.engine)
 
-    def assert_rejected_without_mutation(self, error, operation, match_id="one"):
+    def assert_rejected_without_mutation(self, error, operation, match_id):
         before = self.fingerprint(match_id)
         with self.assertRaises(error):
             operation()
         self.assertEqual(self.fingerprint(match_id), before)
 
-    def test_missing_identity_is_rejected_without_mutation(self):
-        self.assert_rejected_without_mutation(
-            AuthenticationRequired, lambda: self.app.view(None, "one")
-        )
+    def test_fixture_contains_two_matches_and_two_players_per_match(self):
+        for match_id in ("one", "two"):
+            stored = self.service.get_match(match_id)
+            self.assertEqual(set(stored.engine.state.players), {"A", "B"})
+            self.assertEqual(stored.version, 1)
 
-    def test_invalid_identity_is_rejected_without_mutation(self):
-        invalid = ExternalIdentity("https://issuer.example", "alice", authenticated=False)
-        self.assert_rejected_without_mutation(
-            InvalidIdentity, lambda: self.app.view(invalid, "one")
-        )
-
-    def test_cross_player_observation_is_not_selectable(self):
-        view = self.app.view(self.alice, "one")
-        self.assertEqual(view.observation.player_id, "A")
-        self.assertNotIn("player_id", AuthenticatedMatchApplication.view.__annotations__)
-
-    def test_access_to_another_match_is_rejected_without_mutation(self):
-        self.assert_rejected_without_mutation(
-            AccessDenied, lambda: self.app.view(self.alice, "two"), "two"
-        )
-
-    def test_command_attributed_to_another_player_is_rejected_without_mutation(self):
-        self.assert_rejected_without_mutation(
-            AccessDenied,
-            lambda: self.app.submit(
-                self.alice, "one", PassPriority("B"), expected_version=1
+    def test_missing_revoked_and_invalid_credentials_do_not_mutate(self):
+        credentials = (
+            (AuthenticationRequired, None),
+            # Un token revocado/expirado no supera el autenticador del adaptador
+            # y, por tanto, nunca constituye una identidad autenticada.
+            (
+                InvalidIdentity,
+                ExternalIdentity(
+                    "https://issuer.example", "revoked", authenticated=False
+                ),
             ),
+            (InvalidIdentity, ExternalIdentity("", "alice")),
+            (InvalidIdentity, ExternalIdentity("https://issuer.example", "")),
+        )
+        for error, credential in credentials:
+            with self.subTest(error=error.__name__, credential=credential):
+                self.assert_rejected_without_mutation(
+                    error, lambda c=credential: self.app.view(c, "one"), "one"
+                )
+
+    def test_identity_match_resolved_player_and_command_author_matrix(self):
+        # La columna resolved_player documenta el jugador obtenido de la política;
+        # no es un parámetro seleccionable de la API pública.
+        matrix = (
+            ("alice", "one", "A", "A", True),
+            ("alice", "one", "A", "B", False),
+            ("bob", "one", "B", "A", False),
+            ("bob", "one", "B", "B", True),
+            ("carol", "two", "A", "A", True),
+            ("carol", "two", "A", "B", False),
+            ("dave", "two", "B", "A", False),
+            ("dave", "two", "B", "B", True),
+            ("alice", "two", None, "A", False),
+            ("alice", "two", None, "B", False),
+            ("carol", "one", None, "A", False),
+            ("carol", "one", None, "B", False),
+        )
+        for identity_name, match_id, resolved_player, author, allowed in matrix:
+            with self.subTest(
+                identity=identity_name,
+                match=match_id,
+                resolved_player=resolved_player,
+                author=author,
+            ):
+                identity = self.identities[identity_name]
+                before = self.fingerprint(match_id)
+                command = (
+                    self.service.view(match_id, author).legal_actions[0]
+                    if allowed
+                    else Concede(author)
+                )
+                operation = lambda: self.app.submit(
+                    identity,
+                    match_id,
+                    command,
+                    expected_version=before[0],
+                )
+                if allowed:
+                    response = operation()
+                    self.assertEqual(response.observation.player_id, resolved_player)
+                    self.assertEqual(response.version, before[0] + 1)
+                else:
+                    self.assert_rejected_without_mutation(
+                        AccessDenied, operation, match_id
+                    )
+
+    def test_player_cannot_be_selected_on_view_or_submit(self):
+        self.assertNotIn(
+            "player_id", inspect.signature(AuthenticatedMatchApplication.view).parameters
+        )
+        self.assertNotIn(
+            "player_id", inspect.signature(AuthenticatedMatchApplication.submit).parameters
+        )
+        self.assertEqual(
+            self.app.view(self.identities["alice"], "one").observation.player_id,
+            "A",
         )
 
-    def test_stale_version_is_translated_without_mutation(self):
-        view = self.app.view(self.alice, "one")
-        command = self.service.view("one", "A").legal_actions[0]
-        self.app.submit(
-            self.alice, "one", command, expected_version=view.version
+    def test_unauthorized_existing_and_missing_match_are_indistinguishable(self):
+        identity = self.identities["alice"]
+        before = {match_id: self.fingerprint(match_id) for match_id in ("one", "two")}
+        errors = []
+        for match_id in ("two", "does-not-exist"):
+            with self.subTest(match_id=match_id):
+                with self.assertRaises(AccessDenied) as caught:
+                    self.app.view(identity, match_id)
+                errors.append((caught.exception.code, caught.exception.args))
+        self.assertEqual(errors[0], errors[1])
+        self.assertEqual(
+            errors[0],
+            ("access_denied", ("La identidad no está autorizada para esta operación",)),
         )
+        self.assertEqual(
+            {match_id: self.fingerprint(match_id) for match_id in ("one", "two")},
+            before,
+        )
+
+    def test_authorized_missing_match_uses_safe_not_found_error(self):
+        identity = self.identities["alice"]
+        self.authorization.bind_player(identity, "missing", "A")
+        with self.assertRaises(ResourceNotFound) as caught:
+            self.app.view(identity, "missing")
+        self.assertEqual(caught.exception.args, ("El recurso solicitado no existe",))
+
+    def test_illegal_command_and_stale_version_preserve_version_and_digest(self):
+        alice = self.identities["alice"]
+        bob = self.identities["bob"]
+        self.assert_rejected_without_mutation(
+            CommandRejected,
+            lambda: self.app.submit(
+                bob, "one", PassPriority("B"), expected_version=1
+            ),
+            "one",
+        )
+        command = self.service.view("one", "A").legal_actions[0]
+        self.app.submit(alice, "one", command, expected_version=1)
         self.assert_rejected_without_mutation(
             WriteConflict,
-            lambda: self.app.submit(
-                self.alice, "one", command, expected_version=view.version
-            ),
+            lambda: self.app.submit(alice, "one", command, expected_version=1),
+            "one",
         )
 
-    def test_public_dto_serialization_recursively_excludes_internal_state(self):
-        response = self.app.view(self.alice, "one")
+    def test_two_authorized_requests_with_same_version_have_one_cas_winner(self):
+        alice = self.identities["alice"]
+        command = self.service.view("one", "A").legal_actions[0]
+
+        def submit():
+            try:
+                self.app.submit(alice, "one", command, expected_version=1)
+                return "winner"
+            except WriteConflict:
+                return "conflict"
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            outcomes = list(pool.map(lambda _: submit(), range(2)))
+        self.assertCountEqual(outcomes, ("winner", "conflict"))
+        self.assertEqual(self.service.get_match("one").version, 2)
+
+    def test_public_dto_excludes_internal_and_opponent_private_state(self):
+        response = self.app.view(self.identities["alice"], "one")
         payload = response.to_dict()
         encoded = json.dumps(payload)
-
         forbidden_keys = {
-            "engine", "state", "snapshot", "deck", "opponent_hand",
-            "chosen_card_ids", "discard_card_ids", "sacrifice_card_ids",
+            "engine",
+            "state",
+            "snapshot",
+            "deck",
+            "opponent_hand",
+            "chosen_card_ids",
+            "discard_card_ids",
+            "sacrifice_card_ids",
         }
 
-        def inspect(value):
+        def inspect_value(value):
             self.assertNotIsInstance(value, (GameEngine, GameState))
             if isinstance(value, dict):
                 self.assertTrue(forbidden_keys.isdisjoint(value))
                 for nested in value.values():
-                    inspect(nested)
+                    inspect_value(nested)
             elif isinstance(value, (list, tuple)):
                 for nested in value:
-                    inspect(nested)
+                    inspect_value(nested)
 
-        inspect(payload)
+        inspect_value(payload)
         stored = self.service.get_match("one")
         opponent_hidden = {
             *stored.engine.state.players["B"].zones[Zone.HAND],
@@ -126,78 +269,17 @@ class AuthenticatedApplicationR06Tests(unittest.TestCase):
         self.assertTrue(opponent_hidden)
         self.assertTrue(all(card_id not in encoded for card_id in opponent_hidden))
 
-    def test_each_identity_receives_only_its_own_private_observation(self):
-        alice_view = self.app.view(self.alice, "one")
-        bob_view = self.app.view(self.bob, "one")
-        stored = self.service.get_match("one")
-        alice_hand = tuple(stored.engine.state.players["A"].zones[Zone.HAND])
-        bob_hand = tuple(stored.engine.state.players["B"].zones[Zone.HAND])
 
-        self.assertEqual(alice_view.observation.own_hand, alice_hand)
-        self.assertEqual(bob_view.observation.own_hand, bob_hand)
-        self.assertTrue(set(alice_hand).isdisjoint(bob_view.observation.own_hand))
-        self.assertTrue(set(bob_hand).isdisjoint(alice_view.observation.own_hand))
-        self.assertEqual(alice_view.observation.opponent_hand_sizes, {"B": len(bob_hand)})
-        self.assertEqual(bob_view.observation.opponent_hand_sizes, {"A": len(alice_hand)})
-
-    def test_illegal_action_is_safe_and_does_not_mutate(self):
-        self.assert_rejected_without_mutation(
-            CommandRejected,
-            lambda: self.app.submit(
-                self.bob, "one", PassPriority("B"), expected_version=1
-            ),
-        )
-
-    def test_not_found_is_translated_without_internal_identifier(self):
-        self.auth.bind_player(self.alice, "missing", "A")
-        with self.assertRaises(ResourceNotFound) as caught:
-            self.app.view(self.alice, "missing")
-        self.assertEqual(caught.exception.args, ("El recurso solicitado no existe",))
-
-    def test_creation_observation_submission_and_admin_are_separate(self):
-        decks = {"A": test_deck("C"), "B": test_deck("D")}
-        self.assert_rejected_without_mutation(
-            AccessDenied, lambda: self.app.create_match(self.alice, "new", decks)
-        )
-        self.assertEqual(self.app.create_match(self.creator, "new", decks), 1)
-        with self.assertRaises(AccessDenied):
-            self.app.administrative_version(self.creator, "new")
-        self.auth.grant_match(self.creator, "new", Capability.ADMINISTER)
-        self.assertEqual(self.app.administrative_version(self.creator, "new"), 1)
-        with self.assertRaises(AccessDenied):
-            self.app.view(self.creator, "new")
+class InMemoryAuthenticatedApplicationR06Tests(
+    AuthenticatedApplicationR06Contract, unittest.TestCase
+):
+    store_kind = "memory"
 
 
-class MatchStoreParityR06Tests(unittest.TestCase):
-    def test_memory_and_sqlite_preserve_identical_cas_rejections(self):
-        with tempfile.TemporaryDirectory() as directory:
-            stores = (
-                InMemoryMatchStore(),
-                SQLiteMatchStore(Path(directory) / "parity.db"),
-            )
-            outcomes = []
-            for index, store in enumerate(stores):
-                service = MatchService(store)
-                match_id = f"parity-{index}"
-                service.create_match(
-                    match_id, {"A": test_deck("PA"), "B": test_deck("PB")}, seed=12
-                )
-                initial = service.get_match(match_id)
-                view = service.view(match_id, "A")
-                updated = service.submit(
-                    match_id, view.legal_actions[0], expected_version=view.version
-                )
-                digest = state_digest(service.get_match(match_id).engine)
-                with self.assertRaises(WriteConflict):
-                    app = AuthenticatedMatchApplication(service, InMemoryIdentityAuthorization())
-                    identity = ExternalIdentity("issuer", "subject")
-                    app._authorization.bind_player(identity, match_id, "A")
-                    app.submit(identity, match_id, view.legal_actions[0], expected_version=1)
-                final = service.get_match(match_id)
-                outcomes.append((initial.version, updated.version, final.version, digest == state_digest(final.engine)))
-                if isinstance(store, SQLiteMatchStore):
-                    store.close()
-            self.assertEqual(outcomes, [(1, 2, 2, True), (1, 2, 2, True)])
+class SQLiteAuthenticatedApplicationR06Tests(
+    AuthenticatedApplicationR06Contract, unittest.TestCase
+):
+    store_kind = "sqlite"
 
 
 if __name__ == "__main__":

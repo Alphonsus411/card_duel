@@ -257,7 +257,16 @@ class AuthenticatedMatchApplication:
     def _identity(identity: ExternalIdentity | None) -> ExternalIdentity:
         if identity is None:
             raise AuthenticationRequired
-        if not identity.authenticated or not identity.issuer.strip() or not identity.subject.strip():
+        if not isinstance(identity, ExternalIdentity):
+            raise InvalidIdentity
+        if (
+            type(identity.authenticated) is not bool
+            or identity.authenticated is not True
+            or type(identity.issuer) is not str
+            or type(identity.subject) is not str
+            or not identity.issuer.strip()
+            or not identity.subject.strip()
+        ):
             raise InvalidIdentity
         return identity
 

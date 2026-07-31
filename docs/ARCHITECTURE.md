@@ -377,3 +377,21 @@ resolutores o código: las claves y toda decisión de confianza proceden de obje
 creados por la aplicación. El registro termina la validación de firmas,
 dependencias y colisiones de todo el lote antes de tocar el catálogo o la
 procedencia.
+
+## Límite de zonas (R-07.2)
+
+`ZoneManager` contiene la única implementación autoritativa de `_draw`,
+`_set_replacement_order`, `_ordered_replacements` y `_move_card`. Los métodos de
+igual nombre en `GameEngine` son adaptadores de despacho. El gestor opera sobre
+el `GameState` compartido y su `ZoneContext` se limita a reglas, consultas de
+estado y carta, Fuerza, consumo tipado de una elección reproducida y emisión de
+eventos; no recibe despacho ni servicios transaccionales.
+
+`GameEngine` conserva snapshot y rollback, historial de comandos, creación y
+resolución de `PendingMoveReplacement`, replay, invariantes y contadores. La
+paridad R-07.2 cubre robo, agotamiento y reciclaje determinista del mazo, todas
+las zonas almacenables, Equipo, limpieza de instancia y las tres políticas de
+sustitución. Las huellas incluyen estado completo, eventos, historial, semilla,
+curso del replay, pendiente y contadores. Rechazos y fallos previos a almacenar
+una carta no dejan mutación parcial. Esta separación no interpreta ni modifica
+ninguna regla normativa.

@@ -2,6 +2,13 @@
 
 ## Sin publicar
 
+- Cerrada R-07.2 con una única implementación de robo, movimientos y
+  sustituciones en `ZoneManager`; `GameEngine` conserva solo adaptadores y los
+  servicios transaccionales del coordinador.
+- Añadida paridad exhaustiva de zonas con contexto mínimo independiente, curso
+  reproducible, elecciones y contadores, además de atomicidad ante rechazo y
+  excepción; no se modifican reglas ni ambigüedades normativas.
+
 - Cerrada R-07.1 al trasladar a `CombatManager` la construcción determinista de
   atacantes, Desafíos, bloqueadores y `ResolveCombat`, conservando el límite de
   enumeración y la aceptación autoritativa de comandos válidos no enumerados.

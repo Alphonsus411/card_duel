@@ -7,7 +7,13 @@ from card_duel_engine.domain.enums import CardKind, Phase, Zone
 from card_duel_engine.domain.errors import IllegalAction
 from card_duel_engine.domain.models import CardDefinition, GameState, MoveReplacementDefinition
 from card_duel_engine.engine.combat import CombatManager
-from card_duel_engine.engine.commands import DeclareAttackers
+from card_duel_engine.engine.commands import (
+    DeclareAttackers,
+    DeclareBlockers,
+    DeclareChallenge,
+    ResolveCombat,
+)
+from card_duel_engine.rules.config import RuleSet
 
 from fixtures import test_deck
 
@@ -30,6 +36,10 @@ class MinimalCombatContext:
 
     def _is_creature(self, card_id: str) -> bool:
         return self.engine._is_creature(card_id)
+
+    @property
+    def _combat_action_enumeration_limit(self) -> int:
+        return self.engine.rules.legal_action_enumeration_limit
 
     def _current_strength(self, card_id: str) -> int:
         return self.engine._current_strength(card_id)
@@ -60,6 +70,13 @@ class MinimalCombatContext:
 
 
 class CombatParityR071Tests(unittest.TestCase):
+    _COMBAT_COMMANDS = (
+        DeclareAttackers,
+        DeclareBlockers,
+        DeclareChallenge,
+        ResolveCombat,
+    )
+
     def _prepared_engine(self) -> tuple[GameEngine, str]:
         engine = GameEngine()
         engine.new_match({"A": test_deck("A"), "B": test_deck("B")}, seed=71)
@@ -167,6 +184,74 @@ class CombatParityR071Tests(unittest.TestCase):
 
         self.assertEqual(self._fingerprint(regular), regular_before)
         self.assertEqual(self._fingerprint(minimal), minimal_before)
+
+    def test_public_enumeration_matches_direct_manager_for_two_players(self) -> None:
+        engine, _ = self._prepared_engine()
+        before = self._fingerprint(engine)
+
+        public = tuple(
+            action
+            for action in engine.legal_actions("A")
+            if isinstance(action, self._COMBAT_COMMANDS)
+        )
+        direct = engine._combat.legal_actions("A")
+
+        self.assertEqual(public, direct)
+        self.assertEqual(self._fingerprint(engine), before)
+
+    def test_public_enumeration_matches_direct_manager_for_multiple_players(self) -> None:
+        engine = GameEngine()
+        engine.new_match(
+            {player: test_deck(player) for player in ("A", "B", "C")}, seed=72
+        )
+        state = engine._require_state()
+        for player_id in state.turn_order:
+            card_id = state.players[player_id].zones[Zone.HAND][0]
+            engine._move_card(card_id, Zone.BATTLEFIELD, player_id)
+        state.phase = Phase.COMBAT
+        state.phase_priority_complete = True
+        before = self._fingerprint(engine)
+
+        public = tuple(
+            action
+            for action in engine.legal_actions(state.active_player_id)
+            if isinstance(action, self._COMBAT_COMMANDS)
+        )
+        direct = engine._combat.legal_actions(state.active_player_id)
+
+        self.assertEqual(public, direct)
+        self.assertEqual(
+            [action.defending_player_id for action in direct if isinstance(action, DeclareAttackers)],
+            [player for player in state.turn_order if player != state.active_player_id],
+        )
+        self.assertEqual(self._fingerprint(engine), before)
+
+    def test_limit_preserves_order_and_does_not_restrict_authoritative_command(self) -> None:
+        engine = GameEngine(RuleSet(legal_action_enumeration_limit=1))
+        engine.new_match({"A": test_deck("A"), "B": test_deck("B")}, seed=73)
+        state = engine._require_state()
+        attackers = tuple(state.players["A"].zones[Zone.HAND][:2])
+        for card_id in attackers:
+            engine._move_card(card_id, Zone.BATTLEFIELD, "A")
+        state.phase = Phase.COMBAT
+        state.phase_priority_complete = True
+
+        direct = engine._combat.legal_actions("A")
+        public = tuple(
+            action
+            for action in engine.legal_actions("A")
+            if isinstance(action, self._COMBAT_COMMANDS)
+        )
+        self.assertEqual(public, direct)
+        declarations = tuple(
+            action for action in direct if isinstance(action, DeclareAttackers)
+        )
+        self.assertEqual(len(declarations), 1)
+
+        explicit = DeclareAttackers("A", attackers, "B")
+        self.assertNotIn(explicit, declarations)
+        engine.execute(explicit)
+        self.assertEqual(state.combat.attackers, attackers)
 
 
 if __name__ == "__main__":

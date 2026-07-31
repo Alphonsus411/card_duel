@@ -27,13 +27,11 @@ La fuente normativa continúa siendo `Fantasy Tokens.pdf`, interpretada mediante
   explícitamente `GameState`, registro de eventos, historial de comandos y los
   contadores deterministas de instancias y pila; los rechazos y las excepciones
   transaccionales no dejan mutación parcial.
-- **Coordinación de combate aún pendiente de traslado:** la construcción de
-  acciones de combate continúa en `GameEngine.legal_actions`, incluida la
-  enumeración de subconjuntos de atacantes y Desafíos, la oferta de resolución y
-  `_blocker_declarations`. Su traslado deberá conservar orden, límite de
-  enumeración y aceptación autoritativa de comandos no enumerados. El despacho,
-  snapshot/rollback, avance de fases y comprobación de invariantes no se
-  trasladarán porque pertenecen al límite final de `GameEngine`.
+- **Coordinación cerrada:** `CombatManager` construye además los subconjuntos de
+  atacantes, Desafíos, bloqueadores y `ResolveCombat`, con el mismo orden y límite
+  deterministas. La enumeración limitada no restringe la validación autoritativa
+  de comandos explícitos. Despacho, snapshot/rollback, avance de fases e
+  invariantes permanecen en `GameEngine`.
 
 ### R-01 — Proteger las condiciones terminales multijugador
 
@@ -88,8 +86,7 @@ La fuente normativa continúa siendo `Fantasy Tokens.pdf`, interpretada mediante
 
 ### R-07 — Continuar separando el coordinador
 
-- **R-07.2 — Movimientos (siguiente):** extraer robo, orden de sustituciones y
-  movimiento únicamente después de cerrar R-07.1, sin alterar el replay de
-  elecciones diferidas.
+- **R-07.2 — Movimientos (habilitada como siguiente):** extraer robo, orden de
+  sustituciones y movimiento, sin alterar el replay de elecciones diferidas.
 - **Criterio común:** paridad observable, tipado estricto, identificadores
   deterministas y pruebas de atomicidad para cada entrega por separado.

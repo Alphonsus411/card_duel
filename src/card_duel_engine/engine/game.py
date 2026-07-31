@@ -102,6 +102,11 @@ class GameEngine:
         self._zones = ZoneManager(self)
         self._effects = EffectManager(self)
 
+    @property
+    def _combat_action_enumeration_limit(self) -> int:
+        """Expone al gestor de combate únicamente su límite de enumeración."""
+        return self.rules.legal_action_enumeration_limit
+
     def _consume_replacement_replay_choice(self) -> int | None:
         """Consume una elección grabada sin exponer el cursor al gestor de zonas."""
         if self._replacement_replay_cursor >= len(self._replacement_replay_choices):
@@ -507,23 +512,8 @@ class GameEngine:
             actions.append(Concede(player_id))
             return tuple(actions)
 
-        if state.phase is Phase.COMBAT and state.combat is not None:
-            combat = state.combat
-            if player_id == combat.defending_player_id and not combat.blockers_declared:
-                actions.extend(
-                    islice(
-                        self._blocker_declarations(player_id, combat),
-                        self.rules.legal_action_enumeration_limit,
-                    )
-                )
-            if (
-                player_id == combat.attacking_player_id
-                and combat.blockers_declared
-                and not combat.resolved
-                and not state.stack
-                and state.phase_priority_complete
-            ):
-                actions.append(ResolveCombat(player_id))
+        if state.phase is Phase.COMBAT:
+            actions.extend(self._combat.legal_actions(player_id))
 
         if player_id == state.priority_player_id:
             actions.extend(self._legal_plays(player_id))
@@ -559,47 +549,6 @@ class GameEngine:
             and state.phase_priority_complete
             and not state.stack
         ):
-            if state.phase is Phase.COMBAT and state.combat is None:
-                ready = tuple(
-                    card_id
-                    for card_id in player.zones[Zone.BATTLEFIELD]
-                    if self._is_ready_creature(card_id)
-                )
-                if ready:
-                    defenders = tuple(
-                        defender
-                        for defender in state.turn_order
-                        if defender != player_id
-                    )
-                    actions.extend(
-                        DeclareAttackers(player_id, tuple(attackers), defender)
-                        for attackers, defender in islice(
-                            (
-                                (attackers, defender)
-                                for size in range(1, len(ready) + 1)
-                                for attackers in combinations(ready, size)
-                                for defender in defenders
-                            ),
-                            self.rules.legal_action_enumeration_limit,
-                        )
-                    )
-                    for challenger_id in ready:
-                        if self._is_lord_creature(challenger_id):
-                            for defender_id in state.turn_order:
-                                if defender_id == player_id:
-                                    continue
-                                for challenged_id in state.players[defender_id].zones[
-                                    Zone.BATTLEFIELD
-                                ]:
-                                    if self._is_creature(challenged_id):
-                                        actions.append(
-                                            DeclareChallenge(
-                                                player_id,
-                                                challenger_id,
-                                                challenged_id,
-                                                defender_id,
-                                            )
-                                        )
             if state.phase is Phase.DISCARD:
                 excess = max(0, len(player.zones[Zone.HAND]) - self.rules.hand_limit)
                 if excess:
@@ -630,39 +579,6 @@ class GameEngine:
             Concede: 100,
         }
         return tuple(sorted(actions, key=lambda action: command_order[type(action)]))
-
-    def _blocker_declarations(
-        self, player_id: str, combat: CombatState
-    ) -> Iterator[DeclareBlockers]:
-        """Enumera bloqueos legales conservando el orden de cada grupo."""
-        state = self._require_running_state()
-        blockers = tuple(
-            card_id
-            for card_id in state.players[combat.defending_player_id].zones[
-                Zone.BATTLEFIELD
-            ]
-            if self._is_ready_creature(card_id)
-        )
-
-        yield DeclareBlockers(player_id)
-        for blocker_count in range(1, len(blockers) + 1):
-            for ordered_blockers in permutations(blockers, blocker_count):
-                for destinations in product(combat.attackers, repeat=blocker_count):
-                    assignments = tuple(
-                        (
-                            attacker_id,
-                            tuple(
-                                blocker_id
-                                for blocker_id, destination in zip(
-                                    ordered_blockers, destinations, strict=True
-                                )
-                                if destination == attacker_id
-                            ),
-                        )
-                        for attacker_id in combat.attackers
-                        if attacker_id in destinations
-                    )
-                    yield DeclareBlockers(player_id, assignments)
 
     def _trigger_target_commands(
         self, player_id: str, item: StackItem

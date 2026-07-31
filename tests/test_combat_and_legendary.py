@@ -27,6 +27,86 @@ def advance_to(engine: GameEngine, phase: Phase) -> None:
 
 
 class CombatAndLegendaryTests(unittest.TestCase):
+    def _blocker_actions(
+        self,
+        *,
+        attacker_count: int,
+        blocker_count: int,
+        rules: RuleSet | None = None,
+    ) -> tuple[GameEngine, tuple[str, ...], tuple[str, ...], list[DeclareBlockers]]:
+        engine = GameEngine(rules)
+        engine.new_match({"A": test_deck("A"), "B": test_deck("B")}, seed=21)
+        attackers = tuple(
+            force_zone(engine, f"A-{index:03d}", "A", Zone.BATTLEFIELD)
+            for index in range(attacker_count)
+        )
+        blockers = tuple(
+            force_zone(engine, f"B-{index:03d}", "B", Zone.BATTLEFIELD)
+            for index in range(blocker_count)
+        )
+        advance_to(engine, Phase.COMBAT)
+        close_priority(engine)
+        engine.execute(DeclareAttackers("A", attackers, "B"))
+        declarations = [
+            action
+            for action in engine.legal_actions("B")
+            if isinstance(action, DeclareBlockers)
+        ]
+        return engine, attackers, blockers, declarations
+
+    def test_legal_actions_include_empty_and_single_blocker_declarations(self):
+        _, (attacker,), (blocker,), declarations = self._blocker_actions(
+            attacker_count=1, blocker_count=1
+        )
+
+        self.assertEqual(
+            [declaration.assignments for declaration in declarations],
+            [(), ((attacker, (blocker,)),)],
+        )
+
+    def test_blocker_declarations_cover_multiple_attackers_without_reuse(self):
+        _, attackers, (blocker,), declarations = self._blocker_actions(
+            attacker_count=2, blocker_count=1
+        )
+
+        self.assertEqual(
+            [declaration.assignments for declaration in declarations],
+            [
+                (),
+                ((attackers[0], (blocker,)),),
+                ((attackers[1], (blocker,)),),
+            ],
+        )
+        self.assertTrue(
+            all(
+                len(used := [card for _, cards in action.assignments for card in cards])
+                == len(set(used))
+                for action in declarations
+            )
+        )
+
+    def test_multiple_blockers_can_share_an_attacker_in_declared_order(self):
+        _, (attacker,), blockers, declarations = self._blocker_actions(
+            attacker_count=1, blocker_count=2
+        )
+
+        assignments = [declaration.assignments for declaration in declarations]
+        self.assertIn(((attacker, blockers),), assignments)
+        self.assertIn(((attacker, tuple(reversed(blockers))),), assignments)
+
+    def test_blocker_enumeration_limit_does_not_restrict_explicit_commands(self):
+        engine, (attacker,), blockers, declarations = self._blocker_actions(
+            attacker_count=1,
+            blocker_count=2,
+            rules=RuleSet(legal_action_enumeration_limit=2),
+        )
+
+        self.assertEqual(len(declarations), 2)
+        explicit = DeclareBlockers("B", ((attacker, tuple(reversed(blockers))),))
+        self.assertNotIn(explicit, declarations)
+        engine.execute(explicit)
+        self.assertEqual(engine.state.combat.blockers[attacker], tuple(reversed(blockers)))
+
     def _attacker_actions(
         self, engine: GameEngine, attacker_definition_ids: tuple[str, ...]
     ) -> tuple[tuple[str, ...], list[DeclareAttackers]]:

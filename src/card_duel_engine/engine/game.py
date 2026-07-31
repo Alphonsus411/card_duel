@@ -493,7 +493,12 @@ class GameEngine:
         if state.phase is Phase.COMBAT and state.combat is not None:
             combat = state.combat
             if player_id == combat.defending_player_id and not combat.blockers_declared:
-                actions.append(DeclareBlockers(player_id))
+                actions.extend(
+                    islice(
+                        self._blocker_declarations(player_id, combat),
+                        self.rules.legal_action_enumeration_limit,
+                    )
+                )
             if (
                 player_id == combat.attacking_player_id
                 and combat.blockers_declared
@@ -608,6 +613,39 @@ class GameEngine:
             Concede: 100,
         }
         return tuple(sorted(actions, key=lambda action: command_order[type(action)]))
+
+    def _blocker_declarations(
+        self, player_id: str, combat: CombatState
+    ) -> Iterator[DeclareBlockers]:
+        """Enumera bloqueos legales conservando el orden de cada grupo."""
+        state = self._require_running_state()
+        blockers = tuple(
+            card_id
+            for card_id in state.players[combat.defending_player_id].zones[
+                Zone.BATTLEFIELD
+            ]
+            if self._is_ready_creature(card_id)
+        )
+
+        yield DeclareBlockers(player_id)
+        for blocker_count in range(1, len(blockers) + 1):
+            for ordered_blockers in permutations(blockers, blocker_count):
+                for destinations in product(combat.attackers, repeat=blocker_count):
+                    assignments = tuple(
+                        (
+                            attacker_id,
+                            tuple(
+                                blocker_id
+                                for blocker_id, destination in zip(
+                                    ordered_blockers, destinations, strict=True
+                                )
+                                if destination == attacker_id
+                            ),
+                        )
+                        for attacker_id in combat.attackers
+                        if attacker_id in destinations
+                    )
+                    yield DeclareBlockers(player_id, assignments)
 
     def _trigger_target_commands(
         self, player_id: str, item: StackItem

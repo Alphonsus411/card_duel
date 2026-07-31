@@ -343,6 +343,15 @@ class GameEngine:
             raise IllegalAction("No existe una elección de sustitución propia pendiente")
         if command.replacement_index not in pending.candidate_indices:
             raise IllegalAction("La sustitución elegida no está disponible")
+        # La transacción que se reproduce toma su propio respaldo después de que
+        # hayamos retirado la elección pendiente. Ese respaldo es el adecuado si
+        # aparece una segunda elección diferida, pero no si la reproducción falla:
+        # en ese caso la elección original debe volver a estar disponible.
+        snapshot = deepcopy(state)
+        next_instance = self._next_instance
+        next_stack_item = self._next_stack_item
+        replay_choices_before = self._replacement_replay_choices
+        replay_cursor_before = self._replacement_replay_cursor
         original_command = pending.original_command
         replay_choices = (*pending.replay_choices, command.replacement_index)
         state.pending_move_replacement = None
@@ -353,7 +362,15 @@ class GameEngine:
             pending.card_id,
             {"replacement_index": command.replacement_index},
         )
-        self._execute_transaction(original_command, replay_choices)
+        try:
+            self._execute_transaction(original_command, replay_choices)
+        except Exception:
+            self.state = snapshot
+            self._next_instance = next_instance
+            self._next_stack_item = next_stack_item
+            self._replacement_replay_choices = replay_choices_before
+            self._replacement_replay_cursor = replay_cursor_before
+            raise
 
     def observe(self, player_id: str) -> PlayerObservation:
         state = self._require_state()

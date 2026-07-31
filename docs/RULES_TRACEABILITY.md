@@ -96,8 +96,9 @@ enumeración determinista de atacantes, Desafíos y bloqueadores y la oferta de
 resolución, incluido su límite configurable. La validación de `execute` sigue
 siendo autoritativa aunque una acción no aparezca en el prefijo enumerado. La
 paridad cubre dos y más jugadores y huellas de estado, eventos, historial y
-contadores. R-07.1 queda completada y el siguiente incremento permitido es
-R-07.2, limitado a movimientos y sustituciones.
+contadores. R-07.1 quedó completada con un límite explícito: el alcance de
+movimientos y sustituciones se abordó después en R-07.2, sin formar parte de
+aquella entrega de combate.
 
 ## Trazabilidad de R-07.2
 

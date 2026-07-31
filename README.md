@@ -96,10 +96,10 @@ incluir ninguna carta, personaje ni colección antigua.
   salir de un bloque `with`, el almacén rechaza cualquier operación posterior.
 - Bloqueo explícito de finales multijugador no definidos, sin inferir ganadores
   ante una concesión o al alcanzar el límite de Heridas.
-- Hoja de ruta con R-04 (confianza de colecciones), R-06 (frontera autenticada)
-  y R-07.1 (combate, incluida su enumeración) completadas; R-07.2 de movimientos
-  queda habilitada para implementación, mientras R-02, R-03 y R-05 permanecen
-  bloqueadas. La frontera de R-06 es agnóstica del transporte; un adaptador HTTP
+- Hoja de ruta con R-04 (confianza de colecciones), R-06 (frontera autenticada),
+  R-07.1 (combate, incluida su enumeración) y R-07.2 (movimientos y
+  sustituciones) completadas; R-02, R-03 y R-05 permanecen bloqueadas. La
+  frontera de R-06 es agnóstica del transporte; un adaptador HTTP
   u otro servicio de red concreto continúa fuera de alcance.
 
 Las únicas cartas utilizadas están en `tests/fixtures.py` y sirven para probar

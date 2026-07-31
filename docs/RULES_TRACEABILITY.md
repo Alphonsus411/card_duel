@@ -33,8 +33,11 @@ No convierte normalizaciones ni pendientes en reglas nuevas.
 - Reparto entre bloqueadores en orden declarado, pendiente de aclaración.
 - Regeneración como escudo consumible, sin inferir un procedimiento ausente.
 - Precedencia Mítica para la inmunidad de Divinos.
-- Firma de colecciones, esquemas 3+, red/autenticación y registro formal de
-  contradicciones siguen siendo pendientes, no reglas.
+- Esquemas 3+, un adaptador HTTP u otro servicio de red y el registro formal de
+  contradicciones siguen siendo pendientes, no reglas. La firma y política de
+  confianza de colecciones (R-04), así como la frontera autenticada de
+  aplicación agnóstica del transporte (R-06), ya están completadas; esa frontera
+  no equivale a haber entregado el eventual adaptador de red.
 
 ## Trazabilidad 0.18.0
 

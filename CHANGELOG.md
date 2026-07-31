@@ -2,6 +2,12 @@
 
 ## Sin publicar
 
+- Corregida la documentación de pendientes para reconocer como completadas la
+  política de confianza de colecciones de R-04 y la frontera autenticada de
+  aplicación de R-06.
+- Aclarado que R-06 entrega una frontera agnóstica del transporte, no un
+  adaptador HTTP ni otro servicio de red concreto, que continúa fuera de alcance.
+
 - Cerrada R-07.2 con una única implementación de robo, movimientos y
   sustituciones en `ZoneManager`; `GameEngine` conserva solo adaptadores y los
   servicios transaccionales del coordinador.

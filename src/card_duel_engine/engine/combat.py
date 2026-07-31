@@ -190,9 +190,6 @@ class CombatManager:
                 )
 
         self._context._run_state_based_actions()
-        for instance in state.cards.values():
-            if instance.zone is Zone.BATTLEFIELD:
-                instance.damage = 0
         combat.resolved = True
         state.phase_priority_complete = True
         self._context._emit("COMBAT_RESOLVED", combat.attacking_player_id)

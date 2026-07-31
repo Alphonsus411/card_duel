@@ -252,6 +252,28 @@ testigo de asignación estática garantiza que `GameEngine` satisface los tres. 
 de zonas no conoce la secuencia ni el cursor internos del replay: solicita la siguiente
 elección mediante `_consume_replacement_replay_choice`, que devuelve `None` al agotarse.
 
+## Extracción incremental de pila (R-07)
+
+La inspección de los métodos privados del coordinador identifica tres grupos de
+delegación pura: pila (`_pass_priority`, `_resolve_top_stack`,
+`_continue_stack_resolution`, `_resolve_search_choice`, `_shuffle_zone`), combate
+(`_declare_challenge`, `_declare_attackers`, `_declare_blockers`,
+`_resolve_combat`) y movimiento (`_draw`, `_set_replacement_order`,
+`_ordered_replacements`, `_move_card`). Esta entrega elige **solo pila** y mueve
+además la creación y el lote de disparos (`_queue_legendary_effects`,
+`_queue_triggered_abilities`, `_queue_trigger_batch` y la detección de objetivos)
+a `StackManager`; no mezcla este límite arquitectónico con cambios de reglas.
+
+`StackContext` declara explícitamente la enumeración de objetivos y la asignación
+del siguiente identificador. El gestor opera directamente sobre el `GameState`
+entregado por el contexto y no conserva cachés, snapshots ni contadores propios.
+`GameEngine` mantiene la transacción, el despacho de comandos, las fases y la
+validación final de invariantes. En particular, el snapshot y el contador de pila
+se restauran juntos ante excepciones, y `_consume_replacement_replay_choice`
+continúa siendo la única frontera con el replay de movimientos reemplazables.
+Por tanto, la extracción no modifica legalidad, eventos, historial, elecciones
+pendientes, rollback, identificadores ni ninguna otra regla observable.
+
 ## Construcción reproducible y validación (0.16.0)
 
 El lockfile de `uv` es la fuente única para desarrollo y CI. El wheel se construye

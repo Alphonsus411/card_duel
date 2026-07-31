@@ -1,5 +1,16 @@
 # Historial de versiones
 
+## Sin publicar
+
+- Extraída únicamente la coordinación de creación y lotes de disparos a
+  `StackManager`, ampliando `StackContext` con operaciones tipadas explícitas.
+- Añadidos dobles mínimos, testigo estructural y paridad de éxito, acción ilegal,
+  elección pendiente y excepción, incluidos estado, eventos, historial y próximos
+  identificadores.
+- Conservados en `GameEngine` transacción, fases, comandos, invariantes y replay
+  de movimientos reemplazables. Esta extracción arquitectónica no modifica
+  ninguna regla observable.
+
 ## 0.19.0
 
 - Añadido un sobre de firma v1 separado que conserva el manifiesto v2 y su

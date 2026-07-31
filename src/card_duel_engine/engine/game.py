@@ -1805,95 +1805,21 @@ class GameEngine:
         instance.controller_id = controller_id
 
     def _queue_legendary_effects(self) -> None:
-        state = self._require_running_state()
-        player = state.players[state.active_player_id]
-        items: list[StackItem] = []
-        for card_id in player.zones[Zone.BATTLEFIELD]:
-            definition = self._definition(card_id)
-            if definition.rank is CardRank.LEGENDARY and definition.legendary_effects:
-                items.append(
-                    StackItem(
-                        item_id=f"stack-{self._next_stack_item:06d}",
-                        controller_id=state.active_player_id,
-                        source_card_id=card_id,
-                        effects=definition.legendary_effects,
-                        targets_locked=not self._effects_need_choices(
-                            definition.legendary_effects
-                        ),
-                    )
-                )
-                self._next_stack_item += 1
-                self._emit("LEGENDARY_EFFECT_QUEUED", state.active_player_id, card_id)
-        self._queue_trigger_batch(items, state.active_player_id)
+        return self._stack._queue_legendary_effects()
 
     def _queue_triggered_abilities(self, source_card_id: str, trigger: TriggerKind) -> None:
-        state = self._require_running_state()
-        instance = state.cards[source_card_id]
-        definition = self._definition(source_card_id)
-        items: list[StackItem] = []
-        for ability in definition.abilities:
-            if ability.trigger is not trigger:
-                continue
-            items.append(
-                StackItem(
-                    item_id=f"stack-{self._next_stack_item:06d}",
-                    controller_id=instance.controller_id,
-                    source_card_id=source_card_id,
-                    effects=ability.effects,
-                    ability_id=ability.ability_id,
-                    targets_locked=not self._effects_need_choices(ability.effects),
-                )
-            )
-            self._next_stack_item += 1
-            self._emit(
-                "TRIGGERED_ABILITY_QUEUED",
-                instance.controller_id,
-                source_card_id,
-                {"ability_id": ability.ability_id, "trigger": trigger.name},
-            )
-        self._queue_trigger_batch(items, instance.controller_id)
+        return self._stack._queue_triggered_abilities(source_card_id, trigger)
 
     def _queue_trigger_batch(self, items: list[StackItem], controller_id: str) -> None:
-        state = self._require_running_state()
-        viable: list[StackItem] = []
-        for item in items:
-            if item.targets_locked or self._trigger_target_commands(controller_id, item):
-                viable.append(item)
-            else:
-                self._emit(
-                    "TRIGGER_FIZZLED",
-                    controller_id,
-                    item.source_card_id,
-                    {"item_id": item.item_id, "reason": "no_legal_targets"},
-                )
-        if not viable:
-            return
-        if len(viable) == 1 and viable[0].targets_locked:
-            state.stack.append(viable[0])
-            return
-        if state.pending_triggers:
-            raise InvariantViolation("Ya existe otro lote de disparos pendiente")
-        state.pending_triggers.extend(viable)
-        state.priority_player_id = controller_id
-        state.phase_priority_complete = False
-        state.consecutive_passes = 0
-        self._emit(
-            "SIMULTANEOUS_TRIGGERS_AWAITING_ORDER",
-            controller_id,
-            payload={"item_ids": tuple(item.item_id for item in viable)},
-        )
+        return self._stack._queue_trigger_batch(items, controller_id)
 
     def _effects_need_choices(self, effects: tuple[EffectDefinition, ...]) -> bool:
-        return any(
-            effect.target
-            in {
-                TargetMode.CHOSEN_PLAYER,
-                TargetMode.CHOSEN_PERMANENT,
-                TargetMode.CHOSEN_ZONE,
-                TargetMode.CHOSEN_ENTITY,
-            }
-            for effect in effects
-        )
+        return StackManager._effects_need_choices(effects)
+
+    def _allocate_stack_item_id(self) -> str:
+        item_id = f"stack-{self._next_stack_item:06d}"
+        self._next_stack_item += 1
+        return item_id
 
     def _discard_cards(self, command: DiscardCards) -> None:
         state = self._require_running_state()

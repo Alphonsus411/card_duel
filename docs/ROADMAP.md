@@ -7,6 +7,15 @@ La fuente normativa continúa siendo `Fantasy Tokens.pdf`, interpretada mediante
 
 ## Entregas completadas
 
+### R-07 — Separar la coordinación de disparos de pila
+
+- **Entrega incremental:** inventariados pila, combate y movimiento, y extraído
+  únicamente el grupo cohesivo de creación y encolado de disparos a
+  `StackManager`, mediante un `StackContext` explícito.
+- **Garantía:** `GameState` sigue siendo la única autoridad mutable; transacción,
+  fases, comandos, invariantes y replay de sustituciones permanecen en
+  `GameEngine`. Las pruebas de paridad confirman que no cambian reglas observables.
+
 ### R-01 — Proteger las condiciones terminales multijugador
 
 - **Evidencia:** el reglamento permite uno o más adversarios, pero no define la
@@ -70,6 +79,6 @@ La fuente normativa continúa siendo `Fantasy Tokens.pdf`, interpretada mediante
 
 ### R-07 — Continuar separando el coordinador
 
-- Extraer responsabilidades restantes de pila, combate y movimientos hacia
-  resolutores especializados sin duplicar `GameState`.
+- Extraer en entregas posteriores otras responsabilidades restantes de combate
+  o movimientos, siempre como un único grupo y sin duplicar `GameState`.
 - Exigir paridad observable, tipado estricto y pruebas de atomicidad en cada paso.

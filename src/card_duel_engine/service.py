@@ -13,7 +13,7 @@ from .domain.models import CardDefinition
 from .engine.commands import GameCommand
 from .engine.game import GameEngine
 from .rules.config import RuleSet
-from .storage.base import StoredMatch
+from .storage.base import StoredMatch, validate_expected_version
 
 
 class DeckValidationFailure(ValueError):
@@ -113,6 +113,7 @@ class MatchService:
         *,
         expected_version: int,
     ) -> MatchView:
+        expected_version = validate_expected_version(expected_version)
         self.validate_command(command)
         stored = self.store.load(match_id)
         # El CAS se comprueba antes de ejecutar para evitar trabajo y errores engañosos.

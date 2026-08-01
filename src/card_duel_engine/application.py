@@ -26,6 +26,7 @@ from .storage.base import (
     InvalidStoredSnapshot,
     MatchNotFound,
     VersionConflict,
+    validate_expected_version,
     validate_match_id,
 )
 
@@ -181,6 +182,13 @@ class WriteConflict(ApplicationError):
     public_message = "La versión de escritura ya no es vigente"
 
 
+class InvalidExpectedVersion(ApplicationError):
+    """La versión CAS pública no satisface el contrato del dominio."""
+
+    code = "invalid_expected_version"
+    public_message = "La versión esperada no es válida"
+
+
 class CommandRejected(ApplicationError):
     code = "command_rejected"
     public_message = "El comando fue rechazado"
@@ -323,6 +331,14 @@ class AuthenticatedMatchApplication:
             raise InvalidMatchId from None
 
     @staticmethod
+    def _expected_version(value: object) -> int:
+        """Traduce el contrato CAS antes de autorización o persistencia."""
+        try:
+            return validate_expected_version(value)
+        except ValueError:
+            raise InvalidExpectedVersion from None
+
+    @staticmethod
     def _translate(operation: Callable[[], T]) -> T:
         try:
             return operation()
@@ -379,6 +395,7 @@ class AuthenticatedMatchApplication:
     ) -> PublicMatchView:
         principal = self._identity(identity)
         self._match_id(match_id)
+        expected_version = self._expected_version(expected_version)
         player_id = self._authorization.player_for(
             principal, match_id, Capability.SUBMIT_COMMAND
         )
@@ -404,6 +421,7 @@ class AuthenticatedMatchApplication:
     ) -> PublicMatchView:
         principal = self._identity(identity)
         self._match_id(match_id)
+        expected_version = self._expected_version(expected_version)
         player_id = self._authorization.player_for(
             principal, match_id, Capability.SUBMIT_COMMAND
         )

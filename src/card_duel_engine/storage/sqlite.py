@@ -12,6 +12,7 @@ from .base import (
     MatchNotFound,
     StoredMatch,
     VersionConflict,
+    validate_expected_version,
     validate_match_id,
 )
 
@@ -107,8 +108,7 @@ class SQLiteMatchStore:
         self, match_id: str, engine: GameEngine, *, expected_version: int
     ) -> int:
         validate_match_id(match_id)
-        if expected_version < 1:
-            raise ValueError("La versión esperada debe ser positiva")
+        expected_version = validate_expected_version(expected_version)
         payload = dump_snapshot(engine, indent=None)
         new_version = expected_version + 1
         with self._connect() as connection:

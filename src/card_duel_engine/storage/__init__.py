@@ -4,6 +4,7 @@ from .base import (
     MatchNotFound,
     StoredMatch,
     VersionConflict,
+    validate_expected_version,
 )
 from .sqlite import SQLiteMatchStore
 
@@ -14,4 +15,5 @@ __all__ = [
     "SQLiteMatchStore",
     "StoredMatch",
     "VersionConflict",
+    "validate_expected_version",
 ]

@@ -33,11 +33,12 @@ No convierte normalizaciones ni pendientes en reglas nuevas.
 - Reparto entre bloqueadores en orden declarado, pendiente de aclaración.
 - Regeneración como escudo consumible, sin inferir un procedimiento ausente.
 - Precedencia Mítica para la inmunidad de Divinos.
-- Esquemas 3+, un adaptador HTTP u otro servicio de red y el registro formal de
-  contradicciones siguen siendo pendientes, no reglas. La firma y política de
+- Esquemas 3+ y el registro formal de contradicciones siguen siendo pendientes,
+  no reglas. Un adaptador HTTP u otro transporte está excluido del alcance y no
+  es un pendiente implementable. La firma y política de
   confianza de colecciones (R-04), así como la frontera autenticada de
   aplicación agnóstica del transporte (R-06), ya están completadas; esa frontera
-  no equivale a haber entregado el eventual adaptador de red.
+  no equivale a una autorización para implementar un adaptador de red.
 
 ## Trazabilidad 0.18.0
 
@@ -88,6 +89,11 @@ La frontera autenticada es infraestructura y no modifica reglas observables.
 capacidad; entrega DTO públicos y conserva la escritura CAS de `MatchService`.
 La batería compartida de memoria y SQLite verifica además que crear, observar,
 enviar y administrar son permisos independientes. R-06 queda completada.
+El transporte queda fuera de alcance. Solo otra decisión documental expresa podría
+habilitarlo y deberá mantener
+esta aplicación como frontera autoritativa y no podrá aceptar `player_id`, exponer
+`GameEngine` o `GameState`, omitir `expected_version`/CAS ni reinterpretar los
+comandos recibidos.
 
 ## Trazabilidad de R-07.1
 

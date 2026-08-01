@@ -153,7 +153,11 @@ Edición Mítica. No incluye textos de cartas antiguas.
 La política de confianza y firma de colecciones de R-04 y la frontera autenticada
 de aplicación de R-06 ya están entregadas. Esta última es agnóstica del
 transporte: autentica y autoriza los casos de uso, pero no incluye un adaptador
-HTTP ni otro servicio de red concreto.
+HTTP ni otro servicio de red concreto. Por decisión de alcance, ningún transporte
+es una entrega futura habilitada ni un pendiente implementable. Si otra decisión
+lo habilitase, deberá conservar `AuthenticatedMatchApplication` como frontera
+autoritativa: nunca podrá aceptar `player_id`, exponer `GameEngine` o `GameState`,
+omitir `expected_version`/CAS ni reinterpretar comandos.
 
 - El reglamento permite enfrentarse a uno o más adversarios y exige que todos
   los participantes acuerden el mismo límite de Heridas (`Fantasy Tokens.pdf`,
@@ -164,8 +168,6 @@ HTTP ni otro servicio de red concreto.
 - La versión 0.2 distribuye el daño entre bloqueadores en el orden declarado;
   esta normalización debe revisarse si aparece una aclaración normativa.
 - Nuevas migraciones cuando aparezcan futuros esquemas 3 o posteriores.
-- Adaptador HTTP u otro servicio de red que exponga la frontera autenticada de
-  aplicación ya disponible.
 - Extracción de pila, combate y movimientos a resolutores especializados.
 - Registro formal de las contradicciones entre reglamento base y Mítica.
 

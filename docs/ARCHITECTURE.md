@@ -181,19 +181,24 @@ comandos mediante el motor y persiste con versión esperada. `MatchStore` altern
 memoria y SQLite; `CommandSource` permite conectar humanos, simuladores o un
 futuro adaptador AGIX sin incorporar AGIX al dominio.
 
-## R-06 — Frontera de red aprobada
+## R-06 — Frontera autenticada; transporte fuera de alcance
 
-Esta especificación se aprueba antes de implementar un adaptador HTTP concreto:
+R-06 entrega `AuthenticatedMatchApplication`, no una frontera de red. Un adaptador
+HTTP, HTTPS u otro transporte permanece fuera de alcance, no está habilitado como
+entrega futura y no forma parte de los pendientes implementables. Habilitarlo
+exigiría otra decisión documental con alcance, dependencias, criterios de
+aceptación y amenazas propios. Los siguientes puntos son invariantes de seguridad
+de la frontera existente, no una especificación ni autorización para construir
+el adaptador:
 
-- **Transporte:** HTTPS 1.1 o superior con cuerpos JSON UTF-8 y una API REST
-  versionada. TLS termina en infraestructura de confianza; no se admiten
-  credenciales ni datos privados sobre texto claro. El adaptador limita tamaño,
-  tipos y campos antes de construir objetos de aplicación.
-- **Autenticación:** OAuth 2.0 Bearer con tokens JWT emitidos mediante OpenID
-  Connect. El adaptador verifica firma, algoritmo permitido, `iss`, `aud`, `exp`
-  y `nbf` contra configuración local antes de crear una identidad. El motor, los
-  modelos de dominio y `MatchService` nunca reciben ni almacenan tokens, cookies
-  o sesiones.
+- **Entrada no confiable:** ninguna representación externa se convierte en un
+  objeto de aplicación sin límites de tamaño, tipos y campos. Las credenciales y
+  los datos privados nunca se admiten sobre canales en texto claro.
+- **Autenticación:** la infraestructura verifica la credencial contra su
+  configuración local antes de crear una identidad con `iss` y `sub`. El motor,
+  los modelos de dominio y `MatchService` nunca reciben ni almacenan tokens,
+  cookies o sesiones. Esta invariante no selecciona protocolo ni tecnología de
+  autenticación para un transporte futuro.
 - **Identidad externa:** la clave estable es el par exacto (`iss`, `sub`) del
   token validado. Un nombre, correo, IP o valor `player_id` enviado por el cliente
   no es identidad y no participa en la autorización.
@@ -213,9 +218,12 @@ Esta especificación se aprueba antes de implementar un adaptador HTTP concreto:
   observaciones privadas.
 
 `AuthenticatedMatchApplication` materializa estos casos de uso en una capa
-separada y agnóstica del transporte. Un futuro router HTTPS solo debe decodificar
-JSON, autenticar, invocarla y serializar su resultado seguro; no decide reglas
-del juego ni accede directamente a `GameEngine` o al almacén.
+separada, agnóstica del transporte y autoritativa. Si un transporte llegara a
+habilitarse, solo podría decodificar y validar el formato, autenticar, invocarla y
+serializar su resultado seguro. No podría aceptar un `player_id` aportado por el
+cliente, acceder directamente ni exponer `GameEngine` o `GameState`, omitir
+`expected_version` o el CAS, reinterpretar comandos, decidir reglas del juego o
+acceder directamente al almacén.
 
 ### Contrato de salida y confinamiento del motor
 

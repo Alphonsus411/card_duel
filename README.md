@@ -100,7 +100,11 @@ incluir ninguna carta, personaje ni colección antigua.
   R-07.1 (combate, incluida su enumeración) y R-07.2 (movimientos y
   sustituciones) completadas; R-02, R-03 y R-05 permanecen bloqueadas. La
   frontera de R-06 es agnóstica del transporte; un adaptador HTTP
-  u otro servicio de red concreto continúa fuera de alcance.
+  u otro servicio de red concreto continúa fuera de alcance, no tiene entrega de
+  hoja de ruta asignada y no es un pendiente implementable. Cualquier decisión
+  futura deberá conservar `AuthenticatedMatchApplication` como frontera
+  autoritativa: el transporte no podrá aceptar `player_id`, exponer `GameEngine`
+  o `GameState`, omitir `expected_version`/CAS ni reinterpretar comandos.
 
 Las únicas cartas utilizadas están en `tests/fixtures.py` y sirven para probar
 el motor. El catálogo de producción comienza vacío.

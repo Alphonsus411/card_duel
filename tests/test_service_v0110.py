@@ -1,7 +1,10 @@
 import tempfile
 import unittest
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import MISSING, fields
 from pathlib import Path
+from types import UnionType
+from typing import get_args, get_origin
 
 from card_duel_engine import (
     InMemoryMatchStore,
@@ -11,8 +14,15 @@ from card_duel_engine import (
 )
 from card_duel_engine.domain.errors import IllegalAction
 from card_duel_engine.domain.enums import MatchStatus
-from card_duel_engine.engine.commands import Concede, PassPriority
+from card_duel_engine.engine import commands as command_module
+from card_duel_engine.engine.commands import (
+    EXECUTABLE_COMMAND_TYPES,
+    Concede,
+    GameCommand,
+    PassPriority,
+)
 from card_duel_engine.persistence.snapshot import state_digest
+from card_duel_engine.service import MalformedGameCommand
 from fixtures import test_deck
 
 
@@ -86,6 +96,60 @@ class SQLiteMatchIdValidationTests(MatchIdValidationContract, unittest.TestCase)
 class MatchServiceV0110Tests(unittest.TestCase):
     def decks(self):
         return {"A": test_deck("A"), "B": test_deck("B")}
+
+    @staticmethod
+    def command_instance(command_type):
+        values = {"player_id": "A"}
+        for field in fields(command_type):
+            if field.name in values or field.default is not MISSING:
+                continue
+            annotation = field.type
+            origin = get_origin(annotation)
+            if annotation == "int" or annotation is int:
+                values[field.name] = 0
+            elif annotation == "str" or annotation is str:
+                values[field.name] = "value"
+            elif origin is tuple or str(annotation).startswith("tuple["):
+                values[field.name] = ()
+            elif origin is UnionType and type(None) in get_args(annotation):
+                values[field.name] = None
+            else:  # pragma: no cover - obliga a ampliar la fábrica al añadir campos
+                raise AssertionError(f"Campo de prueba desconocido: {field}")
+        return command_type(**values)
+
+    def test_executable_command_registry_is_complete_and_has_no_duplicates(self):
+        concrete_commands = {
+            value
+            for value in vars(command_module).values()
+            if isinstance(value, type)
+            and value.__module__ == command_module.__name__
+            and issubclass(value, GameCommand)
+            and value is not GameCommand
+        }
+        self.assertEqual(set(EXECUTABLE_COMMAND_TYPES), concrete_commands)
+        self.assertEqual(len(EXECUTABLE_COMMAND_TYPES), len(set(EXECUTABLE_COMMAND_TYPES)))
+
+    def test_command_validation_uses_exact_registered_types(self):
+        class InventedCommand(GameCommand):
+            pass
+
+        class InventedConcede(Concede):
+            pass
+
+        rejected = (
+            object(),
+            GameCommand("A"),
+            InventedCommand("A"),
+            InventedConcede("A"),
+        )
+        for command in rejected:
+            with self.subTest(command=type(command).__name__):
+                with self.assertRaises(MalformedGameCommand):
+                    MatchService.validate_command(command)
+
+        for command_type in EXECUTABLE_COMMAND_TYPES:
+            with self.subTest(command_type=command_type.__name__):
+                MatchService.validate_command(self.command_instance(command_type))
 
     def test_create_view_submit_and_isolation(self):
         service = MatchService(InMemoryMatchStore())

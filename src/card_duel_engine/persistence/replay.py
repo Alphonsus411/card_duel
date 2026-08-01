@@ -7,7 +7,7 @@ from typing import Any, Mapping
 from ..catalog import CardCatalog
 from ..domain.enums import MatchStatus
 from ..domain.models import CardDefinition
-from ..engine.commands import GameCommand
+from ..engine.commands import EXECUTABLE_COMMAND_TYPE_SET
 from ..engine.game import GameEngine
 from ..rules.config import RuleSet
 from .codec import canonical_json, decode_value, encode_value
@@ -75,7 +75,7 @@ def replay_from_log(
     ):
         raise ValueError("Catálogo de reproducción no válido")
     if not isinstance(commands, tuple) or not all(
-        isinstance(item, GameCommand) for item in commands
+        type(item) in EXECUTABLE_COMMAND_TYPE_SET for item in commands
     ):
         raise ValueError("Secuencia de comandos no válida")
     if body.get("command_count") != len(commands):

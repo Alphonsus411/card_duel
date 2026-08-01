@@ -75,6 +75,22 @@ La fuente normativa continúa siendo `Fantasy Tokens.pdf`, interpretada mediante
   incluidas atribución falsa, cruces entre partidas, capacidades independientes,
   conflictos concurrentes y ausencia de mutación ante rechazos.
 
+## Decisión sobre transportes
+
+Un adaptador HTTP, HTTPS u otro servicio de red **permanece fuera de alcance** de
+esta hoja de ruta. No es una entrega técnica futura habilitada, no recibe un
+identificador `R-*` y no debe tratarse como pendiente implementable. Su eventual
+incorporación exige una nueva decisión documental explícita que defina su propio
+alcance, dependencias, criterios de aceptación y modelo de amenazas; hasta
+entonces no se implementará.
+
+Esta exclusión no rebaja la frontera ya entregada: `AuthenticatedMatchApplication`
+es la única entrada autoritativa para cualquier transporte futuro. Un adaptador
+no podrá aceptar `player_id` del cliente, exponer ni serializar `GameEngine` o
+`GameState`, omitir `expected_version` ni el CAS en una escritura, reinterpretar
+comandos o aplicar reglas del juego. Solo podrá autenticar, decodificar y validar
+el formato, invocar la aplicación y serializar sus DTO públicos seguros.
+
 ## Pendientes normativos bloqueados
 
 ### R-02 — Revisar el reparto de daño entre bloqueadores
@@ -96,4 +112,5 @@ La fuente normativa continúa siendo `Fantasy Tokens.pdf`, interpretada mediante
 
 No hay incrementos técnicos habilitados por las fuentes vigentes. R-02, R-03 y
 R-05 conservan los bloqueos indicados y no se promoverá una tarea nueva sin
-respaldo explícito del reglamento, la línea base y la arquitectura.
+respaldo explícito del reglamento, la línea base y la arquitectura. El transporte
+queda excluido, no bloqueado ni pendiente.

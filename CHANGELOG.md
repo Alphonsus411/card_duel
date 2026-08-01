@@ -2,6 +2,13 @@
 
 ## Sin publicar
 
+- Decidido de forma uniforme que HTTP y cualquier otro transporte permanecen
+  fuera de alcance, sin identificador de hoja de ruta ni consideración de
+  pendiente implementable.
+- Fijada `AuthenticatedMatchApplication` como frontera autoritativa también ante
+  una eventual decisión futura: ningún transporte podrá aceptar `player_id`,
+  exponer `GameEngine` o `GameState`, omitir `expected_version`/CAS ni
+  reinterpretar comandos.
 - Corregida la documentación de pendientes para reconocer como completadas la
   política de confianza de colecciones de R-04 y la frontera autenticada de
   aplicación de R-06.

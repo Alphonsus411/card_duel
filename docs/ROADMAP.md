@@ -75,6 +75,17 @@ La fuente normativa continúa siendo `Fantasy Tokens.pdf`, interpretada mediante
   incluidas atribución falsa, cruces entre partidas, capacidades independientes,
   conflictos concurrentes y ausencia de mutación ante rechazos.
 
+### R-03A — Inventariar contradicciones entre reglamento base y Mítica
+
+- **Resultado documental completado:** `RULES_TRACEABILITY.md` separa y registra
+  la única contradicción verificable ya documentada: la inmunidad y
+  Transmutación de Divinos. El inventario identifica la página del reglamento
+  base, deja explícita la ausencia de una página verificable de Mítica en el
+  corpus versionado, reproduce las formulaciones en conflicto, describe el
+  comportamiento conservado y enlaza el fundamento de precedencia existente.
+- **Límite:** no incorpora cartas, no convierte adiciones de Mítica en
+  contradicciones y no completa páginas ni formulaciones mediante suposiciones.
+
 ## Decisión sobre transportes
 
 Un adaptador HTTP, HTTPS u otro servicio de red **permanece fuera de alcance** de
@@ -98,10 +109,13 @@ el formato, invocar la aplicación y serializar sus DTO públicos seguros.
 - Contrastar el orden actualmente normalizado con una aclaración oficial.
 - No cambiar el algoritmo hasta disponer de esa aclaración.
 
-### R-03 — Formalizar contradicciones entre reglamento base y Mítica
+### R-03B — Decidir una eventual modificación normativa
 
-- Registrar cada contradicción, las páginas fuente y la precedencia aplicada.
-- Mantener mientras tanto la precedencia Mítica ya declarada para Divinos.
+- **Estado bloqueado:** no modificar `src/card_duel_engine/` ni las expectativas
+  reglamentarias de las pruebas a partir del inventario de R-03A.
+- **Criterio de salida:** recibir una aclaración oficial que identifique la fuente
+  y página de Mítica y determine si debe sustituirse el comportamiento vigente.
+  Hasta entonces se conserva la precedencia Mítica ya documentada para Divinos.
 
 ## Pendientes técnicos bloqueados
 
@@ -110,7 +124,7 @@ el formato, invocar la aplicación y serializar sus DTO públicos seguros.
 - Añadir migraciones únicamente cuando exista un esquema 3 o posterior definido.
 - Rechazar rutas desconocidas sin completar datos mediante suposiciones.
 
-No hay incrementos técnicos habilitados por las fuentes vigentes. R-02, R-03 y
-R-05 conservan los bloqueos indicados y no se promoverá una tarea nueva sin
-respaldo explícito del reglamento, la línea base y la arquitectura. El transporte
+No hay incrementos técnicos habilitados por las fuentes vigentes. R-02, R-03B y
+R-05 conservan los bloqueos indicados; R-03A está completada documentalmente. No
+se promoverá una tarea nueva sin respaldo explícito del reglamento, la línea base y la arquitectura. El transporte
 queda excluido, no bloqueado ni pendiente.

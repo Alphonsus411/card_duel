@@ -2,6 +2,14 @@
 
 ## Sin publicar
 
+- Dividida R-03 en el inventario documental R-03A, ya completado, y la
+  eventual decisión normativa R-03B, bloqueada hasta recibir aclaración oficial.
+- Registrada la única contradicción base–Mítica identificable en la documentación
+  vigente —inmunidad y Transmutación de Divinos— con la página base, la falta
+  explícita de una página Mítica verificable, ambas formulaciones, el
+  comportamiento conservado y la precedencia ya documentada.
+- Conservados sin cambios el motor y las expectativas reglamentarias de pruebas;
+  el inventario no incorpora cartas ni resuelve nuevas ambigüedades.
 - Decidido de forma uniforme que HTTP y cualquier otro transporte permanecen
   fuera de alcance, sin identificador de hoja de ruta ni consideración de
   pendiente implementable.

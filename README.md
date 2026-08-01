@@ -98,7 +98,10 @@ incluir ninguna carta, personaje ni colección antigua.
   ante una concesión o al alcanzar el límite de Heridas.
 - Hoja de ruta con R-04 (confianza de colecciones), R-06 (frontera autenticada),
   R-07.1 (combate, incluida su enumeración) y R-07.2 (movimientos y
-  sustituciones) completadas; R-02, R-03 y R-05 permanecen bloqueadas. La
+  sustituciones) completadas. También se completó R-03A como inventario
+  exclusivamente documental de la contradicción verificable sobre Divinos, sin
+  cartas ni cambios de reglas; R-02, la decisión normativa R-03B y R-05
+  permanecen bloqueadas. La
   frontera de R-06 es agnóstica del transporte; un adaptador HTTP
   u otro servicio de red concreto continúa fuera de alcance, no tiene entrega de
   hoja de ruta asignada y no es un pendiente implementable. Cualquier decisión

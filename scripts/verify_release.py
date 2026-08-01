@@ -14,9 +14,11 @@ import tempfile
 
 from verify_headless_simulations import verify as verify_simulations
 from verify_persistence_roundtrips import verify as verify_persistence
-from verify_reproducible_wheel import VERSION, WHEEL_NAME
+from project_metadata import read_project_version
 
 ROOT = Path(__file__).resolve().parents[1]
+VERSION = read_project_version(ROOT)
+WHEEL_NAME = f"card_duel_engine-{VERSION}-py3-none-any.whl"
 PYTHONS = ("3.11", "3.12", "3.13")
 CommandRunner = Callable[..., subprocess.CompletedProcess[str]]
 

@@ -1,5 +1,9 @@
 """Motor headless y extensible del nuevo juego de cartas."""
 
+from ._version import resolve_version
+
+__version__: str = resolve_version()
+
 from .catalog import CardCatalog
 from .application import (
     AccessDenied,
@@ -74,4 +78,3 @@ __all__ = [
     "load_snapshot",
     "replay_from_log",
 ]
-__version__ = "0.19.0"

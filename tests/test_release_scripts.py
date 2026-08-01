@@ -19,6 +19,11 @@ from zipfile import ZIP_DEFLATED, ZipFile
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def project_version():
+    with (ROOT / "pyproject.toml").open("rb") as stream:
+        return tomllib.load(stream)["project"]["version"]
+
+
 def active_packaging_versions(workflow: str) -> set[str]:
     """Devuelve versiones literales solo del bloque activo de subida del job full."""
     full_job = workflow.split("\n  full:\n", 1)[1]
@@ -51,7 +56,7 @@ class ReleaseVerifierTests(unittest.TestCase):
              patch.object(self.release, "_package", return_value={"status": "ok"}):
             result = self.release.verify("full")
         self.assertEqual(result["status"], "ok")
-        self.assertEqual(result["version"], "0.19.0")
+        self.assertEqual(result["version"], project_version())
         self.assertEqual(self.release.render(result), self.release.render(json.loads(self.release.render(result))))
 
     def test_runtime_profile_skips_expensive_stages(self):

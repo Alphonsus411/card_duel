@@ -1,7 +1,10 @@
 import importlib.util
 from pathlib import Path
 import re
+import sys
+import tomllib
 import unittest
+from unittest.mock import patch
 
 import card_duel_engine
 from card_duel_engine.rules.config import RuleSet
@@ -10,10 +13,38 @@ from card_duel_engine.rules.config import RuleSet
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def project_version():
+    with (ROOT / "pyproject.toml").open("rb") as stream:
+        return tomllib.load(stream)["project"]["version"]
+
+
 class ReleaseMetadataTests(unittest.TestCase):
     def test_public_and_rules_versions_are_in_sync(self):
-        self.assertEqual(card_duel_engine.__version__, "0.19.0")
+        self.assertEqual(card_duel_engine.__version__, project_version())
         self.assertEqual(RuleSet().version, card_duel_engine.__version__)
+
+    def test_installed_distribution_metadata_is_preferred(self):
+        from card_duel_engine._version import resolve_version
+
+        with patch("card_duel_engine._version.metadata.version", return_value="1.2.3") as installed:
+            self.assertEqual(resolve_version(), "1.2.3")
+        installed.assert_called_once_with("card-duel-engine")
+
+    def test_source_tree_fallback_reads_controlled_pyproject(self):
+        from card_duel_engine._version import resolve_version
+
+        with patch(
+            "card_duel_engine._version.metadata.version",
+            side_effect=card_duel_engine._version.metadata.PackageNotFoundError,
+        ):
+            self.assertEqual(resolve_version(), project_version())
+
+    def test_unexpected_metadata_errors_are_not_hidden(self):
+        from card_duel_engine._version import resolve_version
+
+        with patch("card_duel_engine._version.metadata.version", side_effect=RuntimeError("metadata")):
+            with self.assertRaisesRegex(RuntimeError, "metadata"):
+                resolve_version()
 
     def test_wheel_audit_targets_the_universal_release_wheel(self):
         path = ROOT / "scripts" / "verify_reproducible_wheel.py"
@@ -21,8 +52,12 @@ class ReleaseMetadataTests(unittest.TestCase):
         self.assertIsNotNone(spec)
         assert spec is not None and spec.loader is not None
         module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        self.assertEqual(module.WHEEL_NAME, "card_duel_engine-0.19.0-py3-none-any.whl")
+        sys.path.insert(0, str(ROOT / "scripts"))
+        try:
+            spec.loader.exec_module(module)
+        finally:
+            sys.path.pop(0)
+        self.assertEqual(module.WHEEL_NAME, f"card_duel_engine-{project_version()}-py3-none-any.whl")
 
     def test_current_documents_agree_on_completed_roadmap_deliveries(self):
         roadmap = (ROOT / "docs" / "ROADMAP.md").read_text(encoding="utf-8")

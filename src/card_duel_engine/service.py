@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Protocol, cast
 
 from .catalog import CardCatalog
 from .content.registry import CollectionRegistry
 from .controllers.base import PlayerObservation
 from .domain.errors import InvalidDeckDefinition
 from .domain.models import CardDefinition
-from .engine.commands import GameCommand
+from .engine.commands import EXECUTABLE_COMMAND_TYPE_SET, GameCommand
 from .engine.game import GameEngine
 from .rules.config import RuleSet
 from .storage.base import StoredMatch, validate_expected_version
@@ -135,11 +135,12 @@ class MatchService:
     @staticmethod
     def validate_command(command: object) -> None:
         """Rechaza objetos ajenos sin ejecutar ni ocultar errores del motor."""
+        if type(command) not in EXECUTABLE_COMMAND_TYPE_SET:
+            raise MalformedGameCommand
+        validated_command = cast(GameCommand, command)
         if (
-            not isinstance(command, GameCommand)
-            or type(command) not in GameCommand.__subclasses__()
-            or type(command.player_id) is not str
-            or not command.player_id
+            type(validated_command.player_id) is not str
+            or not validated_command.player_id
         ):
             raise MalformedGameCommand
 

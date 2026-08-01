@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Protocol
 
-from ..catalog import CardCatalog
+from ..catalog import CardCatalogReader
 from ..domain.enums import EffectDuration, EffectKind, MoveReason, TargetMode, Zone
 from ..domain.errors import UnsupportedEffectError
 from ..domain.models import (
@@ -25,7 +25,7 @@ from ..domain.models import (
 class EffectContext(Protocol):
     """Operaciones autoritativas que necesita la resolución de efectos."""
 
-    catalog: CardCatalog
+    catalog: CardCatalogReader
 
     def _require_running_state(self) -> GameState: ...
     def _effect_amount(self, effect: EffectDefinition, x_value: int) -> int: ...

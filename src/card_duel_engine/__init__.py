@@ -4,7 +4,7 @@ from ._version import resolve_version
 
 __version__: str = resolve_version()
 
-from .catalog import CardCatalog
+from .catalog import CardCatalog, CardCatalogSnapshot
 from .application import (
     AccessDenied,
     AuthenticatedMatchApplication,
@@ -28,6 +28,7 @@ from .application import (
 from .content import (
     CollectionManifest,
     CollectionRegistry,
+    CollectionRegistrySnapshot,
     CollectionSignatureEnvelope,
     CollectionTrustPolicy,
     PermissiveCollectionTrustPolicy,
@@ -42,6 +43,7 @@ from .storage import InMemoryMatchStore, SQLiteMatchStore, VersionConflict
 
 __all__ = [
     "CardCatalog",
+    "CardCatalogSnapshot",
     "AccessDenied",
     "AuthenticatedMatchApplication",
     "AuthenticationRequired",
@@ -62,6 +64,7 @@ __all__ = [
     "WriteConflict",
     "CollectionManifest",
     "CollectionRegistry",
+    "CollectionRegistrySnapshot",
     "CollectionTrustPolicy",
     "CollectionSignatureEnvelope",
     "PermissiveCollectionTrustPolicy",

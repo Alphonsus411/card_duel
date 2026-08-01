@@ -6,7 +6,7 @@ from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import replace
 from itertools import combinations, islice, permutations, product
 
-from ..catalog import CardCatalog
+from ..catalog import CardCatalog, CardCatalogReader
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -92,7 +92,7 @@ class GameEngine:
         self.registry: CollectionRegistry | None = (
             catalog if catalog is not None and not isinstance(catalog, CardCatalog) else None
         )
-        self.catalog: CardCatalog = (
+        self.catalog: CardCatalogReader = (
             self.registry.catalog
             if self.registry is not None
             else catalog if isinstance(catalog, CardCatalog) else CardCatalog()
@@ -158,6 +158,7 @@ class GameEngine:
 
         for definition in incoming_definitions.values():
             if definition.card_id not in self.catalog:
+                assert isinstance(self.catalog, CardCatalog)
                 self.catalog.register(definition)
 
         self._next_instance = 1

@@ -242,6 +242,11 @@ acción que puedan codificar elecciones privadas. La aplicación solo publica el
 discriminador de cada acción legal; el comando recibido se valida por separado
 contra la identidad autenticada.
 
+`PublicLegalAction.action` identifica el tipo general, pero no distingue
+necesariamente alternativas simultáneas del mismo tipo. La deuda y las
+condiciones de seguridad que tendría que resolver una eventual decisión de
+transporte se registran en
+[AD-01](ENGINEERING_BACKLOG.md#ad-01--identidad-pública-de-alternativas-legales-para-un-transporte-futuro).
 
 ## Contratos de componentes (0.12.0)
 

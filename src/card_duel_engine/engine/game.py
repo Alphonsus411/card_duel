@@ -127,22 +127,110 @@ class GameEngine:
         seed: int = 0,
         auto_start: bool = True,
     ) -> GameState:
-        if len(decks) < self.rules.minimum_players:
+        # Las entradas potencialmente perezosas se consumen antes de cualquier
+        # otra preparación, de modo que un generador que falle no pueda dejar
+        # cambios observables en el motor.
+        prepared_decks = {
+            player_id: tuple(definitions) for player_id, definitions in decks.items()
+        }
+        turn_order = tuple(prepared_decks)
+        if len(prepared_decks) < self.rules.minimum_players:
             raise InvalidDeckDefinition(
                 f"Se necesitan al menos {self.rules.minimum_players} jugadores"
             )
 
-        # Materializar y validar todo antes de tocar el catalogo o reemplazar una
-        # partida existente. Ademas de aceptar generadores, esta fase evita que un
-        # error tardio deje definiciones registradas parcialmente.
-        prepared_decks = {
-            player_id: tuple(definitions) for player_id, definitions in decks.items()
-        }
+        # Conservar explícitamente todas las referencias publicadas. La
+        # preparación no las usa como espacio de trabajo ni necesita rollback.
+        previous_values = (
+            self.catalog,
+            self.state,
+            self._next_instance,
+            self._next_stack_item,
+            self._replacement_replay_choices,
+            self._replacement_replay_cursor,
+        )
+        candidate_catalog = self._prepare_catalog(prepared_decks)
+        next_instance = 1
+        next_stack_item = 1
+        replacement_replay_choices: tuple[int, ...] = ()
+        replacement_replay_cursor = 0
+        rng = random.Random(seed)
+        players = {player_id: PlayerState(player_id) for player_id in turn_order}
+        cards: dict[str, CardInstance] = {}
+        initial_decks: dict[str, tuple[str, ...]] = {}
+
+        for player_id, definitions in prepared_decks.items():
+            definition_ids: list[str] = []
+            for definition in definitions:
+                definition_ids.append(definition.card_id)
+                instance, next_instance = self._create_candidate_instance(
+                    definition, player_id, next_instance
+                )
+                cards[instance.instance_id] = instance
+                players[player_id].zones[Zone.DECK].append(instance.instance_id)
+            initial_decks[player_id] = tuple(definition_ids)
+            rng.shuffle(players[player_id].zones[Zone.DECK])
+
+        candidate_state = GameState(
+            ruleset_id=self.rules.ruleset_id,
+            ruleset_version=self.rules.version,
+            players=players,
+            turn_order=turn_order,
+            cards=cards,
+            priority_player_id=turn_order[0],
+            random_seed=seed,
+            initial_decks=initial_decks,
+            status=MatchStatus.SETUP,
+        )
+
+        # Las operaciones de arranque siguen exactamente los mismos caminos del
+        # motor, pero sobre un coordinador candidato que aún no está publicado.
+        candidate = GameEngine(self.rules)
+        candidate.catalog = candidate_catalog
+        candidate.state = candidate_state
+        candidate._next_instance = next_instance
+        candidate._next_stack_item = next_stack_item
+        candidate._replacement_replay_choices = replacement_replay_choices
+        candidate._replacement_replay_cursor = replacement_replay_cursor
+        for player_id in candidate_state.turn_order:
+            candidate._draw(player_id, self.rules.initial_hand_size)
+        if auto_start:
+            candidate.start_match()
+        self._validate_candidate_invariants(candidate_state, candidate_catalog)
+
+        # Punto único de publicación: simples asignaciones posteriores a toda
+        # operación capaz de fallar.
+        assert previous_values == (
+            self.catalog,
+            self.state,
+            self._next_instance,
+            self._next_stack_item,
+            self._replacement_replay_choices,
+            self._replacement_replay_cursor,
+        )
+        self.catalog = candidate_catalog
+        self.state = candidate_state
+        self._next_instance = candidate._next_instance
+        self._next_stack_item = candidate._next_stack_item
+        self._replacement_replay_choices = candidate._replacement_replay_choices
+        self._replacement_replay_cursor = candidate._replacement_replay_cursor
+        return candidate_state
+
+    def _prepare_catalog(
+        self, prepared_decks: Mapping[str, tuple[CardDefinition, ...]]
+    ) -> CardCatalogReader:
+        """Valida definiciones y devuelve el catálogo aislado de la partida."""
+        authoritative = self.registry.catalog if self.registry is not None else self.catalog
+        candidate = (
+            authoritative
+            if self.registry is not None
+            else CardCatalog({card.card_id: card for card in authoritative.definitions()})
+        )
         incoming_definitions: dict[str, CardDefinition] = {}
         for definitions in prepared_decks.values():
             for definition in definitions:
-                if definition.card_id in self.catalog:
-                    if self.catalog.get(definition.card_id) != definition:
+                if definition.card_id in authoritative:
+                    if authoritative.get(definition.card_id) != definition:
                         raise InvalidDeckDefinition(
                             f"La definición {definition.card_id} no coincide con el catálogo"
                         )
@@ -156,53 +244,28 @@ class GameEngine:
                         f"Definiciones incompatibles para {definition.card_id}"
                     )
 
-        for definition in incoming_definitions.values():
-            if definition.card_id not in self.catalog:
-                assert isinstance(self.catalog, CardCatalog)
-                self.catalog.register(definition)
+        if isinstance(candidate, CardCatalog):
+            for definition in incoming_definitions.values():
+                if definition.card_id not in candidate:
+                    candidate.register(definition)
+        return candidate
 
-        self._next_instance = 1
-        self._next_stack_item = 1
-        self._replacement_replay_choices = ()
-        self._replacement_replay_cursor = 0
-        rng = random.Random(seed)
-        players = {player_id: PlayerState(player_id) for player_id in decks}
-        cards: dict[str, CardInstance] = {}
-        initial_decks: dict[str, tuple[str, ...]] = {}
+    @staticmethod
+    def _create_candidate_instance(
+        definition: CardDefinition, player_id: str, next_instance: int
+    ) -> tuple[CardInstance, int]:
+        instance_id = f"card-{next_instance:06d}"
+        return CardInstance(
+            instance_id=instance_id,
+            definition_id=definition.card_id,
+            owner_id=player_id,
+            controller_id=player_id,
+        ), next_instance + 1
 
-        for player_id, definitions in prepared_decks.items():
-            definition_ids: list[str] = []
-            for definition in definitions:
-                definition_ids.append(definition.card_id)
-                instance_id = f"card-{self._next_instance:06d}"
-                self._next_instance += 1
-                cards[instance_id] = CardInstance(
-                    instance_id=instance_id,
-                    definition_id=definition.card_id,
-                    owner_id=player_id,
-                    controller_id=player_id,
-                )
-                players[player_id].zones[Zone.DECK].append(instance_id)
-            initial_decks[player_id] = tuple(definition_ids)
-            rng.shuffle(players[player_id].zones[Zone.DECK])
-
-        self.state = GameState(
-            ruleset_id=self.rules.ruleset_id,
-            ruleset_version=self.rules.version,
-            players=players,
-            turn_order=tuple(decks),
-            cards=cards,
-            priority_player_id=tuple(decks)[0],
-            random_seed=seed,
-            initial_decks=initial_decks,
-            status=MatchStatus.SETUP,
-        )
-        for player_id in self.state.turn_order:
-            self._draw(player_id, self.rules.initial_hand_size)
-        if auto_start:
-            self.start_match()
-        self.validate_invariants()
-        return self.state
+    def _validate_candidate_invariants(
+        self, state: GameState, catalog: CardCatalogReader
+    ) -> None:
+        self._validate_invariants(state, catalog)
 
     def start_match(self) -> None:
         state = self._require_state()
@@ -2082,13 +2145,19 @@ class GameEngine:
 
     def _definition(self, card_id: str) -> CardDefinition:
         state = self._require_state()
+        return self._definition_for(state, self.catalog, card_id)
+
+    @classmethod
+    def _definition_for(
+        cls, state: GameState, catalog: CardCatalogReader, card_id: str
+    ) -> CardDefinition:
         instance = state.cards[card_id]
-        definition = self.catalog.get(
+        definition = catalog.get(
             instance.overridden_definition_id or instance.definition_id
         )
         for applied in state.text_patches:
             if applied.target_card_id == card_id:
-                definition = self._apply_text_patch_to_definition(
+                definition = cls._apply_text_patch_to_definition(
                     definition, applied.patch
                 )
         return definition
@@ -2123,7 +2192,11 @@ class GameEngine:
         )
 
     def validate_invariants(self) -> None:
-        state = self._require_state()
+        self._validate_invariants(self._require_state(), self.catalog)
+
+    def _validate_invariants(
+        self, state: GameState, catalog: CardCatalogReader
+    ) -> None:
         if (
             state.ruleset_id != self.rules.ruleset_id
             or state.ruleset_version != self.rules.version
@@ -2194,7 +2267,7 @@ class GameEngine:
             raise InvariantViolation("Supresión de fase con jugador inexistente")
         if any(
             instance.overridden_definition_id is not None
-            and instance.overridden_definition_id not in self.catalog
+            and instance.overridden_definition_id not in catalog
             for instance in state.cards.values()
         ):
             raise InvariantViolation("Transformación con definición inexistente")
@@ -2241,7 +2314,13 @@ class GameEngine:
             target = state.cards.get(instance.attached_to)
             if instance.zone is not Zone.BATTLEFIELD or target is None or target.zone is not Zone.BATTLEFIELD:
                 raise InvariantViolation(f"Anexo incoherente para {card_id}")
-            if not self._is_creature(instance.attached_to):
+            target_definition = self._definition_for(
+                state, catalog, instance.attached_to
+            )
+            if not (
+                target_definition.kind is CardKind.CREATURE
+                or target.transformed_as_creature
+            ):
                 raise InvariantViolation(f"Equipo unido a un objetivo no criatura: {card_id}")
         if any(
             modifier.target_card_id not in state.cards
@@ -2258,7 +2337,9 @@ class GameEngine:
         for card_id, instance in state.cards.items():
             if not instance.replacement_order:
                 continue
-            replacements = self._replacement_definitions(self._definition(card_id))
+            replacements = self._replacement_definitions(
+                self._definition_for(state, catalog, card_id)
+            )
             if instance.zone is not Zone.BATTLEFIELD or set(
                 instance.replacement_order
             ) != set(range(len(replacements))):

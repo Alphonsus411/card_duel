@@ -1,5 +1,6 @@
 import tempfile
 import unittest
+from unittest.mock import patch
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import MISSING, fields
 from pathlib import Path
@@ -13,6 +14,8 @@ from card_duel_engine import (
     VersionConflict,
 )
 from card_duel_engine.domain.errors import IllegalAction
+from card_duel_engine.catalog import CardCatalog
+from card_duel_engine.engine.game import GameEngine
 from card_duel_engine.domain.enums import MatchStatus
 from card_duel_engine.engine import commands as command_module
 from card_duel_engine.engine.commands import (
@@ -159,6 +162,37 @@ class MatchServiceV0110Tests(unittest.TestCase):
         updated = service.submit("match", action, expected_version=view.version)
         self.assertEqual(updated.version, 2)
         self.assertEqual(service.get_match("match").version, 2)
+
+    def test_late_engine_failure_never_calls_store_or_mutates_shared_catalog(self):
+        class AccidentalSetupFailure(RuntimeError):
+            pass
+
+        class RecordingStore(InMemoryMatchStore):
+            def __init__(self):
+                super().__init__()
+                self.create_calls = []
+
+            def create(self, match_id, engine):
+                self.create_calls.append((match_id, engine))
+                return super().create(match_id, engine)
+
+        catalog = CardCatalog()
+        store = RecordingStore()
+        service = MatchService(store, catalog=catalog)
+        definitions_before = catalog.definitions()
+
+        with patch.object(
+            GameEngine,
+            "_validate_candidate_invariants",
+            side_effect=AccidentalSetupFailure("fallo accidental tardío"),
+        ):
+            with self.assertRaisesRegex(AccidentalSetupFailure, "accidental tardío"):
+                service.create_match("not-created", self.decks(), seed=41)
+
+        self.assertEqual(store.create_calls, [])
+        self.assertEqual(catalog.definitions(), definitions_before)
+        with self.assertRaises(KeyError):
+            store.load("not-created")
 
     def test_stale_version_is_rejected_without_mutation(self):
         service = MatchService(InMemoryMatchStore())

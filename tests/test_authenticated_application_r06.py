@@ -10,6 +10,7 @@ import json
 import tempfile
 import unittest
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
 
@@ -21,8 +22,11 @@ from card_duel_engine import (
     ExternalIdentity,
     InMemoryIdentityAuthorization,
     InMemoryMatchStore,
+    InternalLoadFailure,
+    InvalidDeck,
     InvalidIdentity,
     InvalidMatchId,
+    MalformedCommand,
     MatchService,
     ResourceNotFound,
     SQLiteMatchStore,
@@ -34,6 +38,7 @@ from card_duel_engine.domain.models import GameState
 from card_duel_engine.engine.commands import Concede, PassPriority
 from card_duel_engine.engine.game import GameEngine
 from card_duel_engine.persistence.snapshot import state_digest
+from card_duel_engine.storage import MatchNotFound
 from fixtures import test_deck
 
 
@@ -93,6 +98,17 @@ class AuthenticatedApplicationR06Contract:
         with self.assertRaises(error):
             operation()
         self.assertEqual(self.fingerprint(match_id), before)
+
+    def corrupt_snapshot(self, match_id, payload):
+        if self.store_kind == "memory":
+            version, _ = self.store._records[match_id]
+            self.store._records[match_id] = (version, payload)
+        else:
+            with self.store._connect() as connection:
+                connection.execute(
+                    "UPDATE matches SET snapshot = ? WHERE match_id = ?",
+                    (payload, match_id),
+                )
 
     def test_fixture_contains_two_matches_and_two_players_per_match(self):
         for match_id in ("one", "two"):
@@ -361,6 +377,57 @@ class AuthenticatedApplicationR06Contract:
             lambda: self.app.submit(alice, "one", command, expected_version=1),
             "one",
         )
+
+    def test_incompatible_decks_have_a_safe_specific_public_error(self):
+        alice = self.identities["alice"]
+        self.authorization.grant_global(alice, Capability.CREATE_MATCH)
+        original = test_deck("duplicate")[0]
+        incompatible = replace(original, name=f"{original.name} (interno secreto)")
+
+        with self.assertRaises(InvalidDeck) as caught:
+            self.app.create_match(
+                alice,
+                "invalid-decks",
+                {"A": (original,), "B": (incompatible,)},
+            )
+
+        self.assertEqual(caught.exception.code, "invalid_deck")
+        self.assertEqual(caught.exception.args, (InvalidDeck.public_message,))
+        self.assertNotIn("interno secreto", str(caught.exception))
+        with self.assertRaises(MatchNotFound):
+            self.service.get_match("invalid-decks")
+
+    def test_malformed_commands_have_a_safe_specific_public_error(self):
+        before = self.fingerprint("one")
+        with self.assertRaises(MalformedCommand) as caught:
+            self.app.submit(
+                self.identities["alice"], "one", object(), expected_version=1
+            )
+        self.assertEqual(caught.exception.code, "malformed_command")
+        self.assertEqual(caught.exception.args, (MalformedCommand.public_message,))
+        self.assertNotIn("object", str(caught.exception))
+        self.assertEqual(self.fingerprint("one"), before)
+
+    def test_unreadable_snapshot_has_a_safe_internal_load_error(self):
+        version, _ = self.fingerprint("one")
+        self.corrupt_snapshot("one", "texto interno que no es JSON")
+
+        with self.assertRaises(InternalLoadFailure) as caught:
+            self.app.view(self.identities["alice"], "one")
+
+        self.assertEqual(caught.exception.code, "internal_load_failure")
+        self.assertEqual(
+            caught.exception.args, (InternalLoadFailure.public_message,)
+        )
+        self.assertNotIn("texto interno", str(caught.exception))
+        if self.store_kind == "memory":
+            self.assertEqual(self.store._records["one"][0], version)
+        else:
+            with self.store._connect() as connection:
+                persisted = connection.execute(
+                    "SELECT version, snapshot FROM matches WHERE match_id = 'one'"
+                ).fetchone()
+            self.assertEqual(persisted, (version, "texto interno que no es JSON"))
 
     def test_two_authorized_requests_with_same_version_have_one_cas_winner(self):
         alice = self.identities["alice"]

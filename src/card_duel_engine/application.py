@@ -15,8 +15,19 @@ from typing import TYPE_CHECKING, Any, Protocol, TypeVar
 from .domain.errors import IllegalAction
 from .domain.models import CardDefinition
 from .engine.commands import GameCommand
-from .service import CommandSource, MatchService, MatchView
-from .storage.base import MatchNotFound, VersionConflict, validate_match_id
+from .service import (
+    CommandSource,
+    DeckValidationFailure,
+    MalformedGameCommand,
+    MatchService,
+    MatchView,
+)
+from .storage.base import (
+    InvalidStoredSnapshot,
+    MatchNotFound,
+    VersionConflict,
+    validate_match_id,
+)
 
 if TYPE_CHECKING:
     from .controllers.base import PlayerObservation
@@ -175,6 +186,27 @@ class CommandRejected(ApplicationError):
     public_message = "El comando fue rechazado"
 
 
+class InvalidDeck(ApplicationError):
+    """Las definiciones públicas de mazo son incompatibles o inválidas."""
+
+    code = "invalid_deck"
+    public_message = "La definición de los mazos no es válida"
+
+
+class MalformedCommand(ApplicationError):
+    """El objeto recibido no tiene la forma de un comando admitido."""
+
+    code = "malformed_command"
+    public_message = "El comando no tiene un formato válido"
+
+
+class InternalLoadFailure(ApplicationError):
+    """La partida existe, pero su instantánea no se puede cargar."""
+
+    code = "internal_load_failure"
+    public_message = "No se pudo cargar el recurso solicitado"
+
+
 class InvalidMatchId(ApplicationError):
     """Entrada pública inválida, identificada por el código ``invalid_match_id``."""
 
@@ -300,6 +332,12 @@ class AuthenticatedMatchApplication:
             raise WriteConflict from None
         except IllegalAction:
             raise CommandRejected from None
+        except DeckValidationFailure:
+            raise InvalidDeck from None
+        except MalformedGameCommand:
+            raise MalformedCommand from None
+        except InvalidStoredSnapshot:
+            raise InternalLoadFailure from None
 
     def create_match(
         self,
@@ -344,7 +382,10 @@ class AuthenticatedMatchApplication:
         player_id = self._authorization.player_for(
             principal, match_id, Capability.SUBMIT_COMMAND
         )
-        if player_id is None or command.player_id != player_id:
+        if player_id is None:
+            raise AccessDenied
+        self._translate(lambda: self._service.validate_command(command))
+        if command.player_id != player_id:
             raise AccessDenied
         view = self._translate(
             lambda: self._service.submit(
@@ -372,6 +413,7 @@ class AuthenticatedMatchApplication:
         if view.version != expected_version:
             raise WriteConflict
         command = source.choose_action(view.observation, view.legal_actions)
+        self._translate(lambda: self._service.validate_command(command))
         if command.player_id != player_id:
             raise AccessDenied
         submitted = self._translate(

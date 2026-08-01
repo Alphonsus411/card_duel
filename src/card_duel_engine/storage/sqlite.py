@@ -4,9 +4,16 @@ import sqlite3
 from pathlib import Path
 from uuid import uuid4
 
+from ..domain.errors import InvariantViolation
 from ..engine.game import GameEngine
 from ..persistence.snapshot import dump_snapshot, load_snapshot
-from .base import MatchNotFound, StoredMatch, VersionConflict, validate_match_id
+from .base import (
+    InvalidStoredSnapshot,
+    MatchNotFound,
+    StoredMatch,
+    VersionConflict,
+    validate_match_id,
+)
 
 
 class SQLiteMatchStore:
@@ -90,7 +97,11 @@ class SQLiteMatchStore:
             ).fetchone()
         if row is None:
             raise MatchNotFound(match_id)
-        return StoredMatch(match_id, int(row[0]), load_snapshot(row[1]))
+        try:
+            engine = load_snapshot(row[1])
+        except (InvariantViolation, KeyError, TypeError, UnicodeError, ValueError) as exc:
+            raise InvalidStoredSnapshot from exc
+        return StoredMatch(match_id, int(row[0]), engine)
 
     def save(
         self, match_id: str, engine: GameEngine, *, expected_version: int

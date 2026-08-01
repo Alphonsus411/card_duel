@@ -3,6 +3,7 @@ from __future__ import annotations
 import random
 import hashlib
 import hmac
+import threading
 from dataclasses import replace
 import tempfile
 from pathlib import Path
@@ -43,6 +44,84 @@ class CollectionRegistryTests(unittest.TestCase):
             def resolve(self, key_id):
                 return (keys or {}).get(key_id)
         return CollectionTrustPolicy(Resolver())
+
+    def assert_catalog_matches_provenance(self, registry):
+        """Cada carta de estas carreras pertenece a una colección publicada."""
+        provenance_ids = set(registry.collections)
+        catalog_collection_ids = {
+            card.set_id for card in registry.catalog.definitions()
+        }
+        self.assertEqual(catalog_collection_ids, provenance_ids)
+
+    def run_concurrent_batches(self, first, second):
+        """Libera dos registros a la vez y devuelve sus resultados y errores."""
+        registry = CollectionRegistry()
+        barrier = threading.Barrier(3)
+        results = []
+        errors = []
+
+        def register_batch(batch):
+            barrier.wait()
+            try:
+                results.append(dict(registry.register_batch(batch)))
+            except ValueError as error:
+                errors.append(error)
+
+        threads = [
+            threading.Thread(target=register_batch, args=(batch,))
+            for batch in (first, second)
+        ]
+        for thread in threads:
+            thread.start()
+        barrier.wait()
+        for thread in threads:
+            thread.join()
+        return registry, results, errors
+
+    def test_concurrent_compatible_batches_are_both_published_without_loss(self):
+        first = [manifest("a", card_id="a-card"), manifest("b", ("a",), "b-card")]
+        second = [manifest("c", card_id="c-card"), manifest("d", ("c",), "d-card")]
+
+        for iteration in range(12):
+            with self.subTest(iteration=iteration):
+                registry, results, errors = self.run_concurrent_batches(first, second)
+                self.assertEqual(errors, [])
+                self.assertEqual(len(results), 2)
+                self.assertEqual(set(registry.collections), {"a", "b", "c", "d"})
+                self.assertEqual(
+                    {card.card_id for card in registry.catalog.definitions()},
+                    {"a-card", "b-card", "c-card", "d-card"},
+                )
+                self.assert_catalog_matches_provenance(registry)
+
+    def test_concurrent_colliding_batches_publish_exactly_one_whole_batch(self):
+        first = [
+            manifest("first-base", card_id="shared-card"),
+            manifest("first-child", ("first-base",), "first-only"),
+        ]
+        second = [
+            manifest("second-base", card_id="shared-card"),
+            manifest("second-child", ("second-base",), "second-only"),
+        ]
+
+        for iteration in range(12):
+            with self.subTest(iteration=iteration):
+                registry, results, errors = self.run_concurrent_batches(first, second)
+                self.assertEqual(len(results), 1)
+                self.assertEqual(len(errors), 1)
+                self.assertIn("colisiona", str(errors[0]))
+                winner = set(results[0])
+                alternatives = (
+                    ({"first-base", "first-child"}, "first-only", "second-only"),
+                    ({"second-base", "second-child"}, "second-only", "first-only"),
+                )
+                winner_ids, winner_card, rejected_card = next(
+                    option for option in alternatives if option[0] == winner
+                )
+                self.assertEqual(set(registry.collections), winner_ids)
+                self.assertIn(winner_card, registry.catalog)
+                self.assertNotIn(rejected_card, registry.catalog)
+                self.assert_catalog_matches_provenance(registry)
 
     def test_valid_signature_and_envelope_does_not_change_manifest_digest(self):
         item = manifest("signed", card_id="signed-card")

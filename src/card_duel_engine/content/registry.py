@@ -12,6 +12,7 @@ from types import MappingProxyType
 from typing import Mapping, Protocol
 import hashlib
 import hmac
+import threading
 
 from ..catalog import CardCatalog
 from .manifest import CollectionManifest, dump_manifest
@@ -110,7 +111,11 @@ class CollectionProvenance:
 
 
 class CollectionRegistry:
-    """Coordina un catálogo único y registra lotes con semántica todo-o-nada."""
+    """Coordina un catálogo único y registra lotes con semántica todo-o-nada.
+
+    ``register_batch()`` serializa la lectura, validación y commit del catálogo
+    y su procedencia como una única operación lógica.
+    """
 
     def __init__(
         self,
@@ -121,6 +126,7 @@ class CollectionRegistry:
         self._catalog = catalog if catalog is not None else CardCatalog()
         self._trust_policy = trust_policy
         self._collections: dict[str, CollectionProvenance] = {}
+        self._lock = threading.RLock()
 
     @property
     def catalog(self) -> CardCatalog:
@@ -151,6 +157,14 @@ class CollectionRegistry:
         | list[CollectionManifest | CollectionSignatureEnvelope],
     ) -> Mapping[str, CollectionProvenance]:
         """Valida y aplica un lote completo en orden topológico determinista."""
+        with self._lock:
+            return self._register_batch_locked(manifests)
+
+    def _register_batch_locked(
+        self,
+        manifests: tuple[CollectionManifest | CollectionSignatureEnvelope, ...]
+        | list[CollectionManifest | CollectionSignatureEnvelope],
+    ) -> Mapping[str, CollectionProvenance]:
         pending: dict[
             str, tuple[CollectionManifest, CollectionSignatureEnvelope | None]
         ] = {}

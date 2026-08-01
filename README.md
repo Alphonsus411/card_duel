@@ -146,7 +146,8 @@ interfaz gráfica, un cliente remoto y AGIX utilizarán exactamente el mismo
 contrato.
 
 Consulta `docs/ARCHITECTURE.md` y `docs/RULES_BASELINE.md` para conocer las
-decisiones de esta primera versión.
+decisiones de esta primera versión. El trabajo técnico pendiente se registra
+por separado en `docs/ENGINEERING_BACKLOG.md`.
 
 ### Registro autoritativo de colecciones
 

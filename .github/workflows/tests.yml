@@ -50,12 +50,26 @@ jobs:
         with:
           version: ${{ env.UV_VERSION }}
       - run: uv sync --locked --extra dev
+      - name: Resolve package metadata
+        id: package
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          import tomllib
+          from pathlib import Path
+
+          version = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+              output.write(f"version={version}\n")
+              output.write(f"wheel=card_duel_engine-{version}-py3-none-any.whl\n")
+          PY
       - run: uv run python scripts/verify_release.py --profile full --json release-verification.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: card-duel-engine-0.17.0-release
+          name: card-duel-engine-${{ steps.package.outputs.version }}-release
           path: |
-            dist/card_duel_engine-0.17.0-py3-none-any.whl
+            dist/${{ steps.package.outputs.wheel }}
             dist/SHA256SUMS
             dist/wheel-audit.json
             release-verification.json

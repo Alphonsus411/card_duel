@@ -6,15 +6,24 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import tomllib
 import unittest
 import base64
 import csv
 import hashlib
 import io
+import re
 from unittest.mock import patch
 from zipfile import ZIP_DEFLATED, ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def active_packaging_versions(workflow: str) -> set[str]:
+    """Devuelve versiones literales solo del bloque activo de subida del job full."""
+    full_job = workflow.split("\n  full:\n", 1)[1]
+    upload = full_job.split("actions/upload-artifact@", 1)[1]
+    return set(re.findall(r"(?<![A-Za-z0-9])([0-9]+\.[0-9]+\.[0-9]+)(?![A-Za-z0-9])", upload))
 
 
 def load(name: str, filename: str):
@@ -78,6 +87,47 @@ class ReleaseVerifierTests(unittest.TestCase):
         self.assertIn("quality:mypy", raised.exception.diagnostic())
         self.assertIn("type output", raised.exception.diagnostic())
         self.assertIn("type error", raised.exception.diagnostic())
+
+    def test_release_workflow_derives_active_package_paths_from_project_version(self):
+        workflow = (ROOT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
+        project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+        version = project["project"]["version"]
+
+        self.assertIn("id: package", workflow)
+        self.assertIn('tomllib.loads(Path("pyproject.toml")', workflow)
+        self.assertIn('output.write(f"version={version}\\n")', workflow)
+        self.assertIn('output.write(f"wheel=card_duel_engine-{version}-py3-none-any.whl\\n")', workflow)
+        self.assertIn("name: card-duel-engine-${{ steps.package.outputs.version }}-release", workflow)
+        self.assertIn("dist/${{ steps.package.outputs.wheel }}", workflow)
+        self.assertEqual(active_packaging_versions(workflow), set())
+
+        # Una mención histórica fuera del bloque de subida no es empaquetado activo.
+        historical = f"# test_historical_release_0.1.0\n{workflow}"
+        self.assertEqual(active_packaging_versions(historical), set())
+        mismatched = workflow.replace(
+            "dist/${{ steps.package.outputs.wheel }}",
+            "dist/card_duel_engine-9.99.9-py3-none-any.whl",
+        )
+        self.assertEqual(active_packaging_versions(mismatched), {"9.99.9"})
+
+        full_job = workflow.split("\n  full:\n", 1)[1]
+        upload = full_job.split("actions/upload-artifact@", 1)[1]
+        expected_paths = {
+            "dist/${{ steps.package.outputs.wheel }}",
+            "dist/SHA256SUMS",
+            "dist/wheel-audit.json",
+            "release-verification.json",
+        }
+        upload_lines = {line.strip() for line in upload.splitlines()}
+        self.assertTrue(expected_paths.issubset(upload_lines))
+        self.assertIn("if-no-files-found: error", upload)
+
+        verifier = (ROOT / "scripts" / "verify_release.py").read_text(encoding="utf-8")
+        wheel_audit = (ROOT / "scripts" / "verify_reproducible_wheel.py").read_text(encoding="utf-8")
+        self.assertIn('(ROOT / "dist" / "wheel-audit.json").read_text', verifier)
+        self.assertIn('(destination / "SHA256SUMS").write_text', wheel_audit)
+        self.assertIn('(destination / "wheel-audit.json").write_text', wheel_audit)
+        self.assertIn("destination / WHEEL_NAME", wheel_audit)
 
 
 class WheelAuditTests(unittest.TestCase):

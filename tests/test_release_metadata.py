@@ -2,6 +2,7 @@ import importlib.util
 from pathlib import Path
 import re
 import sys
+import tempfile
 import tomllib
 import unittest
 from unittest.mock import patch
@@ -23,28 +24,98 @@ class ReleaseMetadataTests(unittest.TestCase):
         self.assertEqual(card_duel_engine.__version__, project_version())
         self.assertEqual(RuleSet().version, card_duel_engine.__version__)
 
-    def test_installed_distribution_metadata_is_preferred(self):
-        from card_duel_engine._version import resolve_version
+    def resolve_from_tree(self, root, pyproject=None, *, installed="0.18.0"):
+        from card_duel_engine import _version
 
-        with patch("card_duel_engine._version.metadata.version", return_value="1.2.3") as installed:
-            self.assertEqual(resolve_version(), "1.2.3")
+        source_file = root / "src" / "card_duel_engine" / "_version.py"
+        source_file.parent.mkdir(parents=True)
+        source_file.touch()
+        if pyproject is not None:
+            (root / "pyproject.toml").write_text(pyproject, encoding="utf-8")
+
+        with (
+            patch.object(_version, "__file__", str(source_file)),
+            patch.object(_version.metadata, "version", return_value=installed) as metadata_version,
+        ):
+            result = _version.resolve_version()
+        return result, metadata_version
+
+    def test_checkout_version_is_preferred_over_installed_metadata(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            result, installed = self.resolve_from_tree(
+                Path(temporary), '[project]\nversion = "0.19.0"\n'
+            )
+
+        self.assertEqual(result, "0.19.0")
+        installed.assert_not_called()
+
+    def test_wheel_install_without_pyproject_uses_distribution_metadata(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            result, installed = self.resolve_from_tree(Path(temporary))
+
+        self.assertEqual(result, "0.18.0")
         installed.assert_called_once_with("card-duel-engine")
 
-    def test_source_tree_fallback_reads_controlled_pyproject(self):
-        from card_duel_engine._version import resolve_version
+    def test_missing_checkout_and_distribution_propagates_package_not_found(self):
+        from card_duel_engine import _version
 
-        with patch(
-            "card_duel_engine._version.metadata.version",
-            side_effect=card_duel_engine._version.metadata.PackageNotFoundError,
-        ):
-            self.assertEqual(resolve_version(), project_version())
+        with tempfile.TemporaryDirectory() as temporary:
+            wheel_file = Path(temporary) / "site-packages" / "card_duel_engine" / "_version.py"
+            wheel_file.parent.mkdir(parents=True)
+            wheel_file.touch()
+            with (
+                patch.object(_version, "__file__", str(wheel_file)),
+                patch.object(
+                    _version.metadata,
+                    "version",
+                    side_effect=_version.metadata.PackageNotFoundError("card-duel-engine"),
+                ),
+                self.assertRaises(_version.metadata.PackageNotFoundError),
+            ):
+                _version.resolve_version()
+
+    def test_invalid_checkout_toml_is_not_hidden(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            with self.assertRaises(tomllib.TOMLDecodeError):
+                self.resolve_from_tree(Path(temporary), "[project\nversion =")
+
+    def test_checkout_requires_project_version(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            with self.assertRaisesRegex(RuntimeError, "project.version"):
+                self.resolve_from_tree(Path(temporary), "[project]\nname = 'example'\n")
+
+    def test_checkout_rejects_non_textual_project_version(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            with self.assertRaisesRegex(ValueError, "debe ser texto"):
+                self.resolve_from_tree(Path(temporary), "[project]\nversion = 19\n")
 
     def test_unexpected_metadata_errors_are_not_hidden(self):
         from card_duel_engine._version import resolve_version
 
-        with patch("card_duel_engine._version.metadata.version", side_effect=RuntimeError("metadata")):
-            with self.assertRaisesRegex(RuntimeError, "metadata"):
-                resolve_version()
+        with (
+            patch("card_duel_engine._version.Path.is_file", return_value=False),
+            patch("card_duel_engine._version.metadata.version", side_effect=RuntimeError("metadata")),
+            self.assertRaisesRegex(RuntimeError, "metadata"),
+        ):
+            resolve_version()
+
+    def test_all_release_version_consumers_read_current_project_version(self):
+        expected = "0.19.0"
+        self.assertEqual(project_version(), expected)
+        self.assertEqual(card_duel_engine.__version__, expected)
+        self.assertEqual(RuleSet().version, expected)
+
+        sys.path.insert(0, str(ROOT / "scripts"))
+        try:
+            from project_metadata import read_project_version
+            import verify_release
+            import verify_reproducible_wheel
+        finally:
+            sys.path.pop(0)
+
+        self.assertEqual(read_project_version(ROOT), expected)
+        self.assertEqual(verify_release.VERSION, expected)
+        self.assertEqual(verify_reproducible_wheel.VERSION, expected)
 
     def test_wheel_audit_targets_the_universal_release_wheel(self):
         path = ROOT / "scripts" / "verify_reproducible_wheel.py"

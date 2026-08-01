@@ -169,7 +169,10 @@ omitir `expected_version`/CAS ni reinterpretar comandos.
   esta normalización debe revisarse si aparece una aclaración normativa.
 - Nuevas migraciones cuando aparezcan futuros esquemas 3 o posteriores.
 - Extracción de pila, combate y movimientos a resolutores especializados.
-- Registro formal de las contradicciones entre reglamento base y Mítica.
+- El inventario documental de la contradicción base–Mítica sobre Divinos está
+  completado en `RULES_TRACEABILITY.md`; cualquier modificación normativa del
+  motor o de expectativas reglamentarias de pruebas sigue bloqueada hasta una
+  aclaración oficial paginada.
 
 Nada de lo anterior debe completarse mediante suposiciones silenciosas.
 

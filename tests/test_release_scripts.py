@@ -138,12 +138,49 @@ class WheelAuditTests(unittest.TestCase):
         with self.assertRaisesRegex(SystemExit, message):
             self.wheel.audit(self.mutate(transform))
 
+    def test_package_policy_matches_tracked_python_modules(self):
+        tracked = subprocess.check_output(
+            ["git", "ls-files", "--", "src/card_duel_engine"],
+            cwd=ROOT,
+            text=True,
+        ).splitlines()
+        package_prefix = "src/card_duel_engine/"
+        python_modules = {
+            path.removeprefix("src/")
+            for path in tracked
+            if path.startswith(package_prefix)
+            and path.endswith(".py")
+            and ".." not in Path(path).parts
+            and "\\" not in path
+        }
+        self.assertIsInstance(self.wheel.PACKAGE_FILES, frozenset)
+        self.assertEqual(python_modules, self.wheel.PACKAGE_FILES)
+        self.assertIn("card_duel_engine/application.py", self.wheel.PACKAGE_FILES)
+        self.assertIn("card_duel_engine/content/signature.py", self.wheel.PACKAGE_FILES)
+
     def test_altered_wheel_and_corrupt_record_are_rejected(self):
         record = f"{self.wheel.DIST_INFO}/RECORD"
         self.assert_rejected(lambda es: [(n, b"altered" if n == record else d) for n, d in es], "RECORD")
 
-    def test_dangerous_and_unexpected_paths_are_rejected(self):
-        self.assert_rejected(lambda es: es + [("../secret.key", b"x")], "Contenido divergente")
+    def test_dangerous_path_is_rejected(self):
+        self.assert_rejected(lambda es: es + [("../escape.py", b"x")], "Ruta peligrosa")
+
+    def test_unexpected_entry_is_rejected(self):
+        self.assert_rejected(lambda es: es + [("card_duel_engine/extra.py", b"x")], "Contenido divergente")
+
+    def test_test_module_is_rejected(self):
+        self.assert_rejected(lambda es: es + [("card_duel_engine/tests/test_extra.py", b"x")], "Ruta peligrosa")
+
+    def test_database_is_rejected(self):
+        self.assert_rejected(lambda es: es + [("card_duel_engine/data.sqlite", b"x")], "Ruta peligrosa")
+
+    def test_secret_is_rejected(self):
+        target = "card_duel_engine/__init__.py"
+        secret = b"-----BEGIN PRIVATE KEY-----"
+        self.assert_rejected(
+            lambda es: [(name, secret if name == target else data) for name, data in es],
+            "Posible secreto",
+        )
 
     def test_runtime_dependency_is_rejected(self):
         metadata = f"{self.wheel.DIST_INFO}/METADATA"

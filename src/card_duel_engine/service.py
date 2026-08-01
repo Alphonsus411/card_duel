@@ -9,6 +9,7 @@ from typing import Protocol
 from .catalog import CardCatalog
 from .content.registry import CollectionRegistry
 from .controllers.base import PlayerObservation
+from .domain.errors import InvalidDeckDefinition
 from .domain.models import CardDefinition
 from .engine.commands import GameCommand
 from .engine.game import GameEngine
@@ -74,8 +75,8 @@ class MatchService:
         engine = self._engine_factory()
         try:
             engine.new_match(decks, seed=seed, auto_start=auto_start)
-        except (TypeError, ValueError) as exc:
-            raise DeckValidationFailure from exc
+        except InvalidDeckDefinition:
+            raise DeckValidationFailure from None
         return self.store.create(match_id, engine)
 
     def get_match(self, match_id: str) -> StoredMatch:

@@ -14,7 +14,7 @@ import hashlib
 import hmac
 import threading
 
-from ..catalog import CardCatalog
+from ..catalog import CardCatalog, CardCatalogSnapshot
 from .manifest import CollectionManifest, dump_manifest
 from .signature import CollectionSignatureEnvelope
 
@@ -110,11 +110,30 @@ class CollectionProvenance:
     manifest_sha256: str
 
 
+@dataclass(frozen=True)
+class CollectionRegistrySnapshot:
+    """Fotografía coherente del catálogo y su procedencia publicada."""
+
+    catalog: CardCatalogSnapshot
+    collections: Mapping[str, CollectionProvenance]
+
+
+@dataclass(frozen=True)
+class _PublishedState:
+    catalog: CardCatalogSnapshot
+    collections: Mapping[str, CollectionProvenance]
+
+
 class CollectionRegistry:
     """Coordina un catálogo único y registra lotes con semántica todo-o-nada.
 
     ``register_batch()`` serializa la lectura, validación y commit del catálogo
-    y su procedencia como una única operación lógica.
+    y su procedencia como una única operación lógica. Cada acceso de lectura
+    devuelve una fotografía coherente e inmutable. Para relacionar catálogo y
+    procedencia capturados en una sola operación, use :meth:`snapshot`.
+
+    ``catalog`` ya no expone operaciones de escritura: la migración consiste en
+    usar :meth:`register` o :meth:`register_batch` para publicar contenido.
     """
 
     def __init__(
@@ -123,23 +142,36 @@ class CollectionRegistry:
         *,
         trust_policy: TrustPolicy | None = None,
     ) -> None:
-        self._catalog = catalog if catalog is not None else CardCatalog()
         self._trust_policy = trust_policy
-        self._collections: dict[str, CollectionProvenance] = {}
         self._lock = threading.RLock()
+        initial = CardCatalog(
+            {card.card_id: card for card in (catalog or CardCatalog()).definitions()}
+        )
+        self._state = _PublishedState(
+            initial.snapshot(), MappingProxyType({})
+        )
 
     @property
-    def catalog(self) -> CardCatalog:
-        """Catálogo coordinado; se comparte con el motor por inyección."""
-        return self._catalog
+    def catalog(self) -> CardCatalogSnapshot:
+        """Fotografía de solo lectura del catálogo publicado."""
+        with self._lock:
+            return self._state.catalog
 
     @property
     def collections(self) -> Mapping[str, CollectionProvenance]:
         """Vista de solo lectura de la procedencia de colecciones cargadas."""
-        return MappingProxyType(self._collections)
+        with self._lock:
+            return self._state.collections
 
     def provenance(self, collection_id: str) -> CollectionProvenance:
-        return self._collections[collection_id]
+        with self._lock:
+            return self._state.collections[collection_id]
+
+    def snapshot(self) -> CollectionRegistrySnapshot:
+        """Captura catálogo y procedencia pertenecientes al mismo commit."""
+        with self._lock:
+            state = self._state
+            return CollectionRegistrySnapshot(state.catalog, state.collections)
 
     def register(
         self, item: CollectionManifest | CollectionSignatureEnvelope
@@ -165,10 +197,12 @@ class CollectionRegistry:
         manifests: tuple[CollectionManifest | CollectionSignatureEnvelope, ...]
         | list[CollectionManifest | CollectionSignatureEnvelope],
     ) -> Mapping[str, CollectionProvenance]:
+        published = self._state
+        materialized = tuple(manifests)
         pending: dict[
             str, tuple[CollectionManifest, CollectionSignatureEnvelope | None]
         ] = {}
-        for item in manifests:
+        for item in materialized:
             if isinstance(item, CollectionSignatureEnvelope):
                 envelope: CollectionSignatureEnvelope | None = item
                 manifest = item.collection_manifest()
@@ -177,7 +211,7 @@ class CollectionRegistry:
                 manifest = item
             if manifest.collection_id in pending:
                 raise ValueError(f"Colección duplicada en el lote: {manifest.collection_id}")
-            existing = self._collections.get(manifest.collection_id)
+            existing = published.collections.get(manifest.collection_id)
             if existing is not None:
                 canonical, digest = self._identity(manifest)
                 if manifest.revision < existing.revision:
@@ -190,9 +224,12 @@ class CollectionRegistry:
             pending[manifest.collection_id] = (manifest, envelope)
 
         manifest_map = {key: value[0] for key, value in pending.items()}
-        order = self._topological_order(manifest_map)
+        order = self._topological_order(manifest_map, published.collections)
         staged: dict[str, CollectionProvenance] = {}
-        seen_cards = set(card.card_id for card in self._catalog.definitions())
+        candidate_catalog = CardCatalog(
+            {card.card_id: card for card in published.catalog.definitions()}
+        )
+        seen_cards = set(card.card_id for card in candidate_catalog.definitions())
         for collection_id in order:
             manifest, envelope = pending[collection_id]
             canonical, digest = self._identity(manifest)
@@ -202,24 +239,32 @@ class CollectionRegistry:
                 if card.card_id in seen_cards:
                     raise ValueError(f"La colección colisiona con el catálogo: {card.card_id}")
                 seen_cards.add(card.card_id)
+                candidate_catalog.register(card)
             staged[collection_id] = CollectionProvenance(
                 collection_id, manifest.revision, tuple(manifest.dependencies), digest
             )
 
-        # No puede fallar: todas las colisiones y políticas se validaron antes.
-        for collection_id in order:
-            for card in pending[collection_id][0].cards:
-                self._catalog.register(card)
-            self._collections[collection_id] = staged[collection_id]
-        return MappingProxyType(dict(staged))
+        candidate_collections = dict(published.collections)
+        candidate_collections.update(staged)
+        candidate_state = _PublishedState(
+            candidate_catalog.snapshot(), MappingProxyType(candidate_collections)
+        )
+        result = MappingProxyType(dict(staged))
+        # Único punto de publicación, posterior a toda operación que puede fallar.
+        self._state = candidate_state
+        return result
 
     @staticmethod
     def _identity(manifest: CollectionManifest) -> tuple[bytes, str]:
         canonical = dump_manifest(manifest, indent=None).encode("utf-8")
         return canonical, hashlib.sha256(canonical).hexdigest()
 
-    def _topological_order(self, pending: Mapping[str, CollectionManifest]) -> list[str]:
-        available = set(self._collections)
+    def _topological_order(
+        self,
+        pending: Mapping[str, CollectionManifest],
+        published: Mapping[str, CollectionProvenance],
+    ) -> list[str]:
+        available = set(published)
         for manifest in pending.values():
             missing = set(manifest.dependencies) - available - set(pending)
             if missing:

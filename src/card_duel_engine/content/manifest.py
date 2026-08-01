@@ -169,7 +169,10 @@ def load_manifest_file(
 
 
 def register_manifest(catalog: CardCatalog, manifest: CollectionManifest) -> None:
-    """API histórica; delega en el registro transaccional."""
+    """API histórica; valida transaccionalmente antes de actualizar el catálogo."""
     from .registry import CollectionRegistry
 
-    CollectionRegistry(catalog).register(manifest)
+    registry = CollectionRegistry(catalog)
+    registry.register(manifest)
+    for card in manifest.cards:
+        catalog.register(card)

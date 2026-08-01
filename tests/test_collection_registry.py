@@ -9,7 +9,7 @@ import tempfile
 from pathlib import Path
 import unittest
 
-from card_duel_engine import CollectionRegistry, GameEngine
+from card_duel_engine import CardCatalog, CollectionRegistry, GameEngine
 from card_duel_engine.content import (
     CollectionManifest, CollectionSignatureEnvelope, CollectionTrustPolicy,
     PermissiveCollectionTrustPolicy, TrustedKey, dump_manifest, load_manifest,
@@ -93,6 +93,32 @@ class CollectionRegistryTests(unittest.TestCase):
                     {"a-card", "b-card", "c-card", "d-card"},
                 )
                 self.assert_catalog_matches_provenance(registry)
+
+    def test_initial_catalog_and_returned_snapshots_cannot_mutate_published_state(self):
+        initial_card = manifest("initial", card_id="initial-card").cards[0]
+        external = CardCatalog({initial_card.card_id: initial_card})
+        registry = CollectionRegistry(external)
+        before = registry.snapshot()
+
+        external.register(manifest("external", card_id="external-card").cards[0])
+        registry.register(manifest("published", card_id="published-card"))
+
+        self.assertNotIn("external-card", registry.catalog)
+        self.assertNotIn("published-card", before.catalog)
+        self.assertEqual(dict(before.collections), {})
+        self.assertFalse(hasattr(registry.catalog, "register"))
+        with self.assertRaises(TypeError):
+            before.collections["x"] = registry.provenance("published")  # type: ignore[index]
+
+    def test_old_collections_snapshot_is_independent_of_later_commits(self):
+        registry = CollectionRegistry()
+        registry.register(manifest("first", card_id="first-card"))
+        old_collections = registry.collections
+
+        registry.register(manifest("second", card_id="second-card"))
+
+        self.assertEqual(tuple(old_collections), ("first",))
+        self.assertEqual(tuple(registry.collections), ("first", "second"))
 
     def test_concurrent_colliding_batches_publish_exactly_one_whole_batch(self):
         first = [

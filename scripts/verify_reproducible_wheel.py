@@ -17,7 +17,10 @@ import sys
 import tempfile
 from zipfile import ZipFile, ZipInfo
 
-VERSION = "0.19.0"
+from project_metadata import read_project_version
+
+ROOT = Path(__file__).resolve().parents[1]
+VERSION = read_project_version(ROOT)
 WHEEL_NAME = f"card_duel_engine-{VERSION}-py3-none-any.whl"
 DIST_INFO = f"card_duel_engine-{VERSION}.dist-info"
 FORBIDDEN_SUFFIXES = {".db", ".sqlite", ".sqlite3", ".pyc", ".pyo", ".pem", ".key"}
@@ -26,6 +29,7 @@ SECRET_PATTERN = re.compile(rb"(BEGIN (RSA |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{1
 
 PACKAGE_FILES = frozenset({
     "card_duel_engine/__init__.py",
+    "card_duel_engine/_version.py",
     "card_duel_engine/application.py",
     "card_duel_engine/catalog.py",
     "card_duel_engine/content/__init__.py",
@@ -159,7 +163,7 @@ def audit(wheel: Path) -> dict[str, object]:
 
 
 def main() -> None:
-    root = Path(__file__).resolve().parents[1]
+    root = ROOT
     epoch = subprocess.check_output(["git", "show", "-s", "--format=%ct", "HEAD"], cwd=root, text=True).strip()
     destination = root / "dist"
     destination.mkdir(exist_ok=True)

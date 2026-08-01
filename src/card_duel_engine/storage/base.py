@@ -4,6 +4,7 @@ import unicodedata
 from dataclasses import dataclass
 from threading import RLock
 
+from ..domain.errors import InvariantViolation
 from ..engine.game import GameEngine
 from ..persistence.snapshot import dump_snapshot, load_snapshot
 
@@ -14,6 +15,10 @@ class MatchNotFound(KeyError):
 
 class VersionConflict(RuntimeError):
     pass
+
+
+class InvalidStoredSnapshot(RuntimeError):
+    """La carga encontró una instantánea persistida que no puede reconstruirse."""
 
 
 @dataclass(frozen=True)
@@ -67,7 +72,11 @@ class InMemoryMatchStore:
                 version, payload = self._records[match_id]
             except KeyError as exc:
                 raise MatchNotFound(match_id) from exc
-        return StoredMatch(match_id, version, load_snapshot(payload))
+        try:
+            engine = load_snapshot(payload)
+        except (InvariantViolation, KeyError, TypeError, UnicodeError, ValueError) as exc:
+            raise InvalidStoredSnapshot from exc
+        return StoredMatch(match_id, version, engine)
 
     def save(self, match_id: str, engine: GameEngine, *, expected_version: int) -> int:
         validate_match_id(match_id)

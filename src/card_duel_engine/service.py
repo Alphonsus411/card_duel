@@ -16,6 +16,14 @@ from .rules.config import RuleSet
 from .storage.base import StoredMatch
 
 
+class DeckValidationFailure(ValueError):
+    """Las definiciones recibidas no permiten construir una partida."""
+
+
+class MalformedGameCommand(TypeError):
+    """El valor recibido no pertenece al vocabulario cerrado de comandos."""
+
+
 class MatchStore(Protocol):
     """Contrato de persistencia CAS, independiente del soporte utilizado."""
 
@@ -64,7 +72,10 @@ class MatchService:
         auto_start: bool = True,
     ) -> int:
         engine = self._engine_factory()
-        engine.new_match(decks, seed=seed, auto_start=auto_start)
+        try:
+            engine.new_match(decks, seed=seed, auto_start=auto_start)
+        except (TypeError, ValueError) as exc:
+            raise DeckValidationFailure from exc
         return self.store.create(match_id, engine)
 
     def get_match(self, match_id: str) -> StoredMatch:
@@ -102,6 +113,7 @@ class MatchService:
         *,
         expected_version: int,
     ) -> MatchView:
+        self.validate_command(command)
         stored = self.store.load(match_id)
         # El CAS se comprueba antes de ejecutar para evitar trabajo y errores engañosos.
         if stored.version != expected_version:
@@ -117,6 +129,17 @@ class MatchService:
         return self._view_for(
             match_id, version, stored.engine, command.player_id
         )
+
+    @staticmethod
+    def validate_command(command: object) -> None:
+        """Rechaza objetos ajenos sin ejecutar ni ocultar errores del motor."""
+        if (
+            not isinstance(command, GameCommand)
+            or type(command) not in GameCommand.__subclasses__()
+            or type(command.player_id) is not str
+            or not command.player_id
+        ):
+            raise MalformedGameCommand
 
     def submit_from(
         self, match_id: str, player_id: str, source: CommandSource

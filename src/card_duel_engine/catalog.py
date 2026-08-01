@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from .domain.errors import InvalidDeckDefinition
 from .domain.models import CardDefinition
 
 
@@ -15,7 +16,7 @@ class CardCatalog:
 
     def register(self, card: CardDefinition) -> None:
         if card.card_id in self._cards:
-            raise ValueError(f"Definición duplicada: {card.card_id}")
+            raise InvalidDeckDefinition(f"Definición duplicada: {card.card_id}")
         self._cards[card.card_id] = card
 
     def get(self, card_id: str) -> CardDefinition:

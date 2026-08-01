@@ -25,7 +25,12 @@ from ..domain.enums import (
     TriggerKind,
     Zone,
 )
-from ..domain.errors import IllegalAction, InvariantViolation, PaymentError
+from ..domain.errors import (
+    IllegalAction,
+    InvalidDeckDefinition,
+    InvariantViolation,
+    PaymentError,
+)
 from ..domain.models import (
     AppliedTextPatch,
     CardDefinition,
@@ -123,7 +128,9 @@ class GameEngine:
         auto_start: bool = True,
     ) -> GameState:
         if len(decks) < self.rules.minimum_players:
-            raise ValueError(f"Se necesitan al menos {self.rules.minimum_players} jugadores")
+            raise InvalidDeckDefinition(
+                f"Se necesitan al menos {self.rules.minimum_players} jugadores"
+            )
 
         # Materializar y validar todo antes de tocar el catalogo o reemplazar una
         # partida existente. Ademas de aceptar generadores, esta fase evita que un
@@ -136,16 +143,16 @@ class GameEngine:
             for definition in definitions:
                 if definition.card_id in self.catalog:
                     if self.catalog.get(definition.card_id) != definition:
-                        raise ValueError(
+                        raise InvalidDeckDefinition(
                             f"La definición {definition.card_id} no coincide con el catálogo"
                         )
                 elif self.registry is not None:
-                    raise ValueError(
+                    raise InvalidDeckDefinition(
                         f"La definición {definition.card_id} no está registrada"
                     )
                 previous = incoming_definitions.setdefault(definition.card_id, definition)
                 if previous != definition:
-                    raise ValueError(
+                    raise InvalidDeckDefinition(
                         f"Definiciones incompatibles para {definition.card_id}"
                     )
 

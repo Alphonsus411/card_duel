@@ -18,6 +18,7 @@ from card_duel_engine import (
     AccessDenied,
     AuthenticatedMatchApplication,
     AuthenticationRequired,
+    CardCatalog,
     CommandRejected,
     ExternalIdentity,
     InMemoryIdentityAuthorization,
@@ -59,7 +60,8 @@ class AuthenticatedApplicationR06Contract:
         else:  # pragma: no cover - protege nuevas subclases mal configuradas
             raise AssertionError("La batería R-06 necesita un almacén")
 
-        self.service = MatchService(self.store)
+        self.catalog = CardCatalog()
+        self.service = MatchService(self.store, catalog=self.catalog)
         self.authorization = InMemoryIdentityAuthorization()
         self.app = AuthenticatedMatchApplication(self.service, self.authorization)
         self.identities = {
@@ -383,6 +385,7 @@ class AuthenticatedApplicationR06Contract:
         self.authorization.grant_global(alice, Capability.CREATE_MATCH)
         original = test_deck("duplicate")[0]
         incompatible = replace(original, name=f"{original.name} (interno secreto)")
+        catalog_before = self.catalog.definitions()
 
         with self.assertRaises(InvalidDeck) as caught:
             self.app.create_match(
@@ -396,6 +399,35 @@ class AuthenticatedApplicationR06Contract:
         self.assertNotIn("interno secreto", str(caught.exception))
         with self.assertRaises(MatchNotFound):
             self.service.get_match("invalid-decks")
+        self.assertEqual(self.catalog.definitions(), catalog_before)
+
+    def test_unexpected_engine_errors_propagate_without_side_effects(self):
+        alice = self.identities["alice"]
+        self.authorization.grant_global(alice, Capability.CREATE_MATCH)
+
+        for error_type in (TypeError, AttributeError, RuntimeError, ValueError):
+            match_id = f"unexpected-{error_type.__name__}"
+            catalog_before = self.catalog.definitions()
+            with self.subTest(error_type=error_type):
+                with patch.object(
+                    GameEngine,
+                    "new_match",
+                    side_effect=error_type("detalle interno accidental"),
+                ):
+                    with self.assertRaises(error_type) as caught:
+                        self.app.create_match(
+                            alice,
+                            match_id,
+                            {
+                                "A": test_deck(f"{match_id}-A"),
+                                "B": test_deck(f"{match_id}-B"),
+                            },
+                        )
+
+                self.assertNotIsInstance(caught.exception, InvalidDeck)
+                with self.assertRaises(MatchNotFound):
+                    self.service.get_match(match_id)
+                self.assertEqual(self.catalog.definitions(), catalog_before)
 
     def test_malformed_commands_have_a_safe_specific_public_error(self):
         before = self.fingerprint("one")

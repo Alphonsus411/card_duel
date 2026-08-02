@@ -20,6 +20,7 @@ from ..domain.enums import (
     EffectDuration,
     EffectKind,
     LordDomain,
+    Keyword,
     MatchStatus,
     MoveReason,
     Phase,
@@ -1255,6 +1256,7 @@ class GameEngine:
             if (
                 from_ability
                 and source_card_id != target_card_id
+                and source_card_id is not None
                 and self._is_creature(source_card_id)
             ):
                 return False
@@ -2087,7 +2089,7 @@ class GameEngine:
                     continue
                 yield source_id, effect
 
-    def _effective_keywords(self, card_id: str) -> frozenset[str]:
+    def _effective_keywords(self, card_id: str) -> frozenset[str | Keyword]:
         state = self._require_state()
         instance = state.cards[card_id]
         definition = self._definition(card_id)

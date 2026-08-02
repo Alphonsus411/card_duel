@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from itertools import combinations, islice, permutations, product
 from typing import Protocol
-from ..domain.enums import LordDomain, Phase, Zone
+from ..domain.enums import Keyword, LordDomain, Phase, Zone
 from ..domain.errors import IllegalAction
 from ..domain.models import CombatState, GameState
 from .commands import (
@@ -22,6 +22,7 @@ class CombatContext(Protocol):
     def _is_ready_creature(self, card_id: str) -> bool: ...
     def _is_lord_creature(self, card_id: str) -> bool: ...
     def _lord_domain(self, card_id: str) -> LordDomain | None: ...
+    def _effective_keywords(self, card_id: str) -> frozenset[str | Keyword]: ...
     @property
     def _legacy_019_replay(self) -> bool: ...
     def _is_creature(self, card_id: str) -> bool: ...
@@ -105,13 +106,10 @@ class CombatManager:
             and not state.stack
             and combat is None
             and not self._challenge_used_this_turn(player_id)
+            and not self._normal_combat_used_this_turn(player_id)
         ):
             for challenger_id in state.players[player_id].zones[Zone.BATTLEFIELD]:
-                if (
-                    self._context._is_ready_creature(challenger_id)
-                    and self._context._is_lord_creature(challenger_id)
-                    and self._context._lord_domain(challenger_id) is LordDomain.REALMS
-                ):
+                if self._can_initiate_challenge(challenger_id):
                     for defender_id in state.turn_order:
                         if defender_id == player_id:
                             continue
@@ -138,6 +136,19 @@ class CombatManager:
             and event.payload.get("turn_serial") == state.turn_serial
             for event in state.event_log
         )
+
+    def _can_initiate_challenge(self, card_id: str) -> bool:
+        """Decide la aptitud del desafiante desde su identidad y estado efectivos."""
+        if not (
+            self._context._is_ready_creature(card_id)
+            and self._context._is_lord_creature(card_id)
+        ):
+            return False
+        if self._legacy_019_replay:
+            return True
+        if self._context._lord_domain(card_id) is LordDomain.REALMS:
+            return True
+        return Keyword.CAN_CHALLENGE in self._context._effective_keywords(card_id)
 
     def _normal_combat_used_this_turn(self, player_id: str) -> bool:
         state = self._context._require_running_state()
@@ -201,16 +212,9 @@ class CombatManager:
             Zone.BATTLEFIELD
         ]:
             raise IllegalAction("La criatura desafiada debe pertenecer al oponente indicado")
-        if (
-            not self._context._is_ready_creature(command.challenger_id)
-            or not self._context._is_lord_creature(command.challenger_id)
-            or (
-                not self._legacy_019_replay
-                and self._context._lord_domain(command.challenger_id) is not LordDomain.REALMS
-            )
-        ):
+        if not self._can_initiate_challenge(command.challenger_id):
             raise IllegalAction(
-                "Solo un Señor de los Reinos transformado y enderezado puede iniciar Desafío"
+                "Solo un Señor elegible, transformado y enderezado puede iniciar Desafío"
             )
         if not self._context._is_creature(command.challenged_id):
             raise IllegalAction("Desafío requiere otra criatura")

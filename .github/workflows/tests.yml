@@ -56,10 +56,10 @@ jobs:
         run: |
           python - <<'PY'
           import os
-          import tomllib
           from pathlib import Path
+          from scripts.project_metadata import read_project_version
 
-          version = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+          version = read_project_version(Path.cwd())
           with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
               output.write(f"version={version}\n")
               output.write(f"wheel=card_duel_engine-{version}-py3-none-any.whl\n")

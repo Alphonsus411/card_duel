@@ -144,7 +144,7 @@ class TestSyntheticRealms(unittest.TestCase):
         self.assertEqual(blocker_game.state.combat.blockers[victim_id], (blocker_id,))
 
     def test_challenge_validation_closed_damage_snapshot_and_rollback(self):
-        for seed in (3, 19, 71):
+        for seed in (3, 19, 71, 101, 313):
             with self.subTest(seed=seed):
                 engine, (lord_id, victim_id, other_id) = self.make_engine(seed)
                 command = DeclareChallenge("A", lord_id, victim_id, "B")

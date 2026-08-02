@@ -102,7 +102,8 @@ class ReleaseVerifierTests(unittest.TestCase):
         version = project["project"]["version"]
 
         self.assertIn("id: package", workflow)
-        self.assertIn('tomllib.loads(Path("pyproject.toml")', workflow)
+        self.assertIn("from scripts.project_metadata import read_project_version", workflow)
+        self.assertIn("version = read_project_version(Path.cwd())", workflow)
         self.assertIn('output.write(f"version={version}\\n")', workflow)
         self.assertIn('output.write(f"wheel=card_duel_engine-{version}-py3-none-any.whl\\n")', workflow)
         self.assertIn("name: card-duel-engine-${{ steps.package.outputs.version }}-release", workflow)

@@ -316,20 +316,23 @@ class MythicV040Tests(unittest.TestCase):
         )
         engine = self.make_engine((lord,))
         lord_id = force_zone(engine, "LORD", "A", Zone.BATTLEFIELD)
+        engine.state.phase = Phase.EFFECTS
+        engine.state.priority_player_id = "A"
         engine.execute(ActivateAbility("A", lord_id, "last_power"))
         self.assertIn(lord_id, engine.state.players["A"].zones[Zone.DISCARD])
         self.assertEqual(len(engine.state.stack), 1)
 
     def test_challenge_replaces_combat_and_never_overflows_to_player(self):
         lord = CardDefinition(
-            "DUELIST", "Señor Duelista", CardKind.CREATURE, 6,
+            "DUELIST", "Señor Duelista", CardKind.LORD, 6,
             lord_domain=LordDomain.REALMS,
         )
         victim = CardDefinition("VICTIM", "Rival", CardKind.CREATURE, 4, base_strength=4)
         engine = self.make_engine((lord,), (victim,))
         challenger = force_zone(engine, "DUELIST", "A", Zone.BATTLEFIELD)
         challenged = force_zone(engine, "VICTIM", "B", Zone.BATTLEFIELD)
-        engine.state.phase = Phase.COMBAT
+        engine.state.cards[challenger].transformed_as_creature = True
+        engine.state.phase = Phase.EFFECTS
         engine.state.priority_player_id = "A"
         engine.state.phase_priority_complete = True
         engine.execute(DeclareChallenge("A", challenger, challenged, "B"))
@@ -385,6 +388,8 @@ class MythicV040Tests(unittest.TestCase):
         )
         engine = self.make_engine((lord,))
         lord_id = force_zone(engine, "ARCANE_LORD", "A", Zone.BATTLEFIELD)
+        engine.state.phase = Phase.EFFECTS
+        engine.state.priority_player_id = "A"
         engine.execute(ActivateAbility("A", lord_id, "manifest"))
         resolve_one(engine)
         self.assertTrue(engine._is_lord_creature(lord_id))

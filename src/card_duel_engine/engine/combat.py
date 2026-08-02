@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from itertools import combinations, islice, permutations, product
 from typing import Protocol
-from ..domain.enums import Phase, Zone
+from ..domain.enums import LordDomain, Phase, Zone
 from ..domain.errors import IllegalAction
 from ..domain.models import CombatState, GameState
 from .commands import (
@@ -21,6 +21,7 @@ class CombatContext(Protocol):
     def _require_running_state(self) -> GameState: ...
     def _is_ready_creature(self, card_id: str) -> bool: ...
     def _is_lord_creature(self, card_id: str) -> bool: ...
+    def _lord_domain(self, card_id: str) -> LordDomain | None: ...
     def _is_creature(self, card_id: str) -> bool: ...
     @property
     def _combat_action_enumeration_limit(self) -> int: ...
@@ -38,7 +39,7 @@ class CombatManager:
     def legal_actions(self, player_id: str) -> tuple[GameCommand, ...]:
         """Construye solo las acciones propias del combate, en orden estable."""
         state = self._context._require_running_state()
-        if state.phase is not Phase.COMBAT or player_id not in state.players:
+        if state.phase not in {Phase.EFFECTS, Phase.COMBAT} or player_id not in state.players:
             return ()
 
         actions: list[GameCommand] = []
@@ -61,7 +62,9 @@ class CombatManager:
                 actions.append(ResolveCombat(player_id))
 
         if (
-            player_id == state.active_player_id
+            state.phase is Phase.COMBAT
+            and not self._challenge_used_this_turn(player_id)
+            and player_id == state.active_player_id
             and state.phase_priority_complete
             and not state.stack
             and combat is None
@@ -88,24 +91,55 @@ class CombatManager:
                         self._context._combat_action_enumeration_limit,
                     )
                 )
-                for challenger_id in ready:
-                    if self._context._is_lord_creature(challenger_id):
-                        for defender_id in state.turn_order:
-                            if defender_id == player_id:
-                                continue
-                            for challenged_id in state.players[defender_id].zones[
-                                Zone.BATTLEFIELD
-                            ]:
-                                if self._context._is_creature(challenged_id):
-                                    actions.append(
-                                        DeclareChallenge(
-                                            player_id,
-                                            challenger_id,
-                                            challenged_id,
-                                            defender_id,
-                                        )
+        if (
+            state.phase is Phase.EFFECTS
+            and player_id == state.active_player_id
+            and state.phase_priority_complete
+            and not state.stack
+            and combat is None
+            and not self._challenge_used_this_turn(player_id)
+        ):
+            for challenger_id in state.players[player_id].zones[Zone.BATTLEFIELD]:
+                if (
+                    self._context._is_ready_creature(challenger_id)
+                    and self._context._is_lord_creature(challenger_id)
+                    and self._context._lord_domain(challenger_id) is LordDomain.REALMS
+                ):
+                    for defender_id in state.turn_order:
+                        if defender_id == player_id:
+                            continue
+                        for challenged_id in state.players[defender_id].zones[
+                            Zone.BATTLEFIELD
+                        ]:
+                            if self._context._is_creature(challenged_id):
+                                actions.append(
+                                    DeclareChallenge(
+                                        player_id,
+                                        challenger_id,
+                                        challenged_id,
+                                        defender_id,
                                     )
+                                )
         return tuple(actions)
+
+    def _challenge_used_this_turn(self, player_id: str) -> bool:
+        """Consulta el registro ya persistido, sin añadir campos a v1/v2."""
+        state = self._context._require_running_state()
+        return any(
+            event.event_type == "CHALLENGE_DECLARED"
+            and event.player_id == player_id
+            and event.payload.get("turn_serial") == state.turn_serial
+            for event in state.event_log
+        )
+
+    def _normal_combat_used_this_turn(self, player_id: str) -> bool:
+        state = self._context._require_running_state()
+        return any(
+            event.event_type == "ATTACKERS_DECLARED"
+            and event.player_id == player_id
+            and event.payload.get("turn_serial") == state.turn_serial
+            for event in state.event_log
+        )
 
     def _blocker_declarations(
         self, player_id: str, combat: CombatState
@@ -140,8 +174,12 @@ class CombatManager:
 
     def _declare_challenge(self, command: DeclareChallenge) -> None:
         state = self._context._require_running_state()
-        if command.player_id != state.active_player_id or state.phase is not Phase.COMBAT:
-            raise IllegalAction("Desafío solo puede declararse en la Fase de Combate propia")
+        if command.player_id != state.active_player_id or state.phase is not Phase.EFFECTS:
+            raise IllegalAction("Desafío solo puede declararse en la Fase Activa propia")
+        if self._challenge_used_this_turn(command.player_id):
+            raise IllegalAction("Desafío solo puede declararse una vez por turno")
+        if self._normal_combat_used_this_turn(command.player_id):
+            raise IllegalAction("Desafío sustituye al combate normal de este turno")
         if state.stack or not state.phase_priority_complete or state.combat is not None:
             raise IllegalAction("Desafío sustituye a un combate todavía no declarado")
         if (
@@ -155,10 +193,14 @@ class CombatManager:
             Zone.BATTLEFIELD
         ]:
             raise IllegalAction("La criatura desafiada debe pertenecer al oponente indicado")
-        if not self._context._is_ready_creature(
-            command.challenger_id
-        ) or not self._context._is_lord_creature(command.challenger_id):
-            raise IllegalAction("Solo un Señor criatura enderezado puede iniciar Desafío")
+        if (
+            not self._context._is_ready_creature(command.challenger_id)
+            or not self._context._is_lord_creature(command.challenger_id)
+            or self._context._lord_domain(command.challenger_id) is not LordDomain.REALMS
+        ):
+            raise IllegalAction(
+                "Solo un Señor de los Reinos transformado y enderezado puede iniciar Desafío"
+            )
         if not self._context._is_creature(command.challenged_id):
             raise IllegalAction("Desafío requiere otra criatura")
         state.combat = CombatState(
@@ -176,13 +218,19 @@ class CombatManager:
             "CHALLENGE_DECLARED",
             command.player_id,
             command.challenger_id,
-            {"challenged_id": command.challenged_id, "defender": command.defending_player_id},
+            {
+                "challenged_id": command.challenged_id,
+                "defender": command.defending_player_id,
+                "turn_serial": state.turn_serial,
+            },
         )
 
     def _declare_attackers(self, command: DeclareAttackers) -> None:
         state = self._context._require_running_state()
         if command.player_id != state.active_player_id or state.phase is not Phase.COMBAT:
             raise IllegalAction("Los atacantes solo se declaran durante el Combate propio")
+        if self._challenge_used_this_turn(command.player_id):
+            raise IllegalAction("El Desafío ya sustituyó al combate normal de este turno")
         if state.stack or not state.phase_priority_complete or state.combat is not None:
             raise IllegalAction("No puede declararse ahora un nuevo combate")
         if (
@@ -210,7 +258,11 @@ class CombatManager:
         self._context._emit(
             "ATTACKERS_DECLARED",
             command.player_id,
-            payload={"attackers": command.attacker_ids, "defender": command.defending_player_id},
+            payload={
+                "attackers": command.attacker_ids,
+                "defender": command.defending_player_id,
+                "turn_serial": state.turn_serial,
+            },
         )
 
     def _declare_blockers(self, command: DeclareBlockers) -> None:

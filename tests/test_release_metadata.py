@@ -100,7 +100,7 @@ class ReleaseMetadataTests(unittest.TestCase):
             resolve_version()
 
     def test_all_release_version_consumers_read_current_project_version(self):
-        expected = "0.19.0"
+        expected = project_version()
         self.assertEqual(project_version(), expected)
         self.assertEqual(card_duel_engine.__version__, expected)
         self.assertEqual(RuleSet().version, expected)

@@ -1,9 +1,18 @@
-# Línea base de reglas 0.10
+# Línea base de reglas 0.20
 
 Esta especificación deriva del reglamento base y de las actualizaciones de la
 Edición Mítica. No incluye textos de cartas antiguas.
 
-## Reglas incorporadas
+## Fuentes primarias
+
+1. `Fantasy Tokens.pdf` es la fuente base verificable.
+2. `Fantasy Tokens Edicion Mitica.pdf` (2018-06-13) es la actualización posterior
+   y prevalece únicamente ante una modificación expresa.
+3. `docs/RULES_SOURCES.json` fija nombre, hash SHA-256, tamaño y número de páginas;
+   `docs/RULES_TRACEABILITY.md` registra página física e interna.
+4. Código, pruebas y este documento son derivados, no nuevas fuentes normativas.
+
+## Reglas universales incorporadas
 
 - Mano inicial de seis cartas.
 - Mulligan: cada repetición reduce en uno la nueva mano, hasta una carta.
@@ -91,7 +100,16 @@ Edición Mítica. No incluye textos de cartas antiguas.
 - La acción interrumpida no produce pagos, daño, eventos ni movimientos
   parciales; se reproduce completa después de cada elección.
 
-## Normalizaciones internas
+## Reglas de formato
+
+- Clásico y Mística se representan mediante `DeckConstructionPolicy` optativas;
+  una partida sin política mantiene el contrato histórico de `RuleSet`.
+- La legalidad de colección se inyecta antes de crear la partida y no incorpora
+  cartas al catálogo distribuido.
+- `N-POINTS-01` impide fijar un presupuesto: las fuentes mencionan 200, 300,
+  300–400 y aproximadamente 300 puntos sin una única cifra autoritativa.
+
+## Normalizaciones del motor
 
 - `wounds` representa Heridas acumuladas; curar reduce este contador.
 - `DISCARD` representa tanto "Pila" como "Pila de Descartes".
@@ -156,6 +174,20 @@ Edición Mítica. No incluye textos de cartas antiguas.
   interna 2) solo respalda su temporización en Fase Activa; no respalda su
   reclasificación universal como Eventos. La cuestión sigue bloqueada.
 - La auditoría y sus categorías A–E están en `MYTHIC_RULES_AUDIT.md`.
+
+## Reglas bloqueadas
+
+No se infieren reglas para `N-POINTS-01`, la posible reclasificación universal de
+habilidades de Señor, el reparto ambiguo entre bloqueadores ni las condiciones
+terminales con tres o más participantes. Los esquemas persistentes siguen siendo
+v1/v2; no existe ni se anticipa un esquema v3.
+
+## Contenido de cartas
+
+El catálogo de producción continúa vacío. Las cartas concretas del PDF no son
+reglas universales ni se transcriben al paquete; solo existen definiciones
+sintéticas bajo `tests/fixtures.py`. Un futuro corpus pertenece a R-03B.4 y deberá
+cargarse externamente mediante manifiestos, no como tarea inmediata.
 
 ## Pendientes explícitos
 
@@ -245,3 +277,12 @@ partidas de dos jugadores conservan exactamente sus condiciones de victoria.
 La autenticación de colecciones es infraestructura y no modifica ninguna regla,
 carta ni resultado. El manifiesto y los documentos persistentes permanecen en
 esquema v2; el sobre de firma usa su propio esquema v1 separado.
+
+
+## Compatibilidad 0.20.0
+
+La integración documental de ambas fuentes y las políticas optativas de mazo no
+modifican resultados históricos. Continúan aceptándose artefactos 0.19.0 y
+documentos v1/v2, con la migración explícita v1 → v2. Se conservan huella,
+historial, contadores, orden e identificadores; no se crea v3, no se añaden cartas
+de producción y no cambian las condiciones terminales multijugador.

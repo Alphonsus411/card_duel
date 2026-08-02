@@ -8,6 +8,16 @@ desbloquea.
 
 Las entradas requieren priorización y alcance propios antes de implementarse.
 
+## Descomposición R-03B (no inmediata)
+
+- **R-03B.1:** conservar y verificar fuentes, hashes y paginación.
+- **R-03B.2:** mantener la matriz de reglas universales frente al motor y sus pruebas.
+- **R-03B.3:** evolucionar las políticas optativas Clásico/Mística sin fijar puntos.
+- **R-03B.4:** preparar manifiestos para un futuro corpus externo; **no** cargar ni
+  transcribir ahora el catálogo completo.
+- **N-POINTS-01 (bloqueado):** no elegir entre 200, 300, 300–400 o «unos 300»
+  hasta recibir una aclaración normativa trazable.
+
 ## Mantenimiento técnico
 
 - Revisar periódicamente las dependencias bloqueadas en `uv.lock`, aplicar las

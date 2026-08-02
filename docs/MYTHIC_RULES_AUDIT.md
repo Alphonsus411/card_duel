@@ -66,9 +66,9 @@ para generalizar una mecánica.
 | M-LORD-ABYSS-01 | A | Mítica, física 3 / interna 2 | Señor del Abismo: nuevo tipo de criatura permanente; su Fuerza parte del coste, puede variar al usar habilidades y a cero va a la Pila de Descartes. No ataca ni bloquea, pero puede ser atacado y recibir daño salvo protección aplicable. |
 | M-LORD-ELYSIUM-01 | A | Mítica, física 3 / interna 2 | Señor del Elíseo comparte las propiedades mecánicas indicadas para Abismo y se diferencia por su dominio temático. |
 | M-LORD-MAGIC-01 | A | Mítica, física 3 / interna 2 | Señor de la Magia se presenta como análogo mecánico de los anteriores y neutral respecto de facción. |
-| M-LORD-KINGDOMS-01 | A | Mítica, física 4 / interna 3 | Señor de los Reinos puede transformarse en criatura para atacar, bloquear y usar sus capacidades. |
+| M-LORD-KINGDOMS-01 | A | Mítica, física 4 / interna 3 | Señor de los Reinos puede transformarse en criatura para atacar, bloquear y usar sus capacidades. En el motor, el dominio sólo da elegibilidad cuando ya está transformado: la transformación necesita una habilidad o efecto declarado por contenido y no se concede gratuitamente a todos los Señores de Reinos. |
 | M-LORD-EVENT-01 | E | Mítica, física 3 / interna 2 | **Ambigüedad abierta:** que las propiedades de Señor se usen «a modo de Eventos» respalda su temporización en Fase Activa, pero no basta para reclasificar universalmente las habilidades como cartas o efectos de tipo Evento. Solo queda respaldada la ventana de Fase Activa; inmunidades, objetivos, pila y demás consecuencias de una reclasificación permanecen bloqueados. |
-| M-CHALLENGE-01 | A | Mítica, física 4 / interna 3 | Desafío es una regla universal utilizable una vez por turno en Fase Activa y sustituye el combate normal por el duelo descrito. Los Señores de los Reinos transformados pueden usarla; Abismo, Elíseo y Magia no pueden sin capacidad apropiada. Los detalles no expresados no se completan con textos de cartas. |
+| M-CHALLENGE-01 | A | Mítica, física 4 / interna 3 | Desafío es una regla universal utilizable una vez por turno en Fase Activa y sustituye el combate normal por el duelo descrito. Los Señores de los Reinos son elegibles sólo transformados; Abismo, Elíseo y Magia necesitan transformación y autorización declarativa `CAN_CHALLENGE`. Esta palabra clave expresa permiso, no convierte una carta o habilidad en Evento. Los detalles no expresados no se completan con textos de cartas. |
 | M-CARDS-START-01 | D | Mítica, física 4 / interna 3 | `EDICION MITICA` y el anuncio del descriptivo de colección marcan el comienzo del inventario de cartas concretas; la nº 001 es su primera entrada. Todo hallazgo posterior sobre una carta pertenece a D y no prueba reglas A. |
 
 ## Bloqueos y efectos derivados
@@ -98,13 +98,22 @@ para generalizar una mecánica.
   permanencia y las inmunidades siguen siendo propiedades explícitas; el rango
   Legendario no las infiere. La política Mística consulta exclusivamente
   `CardDefinition.rank is CardRank.LEGENDARY` para el máximo de cuatro copias.
-- **Divinos y procedencia:** la referencia de fuente que ya transporta cada
-  comando/elemento de pila basta para comparar la fuente con el objetivo. La
-  selección bloquea Eventos, Recursos Rápidos y habilidades cuya definición de
-  fuente es una Criatura, salvo la habilidad del propio permanente Divino. No
-  bloquea por defecto habilidades de artefactos u otras fuentes no criatura.
-  Transmutación no pasa por esta selección de objetivos y continúa permitida.
-  No se creó un segundo sistema de procedencia.
+- **Divinos, tipo efectivo y procedencia:** «criatura permanente» significa una
+  fuente que está en el campo y cuyo tipo **efectivo** es Criatura en el momento
+  de seleccionar objetivo. Por ello también abarca un Señor transformado aunque
+  su definición impresa no fuese Criatura. La referencia de fuente que ya
+  transporta cada comando/elemento de pila basta para comparar la fuente con el
+  objetivo. La selección bloquea Eventos, Recursos Rápidos y habilidades de esas
+  criaturas permanentes, salvo la habilidad del propio permanente Divino; no
+  bloquea por defecto habilidades de artefactos u otras fuentes efectivamente no
+  criatura. Transmutación no pasa por esta selección y continúa permitida. No se
+  creó un segundo sistema de procedencia.
+- **Desafío y autorización:** `CAN_CHALLENGE` es una autorización declarativa de
+  contenido, no un tipo ni una reclasificación como Evento. Reinos sólo es
+  elegible una vez transformado, criatura y enderezado. En Abismo, Elíseo y
+  Magia se exige además `CAN_CHALLENGE`; ningún dominio concede por sí solo una
+  transformación. La declaración ocurre en Fase de Efectos/Fase Activa, una vez
+  por turno, y excluye el combate normal del mismo turno en ambos sentidos.
 - **Límite deliberado:** esta inmunidad de selección no se consulta para
   descarte, sacrificio, costes, acciones basadas en estado ni movimientos por
   otras reglas. Tampoco se atribuye inmunidad automática a los Legendarios.

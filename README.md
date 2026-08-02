@@ -36,14 +36,18 @@ incluir ninguna carta, personaje ni colección antigua.
 - Modificadores permanentes y hasta el final del turno.
 - Equipos, anexos, bonificaciones y separación automática.
 - Limpieza de fin de turno para daño, prevención y límites de activación.
-- Drenaje universal una vez por turno activo: un Paso gratuito y hasta cuatro
-  adicionales por tres Heridas cada uno.
+- Drenaje universal una vez por turno en Fase de Efectos (Fase Activa): un Paso
+  gratuito y hasta cuatro adicionales por tres Heridas cada uno.
 - Objetivos múltiples con límites mínimos y máximos declarativos.
 - Capas continuas de Fuerza y palabras clave filtradas por controlador, tipo y subtipo.
-- Divinos inmunes a Eventos, Recursos Rápidos y habilidades, pero transmutables.
+- Divinos inmunes a Eventos, Recursos Rápidos y habilidades de criaturas
+  permanentes según el tipo efectivo de la fuente, pero transmutables.
 - Señores de Abismo, Elíseo, Magia y Reinos con Fuerza pagable y descarte al llegar a cero.
-- Transformación temporal de Señores no criatura.
-- Desafío como duelo cerrado que sustituye el combate normal del turno.
+- Transformación temporal de Señores no criatura únicamente mediante efectos o
+  habilidades declarados; Reinos no recibe transformación gratuita por dominio.
+- Desafío una vez por turno en Fase Activa como duelo cerrado que sustituye el
+  combate normal: Reinos requiere estar transformado y los demás dominios
+  necesitan además la autorización declarativa `CAN_CHALLENGE`.
 - Elección explícita del orden de resolución de disparos simultáneos.
 - Zonas de jugador como objetivos sin revelar las cartas que contienen.
 - Movimiento declarativo de cartas entre zonas.
@@ -77,6 +81,9 @@ incluir ninguna carta, personaje ni colección antigua.
 - Huellas SHA-256 para detectar corrupción o alteraciones accidentales.
 - Historial autoritativo de comandos y mulligans dentro de la partida.
 - Reproducción determinista desde semilla, mazos y comandos.
+- Compatibilidad semántica temporal para replays 0.19 generados con el commit
+  histórico documentado; no habilita esa semántica en partidas actuales y su
+  retirada requiere una decisión de compatibilidad versionada.
 - Verificación automática de la huella final de una reproducción.
 - Manifiestos externos versionados para incorporar colecciones nuevas.
 - Lista cerrada de tipos persistibles y validación estricta de campos.

@@ -2,6 +2,18 @@
 
 ## Sin publicar
 
+- Alineada la matriz base–Mítica con las pruebas finales de construcción,
+  copias, coste cero, formatos, Drenaje, Legendarios, Divinos y los cuatro
+  dominios de Señor; la columna `Decisión` usa ahora un vocabulario cerrado.
+- Documentados Drenaje actual sólo en Fase Activa, inmunidad Divina por tipo
+  efectivo de criatura permanente y Desafío una vez por turno, excluyente del
+  combate y sujeto a transformación/autorización declarativa.
+- Añadido `R-COMPAT-019-REPLAY` para separar deserialización de reproducción
+  semántica mediante fixtures creados con el commit 0.19 histórico. El modo
+  legacy es temporal, aislado de partidas nuevas y con retirada versionada.
+- Conservados como deudas bloqueadas `N-POINTS-01` y `M-LORD-EVENT-01`, sin
+  incorporar nombres ni catálogo de cartas.
+
 ## 0.20.0
 
 - Integradas como fuentes primarias verificables tanto las reglas base como la
@@ -263,7 +275,8 @@
 - Inmunidad automática de Tokens Divinos.
 - Dominios de Señor y costes pagados con Fuerza.
 - Forma de criatura permanente o hasta el final del turno.
-- Regla universal de Desafío integrada en la Fase de Combate.
+- Regla universal de Desafío integrada entonces en la Fase de Combate; 0.20 la
+  trasladó a Fase Activa y aisló esta semántica histórica al replay 0.19.
 - Orden elegido para disparos simultáneos.
 - Observaciones públicas de pila y disparos para controladores humanos o AGIX.
 

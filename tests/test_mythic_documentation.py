@@ -9,6 +9,32 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
 PACKAGE = ROOT / "src" / "card_duel_engine"
+TRACEABILITY = DOCS / "RULES_TRACEABILITY.md"
+
+TRACEABILITY_DECISIONS = {
+    "ya cumple",
+    "requiere prueba",
+    "requiere corrección",
+    "bloqueada",
+    "sólo documentación",
+}
+
+
+def traceability_decisions() -> dict[str, str]:
+    text = TRACEABILITY.read_text(encoding="utf-8")
+    matrix = text.split("## Matriz de decisiones base–Mítica (R-03B)", 1)[1]
+    matrix = matrix.split("\n## ", 1)[0]
+    rows: dict[str, str] = {}
+    for line in matrix.splitlines():
+        if not (
+            line.startswith("| R-")
+            or line.startswith("| N-")
+            or line.startswith("| M-")
+        ):
+            continue
+        cells = [cell.strip() for cell in line.strip("|").split("|")]
+        rows[cells[0]] = cells[-1]
+    return rows
 
 
 STALE_DOCUMENTATION = {
@@ -40,6 +66,21 @@ def stale_claims(text: str) -> list[str]:
 
 
 class MythicDocumentationTests(unittest.TestCase):
+    def test_traceability_decision_column_uses_closed_vocabulary(self):
+        decisions = traceability_decisions()
+        self.assertTrue(decisions)
+        self.assertEqual(
+            {identifier: value for identifier, value in decisions.items()
+             if value not in TRACEABILITY_DECISIONS},
+            {},
+        )
+
+    def test_traceability_includes_replay_and_keeps_debts_blocked(self):
+        decisions = traceability_decisions()
+        self.assertEqual(decisions["R-COMPAT-019-REPLAY"], "ya cumple")
+        self.assertEqual(decisions["N-POINTS-01"], "bloqueada")
+        self.assertEqual(decisions["M-LORD-EVENT-01"], "bloqueada")
+
     def test_detector_recognizes_each_obsolete_claim(self):
         examples = {
             "El PDF Mítico no está disponible en este repositorio.",

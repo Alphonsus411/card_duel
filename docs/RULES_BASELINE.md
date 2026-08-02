@@ -143,10 +143,19 @@ Edición Mítica. No incluye textos de cartas antiguas.
 
 ## Precedencia normativa
 
+- `Fantasy Tokens.pdf` es la fuente base. `Fantasy Tokens Edicion Mitica.pdf`
+  (2018-06-13) prevalece solo donde modifica expresamente la base; una adición no
+  es por sí sola contradicción. Las contradicciones y ambigüedades quedan
+  bloqueadas. Este documento, el código y las pruebas son derivados, no prueba
+  normativa.
 - La regla antigua afirmaba que un Divino era inmune incluso al descarte. Mítica
-  especifica inmunidad frente a Eventos, Recursos Rápidos y habilidades, y dice
-  expresamente que puede transmutarse. La versión 0.5 aplica la formulación de
-  Mítica por ser posterior y más específica.
+  (física 3 / interna 2) especifica inmunidad frente a Eventos, Recursos Rápidos
+  y habilidades, y permite expresamente la Transmutación. La versión 0.5 aplica
+  esa formulación por ser una modificación posterior expresa.
+- La frase sobre habilidades de Señor «a modo de Eventos» (Mítica, física 3 /
+  interna 2) solo respalda su temporización en Fase Activa; no respalda su
+  reclasificación universal como Eventos. La cuestión sigue bloqueada.
+- La auditoría y sus categorías A–E están en `MYTHIC_RULES_AUDIT.md`.
 
 ## Pendientes explícitos
 
@@ -169,10 +178,9 @@ omitir `expected_version`/CAS ni reinterpretar comandos.
   esta normalización debe revisarse si aparece una aclaración normativa.
 - Nuevas migraciones cuando aparezcan futuros esquemas 3 o posteriores.
 - Extracción de pila, combate y movimientos a resolutores especializados.
-- El inventario documental de la contradicción base–Mítica sobre Divinos está
-  completado en `RULES_TRACEABILITY.md`; cualquier modificación normativa del
-  motor o de expectativas reglamentarias de pruebas sigue bloqueada hasta una
-  aclaración oficial paginada.
+- La auditoría base–Mítica está completada en `MYTHIC_RULES_AUDIT.md`; los puntos
+  de mazo (`N-POINTS-01`) y la posible reclasificación de habilidades de Señor
+  (`M-LORD-EVENT-01`) siguen bloqueados hasta una aclaración oficial.
 
 Nada de lo anterior debe completarse mediante suposiciones silenciosas.
 

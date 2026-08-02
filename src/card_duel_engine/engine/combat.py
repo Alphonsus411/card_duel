@@ -22,6 +22,8 @@ class CombatContext(Protocol):
     def _is_ready_creature(self, card_id: str) -> bool: ...
     def _is_lord_creature(self, card_id: str) -> bool: ...
     def _lord_domain(self, card_id: str) -> LordDomain | None: ...
+    @property
+    def _legacy_019_replay(self) -> bool: ...
     def _is_creature(self, card_id: str) -> bool: ...
     @property
     def _combat_action_enumeration_limit(self) -> int: ...
@@ -35,6 +37,11 @@ class CombatContext(Protocol):
 class CombatManager:
     def __init__(self, context: CombatContext) -> None:
         self._context = context
+
+    @property
+    def _legacy_019_replay(self) -> bool:
+        """Mantiene compatibles los contextos mínimos externos del gestor."""
+        return getattr(self._context, "_legacy_019_replay", False)
 
     def legal_actions(self, player_id: str) -> tuple[GameCommand, ...]:
         """Construye solo las acciones propias del combate, en orden estable."""
@@ -174,11 +181,12 @@ class CombatManager:
 
     def _declare_challenge(self, command: DeclareChallenge) -> None:
         state = self._context._require_running_state()
-        if command.player_id != state.active_player_id or state.phase is not Phase.EFFECTS:
+        expected_phase = Phase.COMBAT if self._legacy_019_replay else Phase.EFFECTS
+        if command.player_id != state.active_player_id or state.phase is not expected_phase:
             raise IllegalAction("Desafío solo puede declararse en la Fase Activa propia")
-        if self._challenge_used_this_turn(command.player_id):
+        if not self._legacy_019_replay and self._challenge_used_this_turn(command.player_id):
             raise IllegalAction("Desafío solo puede declararse una vez por turno")
-        if self._normal_combat_used_this_turn(command.player_id):
+        if not self._legacy_019_replay and self._normal_combat_used_this_turn(command.player_id):
             raise IllegalAction("Desafío sustituye al combate normal de este turno")
         if state.stack or not state.phase_priority_complete or state.combat is not None:
             raise IllegalAction("Desafío sustituye a un combate todavía no declarado")
@@ -196,7 +204,10 @@ class CombatManager:
         if (
             not self._context._is_ready_creature(command.challenger_id)
             or not self._context._is_lord_creature(command.challenger_id)
-            or self._context._lord_domain(command.challenger_id) is not LordDomain.REALMS
+            or (
+                not self._legacy_019_replay
+                and self._context._lord_domain(command.challenger_id) is not LordDomain.REALMS
+            )
         ):
             raise IllegalAction(
                 "Solo un Señor de los Reinos transformado y enderezado puede iniciar Desafío"
@@ -214,15 +225,17 @@ class CombatManager:
         state.priority_player_id = command.defending_player_id
         state.phase_priority_complete = False
         state.consecutive_passes = 0
+        payload: dict[str, object] = {
+            "challenged_id": command.challenged_id,
+            "defender": command.defending_player_id,
+        }
+        if not self._legacy_019_replay:
+            payload["turn_serial"] = state.turn_serial
         self._context._emit(
             "CHALLENGE_DECLARED",
             command.player_id,
             command.challenger_id,
-            {
-                "challenged_id": command.challenged_id,
-                "defender": command.defending_player_id,
-                "turn_serial": state.turn_serial,
-            },
+            payload,
         )
 
     def _declare_attackers(self, command: DeclareAttackers) -> None:
@@ -255,14 +268,16 @@ class CombatManager:
         state.priority_player_id = command.defending_player_id
         state.phase_priority_complete = False
         state.consecutive_passes = 0
+        payload: dict[str, object] = {
+            "attackers": command.attacker_ids,
+            "defender": command.defending_player_id,
+        }
+        if not self._legacy_019_replay:
+            payload["turn_serial"] = state.turn_serial
         self._context._emit(
             "ATTACKERS_DECLARED",
             command.player_id,
-            payload={
-                "attackers": command.attacker_ids,
-                "defender": command.defending_player_id,
-                "turn_serial": state.turn_serial,
-            },
+            payload=payload,
         )
 
     def _declare_blockers(self, command: DeclareBlockers) -> None:

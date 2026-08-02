@@ -1,0 +1,397 @@
+{
+  "body": {
+    "catalog": {
+      "$tuple": [
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 1,
+            "card_id": "A-F1",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 0,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "A-F1",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 1,
+            "card_id": "A-F2",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 0,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "A-F2",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 1,
+            "card_id": "B-F1",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 0,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "B-F1",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 1,
+            "card_id": "B-F2",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 0,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "B-F2",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        }
+      ]
+    },
+    "command_count": 10,
+    "commands": {
+      "$tuple": [
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "AdvancePhase",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "AdvancePhase",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "AdvancePhase",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "DrainSteps",
+          "fields": {
+            "amount": 3,
+            "player_id": "A"
+          }
+        }
+      ]
+    },
+    "engine_version": "0.19.0",
+    "final_digest": "f216145cb50c9cd8648debce523581f6f537d801558ee6e8a05497a85fa06110",
+    "initial_decks": {
+      "$mapping": [
+        [
+          "A",
+          {
+            "$tuple": [
+              "A-F1",
+              "A-F2"
+            ]
+          }
+        ],
+        [
+          "B",
+          {
+            "$tuple": [
+              "B-F1",
+              "B-F2"
+            ]
+          }
+        ]
+      ]
+    },
+    "mulligans": {
+      "$tuple": []
+    },
+    "rules": {
+      "$type": "RuleSet",
+      "fields": {
+        "hand_limit": 8,
+        "initial_hand_size": 2,
+        "legal_action_enumeration_limit": 1000,
+        "minimum_players": 2,
+        "phase_sequence": {
+          "$tuple": [
+            {
+              "$enum": "Phase",
+              "name": "DRAW"
+            },
+            {
+              "$enum": "Phase",
+              "name": "MAINTENANCE"
+            },
+            {
+              "$enum": "Phase",
+              "name": "EFFECTS"
+            },
+            {
+              "$enum": "Phase",
+              "name": "COMBAT"
+            },
+            {
+              "$enum": "Phase",
+              "name": "LEGENDARY"
+            },
+            {
+              "$enum": "Phase",
+              "name": "DISCARD"
+            }
+          ]
+        },
+        "recycle_discard": true,
+        "ruleset_id": "universal",
+        "steps_per_maintenance": 5,
+        "version": "0.19.0",
+        "wound_limit": 50
+      }
+    },
+    "schema_version": "2",
+    "seed": 1901,
+    "started": true,
+    "turn_order": {
+      "$tuple": [
+        "A",
+        "B"
+      ]
+    }
+  },
+  "sha256": "d67fdba121ab5f9c309745fb2e6191085e7b2193243587e4ffa8b1e285c45aba"
+}

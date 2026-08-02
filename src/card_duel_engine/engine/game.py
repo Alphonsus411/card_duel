@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from enum import Enum, auto
 import random
 from copy import deepcopy
 from collections.abc import Iterable, Iterator, Mapping
@@ -85,6 +86,13 @@ from .commands import (
 )
 
 
+class ReplayCompatibilityMode(Enum):
+    """Ajustes efímeros reservados a reproducciones históricas exactas."""
+
+    NORMAL = auto()
+    LEGACY_019 = auto()
+
+
 class GameEngine:
     """Autoridad única sobre una partida; ninguna interfaz modifica el estado."""
 
@@ -103,6 +111,7 @@ class GameEngine:
         self._next_stack_item = 1
         self._replacement_replay_choices: tuple[int, ...] = ()
         self._replacement_replay_cursor = 0
+        self._replay_compatibility_mode = ReplayCompatibilityMode.NORMAL
         self._combat = CombatManager(self)
         self._stack = StackManager(self)
         self._zones = ZoneManager(self)
@@ -112,6 +121,10 @@ class GameEngine:
     def _combat_action_enumeration_limit(self) -> int:
         """Expone al gestor de combate únicamente su límite de enumeración."""
         return self.rules.legal_action_enumeration_limit
+
+    @property
+    def _legacy_019_replay(self) -> bool:
+        return self._replay_compatibility_mode is ReplayCompatibilityMode.LEGACY_019
 
     def _consume_replacement_replay_choice(self) -> int | None:
         """Consume una elección grabada sin exponer el cursor al gestor de zonas."""
@@ -1536,7 +1549,7 @@ class GameEngine:
             raise IllegalAction("El jugador no posee prioridad")
         if command.player_id != state.active_player_id:
             raise IllegalAction("Drenaje solo puede usarse durante la Fase Activa propia")
-        if state.phase is not Phase.EFFECTS:
+        if not self._legacy_019_replay and state.phase is not Phase.EFFECTS:
             raise IllegalAction("Drenaje solo puede usarse durante la Fase Activa propia")
         player = state.players[command.player_id]
         if player.drainage_used_turn_serial == state.turn_serial:

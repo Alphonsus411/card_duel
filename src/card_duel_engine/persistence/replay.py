@@ -8,7 +8,7 @@ from ..catalog import CardCatalog
 from ..domain.enums import MatchStatus
 from ..domain.models import CardDefinition
 from ..engine.commands import EXECUTABLE_COMMAND_TYPE_SET
-from ..engine.game import GameEngine
+from ..engine.game import GameEngine, ReplayCompatibilityMode
 from ..rules.config import RuleSet
 from .codec import canonical_json, decode_value, encode_value
 from .migrations import migrate_document
@@ -68,8 +68,11 @@ def replay_from_log(
     commands = decode_value(body["commands"])
     if not isinstance(rules, RuleSet):
         raise ValueError("Reglas de reproducción no válidas")
-    if body.get("engine_version") != rules.version:
+    engine_version = body.get("engine_version")
+    if engine_version != rules.version:
         raise ValueError("La versión declarada no coincide con las reglas de reproducción")
+    if engine_version != "0.19.0" and not str(engine_version).startswith("0.20."):
+        raise ValueError(f"Versión de reproducción no compatible: {engine_version!r}")
     if not isinstance(definitions, tuple) or not all(
         isinstance(item, CardDefinition) for item in definitions
     ):
@@ -94,13 +97,19 @@ def replay_from_log(
     except (AttributeError, KeyError, TypeError) as exc:
         raise ValueError("Mazos iniciales no válidos") from exc
     engine = GameEngine(rules, catalog)
-    engine.new_match(decks, seed=int(body["seed"]), auto_start=False)
-    for player_id in mulligans:
-        engine.mulligan(player_id)
-    if body["started"]:
-        engine.start_match()
-    for command in commands:
-        engine.execute(command)
-    if verify_digest and state_digest(engine) != body["final_digest"]:
-        raise ValueError("La reproducción diverge de la huella final registrada")
+    previous_mode = engine._replay_compatibility_mode
+    if engine_version == "0.19.0":
+        engine._replay_compatibility_mode = ReplayCompatibilityMode.LEGACY_019
+    try:
+        engine.new_match(decks, seed=int(body["seed"]), auto_start=False)
+        for player_id in mulligans:
+            engine.mulligan(player_id)
+        if body["started"]:
+            engine.start_match()
+        for command in commands:
+            engine.execute(command)
+        if verify_digest and state_digest(engine) != body["final_digest"]:
+            raise ValueError("La reproducción diverge de la huella final registrada")
+    finally:
+        engine._replay_compatibility_mode = previous_mode
     return engine

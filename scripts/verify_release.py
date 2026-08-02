@@ -15,6 +15,8 @@ import tempfile
 from verify_headless_simulations import verify as verify_simulations
 from verify_persistence_roundtrips import verify as verify_persistence
 from project_metadata import read_project_version
+from verify_release_metadata import verify as verify_metadata
+from verify_repository_security import verify as verify_security
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = read_project_version(ROOT)
@@ -68,6 +70,22 @@ def _quality(runner: CommandRunner) -> dict[str, object]:
     return {"status": "ok", "mypy": True, "compileall": True, "coverage_percent": coverage}
 
 
+def _metadata() -> dict[str, object]:
+    try:
+        values = verify_metadata(ROOT)
+    except (OSError, KeyError, StopIteration, ValueError) as error:
+        raise VerificationStageError("metadata", ["verify_release_metadata.py"], 1, "", str(error)) from error
+    return {"status": "ok", "values": values}
+
+
+def _security() -> dict[str, object]:
+    try:
+        result = verify_security(ROOT)
+    except (OSError, subprocess.SubprocessError, SyntaxError, ValueError) as error:
+        raise VerificationStageError("security", ["verify_repository_security.py"], 1, "", str(error)) from error
+    return {"status": "ok", **result}
+
+
 def _package(runner: CommandRunner) -> dict[str, object]:
     _run([sys.executable, "scripts/verify_reproducible_wheel.py"], stage="package:build-audit", runner=runner)
     report = json.loads((ROOT / "dist" / "wheel-audit.json").read_text(encoding="utf-8")); wheel = ROOT / "dist" / WHEEL_NAME
@@ -97,7 +115,8 @@ def _rules_sources(runner: CommandRunner) -> dict[str, object]:
 def verify(profile: str = "full", *, runner: CommandRunner = subprocess.run) -> dict[str, object]:
     """Ejecuta el perfil solicitado; ``full`` conserva el comportamiento histórico."""
     stages: list[tuple[str, Callable[[], dict[str, object]]]] = [
-        ("lockfile", lambda: _lockfile(runner)), ("quality", lambda: _quality(runner))
+        ("metadata", _metadata), ("lockfile", lambda: _lockfile(runner)),
+        ("security", _security), ("quality", lambda: _quality(runner))
     ]
     if profile == "full":
         stages.extend((("rules-sources", lambda: _rules_sources(runner)), ("simulations", verify_simulations),

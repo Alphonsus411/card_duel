@@ -7,6 +7,9 @@ Este procedimiento prepara una entrega sin publicar en PyPI ni fusionarla.
 - Partir del commit de `main` que corresponde a la última entrega y crear una rama.
 - Actualizar conjuntamente `pyproject.toml`, `card_duel_engine.__version__`,
   `RuleSet.version`, README, CHANGELOG, arquitectura y reglas base.
+- Ejecutar `uv run python scripts/verify_release_metadata.py` y
+  `uv run python scripts/verify_repository_security.py`; no aprobar excepciones
+  de seguridad sin justificarlas en las reglas versionadas.
 - Confirmar que `dependencies = []`, `license = "Apache-2.0"` y los formatos v2
   permanecen intactos.
 
@@ -75,3 +78,9 @@ estén verdes y descargar el artefacto para cotejar su SHA-256.
   contrastarlo con `SHA256SUMS` antes de cualquier publicación manual.
 - La creación del tag, la fusión y la publicación quedan siempre fuera de esta
   automatización.
+
+## 8. Rollback
+
+Si un artefacto ya publicado resulta defectuoso, seguir
+`docs/RELEASE_ROLLBACK.md`. No borrar ni sustituir el wheel con el mismo nombre,
+no reescribir tags y no alterar snapshots o replays como parte del rollback.

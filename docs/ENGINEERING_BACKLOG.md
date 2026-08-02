@@ -31,19 +31,13 @@ Las entradas requieren priorización y alcance propios antes de implementarse.
 - Revisar periódicamente las dependencias bloqueadas en `uv.lock`, aplicar las
   actualizaciones compatibles en cambios aislados y documentar cualquier
   incompatibilidad antes de adoptarla.
-- Automatizar una comprobación de deriva entre los metadatos de versión del
-  paquete, el changelog y la documentación de release.
 - Inventariar y retirar utilidades internas obsoletas sólo después de confirmar
   mediante búsqueda y pruebas que no tienen consumidores.
 
 ## CI y release
 
-- Ejecutar en CI los perfiles `runtime` y `full` de verificación de release y
-  conservar sus diagnósticos como artefactos de la ejecución.
-- Añadir una comprobación reproducible del wheel en el flujo de release antes
-  de publicar cualquier artefacto.
-- Documentar y ensayar un procedimiento de rollback de artefactos de release
-  que no altere formatos persistidos ni decisiones normativas.
+- Mantener la comprobación cerrada de deriva de versión (**AUD-01**) y el
+  procedimiento ensayable de rollback (**AUD-03**) incorporados en 0.20.1.
 
 ### Recomendación operativa sobre ramas
 
@@ -58,8 +52,8 @@ Las entradas requieren priorización y alcance propios antes de implementarse.
 
 - Elaborar un modelo de amenazas para las fronteras de autenticación,
   persistencia y carga de manifiestos, sin ampliar sus contratos funcionales.
-- Incorporar análisis estático de seguridad y detección de secretos a CI, con
-  reglas versionadas y falsos positivos justificados.
+- Mantener las reglas versionadas de análisis estático y detección de secretos
+  del checkout (**AUD-02**) y justificar cualquier excepción antes de añadirla.
 - Añadir fuzzing de entradas serializadas y manifiestos no confiables para
   verificar rechazos acotados y ausencia de filtraciones de estado privado.
 

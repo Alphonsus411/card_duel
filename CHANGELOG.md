@@ -4,6 +4,12 @@
 
 ## 0.20.1
 
+- Incorporadas comprobaciones cerradas de deriva entre la versión del proyecto,
+  lockfile, changelog y documento de validación.
+- Añadido análisis estático versionado del checkout para secretos, ejecución
+  dinámica y usos no autorizados de `shell=True`.
+- Documentado y cubierto por pruebas un procedimiento no destructivo de rollback
+  de publicaciones que preserva artefactos y formatos persistidos.
 - Conservada la compatibilidad semántica real con 0.19.0 para los cuatro
   replays históricos, además de los esquemas persistentes v1/v2, sin crear un
   esquema v3 ni alterar la estructura de snapshots o replays.

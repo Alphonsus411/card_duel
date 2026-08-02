@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import random
 from typing import Protocol
-from ..domain.enums import EffectKind, MoveReason, TargetMode, TriggerKind, Zone
-from ..domain.errors import IllegalAction
+from ..domain.enums import CardRank, EffectKind, MoveReason, TargetMode, TriggerKind, Zone
+from ..domain.errors import IllegalAction, InvariantViolation
 from ..domain.models import CardDefinition, EffectDefinition, GameState, PendingSearch, StackItem, TargetAllocation, ZoneTarget
-from .commands import ResolveSearchChoice
+from .commands import ChooseTriggeredTargets, ResolveSearchChoice
 
 
 class StackContext(Protocol):
@@ -14,6 +14,10 @@ class StackContext(Protocol):
     def _require_running_state(self) -> GameState: ...
     def _next_player(self, player_id: str) -> str: ...
     def _definition(self, card_id: str) -> CardDefinition: ...
+    def _allocate_stack_item_id(self) -> str: ...
+    def _trigger_target_commands(
+        self, player_id: str, item: StackItem
+    ) -> list[ChooseTriggeredTargets]: ...
     def _move_card(self, card_id: str, destination: Zone, destination_player: str, *, reason: MoveReason = MoveReason.RULE, allow_replacement: bool = True) -> Zone: ...
     def _queue_triggered_abilities(self, source_card_id: str, trigger: TriggerKind) -> None: ...
     def _run_state_based_actions(self) -> None: ...
@@ -44,6 +48,89 @@ class StackManager:
             self._context._emit("PRIORITY_WINDOW_CLOSED", state.active_player_id)
         if not state.pending_triggers and state.pending_search is None:
             state.priority_player_id = state.active_player_id
+
+    @staticmethod
+    def _effects_need_choices(effects: tuple[EffectDefinition, ...]) -> bool:
+        return any(
+            effect.target
+            in {
+                TargetMode.CHOSEN_PLAYER,
+                TargetMode.CHOSEN_PERMANENT,
+                TargetMode.CHOSEN_ZONE,
+                TargetMode.CHOSEN_ENTITY,
+            }
+            for effect in effects
+        )
+
+    def _queue_legendary_effects(self) -> None:
+        state = self._context._require_running_state()
+        player = state.players[state.active_player_id]
+        items: list[StackItem] = []
+        for card_id in player.zones[Zone.BATTLEFIELD]:
+            definition = self._context._definition(card_id)
+            if definition.rank is CardRank.LEGENDARY and definition.legendary_effects:
+                items.append(
+                    StackItem(
+                        item_id=self._context._allocate_stack_item_id(),
+                        controller_id=state.active_player_id,
+                        source_card_id=card_id,
+                        effects=definition.legendary_effects,
+                        targets_locked=not self._effects_need_choices(definition.legendary_effects),
+                    )
+                )
+                self._context._emit("LEGENDARY_EFFECT_QUEUED", state.active_player_id, card_id)
+        self._queue_trigger_batch(items, state.active_player_id)
+
+    def _queue_triggered_abilities(self, source_card_id: str, trigger: TriggerKind) -> None:
+        state = self._context._require_running_state()
+        instance = state.cards[source_card_id]
+        definition = self._context._definition(source_card_id)
+        items: list[StackItem] = []
+        for ability in definition.abilities:
+            if ability.trigger is not trigger:
+                continue
+            items.append(
+                StackItem(
+                    item_id=self._context._allocate_stack_item_id(),
+                    controller_id=instance.controller_id,
+                    source_card_id=source_card_id,
+                    effects=ability.effects,
+                    ability_id=ability.ability_id,
+                    targets_locked=not self._effects_need_choices(ability.effects),
+                )
+            )
+            self._context._emit(
+                "TRIGGERED_ABILITY_QUEUED", instance.controller_id, source_card_id,
+                {"ability_id": ability.ability_id, "trigger": trigger.name},
+            )
+        self._queue_trigger_batch(items, instance.controller_id)
+
+    def _queue_trigger_batch(self, items: list[StackItem], controller_id: str) -> None:
+        state = self._context._require_running_state()
+        viable: list[StackItem] = []
+        for item in items:
+            if item.targets_locked or self._context._trigger_target_commands(controller_id, item):
+                viable.append(item)
+            else:
+                self._context._emit(
+                    "TRIGGER_FIZZLED", controller_id, item.source_card_id,
+                    {"item_id": item.item_id, "reason": "no_legal_targets"},
+                )
+        if not viable:
+            return
+        if len(viable) == 1 and viable[0].targets_locked:
+            state.stack.append(viable[0])
+            return
+        if state.pending_triggers:
+            raise InvariantViolation("Ya existe otro lote de disparos pendiente")
+        state.pending_triggers.extend(viable)
+        state.priority_player_id = controller_id
+        state.phase_priority_complete = False
+        state.consecutive_passes = 0
+        self._context._emit(
+            "SIMULTANEOUS_TRIGGERS_AWAITING_ORDER", controller_id,
+            payload={"item_ids": tuple(item.item_id for item in viable)},
+        )
 
     def _resolve_top_stack(self) -> None:
         state = self._context._require_running_state()

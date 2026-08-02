@@ -4,16 +4,25 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Protocol, cast
 
 from .catalog import CardCatalog
 from .content.registry import CollectionRegistry
 from .controllers.base import PlayerObservation
+from .domain.errors import InvalidDeckDefinition
 from .domain.models import CardDefinition
-from .engine.commands import GameCommand
+from .engine.commands import EXECUTABLE_COMMAND_TYPE_SET, GameCommand
 from .engine.game import GameEngine
 from .rules.config import RuleSet
-from .storage.base import StoredMatch
+from .storage.base import StoredMatch, validate_expected_version
+
+
+class DeckValidationFailure(ValueError):
+    """Las definiciones recibidas no permiten construir una partida."""
+
+
+class MalformedGameCommand(TypeError):
+    """El valor recibido no pertenece al vocabulario cerrado de comandos."""
 
 
 class MatchStore(Protocol):
@@ -64,20 +73,38 @@ class MatchService:
         auto_start: bool = True,
     ) -> int:
         engine = self._engine_factory()
-        engine.new_match(decks, seed=seed, auto_start=auto_start)
+        try:
+            engine.new_match(decks, seed=seed, auto_start=auto_start)
+        except InvalidDeckDefinition:
+            raise DeckValidationFailure from None
         return self.store.create(match_id, engine)
 
     def get_match(self, match_id: str) -> StoredMatch:
-        """Devuelve una copia deserializada; modificarla no altera el almacén."""
+        """Carga una partida para administración/persistencia dentro del proceso.
+
+        El resultado contiene un ``GameEngine`` deserializado. Por ello esta es una
+        operación interna: nunca debe usarse como respuesta de un adaptador remoto
+        ni atravesar la frontera R-06. Los clientes reciben exclusivamente los DTO
+        seguros construidos por ``AuthenticatedMatchApplication`` desde ``MatchView``.
+        Modificar la copia retornada no altera el almacén.
+        """
         return self.store.load(match_id)
 
     def view(self, match_id: str, player_id: str) -> MatchView:
         stored = self.store.load(match_id)
+        return self._view_for(
+            match_id, stored.version, stored.engine, player_id
+        )
+
+    @staticmethod
+    def _view_for(
+        match_id: str, version: int, engine: GameEngine, player_id: str
+    ) -> MatchView:
         return MatchView(
             match_id,
-            stored.version,
-            stored.engine.observe(player_id),
-            stored.engine.legal_actions(player_id),
+            version,
+            engine.observe(player_id),
+            engine.legal_actions(player_id),
         )
 
     def submit(
@@ -87,6 +114,8 @@ class MatchService:
         *,
         expected_version: int,
     ) -> MatchView:
+        expected_version = validate_expected_version(expected_version)
+        self.validate_command(command)
         stored = self.store.load(match_id)
         # El CAS se comprueba antes de ejecutar para evitar trabajo y errores engañosos.
         if stored.version != expected_version:
@@ -99,12 +128,21 @@ class MatchService:
         version = self.store.save(
             match_id, stored.engine, expected_version=expected_version
         )
-        return MatchView(
-            match_id,
-            version,
-            stored.engine.observe(command.player_id),
-            stored.engine.legal_actions(command.player_id),
+        return self._view_for(
+            match_id, version, stored.engine, command.player_id
         )
+
+    @staticmethod
+    def validate_command(command: object) -> None:
+        """Rechaza objetos ajenos sin ejecutar ni ocultar errores del motor."""
+        if type(command) not in EXECUTABLE_COMMAND_TYPE_SET:
+            raise MalformedGameCommand
+        validated_command = cast(GameCommand, command)
+        if (
+            type(validated_command.player_id) is not str
+            or not validated_command.player_id
+        ):
+            raise MalformedGameCommand
 
     def submit_from(
         self, match_id: str, player_id: str, source: CommandSource

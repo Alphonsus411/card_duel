@@ -7,7 +7,18 @@ from .manifest import (
     register_manifest,
     save_manifest_file,
 )
-from .registry import CollectionProvenance, CollectionRegistry, CollectionTrustPolicy
+from .registry import (
+    CollectionProvenance,
+    CollectionRegistry,
+    CollectionRegistrySnapshot,
+    CollectionTrustPolicy,
+)
+from .registry import PermissiveCollectionTrustPolicy, TrustedKey, TrustedKeyResolver, TrustPolicy
+from .signature import (
+    CollectionSignatureEnvelope,
+    dump_signature_envelope,
+    load_signature_envelope,
+)
 
 __all__ = [
     "CollectionManifest",
@@ -18,5 +29,13 @@ __all__ = [
     "save_manifest_file",
     "CollectionProvenance",
     "CollectionRegistry",
+    "CollectionRegistrySnapshot",
     "CollectionTrustPolicy",
+    "PermissiveCollectionTrustPolicy",
+    "TrustedKey",
+    "TrustedKeyResolver",
+    "TrustPolicy",
+    "CollectionSignatureEnvelope",
+    "dump_signature_envelope",
+    "load_signature_envelope",
 ]

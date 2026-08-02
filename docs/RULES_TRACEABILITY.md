@@ -7,7 +7,7 @@ No convierte normalizaciones ni pendientes en reglas nuevas.
 |---|---|---|
 | Preparación, mano, robo, Reserva, fases y descarte | `engine/game.py`, `engine/zones.py`, `rules/config.py` | `test_setup_and_phases.py`, `test_resources_and_zones.py` |
 | Pago atómico, habilidades, costes alternativos, dinámicos y X | `engine/game.py`, `rules/resolvers.py`, `domain/models.py` | `test_stack_and_priority.py`, `test_advanced_mechanics.py`, `test_dynamic_rules_v070.py`, `test_variable_rules_v080.py` |
-| Prioridad, pila, objetivos, búsquedas y disparos | `engine/stack.py`, `engine/effects.py`, `engine/game.py` | `test_stack_and_priority.py`, `test_resolution_v050.py`, `test_extensibility_v060.py` |
+| Prioridad, pila, objetivos, búsquedas y disparos | `engine/stack.py`, `engine/effects.py`, `engine/game.py` | `test_stack_and_priority.py`, `test_resolution_v050.py`, `test_extensibility_v060.py`, `test_manager_contracts_v0130.py` (paridad arquitectónica, sin cambio normativo) |
 | Efectos, prevención, daño, regeneración y estado | `engine/effects.py`, `engine/game.py`, `engine/zones.py` | `test_effect_manager_v0170.py`, `test_advanced_mechanics.py`, `test_resolution_v050.py` |
 | Combate, Desafío, Divinos, Señores y Legendaria | `engine/combat.py`, `engine/game.py` | `test_combat_and_legendary.py`, `test_mythic_v040.py` |
 | Zonas, barajado, sustituciones y control | `engine/zones.py`, `engine/stack.py`, `engine/effects.py` | `test_resolution_v050.py`, `test_extensibility_v060.py`, `test_variable_rules_v080.py` |
@@ -15,14 +15,122 @@ No convierte normalizaciones ni pendientes en reglas nuevas.
 | Documentos v2 y migraciones v1 | `persistence/`, `content/manifest.py` | `test_persistence_v090.py`, `test_hardening_v0100.py` |
 | Persistencia CAS | `storage/`, `service.py` | `test_service_v0110.py`, `test_hardening_v0100.py` |
 
+## Inventario de contradicciones base–Mítica (R-03A)
+
+Este inventario se limita a formulaciones universales que ya estaban señaladas
+en esta documentación. La revisión no incorpora textos de cartas y no trata como
+contradicción una mera ampliación de Mítica. Con ese criterio existe **una sola
+contradicción identificable** en el corpus documental actual:
+
+| Materia | Reglamento base | Actualización Mítica | Comportamiento conservado | Precedencia documentada |
+|---|---|---|---|---|
+| Inmunidad y Transmutación de Divinos | `Fantasy Tokens.pdf`, regla básica 19, p. 8: un Divino es «inmune completamente incluso al descarte». | Página **no consignada ni verificable en los artefactos versionados**: la formulación recogida en `RULES_BASELINE.md` limita la inmunidad a Eventos, Recursos Rápidos y habilidades, y permite expresamente la Transmutación. La ausencia de página se registra; no se inventa una referencia. | Se mantiene la conducta vigente: un Divino no puede ser objetivo de esas tres clases de fuente, pero sí conserva Transmutación y sus propias habilidades. No se cambia el motor ni ninguna expectativa reglamentaria de pruebas. | La sección «Precedencia normativa» de `RULES_BASELINE.md` aplica Mítica porque es posterior y más específica. El inventario describe esa decisión existente; no adopta otra nueva. |
+
+La falta de una copia paginada y oficialmente identificada de la actualización
+Mítica impide completar la referencia secundaria y, sobre todo, reevaluar la
+decisión normativa. Cualquier modificación de `src/card_duel_engine/` o de las
+expectativas reglamentarias de las pruebas queda bloqueada en R-03B hasta recibir
+aclaración oficial.
+
 ## Ambigüedades y deuda normativa conservadas
 
+- El reglamento sí contempla más de dos participantes: presenta el objetivo
+  como enfrentarse a «uno o más adversarios» (PDF, p. 3) y su regla básica 2
+  se refiere expresamente a «ambos jugadores o todos los participantes» al
+  acordar el mismo límite de Heridas (PDF, p. 5).
+- El mismo texto no define cómo termina una partida de tres o más participantes.
+  La concesión abandona el juego y otorga la victoria a «su oponente» (PDF,
+  p. 3), alcanzar el límite de Heridas hace perder «al que» llega a él (PDF,
+  p. 4), y la única regla de derrota simultánea describe un empate entre «el
+  jugador pasivo» y «el otro jugador» (regla básica 18, PDF, pp. 7–8).
+  No se especifica si una concesión o derrota individual termina toda la
+  partida, si continúan los supervivientes, ni cómo seleccionar u ordenar
+  ganadores. Hasta que exista aclaración normativa, no se eleva a regla ninguna
+  de esas posibles mecánicas multijugador.
 - Reparto entre bloqueadores en orden declarado, pendiente de aclaración.
 - Regeneración como escudo consumible, sin inferir un procedimiento ausente.
-- Precedencia Mítica para la inmunidad de Divinos.
-- Firma de colecciones, esquemas 3+, red/autenticación y registro formal de
-  contradicciones siguen siendo pendientes, no reglas.
+- La precedencia Mítica para la inmunidad de Divinos se conserva; su inventario
+  documental R-03A está completado y cualquier cambio normativo pertenece a
+  R-03B, que continúa bloqueado.
+- Los esquemas 3+ siguen siendo pendientes,
+  no reglas. Un adaptador HTTP u otro transporte está excluido del alcance y no
+  es un pendiente implementable. La firma y política de
+  confianza de colecciones (R-04), así como la frontera autenticada de
+  aplicación agnóstica del transporte (R-06), ya están completadas; esa frontera
+  no equivale a una autorización para implementar un adaptador de red.
 
 ## Trazabilidad 0.18.0
 
 El registro de colecciones es infraestructura de contenido y no modifica reglas observables. Los manifiestos, snapshots y replays continúan en esquema v2 y las migraciones v1 a v2 permanecen vigentes. La igualdad exacta entre una definición del mazo y la registrada se comprueba antes de crear la partida.
+
+## Trazabilidad 0.18.1
+
+La secuencia de fases y el mínimo de dos participantes ya documentados se
+rechazan ahora durante la construcción de un `RuleSet` inválido. La validación
+previa de mazos y el arreglo del SQLite en memoria son garantías de atomicidad e
+infraestructura; no incorporan texto de cartas ni resuelven las ambigüedades
+normativas pendientes.
+
+## Trazabilidad 0.18.2
+
+La revisión directa de `Fantasy Tokens.pdf` confirma que el formato admite uno
+o más adversarios y que todos los participantes comparten el límite de Heridas.
+No resuelve la concesión, la continuidad tras una derrota, las derrotas
+simultáneas ni la selección y el orden de ganadores cuando participan más de dos;
+esas cuestiones quedan registradas como deuda normativa, sin convertir el
+comportamiento actual del motor en una regla fuente.
+
+## Trazabilidad 0.18.3
+
+`engine/game.py` deja de aplicar a tres o más participantes la inferencia de que
+todos los jugadores no derrotados son ganadores. Ante concesión o límite de
+Heridas conserva los afectados, no asigna ganadores y usa `BLOCKED` como parada
+técnica pendiente de aclaración. `test_end_conditions.py` verifica ambos caminos
+y conserva las condiciones terminales existentes para exactamente dos jugadores.
+Esta protección se registra como entrega completada en la hoja de ruta. R-04 es
+la única tarea siguiente; R-02 y R-03 permanecen bloqueadas por aclaraciones
+normativas, R-05 por la falta de un esquema 3 definido, y R-06 y R-07 continúan
+como pendientes técnicos sin promover.
+
+## Trazabilidad 0.19.0
+
+El sobre de firma v1 y la política de claves son infraestructura de distribución,
+no reglas del juego: no cambian fases, acciones, cartas ni resultados. El
+manifiesto permanece en esquema v2 y conserva sus bytes canónicos y su SHA-256;
+el sobre separado añade autenticidad cuando una aplicación exige una firma de
+una clave confiable. Los formatos persistentes de partidas continúan en v2 y no
+se añade ninguna migración. R-04 queda completada sin resolver deuda normativa.
+
+## Trazabilidad de R-06
+
+La frontera autenticada es infraestructura y no modifica reglas observables.
+`AuthenticatedMatchApplication` deriva el jugador de (`iss`, `sub`), partida y
+capacidad; entrega DTO públicos y conserva la escritura CAS de `MatchService`.
+La batería compartida de memoria y SQLite verifica además que crear, observar,
+enviar y administrar son permisos independientes. R-06 queda completada.
+El transporte queda fuera de alcance. Solo otra decisión documental expresa podría
+habilitarlo y deberá mantener
+esta aplicación como frontera autoritativa y no podrá aceptar `player_id`, exponer
+`GameEngine` o `GameState`, omitir `expected_version`/CAS ni reinterpretar los
+comandos recibidos.
+
+## Trazabilidad de R-07.1
+
+La extracción de combate no modifica reglas: `CombatManager` reproduce la
+enumeración determinista de atacantes, Desafíos y bloqueadores y la oferta de
+resolución, incluido su límite configurable. La validación de `execute` sigue
+siendo autoritativa aunque una acción no aparezca en el prefijo enumerado. La
+paridad cubre dos y más jugadores y huellas de estado, eventos, historial y
+contadores. R-07.1 quedó completada con un límite explícito: el alcance de
+movimientos y sustituciones se abordó después en R-07.2, sin formar parte de
+aquella entrega de combate.
+
+## Trazabilidad de R-07.2
+
+La consolidación de movimientos es exclusivamente arquitectónica. Robo,
+reciclaje, movimiento, separación de Equipo, limpieza de instancia y
+sustituciones conservan los resultados anteriores y tienen una sola autoridad
+en `ZoneManager`; `GameEngine` conserva coordinación, transacción y replay. La
+paridad de `test_zone_parity_r072.py` compara todas las observaciones
+deterministas mediante un `ZoneContext` mínimo independiente. R-07.2 queda
+cerrada sin resolver ambigüedades ni cambiar reglas del juego.

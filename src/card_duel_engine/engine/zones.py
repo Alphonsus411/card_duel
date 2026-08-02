@@ -3,11 +3,11 @@ from __future__ import annotations
 import random
 from dataclasses import replace
 from typing import Protocol
-from ..domain.enums import CardKind, ControllerScope, MatchStatus, MoveReason, TriggerKind, Zone
+from ..domain.enums import MatchStatus, MoveReason, Zone
 from ..domain.errors import IllegalAction, InvariantViolation
 from ..domain.models import CardDefinition, GameState, MoveReplacementDefinition, PendingMoveReplacement
 from ..rules.config import RuleSet
-from .commands import GameCommand, ResolveMoveReplacement, SetReplacementOrder
+from .commands import SetReplacementOrder
 
 
 class MoveReplacementChoiceRequired(Exception):
@@ -35,7 +35,6 @@ class ZoneContext(Protocol):
     def _definition(self, card_id: str) -> CardDefinition: ...
     def _current_strength(self, card_id: str) -> int: ...
     def _consume_replacement_replay_choice(self) -> int | None: ...
-    def _execute_transaction(self, command: GameCommand, replay_choices: tuple[int, ...]) -> None: ...
     def _emit(self, event_type: str, player_id: str | None = None, card_id: str | None = None, payload: dict[str, object] | None = None) -> None: ...
 
 
@@ -208,6 +207,11 @@ class ZoneManager:
                     card_id,
                     {"reason": reason.name, "destination": destination.name},
                 )
+        if destination not in {Zone.RESOLUTION, Zone.VOID} and (
+            destination_player not in state.players
+            or destination not in state.players[destination_player].zones
+        ):
+            raise ValueError(f"Zona de destino no almacenable: {destination.name}")
         if instance.zone is Zone.BATTLEFIELD and destination is not Zone.BATTLEFIELD:
             for other in state.cards.values():
                 if other.attached_to == card_id:

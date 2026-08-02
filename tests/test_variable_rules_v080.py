@@ -23,6 +23,7 @@ from card_duel_engine.engine import (
     PlayCard,
     ResolveMoveReplacement,
 )
+from card_duel_engine.persistence import dump_snapshot
 
 from fixtures import test_deck
 
@@ -338,6 +339,60 @@ class VariableRulesV080Tests(unittest.TestCase):
         self.assertIn(target_b, engine.state.players["B"].zones[Zone.EXILE])
         self.assertIn(spell, engine.state.players["A"].zones[Zone.DISCARD])
         engine.validate_invariants()
+
+    def test_failed_replay_restores_the_complete_pending_choice_state(self):
+        resilient = CardDefinition(
+            "DEFER_FAILURE8",
+            "Destino recuperable",
+            CardKind.CREATURE,
+            3,
+            base_strength=3,
+            move_replacements=(
+                MoveReplacementDefinition(Zone.HAND),
+                MoveReplacementDefinition(Zone.EXILE),
+            ),
+            deferred_replacement_choice=True,
+        )
+        destroy = CardDefinition(
+            "DESTROY_FAILURE8",
+            "Destrucción fallida",
+            CardKind.QUICK_RESOURCE,
+            0,
+            permanent=False,
+            transmutable=False,
+            effects=(
+                EffectDefinition(EffectKind.DESTROY, 0, TargetMode.CHOSEN_PERMANENT),
+            ),
+        )
+        engine = self.make_engine((destroy,), (resilient,))
+        spell = force_zone(engine, "DESTROY_FAILURE8", "A", Zone.HAND)
+        target = force_zone(engine, "DEFER_FAILURE8", "B", Zone.BATTLEFIELD)
+        engine.execute(PlayCard("A", spell, chosen_card_ids=(target,)))
+        engine.execute(PassPriority("B"))
+        engine.execute(PassPriority("A"))
+
+        fingerprint_before = dump_snapshot(engine, indent=None)
+        replay_state_before = (
+            engine._replacement_replay_choices,
+            engine._replacement_replay_cursor,
+        )
+        check_wound_limits = engine._check_wound_limits
+
+        def fail_after_replacement():
+            raise RuntimeError("fallo posterior simulado")
+
+        engine._check_wound_limits = fail_after_replacement
+        try:
+            with self.assertRaisesRegex(RuntimeError, "fallo posterior simulado"):
+                engine.execute(ResolveMoveReplacement("B", 0))
+        finally:
+            engine._check_wound_limits = check_wound_limits
+
+        self.assertEqual(dump_snapshot(engine, indent=None), fingerprint_before)
+        self.assertEqual(
+            (engine._replacement_replay_choices, engine._replacement_replay_cursor),
+            replay_state_before,
+        )
 
 
 if __name__ == "__main__":

@@ -150,13 +150,29 @@ Edición Mítica. No incluye textos de cartas antiguas.
 
 ## Pendientes explícitos
 
+La política de confianza y firma de colecciones de R-04 y la frontera autenticada
+de aplicación de R-06 ya están entregadas. Esta última es agnóstica del
+transporte: autentica y autoriza los casos de uso, pero no incluye un adaptador
+HTTP ni otro servicio de red concreto. Por decisión de alcance, ningún transporte
+es una entrega futura habilitada ni un pendiente implementable. Si otra decisión
+lo habilitase, deberá conservar `AuthenticatedMatchApplication` como frontera
+autoritativa: nunca podrá aceptar `player_id`, exponer `GameEngine` o `GameState`,
+omitir `expected_version`/CAS ni reinterpretar comandos.
+
+- El reglamento permite enfrentarse a uno o más adversarios y exige que todos
+  los participantes acuerden el mismo límite de Heridas (`Fantasy Tokens.pdf`,
+  pp. 3 y 5). Sin embargo, solo formula concesión, derrota por Heridas y empate
+  simultáneo en singular o para dos jugadores (pp. 3–4 y regla 18, pp. 7–8).
+  Quedan sin definir la continuidad de una partida multijugador y la selección
+  y orden de sus ganadores; no debe inferirse una condición terminal.
 - La versión 0.2 distribuye el daño entre bloqueadores en el orden declarado;
   esta normalización debe revisarse si aparece una aclaración normativa.
-- Firma de colecciones distribuidas por terceros y política de confianza.
 - Nuevas migraciones cuando aparezcan futuros esquemas 3 o posteriores.
-- Servicio de red, autenticación y autorización sobre el almacén de partidas.
 - Extracción de pila, combate y movimientos a resolutores especializados.
-- Registro formal de las contradicciones entre reglamento base y Mítica.
+- El inventario documental de la contradicción base–Mítica sobre Divinos está
+  completado en `RULES_TRACEABILITY.md`; cualquier modificación normativa del
+  motor o de expectativas reglamentarias de pruebas sigue bloqueada hasta una
+  aclaración oficial paginada.
 
 Nada de lo anterior debe completarse mediante suposiciones silenciosas.
 
@@ -194,3 +210,30 @@ Legendaria, documentos v2, migraciones v1 y ambigüedades. La trazabilidad en
 ## Compatibilidad 0.18.0
 
 La línea base de reglas, incluida la fase Legendaria, permanece sin cambios respecto de 0.17.0. El catálogo de producción continúa vacío; el registro solo añade procedencia y transacciones a la carga explícita de colecciones.
+
+## Compatibilidad 0.18.1
+
+Se valida que toda configuración conserve los dos participantes mínimos y la
+secuencia normativa Robo, Mantenimiento, Efectos, Combate, Legendaria y
+Descarte. El endurecimiento transaccional de mazos y el soporte SQLite en memoria
+no añaden cartas ni interpretaciones a las reglas vigentes.
+
+## Compatibilidad 0.18.2
+
+Se conserva el mínimo de dos participantes porque el reglamento permite
+explícitamente enfrentarse a uno o más adversarios. La versión solo registra esa
+evidencia y la ausencia de una condición terminal multijugador completa: no
+normaliza concesiones, eliminaciones, empates ni ganadores para tres o más.
+
+## Compatibilidad 0.18.3
+
+Una concesión o la llegada al límite de Heridas en una partida de tres o más
+participantes bloquea la ejecución sin declarar ganadores. `BLOCKED` expresa que
+falta una decisión normativa y no constituye una condición terminal nueva. Las
+partidas de dos jugadores conservan exactamente sus condiciones de victoria.
+
+## Compatibilidad 0.19.0
+
+La autenticación de colecciones es infraestructura y no modifica ninguna regla,
+carta ni resultado. El manifiesto y los documentos persistentes permanecen en
+esquema v2; el sobre de firma usa su propio esquema v1 separado.

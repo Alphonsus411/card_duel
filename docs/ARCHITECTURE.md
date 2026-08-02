@@ -181,6 +181,72 @@ comandos mediante el motor y persiste con versión esperada. `MatchStore` altern
 memoria y SQLite; `CommandSource` permite conectar humanos, simuladores o un
 futuro adaptador AGIX sin incorporar AGIX al dominio.
 
+## R-06 — Frontera autenticada; transporte fuera de alcance
+
+R-06 entrega `AuthenticatedMatchApplication`, no una frontera de red. Un adaptador
+HTTP, HTTPS u otro transporte permanece fuera de alcance, no está habilitado como
+entrega futura y no forma parte de los pendientes implementables. Habilitarlo
+exigiría otra decisión documental con alcance, dependencias, criterios de
+aceptación y amenazas propios. Los siguientes puntos son invariantes de seguridad
+de la frontera existente, no una especificación ni autorización para construir
+el adaptador:
+
+- **Entrada no confiable:** ninguna representación externa se convierte en un
+  objeto de aplicación sin límites de tamaño, tipos y campos. Las credenciales y
+  los datos privados nunca se admiten sobre canales en texto claro.
+- **Autenticación:** la infraestructura verifica la credencial contra su
+  configuración local antes de crear una identidad con `iss` y `sub`. El motor,
+  los modelos de dominio y `MatchService` nunca reciben ni almacenan tokens,
+  cookies o sesiones. Esta invariante no selecciona protocolo ni tecnología de
+  autenticación para un transporte futuro.
+- **Identidad externa:** la clave estable es el par exacto (`iss`, `sub`) del
+  token validado. Un nombre, correo, IP o valor `player_id` enviado por el cliente
+  no es identidad y no participa en la autorización.
+- **Asociación:** una tabla o política externa relaciona (`iss`, `sub`,
+  `match_id`, capacidad) con un único `player_id`. La capa de aplicación resuelve
+  esa asociación para observar o enviar; sus operaciones públicas no aceptan un
+  `player_id` elegible por el cliente y rechazan comandos cuyo autor difiera.
+- **Autorización:** `create_match` es una capacidad global; `observe` y
+  `submit_command` son capacidades de jugador y partida independientes;
+  `administer` es una capacidad de partida separada y no concede implícitamente
+  observación privada ni juego. Denegar una capacidad no consulta ni muta la
+  partida.
+- **Concurrencia y errores:** toda escritura requiere `expected_version` y llega
+  al CAS de `InMemoryMatchStore` o `SQLiteMatchStore`. La frontera convierte
+  partida ausente, conflicto de versión y acción ilegal en códigos públicos
+  estables, sin incluir excepciones internas, snapshots, acciones legales u
+  observaciones privadas.
+
+`AuthenticatedMatchApplication` materializa estos casos de uso en una capa
+separada, agnóstica del transporte y autoritativa. Si un transporte llegara a
+habilitarse, solo podría decodificar y validar el formato, autenticar, invocarla y
+serializar su resultado seguro. No podría aceptar un `player_id` aportado por el
+cliente, acceder directamente ni exponer `GameEngine` o `GameState`, omitir
+`expected_version` o el CAS, reinterpretar comandos, decidir reglas del juego o
+acceder directamente al almacén.
+
+### Contrato de salida y confinamiento del motor
+
+`MatchService.get_match()` es una operación **exclusivamente interna** de
+administración y persistencia. Devuelve un `StoredMatch` con el `GameEngine`
+deserializado para uso dentro del proceso; jamás es una respuesta para clientes
+remotos ni puede serializarse en R-06. El acceso al motor deserializado queda
+confinado a la aplicación y a las implementaciones de `MatchStore`.
+
+Las respuestas de observación y escritura de R-06 son `PublicMatchView`,
+`PublicPlayerObservation` y `PublicLegalAction`. Se construyen únicamente desde
+el `MatchView` ya autorizado y su `PlayerObservation`: contienen primitivas JSON,
+la mano propia, tamaños de manos rivales y zonas públicas. Nunca contienen
+`GameEngine`, `GameState`, snapshots, mazos o manos rivales, ni los campos de una
+acción que puedan codificar elecciones privadas. La aplicación solo publica el
+discriminador de cada acción legal; el comando recibido se valida por separado
+contra la identidad autenticada.
+
+`PublicLegalAction.action` identifica el tipo general, pero no distingue
+necesariamente alternativas simultáneas del mismo tipo. La deuda y las
+condiciones de seguridad que tendría que resolver una eventual decisión de
+transporte se registran en
+[AD-01](ENGINEERING_BACKLOG.md#ad-01--identidad-pública-de-alternativas-legales-para-un-transporte-futuro).
 
 ## Contratos de componentes (0.12.0)
 
@@ -198,6 +264,61 @@ mutable sigue siendo `GameState`, por lo que no hay sincronización ni estado es
 testigo de asignación estática garantiza que `GameEngine` satisface los tres. El gestor
 de zonas no conoce la secuencia ni el cursor internos del replay: solicita la siguiente
 elección mediante `_consume_replacement_replay_choice`, que devuelve `None` al agotarse.
+
+## Extracción incremental de pila (R-07)
+
+La inspección de los métodos privados del coordinador identifica tres grupos de
+delegación pura: pila (`_pass_priority`, `_resolve_top_stack`,
+`_continue_stack_resolution`, `_resolve_search_choice`, `_shuffle_zone`), combate
+(`_declare_challenge`, `_declare_attackers`, `_declare_blockers`,
+`_resolve_combat`) y movimiento (`_draw`, `_set_replacement_order`,
+`_ordered_replacements`, `_move_card`). Esta entrega elige **solo pila** y mueve
+además la creación y el lote de disparos (`_queue_legendary_effects`,
+`_queue_triggered_abilities`, `_queue_trigger_batch` y la detección de objetivos)
+a `StackManager`; no mezcla este límite arquitectónico con cambios de reglas.
+
+`StackContext` declara explícitamente la enumeración de objetivos y la asignación
+del siguiente identificador. El gestor opera directamente sobre el `GameState`
+entregado por el contexto y no conserva cachés, snapshots ni contadores propios.
+`GameEngine` mantiene la transacción, el despacho de comandos, las fases y la
+validación final de invariantes. En particular, el snapshot y el contador de pila
+se restauran juntos ante excepciones, y `_consume_replacement_replay_choice`
+continúa siendo la única frontera con el replay de movimientos reemplazables.
+Por tanto, la extracción no modifica legalidad, eventos, historial, elecciones
+pendientes, rollback, identificadores ni ninguna otra regla observable.
+
+## Límite de combate (R-07.1)
+
+El inventario estático separa las responsabilidades actuales así:
+
+| Responsabilidad | Propietario actual y final |
+| --- | --- |
+| Despacho de `DeclareChallenge`, `DeclareAttackers`, `DeclareBlockers` y `ResolveCombat` | `GameEngine._execute_command`; sus cuatro adaptadores privados solo encaminan la llamada a `CombatManager`. |
+| Enumeración de acciones | `CombatManager.legal_actions`: construye subconjuntos de atacantes, Desafíos, declaraciones de bloqueadores y la oferta de `ResolveCombat`; `GameEngine.legal_actions` integra y ordena el resultado público. |
+| Transacción | `GameEngine.execute` y `_execute_transaction`: crean snapshot cuando corresponde, restauran estado y contador de pila y administran el replay de sustituciones. |
+| Fases y prioridad general | `GameEngine` avanza y entra en fases; `CombatManager` solo actualiza la prioridad y las banderas exigidas por una declaración o resolución concreta. |
+| Invariantes y final de comando | `GameEngine._execute_command` comprueba límites de Heridas y ejecuta `validate_invariants` después de la operación delegada. |
+| Validación y mutación propias del combate | `CombatManager`: legalidad de participantes y criaturas, creación y actualización de `CombatState`, agotamiento, daño, Heridas, acciones basadas en estado y eventos de combate. |
+| Operaciones delegadas por combate | El `CombatContext` ofrece estado en ejecución, el límite de enumeración, consultas de criatura/Fuerza, daño, Heridas, acciones basadas en estado y emisión; estas operaciones siguen coordinadas por `GameEngine` sobre el mismo estado. |
+
+El límite final mantiene a `GameEngine` como dueño del despacho, el
+snapshot/rollback, el avance de fases y las invariantes. `CombatManager` es dueño
+de la validación y mutación específicas del combate. Ambos operan sobre el único
+`GameState`; el gestor no conserva estado espejo, historial, contadores ni una
+transacción propia.
+
+La paridad R-07.1 se evalúa entrando por `GameEngine.execute` tanto con el contexto
+normal como con un adaptador que implementa únicamente `CombatContext`. Los casos
+de éxito, comando ilegal y excepción comparan el estado completo, `event_log`,
+`command_history`, `_next_instance` y `_next_stack_item`. La excepción se inyecta
+después de una mutación y, con snapshot transaccional activo, demuestra rollback
+sin residuos; el comando ilegal demuestra que la validación tampoco produce una
+mutación parcial.
+
+La enumeración pública se compara también con el gestor directo en partidas de
+dos y más jugadores. El límite conserva el prefijo y orden históricos, mientras
+que `execute` continúa aceptando una declaración válida ausente de ese prefijo.
+Con esta frontera cerrada, R-07.2 (movimientos) queda inequívocamente habilitada.
 
 ## Construcción reproducible y validación (0.16.0)
 
@@ -222,3 +343,68 @@ reproducible con instalaciones multiversión para una ejecución en Python 3.13.
 ## Registro de colecciones (0.18.0)
 
 `CollectionRegistry` coordina un único `CardCatalog` vacío por defecto. Valida primero el lote completo, ordena su grafo de dependencias topológicamente con desempate lexicográfico y solo entonces incorpora cartas y procedencia inmutable. Una excepción de validación o confianza no deja estado parcial. El contenido canónico del manifiesto v2 se identifica con SHA-256; este digest aporta integridad, no autenticidad. Las firmas y decisiones de confianza pertenecen a una capa externa mediante `CollectionTrustPolicy`; el motor no carga módulos ni ejecuta contenido de colecciones.
+
+El formato de versión que admite el manifiesto v2 es exclusivamente
+`MAJOR.MINOR.PATCH`, con exactamente tres componentes decimales enteros no
+negativos (por ejemplo, `0.1.0` o `2.0.3`). Tanto `engine_min_version` como la
+versión del motor de la aplicación deben usar ese formato. No se admiten
+espacios, componentes ausentes o adicionales, signos, prereleases ni metadatos
+de compilación de SemVer; los productores de colecciones deben omitir esos
+sufijos.
+
+## Endurecimiento transaccional (0.18.1)
+
+La preparación de una partida materializa y valida todos los mazos antes de
+registrar definiciones o sustituir el estado vigente. Cuando se inyecta un
+`CollectionRegistry`, el motor solo admite las definiciones exactas que ya
+pertenecen a su catálogo autoritativo; no existe una vía lateral de registro a
+través de un mazo. Esta corrección no cambia ninguna mecánica del reglamento.
+
+El almacén SQLite conserva el modelo de conexiones cortas. Para `:memory:` usa
+una base compartida identificada de forma privada y una conexión de
+mantenimiento, liberable mediante `close()`, porque una conexión independiente a
+`:memory:` representaría otra base vacía.
+
+## Autenticidad de colecciones (0.19.0)
+
+El manifiesto v2 continúa siendo el documento de contenido compatible y su única
+representación canónica es `dump_manifest(manifest, indent=None)`. Esos bytes se
+usan tanto para `manifest_sha256` como para la firma. El digest demuestra
+**integridad** (identidad de los bytes), pero cualquiera puede recalcularlo; una
+firma válida aporta **autenticidad** respecto de una clave que la aplicación haya
+decidido confiar.
+
+`CollectionSignatureEnvelope` es un formato separado, versión 1, con exactamente
+cinco campos de texto: versión, manifiesto canónico completo, identificador de
+clave, algoritmo y firma. La firma queda fuera del manifiesto, por lo que cambiar
+el sobre no cambia su digest. El lector rechaza campos extra, ausentes, de otro
+tipo, versiones desconocidas y manifiestos no canónicos. El esquema v2 del
+manifiesto no cambia y los manifiestos sin sobre siguen pudiendo leerse y, bajo
+una política explícitamente permisiva o sin política por compatibilidad, cargarse.
+
+La política estricta incluida admite únicamente algoritmos configurados (por
+defecto `hmac-sha256`), resuelve `TrustedKey` por `key_id` mediante un objeto
+inyectado y rechaza ausencia de firma, algoritmos desconocidos, claves ausentes o
+revocadas y firmas inválidas. Ni el sobre ni el manifiesto pueden indicar módulos,
+resolutores o código: las claves y toda decisión de confianza proceden de objetos
+creados por la aplicación. El registro termina la validación de firmas,
+dependencias y colisiones de todo el lote antes de tocar el catálogo o la
+procedencia.
+
+## Límite de zonas (R-07.2)
+
+`ZoneManager` contiene la única implementación autoritativa de `_draw`,
+`_set_replacement_order`, `_ordered_replacements` y `_move_card`. Los métodos de
+igual nombre en `GameEngine` son adaptadores de despacho. El gestor opera sobre
+el `GameState` compartido y su `ZoneContext` se limita a reglas, consultas de
+estado y carta, Fuerza, consumo tipado de una elección reproducida y emisión de
+eventos; no recibe despacho ni servicios transaccionales.
+
+`GameEngine` conserva snapshot y rollback, historial de comandos, creación y
+resolución de `PendingMoveReplacement`, replay, invariantes y contadores. La
+paridad R-07.2 cubre robo, agotamiento y reciclaje determinista del mazo, todas
+las zonas almacenables, Equipo, limpieza de instancia y las tres políticas de
+sustitución. Las huellas incluyen estado completo, eventos, historial, semilla,
+curso del replay, pendiente y contadores. Rechazos y fallos previos a almacenar
+una carta no dejan mutación parcial. Esta separación no interpreta ni modifica
+ninguna regla normativa.

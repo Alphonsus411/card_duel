@@ -6,7 +6,7 @@ from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import replace
 from itertools import combinations, islice, permutations, product
 
-from ..catalog import CardCatalog
+from ..catalog import CardCatalog, CardCatalogReader
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -25,7 +25,12 @@ from ..domain.enums import (
     TriggerKind,
     Zone,
 )
-from ..domain.errors import IllegalAction, InvariantViolation, PaymentError
+from ..domain.errors import (
+    IllegalAction,
+    InvalidDeckDefinition,
+    InvariantViolation,
+    PaymentError,
+)
 from ..domain.models import (
     AppliedTextPatch,
     CardDefinition,
@@ -87,7 +92,7 @@ class GameEngine:
         self.registry: CollectionRegistry | None = (
             catalog if catalog is not None and not isinstance(catalog, CardCatalog) else None
         )
-        self.catalog: CardCatalog = (
+        self.catalog: CardCatalogReader = (
             self.registry.catalog
             if self.registry is not None
             else catalog if isinstance(catalog, CardCatalog) else CardCatalog()
@@ -101,6 +106,11 @@ class GameEngine:
         self._stack = StackManager(self)
         self._zones = ZoneManager(self)
         self._effects = EffectManager(self)
+
+    @property
+    def _combat_action_enumeration_limit(self) -> int:
+        """Expone al gestor de combate únicamente su límite de enumeración."""
+        return self.rules.legal_action_enumeration_limit
 
     def _consume_replacement_replay_choice(self) -> int | None:
         """Consume una elección grabada sin exponer el cursor al gestor de zonas."""
@@ -117,57 +127,145 @@ class GameEngine:
         seed: int = 0,
         auto_start: bool = True,
     ) -> GameState:
-        if len(decks) < self.rules.minimum_players:
-            raise ValueError(f"Se necesitan al menos {self.rules.minimum_players} jugadores")
+        # Las entradas potencialmente perezosas se consumen antes de cualquier
+        # otra preparación, de modo que un generador que falle no pueda dejar
+        # cambios observables en el motor.
+        prepared_decks = {
+            player_id: tuple(definitions) for player_id, definitions in decks.items()
+        }
+        turn_order = tuple(prepared_decks)
+        if len(prepared_decks) < self.rules.minimum_players:
+            raise InvalidDeckDefinition(
+                f"Se necesitan al menos {self.rules.minimum_players} jugadores"
+            )
 
-        self._next_instance = 1
-        self._next_stack_item = 1
-        self._replacement_replay_choices = ()
-        self._replacement_replay_cursor = 0
+        # Conservar explícitamente todas las referencias publicadas. La
+        # preparación no las usa como espacio de trabajo ni necesita rollback.
+        previous_values = (
+            self.catalog,
+            self.state,
+            self._next_instance,
+            self._next_stack_item,
+            self._replacement_replay_choices,
+            self._replacement_replay_cursor,
+        )
+        candidate_catalog = self._prepare_catalog(prepared_decks)
+        next_instance = 1
+        next_stack_item = 1
+        replacement_replay_choices: tuple[int, ...] = ()
+        replacement_replay_cursor = 0
         rng = random.Random(seed)
-        players = {player_id: PlayerState(player_id) for player_id in decks}
+        players = {player_id: PlayerState(player_id) for player_id in turn_order}
         cards: dict[str, CardInstance] = {}
         initial_decks: dict[str, tuple[str, ...]] = {}
 
-        for player_id, definitions in decks.items():
+        for player_id, definitions in prepared_decks.items():
             definition_ids: list[str] = []
             for definition in definitions:
                 definition_ids.append(definition.card_id)
-                if definition.card_id not in self.catalog:
-                    self.catalog.register(definition)
-                elif self.catalog.get(definition.card_id) != definition:
-                    raise ValueError(
-                        f"La definición {definition.card_id} no coincide con el catálogo"
-                    )
-                instance_id = f"card-{self._next_instance:06d}"
-                self._next_instance += 1
-                cards[instance_id] = CardInstance(
-                    instance_id=instance_id,
-                    definition_id=definition.card_id,
-                    owner_id=player_id,
-                    controller_id=player_id,
+                instance, next_instance = self._create_candidate_instance(
+                    definition, player_id, next_instance
                 )
-                players[player_id].zones[Zone.DECK].append(instance_id)
+                cards[instance.instance_id] = instance
+                players[player_id].zones[Zone.DECK].append(instance.instance_id)
             initial_decks[player_id] = tuple(definition_ids)
             rng.shuffle(players[player_id].zones[Zone.DECK])
 
-        self.state = GameState(
+        candidate_state = GameState(
             ruleset_id=self.rules.ruleset_id,
             ruleset_version=self.rules.version,
             players=players,
-            turn_order=tuple(decks),
+            turn_order=turn_order,
             cards=cards,
-            priority_player_id=tuple(decks)[0],
+            priority_player_id=turn_order[0],
             random_seed=seed,
             initial_decks=initial_decks,
             status=MatchStatus.SETUP,
         )
-        for player_id in self.state.turn_order:
-            self._draw(player_id, self.rules.initial_hand_size)
+
+        # Las operaciones de arranque siguen exactamente los mismos caminos del
+        # motor, pero sobre un coordinador candidato que aún no está publicado.
+        candidate = GameEngine(self.rules)
+        candidate.catalog = candidate_catalog
+        candidate.state = candidate_state
+        candidate._next_instance = next_instance
+        candidate._next_stack_item = next_stack_item
+        candidate._replacement_replay_choices = replacement_replay_choices
+        candidate._replacement_replay_cursor = replacement_replay_cursor
+        for player_id in candidate_state.turn_order:
+            candidate._draw(player_id, self.rules.initial_hand_size)
         if auto_start:
-            self.start_match()
-        self.validate_invariants()
-        return self.state
+            candidate.start_match()
+        self._validate_candidate_invariants(candidate_state, candidate_catalog)
+
+        # Punto único de publicación: simples asignaciones posteriores a toda
+        # operación capaz de fallar.
+        assert previous_values == (
+            self.catalog,
+            self.state,
+            self._next_instance,
+            self._next_stack_item,
+            self._replacement_replay_choices,
+            self._replacement_replay_cursor,
+        )
+        self.catalog = candidate_catalog
+        self.state = candidate_state
+        self._next_instance = candidate._next_instance
+        self._next_stack_item = candidate._next_stack_item
+        self._replacement_replay_choices = candidate._replacement_replay_choices
+        self._replacement_replay_cursor = candidate._replacement_replay_cursor
+        return candidate_state
+
+    def _prepare_catalog(
+        self, prepared_decks: Mapping[str, tuple[CardDefinition, ...]]
+    ) -> CardCatalogReader:
+        """Valida definiciones y devuelve el catálogo aislado de la partida."""
+        authoritative = self.registry.catalog if self.registry is not None else self.catalog
+        candidate = (
+            authoritative
+            if self.registry is not None
+            else CardCatalog({card.card_id: card for card in authoritative.definitions()})
+        )
+        incoming_definitions: dict[str, CardDefinition] = {}
+        for definitions in prepared_decks.values():
+            for definition in definitions:
+                if definition.card_id in authoritative:
+                    if authoritative.get(definition.card_id) != definition:
+                        raise InvalidDeckDefinition(
+                            f"La definición {definition.card_id} no coincide con el catálogo"
+                        )
+                elif self.registry is not None:
+                    raise InvalidDeckDefinition(
+                        f"La definición {definition.card_id} no está registrada"
+                    )
+                previous = incoming_definitions.setdefault(definition.card_id, definition)
+                if previous != definition:
+                    raise InvalidDeckDefinition(
+                        f"Definiciones incompatibles para {definition.card_id}"
+                    )
+
+        if isinstance(candidate, CardCatalog):
+            for definition in incoming_definitions.values():
+                if definition.card_id not in candidate:
+                    candidate.register(definition)
+        return candidate
+
+    @staticmethod
+    def _create_candidate_instance(
+        definition: CardDefinition, player_id: str, next_instance: int
+    ) -> tuple[CardInstance, int]:
+        instance_id = f"card-{next_instance:06d}"
+        return CardInstance(
+            instance_id=instance_id,
+            definition_id=definition.card_id,
+            owner_id=player_id,
+            controller_id=player_id,
+        ), next_instance + 1
+
+    def _validate_candidate_invariants(
+        self, state: GameState, catalog: CardCatalogReader
+    ) -> None:
+        self._validate_invariants(state, catalog)
 
     def start_match(self) -> None:
         state = self._require_state()
@@ -321,6 +419,15 @@ class GameEngine:
             raise IllegalAction("No existe una elección de sustitución propia pendiente")
         if command.replacement_index not in pending.candidate_indices:
             raise IllegalAction("La sustitución elegida no está disponible")
+        # La transacción que se reproduce toma su propio respaldo después de que
+        # hayamos retirado la elección pendiente. Ese respaldo es el adecuado si
+        # aparece una segunda elección diferida, pero no si la reproducción falla:
+        # en ese caso la elección original debe volver a estar disponible.
+        snapshot = deepcopy(state)
+        next_instance = self._next_instance
+        next_stack_item = self._next_stack_item
+        replay_choices_before = self._replacement_replay_choices
+        replay_cursor_before = self._replacement_replay_cursor
         original_command = pending.original_command
         replay_choices = (*pending.replay_choices, command.replacement_index)
         state.pending_move_replacement = None
@@ -331,7 +438,15 @@ class GameEngine:
             pending.card_id,
             {"replacement_index": command.replacement_index},
         )
-        self._execute_transaction(original_command, replay_choices)
+        try:
+            self._execute_transaction(original_command, replay_choices)
+        except Exception:
+            self.state = snapshot
+            self._next_instance = next_instance
+            self._next_stack_item = next_stack_item
+            self._replacement_replay_choices = replay_choices_before
+            self._replacement_replay_cursor = replay_cursor_before
+            raise
 
     def observe(self, player_id: str) -> PlayerObservation:
         state = self._require_state()
@@ -412,7 +527,11 @@ class GameEngine:
         )
 
     def legal_actions(self, player_id: str) -> tuple[GameCommand, ...]:
-        state = self._require_running_state()
+        state = self._require_state()
+        if state.status in (MatchStatus.FINISHED, MatchStatus.BLOCKED):
+            return ()
+        if state.status is not MatchStatus.RUNNING:
+            raise IllegalAction("La partida no está en ejecución")
         if player_id not in state.players:
             return ()
         actions: list[GameCommand] = []
@@ -464,18 +583,8 @@ class GameEngine:
             actions.append(Concede(player_id))
             return tuple(actions)
 
-        if state.phase is Phase.COMBAT and state.combat is not None:
-            combat = state.combat
-            if player_id == combat.defending_player_id and not combat.blockers_declared:
-                actions.append(DeclareBlockers(player_id))
-            if (
-                player_id == combat.attacking_player_id
-                and combat.blockers_declared
-                and not combat.resolved
-                and not state.stack
-                and state.phase_priority_complete
-            ):
-                actions.append(ResolveCombat(player_id))
+        if state.phase is Phase.COMBAT:
+            actions.extend(self._combat.legal_actions(player_id))
 
         if player_id == state.priority_player_id:
             actions.extend(self._legal_plays(player_id))
@@ -511,33 +620,6 @@ class GameEngine:
             and state.phase_priority_complete
             and not state.stack
         ):
-            if state.phase is Phase.COMBAT and state.combat is None:
-                ready = tuple(
-                    card_id
-                    for card_id in player.zones[Zone.BATTLEFIELD]
-                    if self._is_ready_creature(card_id)
-                )
-                if ready:
-                    for defender in state.turn_order:
-                        if defender != player_id:
-                            actions.append(DeclareAttackers(player_id, ready, defender))
-                    for challenger_id in ready:
-                        if self._is_lord_creature(challenger_id):
-                            for defender_id in state.turn_order:
-                                if defender_id == player_id:
-                                    continue
-                                for challenged_id in state.players[defender_id].zones[
-                                    Zone.BATTLEFIELD
-                                ]:
-                                    if self._is_creature(challenged_id):
-                                        actions.append(
-                                            DeclareChallenge(
-                                                player_id,
-                                                challenger_id,
-                                                challenged_id,
-                                                defender_id,
-                                            )
-                                        )
             if state.phase is Phase.DISCARD:
                 excess = max(0, len(player.zones[Zone.HAND]) - self.rules.hand_limit)
                 if excess:
@@ -1779,95 +1861,21 @@ class GameEngine:
         instance.controller_id = controller_id
 
     def _queue_legendary_effects(self) -> None:
-        state = self._require_running_state()
-        player = state.players[state.active_player_id]
-        items: list[StackItem] = []
-        for card_id in player.zones[Zone.BATTLEFIELD]:
-            definition = self._definition(card_id)
-            if definition.rank is CardRank.LEGENDARY and definition.legendary_effects:
-                items.append(
-                    StackItem(
-                        item_id=f"stack-{self._next_stack_item:06d}",
-                        controller_id=state.active_player_id,
-                        source_card_id=card_id,
-                        effects=definition.legendary_effects,
-                        targets_locked=not self._effects_need_choices(
-                            definition.legendary_effects
-                        ),
-                    )
-                )
-                self._next_stack_item += 1
-                self._emit("LEGENDARY_EFFECT_QUEUED", state.active_player_id, card_id)
-        self._queue_trigger_batch(items, state.active_player_id)
+        return self._stack._queue_legendary_effects()
 
     def _queue_triggered_abilities(self, source_card_id: str, trigger: TriggerKind) -> None:
-        state = self._require_running_state()
-        instance = state.cards[source_card_id]
-        definition = self._definition(source_card_id)
-        items: list[StackItem] = []
-        for ability in definition.abilities:
-            if ability.trigger is not trigger:
-                continue
-            items.append(
-                StackItem(
-                    item_id=f"stack-{self._next_stack_item:06d}",
-                    controller_id=instance.controller_id,
-                    source_card_id=source_card_id,
-                    effects=ability.effects,
-                    ability_id=ability.ability_id,
-                    targets_locked=not self._effects_need_choices(ability.effects),
-                )
-            )
-            self._next_stack_item += 1
-            self._emit(
-                "TRIGGERED_ABILITY_QUEUED",
-                instance.controller_id,
-                source_card_id,
-                {"ability_id": ability.ability_id, "trigger": trigger.name},
-            )
-        self._queue_trigger_batch(items, instance.controller_id)
+        return self._stack._queue_triggered_abilities(source_card_id, trigger)
 
     def _queue_trigger_batch(self, items: list[StackItem], controller_id: str) -> None:
-        state = self._require_running_state()
-        viable: list[StackItem] = []
-        for item in items:
-            if item.targets_locked or self._trigger_target_commands(controller_id, item):
-                viable.append(item)
-            else:
-                self._emit(
-                    "TRIGGER_FIZZLED",
-                    controller_id,
-                    item.source_card_id,
-                    {"item_id": item.item_id, "reason": "no_legal_targets"},
-                )
-        if not viable:
-            return
-        if len(viable) == 1 and viable[0].targets_locked:
-            state.stack.append(viable[0])
-            return
-        if state.pending_triggers:
-            raise InvariantViolation("Ya existe otro lote de disparos pendiente")
-        state.pending_triggers.extend(viable)
-        state.priority_player_id = controller_id
-        state.phase_priority_complete = False
-        state.consecutive_passes = 0
-        self._emit(
-            "SIMULTANEOUS_TRIGGERS_AWAITING_ORDER",
-            controller_id,
-            payload={"item_ids": tuple(item.item_id for item in viable)},
-        )
+        return self._stack._queue_trigger_batch(items, controller_id)
 
     def _effects_need_choices(self, effects: tuple[EffectDefinition, ...]) -> bool:
-        return any(
-            effect.target
-            in {
-                TargetMode.CHOSEN_PLAYER,
-                TargetMode.CHOSEN_PERMANENT,
-                TargetMode.CHOSEN_ZONE,
-                TargetMode.CHOSEN_ENTITY,
-            }
-            for effect in effects
-        )
+        return StackManager._effects_need_choices(effects)
+
+    def _allocate_stack_item_id(self) -> str:
+        item_id = f"stack-{self._next_stack_item:06d}"
+        self._next_stack_item += 1
+        return item_id
 
     def _discard_cards(self, command: DiscardCards) -> None:
         state = self._require_running_state()
@@ -2090,6 +2098,9 @@ class GameEngine:
     def _concede(self, player_id: str) -> None:
         state = self._require_running_state()
         state.players[player_id].conceded = True
+        if len(state.players) > 2:
+            self._block_undefined_multiplayer_end((player_id,), "concession")
+            return
         winners = tuple(pid for pid in state.turn_order if pid != player_id)
         state.winner_ids = winners
         state.status = MatchStatus.FINISHED
@@ -2134,13 +2145,19 @@ class GameEngine:
 
     def _definition(self, card_id: str) -> CardDefinition:
         state = self._require_state()
+        return self._definition_for(state, self.catalog, card_id)
+
+    @classmethod
+    def _definition_for(
+        cls, state: GameState, catalog: CardCatalogReader, card_id: str
+    ) -> CardDefinition:
         instance = state.cards[card_id]
-        definition = self.catalog.get(
+        definition = catalog.get(
             instance.overridden_definition_id or instance.definition_id
         )
         for applied in state.text_patches:
             if applied.target_card_id == card_id:
-                definition = self._apply_text_patch_to_definition(
+                definition = cls._apply_text_patch_to_definition(
                     definition, applied.patch
                 )
         return definition
@@ -2154,13 +2171,32 @@ class GameEngine:
         )
         if not defeated:
             return
+        if len(state.players) > 2:
+            self._block_undefined_multiplayer_end(defeated, "wound_limit")
+            return
         winners = tuple(player_id for player_id in state.turn_order if player_id not in defeated)
         state.winner_ids = winners
         state.status = MatchStatus.FINISHED
         self._emit("MATCH_FINISHED", payload={"defeated": defeated, "winners": winners})
 
+    def _block_undefined_multiplayer_end(
+        self, affected_player_ids: tuple[str, ...], cause: str
+    ) -> None:
+        """Stop before inferring an end condition absent from the source rules."""
+        state = self._require_running_state()
+        state.winner_ids = ()
+        state.status = MatchStatus.BLOCKED
+        self._emit(
+            "MULTIPLAYER_END_UNDEFINED",
+            payload={"affected_player_ids": affected_player_ids, "cause": cause},
+        )
+
     def validate_invariants(self) -> None:
-        state = self._require_state()
+        self._validate_invariants(self._require_state(), self.catalog)
+
+    def _validate_invariants(
+        self, state: GameState, catalog: CardCatalogReader
+    ) -> None:
         if (
             state.ruleset_id != self.rules.ruleset_id
             or state.ruleset_version != self.rules.version
@@ -2231,7 +2267,7 @@ class GameEngine:
             raise InvariantViolation("Supresión de fase con jugador inexistente")
         if any(
             instance.overridden_definition_id is not None
-            and instance.overridden_definition_id not in self.catalog
+            and instance.overridden_definition_id not in catalog
             for instance in state.cards.values()
         ):
             raise InvariantViolation("Transformación con definición inexistente")
@@ -2244,11 +2280,14 @@ class GameEngine:
             raise InvariantViolation("Cambio de control temporal incoherente")
         if state.pending_search is not None:
             search = state.pending_search
-            source_zone = state.players[search.zone_target.player_id].zones[
-                search.zone_target.zone
-            ]
             if search.chooser_id not in state.players:
                 raise InvariantViolation("Búsqueda asignada a un jugador inexistente")
+            if search.zone_target.player_id not in state.players:
+                raise InvariantViolation("Búsqueda dirigida a un jugador inexistente")
+            target_player = state.players[search.zone_target.player_id]
+            if search.zone_target.zone not in target_player.zones:
+                raise InvariantViolation("Búsqueda dirigida a una zona inexistente")
+            source_zone = target_player.zones[search.zone_target.zone]
             if len(search.eligible_card_ids) != len(set(search.eligible_card_ids)):
                 raise InvariantViolation("Búsqueda con candidatos duplicados")
             if any(card_id not in source_zone for card_id in search.eligible_card_ids):
@@ -2275,7 +2314,13 @@ class GameEngine:
             target = state.cards.get(instance.attached_to)
             if instance.zone is not Zone.BATTLEFIELD or target is None or target.zone is not Zone.BATTLEFIELD:
                 raise InvariantViolation(f"Anexo incoherente para {card_id}")
-            if not self._is_creature(instance.attached_to):
+            target_definition = self._definition_for(
+                state, catalog, instance.attached_to
+            )
+            if not (
+                target_definition.kind is CardKind.CREATURE
+                or target.transformed_as_creature
+            ):
                 raise InvariantViolation(f"Equipo unido a un objetivo no criatura: {card_id}")
         if any(
             modifier.target_card_id not in state.cards
@@ -2292,7 +2337,9 @@ class GameEngine:
         for card_id, instance in state.cards.items():
             if not instance.replacement_order:
                 continue
-            replacements = self._replacement_definitions(self._definition(card_id))
+            replacements = self._replacement_definitions(
+                self._definition_for(state, catalog, card_id)
+            )
             if instance.zone is not Zone.BATTLEFIELD or set(
                 instance.replacement_order
             ) != set(range(len(replacements))):

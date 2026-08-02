@@ -11,7 +11,7 @@ from typing import Any, Union, get_args, get_origin, get_type_hints
 
 from ..domain import enums as enum_module
 from ..domain import models as model_module
-from ..engine import commands as command_module
+from ..engine.commands import EXECUTABLE_COMMAND_TYPES
 from ..rules.config import RuleSet
 
 
@@ -28,7 +28,7 @@ _ENUM_TYPES = _registry(
 )
 _DATACLASS_TYPES = {
     **_registry(model_module, is_dataclass),
-    **_registry(command_module, is_dataclass),
+    **{command_type.__name__: command_type for command_type in EXECUTABLE_COMMAND_TYPES},
     "RuleSet": RuleSet,
 }
 

@@ -1,5 +1,95 @@
 # Historial de versiones
 
+## Sin publicar
+
+- Dividida R-03 en el inventario documental R-03A, ya completado, y la
+  eventual decisión normativa R-03B, bloqueada hasta recibir aclaración oficial.
+- Registrada la única contradicción base–Mítica identificable en la documentación
+  vigente —inmunidad y Transmutación de Divinos— con la página base, la falta
+  explícita de una página Mítica verificable, ambas formulaciones, el
+  comportamiento conservado y la precedencia ya documentada.
+- Conservados sin cambios el motor y las expectativas reglamentarias de pruebas;
+  el inventario no incorpora cartas ni resuelve nuevas ambigüedades.
+- Decidido de forma uniforme que HTTP y cualquier otro transporte permanecen
+  fuera de alcance, sin identificador de hoja de ruta ni consideración de
+  pendiente implementable.
+- Fijada `AuthenticatedMatchApplication` como frontera autoritativa también ante
+  una eventual decisión futura: ningún transporte podrá aceptar `player_id`,
+  exponer `GameEngine` o `GameState`, omitir `expected_version`/CAS ni
+  reinterpretar comandos.
+- Corregida la documentación de pendientes para reconocer como completadas la
+  política de confianza de colecciones de R-04 y la frontera autenticada de
+  aplicación de R-06.
+- Aclarado que R-06 entrega una frontera agnóstica del transporte, no un
+  adaptador HTTP ni otro servicio de red concreto, que continúa fuera de alcance.
+
+- Cerrada R-07.2 con una única implementación de robo, movimientos y
+  sustituciones en `ZoneManager`; `GameEngine` conserva solo adaptadores y los
+  servicios transaccionales del coordinador.
+- Añadida paridad exhaustiva de zonas con contexto mínimo independiente, curso
+  reproducible, elecciones y contadores, además de atomicidad ante rechazo y
+  excepción; no se modifican reglas ni ambigüedades normativas.
+
+- Cerrada R-07.1 al trasladar a `CombatManager` la construcción determinista de
+  atacantes, Desafíos, bloqueadores y `ResolveCombat`, conservando el límite de
+  enumeración y la aceptación autoritativa de comandos válidos no enumerados.
+- Ampliada la paridad de combate para comparar acceso público y gestor directo
+  con dos y más jugadores, éxito, rechazo, excepción y huellas que incluyen
+  estado, eventos, historial y contadores; R-07.2 queda habilitada.
+- Cerrada R-06 al alinear la hoja de ruta con la frontera autenticada ya
+  implementada y verificar por separado las capacidades de creación,
+  observación, envío y administración sobre memoria y SQLite.
+- Dividida la continuación de R-07 en extracciones consecutivas de combate y
+  movimientos, sin promover deuda normativa ni mezclar cambios de reglas.
+- Extraída únicamente la coordinación de creación y lotes de disparos a
+  `StackManager`, ampliando `StackContext` con operaciones tipadas explícitas.
+- Añadidos dobles mínimos, testigo estructural y paridad de éxito, acción ilegal,
+  elección pendiente y excepción, incluidos estado, eventos, historial y próximos
+  identificadores.
+- Conservados en `GameEngine` transacción, fases, comandos, invariantes y replay
+  de movimientos reemplazables. Esta extracción arquitectónica no modifica
+  ninguna regla observable.
+
+## 0.19.0
+
+- Añadido un sobre de firma v1 separado que conserva el manifiesto v2 y su
+  digest canónico sin cambios.
+- Incorporada una política de confianza inyectable con resolución de claves,
+  revocación, lista cerrada de algoritmos y verificación HMAC-SHA256.
+- El registro verifica por completo firmas, dependencias y colisiones antes de
+  modificar el catálogo o la procedencia; no carga ni ejecuta código externo.
+- Documentadas integridad, autenticidad, compatibilidad y la finalización de
+  R-04, sin alterar reglas ni añadir cartas.
+
+## 0.18.3
+
+- Las partidas de tres o más participantes dejan de declarar como ganadores a
+  todos los no derrotados ante una concesión o el límite de Heridas: se bloquean
+  con diagnóstico explícito hasta que exista una regla normativa.
+- Añadida una hoja de ruta con tareas separadas y sin convertir deuda normativa
+  en mecánicas nuevas.
+- Marcada como completada la protección de condiciones terminales multijugador
+  entregada en 0.18.3 y seleccionada R-04 como única tarea siguiente. R-02 y
+  R-03 siguen bloqueadas por aclaraciones normativas, y R-05 por la ausencia de
+  un esquema 3 definido.
+
+## 0.18.2
+
+- Documentada la autorización expresa del reglamento para enfrentarse a uno o
+  más adversarios y compartir entre todos el límite acordado de Heridas.
+- Registrada, sin inferir una mecánica, la ausencia de reglas multijugador para
+  concesión, continuidad tras derrotas, simultaneidad y selección u orden de
+  ganadores.
+
+## 0.18.1
+
+- La creación de partidas valida por completo las definiciones antes de mutar el
+  catálogo y rechaza cartas ajenas a un registro de colecciones inyectado.
+- `RuleSet` rechaza configuraciones que romperían el mínimo de participantes o la
+  secuencia normativa de fases.
+- `SQLiteMatchStore(":memory:")` conserva sus datos entre conexiones cortas y
+  ofrece cierre explícito de la conexión de mantenimiento.
+
 ## 0.17.0
 
 - Resolución extraída a `EffectManager`, con `EffectContext` tipado, registro

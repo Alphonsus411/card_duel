@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Mapping
@@ -14,11 +15,55 @@ from ..rules.config import RuleSet
 MANIFEST_SCHEMA_VERSION = "2"
 
 
-def _version_tuple(value: str) -> tuple[int, ...]:
-    try:
-        return tuple(int(part) for part in value.split("."))
-    except ValueError as exc:
-        raise ValueError(f"Versión semántica no válida: {value}") from exc
+def _validate_manifest_document(data: Mapping[str, Any]) -> None:
+    """Valida la forma JSON del manifiesto antes de convertir sus valores."""
+
+    expected = {
+        "schema_version",
+        "collection_id",
+        "name",
+        "revision",
+        "engine_min_version",
+        "cards",
+        "metadata",
+        "dependencies",
+    }
+    if set(data) != expected:
+        raise ValueError("La estructura del manifiesto no es válida")
+    text_fields = ("schema_version", "collection_id", "name", "engine_min_version")
+    if any(not isinstance(data[field], str) for field in text_fields):
+        raise ValueError("Los campos de texto del manifiesto deben ser cadenas")
+    if type(data["revision"]) is not int:
+        raise ValueError("La revisión de colección debe ser un entero")
+    if type(data["cards"]) is not list:
+        raise ValueError("Las cartas del manifiesto deben ser una lista JSON")
+    if type(data["dependencies"]) is not list:
+        raise ValueError("Las dependencias del manifiesto deben ser una lista JSON")
+    if any(not isinstance(item, str) for item in data["dependencies"]):
+        raise ValueError("Las dependencias del manifiesto deben ser cadenas")
+    if type(data["metadata"]) is not dict:
+        raise ValueError("Los metadatos del manifiesto deben ser un objeto JSON")
+    if any(
+        not isinstance(key, str) or not isinstance(value, str)
+        for key, value in data["metadata"].items()
+    ):
+        raise ValueError("Los metadatos de colección deben ser pares de texto")
+
+
+_VERSION_PATTERN = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+")
+_INVALID_VERSION_MESSAGE = (
+    "Versión semántica no válida: se requiere exactamente "
+    "MAJOR.MINOR.PATCH con enteros no negativos"
+)
+
+
+def _version_tuple(value: str) -> tuple[int, int, int]:
+    """Valida y convierte el subconjunto MAJOR.MINOR.PATCH admitido."""
+
+    if not isinstance(value, str) or _VERSION_PATTERN.fullmatch(value) is None:
+        raise ValueError(_INVALID_VERSION_MESSAGE)
+    major, minor, patch = value.split(".")
+    return int(major), int(minor), int(patch)
 
 
 @dataclass(frozen=True)
@@ -84,19 +129,11 @@ def load_manifest(
         payload = payload.decode("utf-8")
     raw = json.loads(payload) if isinstance(payload, str) else dict(payload)
     data = migrate_document("manifest", raw, MANIFEST_SCHEMA_VERSION)
-    expected = {
-        "schema_version",
-        "collection_id",
-        "name",
-        "revision",
-        "engine_min_version",
-        "cards",
-        "metadata",
-        "dependencies",
-    }
-    if set(data) != expected or not isinstance(data["cards"], list):
-        raise ValueError("La estructura del manifiesto no es válida")
-    cards = tuple(decode_value(item) for item in data["cards"])
+    _validate_manifest_document(data)
+    try:
+        cards = tuple(decode_value(item) for item in data["cards"])
+    except (AttributeError, KeyError, TypeError) as exc:
+        raise ValueError("El manifiesto contiene cartas no válidas") from exc
     if not all(isinstance(card, CardDefinition) for card in cards):
         raise ValueError("El manifiesto contiene elementos que no son cartas")
     manifest = CollectionManifest(
@@ -109,7 +146,7 @@ def load_manifest(
         metadata=data["metadata"],
         dependencies=tuple(data["dependencies"]),
     )
-    current = engine_version or RuleSet().version
+    current = RuleSet().version if engine_version is None else engine_version
     if _version_tuple(current) < _version_tuple(manifest.engine_min_version):
         raise ValueError(
             f"La colección requiere motor {manifest.engine_min_version} o posterior"
@@ -132,7 +169,10 @@ def load_manifest_file(
 
 
 def register_manifest(catalog: CardCatalog, manifest: CollectionManifest) -> None:
-    """API histórica; delega en el registro transaccional."""
+    """API histórica; valida transaccionalmente antes de actualizar el catálogo."""
     from .registry import CollectionRegistry
 
-    CollectionRegistry(catalog).register(manifest)
+    registry = CollectionRegistry(catalog)
+    registry.register(manifest)
+    for card in manifest.cards:
+        catalog.register(card)

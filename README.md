@@ -4,7 +4,7 @@ Primera estructura del backend headless para el futuro juego de cartas. El
 paquete implementa el armazón de las reglas universales de Fantasy Tokens sin
 incluir ninguna carta, personaje ni colección antigua.
 
-## Alcance de la versión 0.18.0
+## Alcance de la versión 0.19.0
 
 - Catálogo de cartas vacío y extensible.
 - Contratos pequeños de gestores verificados por `mypy` y dobles mínimos independientes.
@@ -13,6 +13,9 @@ incluir ninguna carta, personaje ni colección antigua.
 - Definiciones e instancias de cartas separadas.
 - Zonas privadas y públicas.
 - Jugadores activo y pasivos.
+- Preparación para dos o más participantes, autorizada expresamente por el
+  reglamento fuente; sus condiciones terminales multijugador siguen sin estar
+  definidas y no se presentan como mecánica normativa.
 - Secuencia Robo, Mantenimiento, Efectos, Combate, Legendaria y Descarte.
 - Mano inicial, mulligan decreciente y reciclaje del descarte.
 - Reserva de Pasos y pago atómico.
@@ -87,6 +90,24 @@ incluir ninguna carta, personaje ni colección antigua.
 - Pruebas generativas deterministas de fórmulas y secuencias de comandos.
 - Componentes aislados para combate, pila y movimiento entre zonas.
 - `MatchService` headless con persistencia CAS y contrato futuro para AGIX.
+- Preparación atómica de mazos y aplicación estricta del registro autoritativo.
+- SQLite en memoria funcional entre las conexiones cortas del servicio.
+- Ciclo de vida explícito para SQLite: `close()` es idempotente y, también al
+  salir de un bloque `with`, el almacén rechaza cualquier operación posterior.
+- Bloqueo explícito de finales multijugador no definidos, sin inferir ganadores
+  ante una concesión o al alcanzar el límite de Heridas.
+- Hoja de ruta con R-04 (confianza de colecciones), R-06 (frontera autenticada),
+  R-07.1 (combate, incluida su enumeración) y R-07.2 (movimientos y
+  sustituciones) completadas. También se completó R-03A como inventario
+  exclusivamente documental de la contradicción verificable sobre Divinos, sin
+  cartas ni cambios de reglas; R-02, la decisión normativa R-03B y R-05
+  permanecen bloqueadas. La
+  frontera de R-06 es agnóstica del transporte; un adaptador HTTP
+  u otro servicio de red concreto continúa fuera de alcance, no tiene entrega de
+  hoja de ruta asignada y no es un pendiente implementable. Cualquier decisión
+  futura deberá conservar `AuthenticatedMatchApplication` como frontera
+  autoritativa: el transporte no podrá aceptar `player_id`, exponer `GameEngine`
+  o `GameState`, omitir `expected_version`/CAS ni reinterpretar comandos.
 
 Las únicas cartas utilizadas están en `tests/fixtures.py` y sirven para probar
 el motor. El catálogo de producción comienza vacío.
@@ -125,8 +146,9 @@ interfaz gráfica, un cliente remoto y AGIX utilizarán exactamente el mismo
 contrato.
 
 Consulta `docs/ARCHITECTURE.md` y `docs/RULES_BASELINE.md` para conocer las
-decisiones de esta primera versión.
+decisiones de esta primera versión. El trabajo técnico pendiente se registra
+por separado en `docs/ENGINEERING_BACKLOG.md`.
 
 ### Registro autoritativo de colecciones
 
-`CollectionRegistry` permite cargar manifiestos v2 individualmente o por lotes atómicos, resuelve dependencias de forma determinista y conserva revisión, dependencias y digest canónico. El catálogo de producción sigue vacío. SHA-256 detecta alteraciones, pero **no autentica** al autor; para firmas o confianza se inyecta una `CollectionTrustPolicy` externa. Los manifiestos son datos y nunca código ejecutable.
+`CollectionRegistry` permite cargar manifiestos v2 individualmente o por lotes atómicos, resuelve dependencias de forma determinista y conserva revisión, dependencias y digest canónico. El sobre de firma v1 es independiente, y `CollectionTrustPolicy` recibe de la aplicación las claves confiables y su revocación. SHA-256 aporta integridad; una firma aceptada por la política aporta autenticidad. Manifiestos y sobres son datos y nunca código ejecutable.

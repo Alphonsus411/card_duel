@@ -1,10 +1,18 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
+from itertools import combinations, islice, permutations, product
 from typing import Protocol
 from ..domain.enums import Phase, Zone
 from ..domain.errors import IllegalAction
 from ..domain.models import CombatState, GameState
-from .commands import DeclareAttackers, DeclareBlockers, DeclareChallenge
+from .commands import (
+    DeclareAttackers,
+    DeclareBlockers,
+    DeclareChallenge,
+    GameCommand,
+    ResolveCombat,
+)
 
 
 class CombatContext(Protocol):
@@ -14,6 +22,8 @@ class CombatContext(Protocol):
     def _is_ready_creature(self, card_id: str) -> bool: ...
     def _is_lord_creature(self, card_id: str) -> bool: ...
     def _is_creature(self, card_id: str) -> bool: ...
+    @property
+    def _combat_action_enumeration_limit(self) -> int: ...
     def _current_strength(self, card_id: str) -> int: ...
     def _deal_damage(self, card_id: str, amount: int, source_card_id: str | None = None) -> None: ...
     def _deal_wounds(self, player_id: str, amount: int, source_card_id: str | None = None) -> None: ...
@@ -24,6 +34,109 @@ class CombatContext(Protocol):
 class CombatManager:
     def __init__(self, context: CombatContext) -> None:
         self._context = context
+
+    def legal_actions(self, player_id: str) -> tuple[GameCommand, ...]:
+        """Construye solo las acciones propias del combate, en orden estable."""
+        state = self._context._require_running_state()
+        if state.phase is not Phase.COMBAT or player_id not in state.players:
+            return ()
+
+        actions: list[GameCommand] = []
+        combat = state.combat
+        if combat is not None:
+            if player_id == combat.defending_player_id and not combat.blockers_declared:
+                actions.extend(
+                    islice(
+                        self._blocker_declarations(player_id, combat),
+                        self._context._combat_action_enumeration_limit,
+                    )
+                )
+            if (
+                player_id == combat.attacking_player_id
+                and combat.blockers_declared
+                and not combat.resolved
+                and not state.stack
+                and state.phase_priority_complete
+            ):
+                actions.append(ResolveCombat(player_id))
+
+        if (
+            player_id == state.active_player_id
+            and state.phase_priority_complete
+            and not state.stack
+            and combat is None
+        ):
+            player = state.players[player_id]
+            ready = tuple(
+                card_id
+                for card_id in player.zones[Zone.BATTLEFIELD]
+                if self._context._is_ready_creature(card_id)
+            )
+            if ready:
+                defenders = tuple(
+                    defender for defender in state.turn_order if defender != player_id
+                )
+                actions.extend(
+                    DeclareAttackers(player_id, tuple(attackers), defender)
+                    for attackers, defender in islice(
+                        (
+                            (attackers, defender)
+                            for size in range(1, len(ready) + 1)
+                            for attackers in combinations(ready, size)
+                            for defender in defenders
+                        ),
+                        self._context._combat_action_enumeration_limit,
+                    )
+                )
+                for challenger_id in ready:
+                    if self._context._is_lord_creature(challenger_id):
+                        for defender_id in state.turn_order:
+                            if defender_id == player_id:
+                                continue
+                            for challenged_id in state.players[defender_id].zones[
+                                Zone.BATTLEFIELD
+                            ]:
+                                if self._context._is_creature(challenged_id):
+                                    actions.append(
+                                        DeclareChallenge(
+                                            player_id,
+                                            challenger_id,
+                                            challenged_id,
+                                            defender_id,
+                                        )
+                                    )
+        return tuple(actions)
+
+    def _blocker_declarations(
+        self, player_id: str, combat: CombatState
+    ) -> Iterator[DeclareBlockers]:
+        """Enumera bloqueos legales conservando el orden de cada grupo."""
+        state = self._context._require_running_state()
+        blockers = tuple(
+            card_id
+            for card_id in state.players[combat.defending_player_id].zones[Zone.BATTLEFIELD]
+            if self._context._is_ready_creature(card_id)
+        )
+
+        yield DeclareBlockers(player_id)
+        for blocker_count in range(1, len(blockers) + 1):
+            for ordered_blockers in permutations(blockers, blocker_count):
+                for destinations in product(combat.attackers, repeat=blocker_count):
+                    assignments = tuple(
+                        (
+                            attacker_id,
+                            tuple(
+                                blocker_id
+                                for blocker_id, destination in zip(
+                                    ordered_blockers, destinations, strict=True
+                                )
+                                if destination == attacker_id
+                            ),
+                        )
+                        for attacker_id in combat.attackers
+                        if attacker_id in destinations
+                    )
+                    yield DeclareBlockers(player_id, assignments)
 
     def _declare_challenge(self, command: DeclareChallenge) -> None:
         state = self._context._require_running_state()
@@ -190,9 +303,6 @@ class CombatManager:
                 )
 
         self._context._run_state_based_actions()
-        for instance in state.cards.values():
-            if instance.zone is Zone.BATTLEFIELD:
-                instance.damage = 0
         combat.resolved = True
         state.phase_priority_complete = True
         self._context._emit("COMBAT_RESOLVED", combat.attacking_player_id)

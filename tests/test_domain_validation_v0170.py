@@ -96,7 +96,8 @@ class DomainValidationTests(unittest.TestCase):
         for kwargs in (
             {"initial_hand_size": 0}, {"hand_limit": 0}, {"wound_limit": 0},
             {"steps_per_maintenance": -1}, {"legal_action_enumeration_limit": 0},
-            {"phase_sequence": (Phase.DRAW, Phase.DRAW)},
+            {"minimum_players": 1}, {"phase_sequence": (Phase.DRAW, Phase.DRAW)},
+            {"phase_sequence": (Phase.DRAW, Phase.DISCARD)},
         ):
             with self.subTest(kwargs=kwargs): self.assert_invalid(RuleSet, **kwargs)
 

@@ -6,15 +6,29 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import tomllib
 import unittest
 import base64
 import csv
 import hashlib
 import io
+import re
 from unittest.mock import patch
 from zipfile import ZIP_DEFLATED, ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def project_version():
+    with (ROOT / "pyproject.toml").open("rb") as stream:
+        return tomllib.load(stream)["project"]["version"]
+
+
+def active_packaging_versions(workflow: str) -> set[str]:
+    """Devuelve versiones literales solo del bloque activo de subida del job full."""
+    full_job = workflow.split("\n  full:\n", 1)[1]
+    upload = full_job.split("actions/upload-artifact@", 1)[1]
+    return set(re.findall(r"(?<![A-Za-z0-9])([0-9]+\.[0-9]+\.[0-9]+)(?![A-Za-z0-9])", upload))
 
 
 def load(name: str, filename: str):
@@ -42,7 +56,7 @@ class ReleaseVerifierTests(unittest.TestCase):
              patch.object(self.release, "_package", return_value={"status": "ok"}):
             result = self.release.verify("full")
         self.assertEqual(result["status"], "ok")
-        self.assertEqual(result["version"], "0.18.0")
+        self.assertEqual(result["version"], project_version())
         self.assertEqual(self.release.render(result), self.release.render(json.loads(self.release.render(result))))
 
     def test_runtime_profile_skips_expensive_stages(self):
@@ -78,6 +92,47 @@ class ReleaseVerifierTests(unittest.TestCase):
         self.assertIn("quality:mypy", raised.exception.diagnostic())
         self.assertIn("type output", raised.exception.diagnostic())
         self.assertIn("type error", raised.exception.diagnostic())
+
+    def test_release_workflow_derives_active_package_paths_from_project_version(self):
+        workflow = (ROOT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
+        project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+        version = project["project"]["version"]
+
+        self.assertIn("id: package", workflow)
+        self.assertIn('tomllib.loads(Path("pyproject.toml")', workflow)
+        self.assertIn('output.write(f"version={version}\\n")', workflow)
+        self.assertIn('output.write(f"wheel=card_duel_engine-{version}-py3-none-any.whl\\n")', workflow)
+        self.assertIn("name: card-duel-engine-${{ steps.package.outputs.version }}-release", workflow)
+        self.assertIn("dist/${{ steps.package.outputs.wheel }}", workflow)
+        self.assertEqual(active_packaging_versions(workflow), set())
+
+        # Una mención histórica fuera del bloque de subida no es empaquetado activo.
+        historical = f"# test_historical_release_0.1.0\n{workflow}"
+        self.assertEqual(active_packaging_versions(historical), set())
+        mismatched = workflow.replace(
+            "dist/${{ steps.package.outputs.wheel }}",
+            "dist/card_duel_engine-9.99.9-py3-none-any.whl",
+        )
+        self.assertEqual(active_packaging_versions(mismatched), {"9.99.9"})
+
+        full_job = workflow.split("\n  full:\n", 1)[1]
+        upload = full_job.split("actions/upload-artifact@", 1)[1]
+        expected_paths = {
+            "dist/${{ steps.package.outputs.wheel }}",
+            "dist/SHA256SUMS",
+            "dist/wheel-audit.json",
+            "release-verification.json",
+        }
+        upload_lines = {line.strip() for line in upload.splitlines()}
+        self.assertTrue(expected_paths.issubset(upload_lines))
+        self.assertIn("if-no-files-found: error", upload)
+
+        verifier = (ROOT / "scripts" / "verify_release.py").read_text(encoding="utf-8")
+        wheel_audit = (ROOT / "scripts" / "verify_reproducible_wheel.py").read_text(encoding="utf-8")
+        self.assertIn('(ROOT / "dist" / "wheel-audit.json").read_text', verifier)
+        self.assertIn('(destination / "SHA256SUMS").write_text', wheel_audit)
+        self.assertIn('(destination / "wheel-audit.json").write_text', wheel_audit)
+        self.assertIn("destination / WHEEL_NAME", wheel_audit)
 
 
 class WheelAuditTests(unittest.TestCase):
@@ -138,12 +193,49 @@ class WheelAuditTests(unittest.TestCase):
         with self.assertRaisesRegex(SystemExit, message):
             self.wheel.audit(self.mutate(transform))
 
+    def test_package_policy_matches_tracked_python_modules(self):
+        tracked = subprocess.check_output(
+            ["git", "ls-files", "--", "src/card_duel_engine"],
+            cwd=ROOT,
+            text=True,
+        ).splitlines()
+        package_prefix = "src/card_duel_engine/"
+        python_modules = {
+            path.removeprefix("src/")
+            for path in tracked
+            if path.startswith(package_prefix)
+            and path.endswith(".py")
+            and ".." not in Path(path).parts
+            and "\\" not in path
+        }
+        self.assertIsInstance(self.wheel.PACKAGE_FILES, frozenset)
+        self.assertEqual(python_modules, self.wheel.PACKAGE_FILES)
+        self.assertIn("card_duel_engine/application.py", self.wheel.PACKAGE_FILES)
+        self.assertIn("card_duel_engine/content/signature.py", self.wheel.PACKAGE_FILES)
+
     def test_altered_wheel_and_corrupt_record_are_rejected(self):
         record = f"{self.wheel.DIST_INFO}/RECORD"
         self.assert_rejected(lambda es: [(n, b"altered" if n == record else d) for n, d in es], "RECORD")
 
-    def test_dangerous_and_unexpected_paths_are_rejected(self):
-        self.assert_rejected(lambda es: es + [("../secret.key", b"x")], "Contenido divergente")
+    def test_dangerous_path_is_rejected(self):
+        self.assert_rejected(lambda es: es + [("../escape.py", b"x")], "Ruta peligrosa")
+
+    def test_unexpected_entry_is_rejected(self):
+        self.assert_rejected(lambda es: es + [("card_duel_engine/extra.py", b"x")], "Contenido divergente")
+
+    def test_test_module_is_rejected(self):
+        self.assert_rejected(lambda es: es + [("card_duel_engine/tests/test_extra.py", b"x")], "Ruta peligrosa")
+
+    def test_database_is_rejected(self):
+        self.assert_rejected(lambda es: es + [("card_duel_engine/data.sqlite", b"x")], "Ruta peligrosa")
+
+    def test_secret_is_rejected(self):
+        target = "card_duel_engine/__init__.py"
+        secret = b"-----BEGIN PRIVATE KEY-----"
+        self.assert_rejected(
+            lambda es: [(name, secret if name == target else data) for name, data in es],
+            "Posible secreto",
+        )
 
     def test_runtime_dependency_is_rejected(self):
         metadata = f"{self.wheel.DIST_INFO}/METADATA"

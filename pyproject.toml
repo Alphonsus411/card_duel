@@ -36,6 +36,6 @@ branch = true
 source = ["card_duel_engine"]
 
 [tool.coverage.report]
-fail_under = 86
+fail_under = 88
 show_missing = true
 skip_covered = true

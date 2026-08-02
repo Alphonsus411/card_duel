@@ -53,10 +53,12 @@ class ReleaseVerifierTests(unittest.TestCase):
              patch.object(self.release, "_quality", return_value={"status": "ok"}), \
              patch.object(self.release, "verify_simulations", return_value={"simulations": 300}), \
              patch.object(self.release, "verify_persistence", return_value={"roundtrips": 30}), \
+             patch.object(self.release, "_rules_sources", return_value={"status": "ok"}), \
              patch.object(self.release, "_package", return_value={"status": "ok"}):
             result = self.release.verify("full")
         self.assertEqual(result["status"], "ok")
         self.assertEqual(result["version"], project_version())
+        self.assertIn("rules-sources", result["executed_stages"])
         self.assertEqual(self.release.render(result), self.release.render(json.loads(self.release.render(result))))
 
     def test_runtime_profile_skips_expensive_stages(self):
@@ -64,11 +66,12 @@ class ReleaseVerifierTests(unittest.TestCase):
              patch.object(self.release, "_quality", return_value={"status": "ok"}), \
              patch.object(self.release, "verify_simulations") as simulations, \
              patch.object(self.release, "verify_persistence") as persistence, \
+             patch.object(self.release, "_rules_sources") as rules_sources, \
              patch.object(self.release, "_package") as package:
             result = self.release.verify("runtime")
         self.assertEqual(result["profile"], "runtime")
         self.assertEqual(result["executed_stages"], ["lockfile", "quality"])
-        simulations.assert_not_called(); persistence.assert_not_called(); package.assert_not_called()
+        simulations.assert_not_called(); persistence.assert_not_called(); rules_sources.assert_not_called(); package.assert_not_called()
 
     def test_runtime_never_invokes_build_or_wheel_auditor(self):
         commands = []

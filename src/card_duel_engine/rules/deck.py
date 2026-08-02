@@ -41,9 +41,11 @@ class DeckValidationResult:
 class InvalidDeckConstruction(ValueError):
     """Excepción de dominio para un mazo rechazado por su formato."""
 
-    def __init__(self, result: DeckValidationResult) -> None:
-        self.result = result
-        super().__init__("; ".join(issue.message for issue in result.issues))
+    def __init__(self) -> None:
+        # La excepción cruza fronteras de servicio: no conserva el mazo ni
+        # detalles internos de la política. El resultado detallado sigue
+        # disponible para quien invoque ``validate`` explícitamente.
+        super().__init__("El mazo no cumple la política de construcción")
 
 
 @dataclass(frozen=True)
@@ -61,24 +63,40 @@ class DeckConstructionPolicy:
     forbid_zero_cost: bool = False
     max_zero_cost_copies: int | None = None
     max_zero_cost_total: int | None = None
-    allowed_set_ids: frozenset[str] | None = None
+    allowed_set_ids: Iterable[str] | None = None
     set_predicate: SetPredicate | None = None
-    mythic_set_ids: frozenset[str] = frozenset()
+    mythic_set_ids: Iterable[str] = frozenset()
     mythic_set_predicate: SetPredicate | None = None
     mythic_min_cost: int | None = None
     mythic_max_cost: int | None = None
     point_budget: int | None = None
 
     def __post_init__(self) -> None:
-        if self.allowed_set_ids is not None:
-            object.__setattr__(self, "allowed_set_ids", frozenset(self.allowed_set_ids))
-        object.__setattr__(self, "mythic_set_ids", frozenset(self.mythic_set_ids))
         nonnegative = (
             "min_cards", "max_cards", "max_standard_copies",
             "max_legendary_copies", "max_zero_cost_copies",
             "max_zero_cost_total", "mythic_min_cost", "mythic_max_cost",
             "point_budget",
         )
+        for name in nonnegative:
+            value = getattr(self, name)
+            if value is not None and type(value) is not int:
+                raise TypeError(f"{name} debe ser un entero o None")
+        if type(self.forbid_zero_cost) is not bool:
+            raise TypeError("forbid_zero_cost debe ser bool")
+        if self.set_predicate is not None and not callable(self.set_predicate):
+            raise TypeError("set_predicate debe ser invocable o None")
+        if self.mythic_set_predicate is not None and not callable(self.mythic_set_predicate):
+            raise TypeError("mythic_set_predicate debe ser invocable o None")
+
+        allowed_set_ids = self._materialize_set_ids("allowed_set_ids", self.allowed_set_ids)
+        mythic_set_ids = (
+            self._materialize_set_ids("mythic_set_ids", self.mythic_set_ids)
+            or frozenset()
+        )
+        object.__setattr__(self, "allowed_set_ids", allowed_set_ids)
+        object.__setattr__(self, "mythic_set_ids", mythic_set_ids)
+
         if any(getattr(self, name) is not None and getattr(self, name) < 0 for name in nonnegative):
             raise ValueError("Los límites de construcción no pueden ser negativos")
         if self.min_cards is not None and self.max_cards is not None and self.min_cards > self.max_cards:
@@ -87,6 +105,25 @@ class DeckConstructionPolicy:
             raise ValueError("El coste Mítico mínimo no puede superar el máximo")
         if self.allowed_set_ids is not None and self.set_predicate is not None:
             raise ValueError("Use conjuntos permitidos o un predicado, no ambos")
+        if allowed_set_ids is not None and not mythic_set_ids.issubset(allowed_set_ids):
+            raise ValueError("Las colecciones Míticas deben pertenecer a las colecciones permitidas")
+        has_mythic_limits = self.mythic_min_cost is not None or self.mythic_max_cost is not None
+        if has_mythic_limits and not mythic_set_ids and self.mythic_set_predicate is None:
+            raise ValueError("Los límites Míticos requieren un mecanismo de clasificación aplicable")
+
+    @staticmethod
+    def _materialize_set_ids(
+        name: str, values: Iterable[str] | None
+    ) -> frozenset[str] | None:
+        if values is None:
+            return None
+        try:
+            materialized = tuple(values)
+        except TypeError:
+            raise TypeError(f"{name} debe ser un iterable de cadenas") from None
+        if any(type(value) is not str or not value for value in materialized):
+            raise TypeError(f"Cada elemento de {name} debe ser una cadena no vacía")
+        return frozenset(materialized)
 
     def validate(self, cards: Iterable[CardDefinition]) -> DeckValidationResult:
         """Consume ``cards`` exactamente una vez y no modifica ningún argumento."""
@@ -135,7 +172,7 @@ class DeckConstructionPolicy:
     def require_valid(self, cards: Iterable[CardDefinition]) -> tuple[CardDefinition, ...]:
         result = self.validate(cards)
         if not result.is_valid:
-            raise InvalidDeckConstruction(result)
+            raise InvalidDeckConstruction from None
         return result.cards
 
     def _set_allowed(self, set_id: str) -> bool:
@@ -150,29 +187,35 @@ class DeckConstructionPolicy:
 
 
 def mythic_deck_policy(
-    *, allowed_set_ids: frozenset[str] | None = None,
+    *, allowed_set_ids: Iterable[str] | None = None,
     set_predicate: SetPredicate | None = None,
-    mythic_set_ids: frozenset[str] = frozenset(),
+    mythic_set_ids: Iterable[str] | None = None,
     mythic_set_predicate: SetPredicate | None = None,
     point_budget: int | None = None,
 ) -> DeckConstructionPolicy:
+    # Sin una clasificación más estrecha, el perfil Místico clasifica todas
+    # las cartas que admite; así el intervalo nunca queda configurado sin uso.
+    if mythic_set_ids is None and mythic_set_predicate is None:
+        mythic_set_predicate = lambda _set_id: True
     return DeckConstructionPolicy(
         min_cards=40, max_cards=60, max_standard_copies=5,
         max_legendary_copies=4, forbid_zero_cost=True,
         allowed_set_ids=allowed_set_ids, set_predicate=set_predicate,
-        mythic_set_ids=mythic_set_ids, mythic_set_predicate=mythic_set_predicate,
+        mythic_set_ids=frozenset() if mythic_set_ids is None else mythic_set_ids,
+        mythic_set_predicate=mythic_set_predicate,
         mythic_min_cost=5, mythic_max_cost=50, point_budget=point_budget,
     )
 
 
 def classic_deck_policy(
-    *, allowed_set_ids: frozenset[str] | None = None,
+    *, allowed_set_ids: Iterable[str] | None = None,
     set_predicate: SetPredicate | None = None,
-    max_standard_copies: int | None = None,
-    max_legendary_copies: int | None = None,
+    max_standard_copies: int | None = 5,
+    max_legendary_copies: int | None = 4,
     point_budget: int | None = None,
 ) -> DeckConstructionPolicy:
     return DeckConstructionPolicy(
+        min_cards=40, max_cards=60,
         max_standard_copies=max_standard_copies,
         max_legendary_copies=max_legendary_copies,
         max_zero_cost_copies=1, max_zero_cost_total=6,

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import unittest
+from decimal import Decimal
 
 from card_duel_engine import (
     CardCatalog,
+    DeckConstructionPolicy,
     InMemoryMatchStore,
     MatchService,
     classic_deck_policy,
@@ -12,6 +14,7 @@ from card_duel_engine import (
 from card_duel_engine.domain.enums import CardKind, CardRank
 from card_duel_engine.domain.models import CardDefinition
 from card_duel_engine.service import DeckValidationFailure
+from card_duel_engine.storage import MatchNotFound
 
 
 def card(card_id: str, *, cost: int = 5, rank: CardRank = CardRank.STANDARD, set_id: str = "new") -> CardDefinition:
@@ -23,6 +26,80 @@ def legal_cards(size: int, *, set_id: str = "new") -> list[CardDefinition]:
 
 
 class DeckConstructionPolicyTests(unittest.TestCase):
+    def test_all_numeric_limits_require_exact_int(self):
+        fields = (
+            "min_cards", "max_cards", "max_standard_copies",
+            "max_legendary_copies", "max_zero_cost_copies",
+            "max_zero_cost_total", "mythic_min_cost", "mythic_max_cost",
+            "point_budget",
+        )
+
+        class IntLike:
+            def __int__(self):
+                return 1
+
+        invalid_values = (
+            True, 1.0, "1", [1], (1,), {1}, {"value": 1},
+            Decimal("1"), IntLike(),
+        )
+        for field in fields:
+            for value in invalid_values:
+                with self.subTest(field=field, value_type=type(value).__name__):
+                    with self.assertRaises(TypeError):
+                        DeckConstructionPolicy(**{field: value})
+
+    def test_numeric_relationships_and_nonnegative_limits_are_preserved(self):
+        for arguments in (
+            {"min_cards": -1},
+            {"min_cards": 2, "max_cards": 1},
+            {"mythic_min_cost": 6, "mythic_max_cost": 5,
+             "mythic_set_ids": {"myth"}},
+        ):
+            with self.subTest(arguments=arguments):
+                with self.assertRaises(ValueError):
+                    DeckConstructionPolicy(**arguments)
+
+    def test_collection_ids_and_predicates_are_strictly_validated(self):
+        for field in ("allowed_set_ids", "mythic_set_ids"):
+            for ids in (("",), (1,), (None,), ("ok", False)):
+                with self.subTest(field=field, ids=ids):
+                    with self.assertRaises(TypeError):
+                        DeckConstructionPolicy(**{field: ids})
+        for field in ("set_predicate", "mythic_set_predicate"):
+            for value in (False, 1, "callable", []):
+                with self.subTest(field=field, value=value):
+                    with self.assertRaises(TypeError):
+                        DeckConstructionPolicy(**{field: value})
+
+    def test_collection_generators_are_consumed_once(self):
+        iterations = {"allowed": 0, "mythic": 0}
+
+        def ids(kind, values):
+            iterations[kind] += 1
+            if iterations[kind] > 1:
+                raise AssertionError("segunda iteración")
+            yield from values
+
+        policy = DeckConstructionPolicy(
+            allowed_set_ids=ids("allowed", ("base", "myth")),
+            mythic_set_ids=ids("mythic", ("myth",)),
+            mythic_min_cost=5,
+            mythic_max_cost=50,
+        )
+        self.assertEqual(iterations, {"allowed": 1, "mythic": 1})
+        self.assertEqual(policy.allowed_set_ids, frozenset({"base", "myth"}))
+        self.assertEqual(policy.mythic_set_ids, frozenset({"myth"}))
+
+    def test_explicit_mythic_sets_must_be_allowed(self):
+        with self.assertRaisesRegex(ValueError, "Míticas.*permitidas"):
+            mythic_deck_policy(
+                allowed_set_ids={"current"}, mythic_set_ids={"future"}
+            )
+
+    def test_mythic_limits_require_an_applicable_classifier(self):
+        with self.assertRaisesRegex(ValueError, "clasificación aplicable"):
+            DeckConstructionPolicy(mythic_min_cost=5, mythic_max_cost=50)
+
     def test_mythic_size_boundaries(self):
         policy = mythic_deck_policy(allowed_set_ids=frozenset({"new"}))
         for size, valid in ((39, False), (40, True), (60, True), (61, False)):
@@ -49,6 +126,13 @@ class DeckConstructionPolicyTests(unittest.TestCase):
                 deck = legal_cards(39) + [card("edge", cost=cost, set_id=set_id)]
                 self.assertEqual(policy.validate(deck).is_valid, valid)
 
+    def test_default_mythic_profile_applies_cost_interval_to_every_allowed_card(self):
+        policy = mythic_deck_policy(allowed_set_ids={"new"})
+        for cost, valid in ((4, False), (5, True), (50, True), (51, False)):
+            with self.subTest(cost=cost):
+                deck = legal_cards(39) + [card("edge", cost=cost)]
+                self.assertEqual(policy.validate(deck).is_valid, valid)
+
     def test_set_allowlist_and_predicate_are_injected(self):
         allowed = mythic_deck_policy(allowed_set_ids=frozenset({"new"}))
         predicate = mythic_deck_policy(set_predicate=lambda value: value.startswith("season-"))
@@ -59,25 +143,37 @@ class DeckConstructionPolicyTests(unittest.TestCase):
     def test_classic_old_sets_require_explicit_authorization(self):
         closed = classic_deck_policy(allowed_set_ids=frozenset({"current"}))
         open_old = classic_deck_policy(allowed_set_ids=frozenset({"current", "old"}))
-        self.assertFalse(closed.validate([card("x", set_id="old")]).is_valid)
-        self.assertTrue(open_old.validate([card("x", set_id="old")]).is_valid)
+        old_deck = legal_cards(40, set_id="old")
+        self.assertFalse(closed.validate(old_deck).is_valid)
+        self.assertTrue(open_old.validate(old_deck).is_valid)
 
     def test_classic_zero_cost_limits(self):
         policy = classic_deck_policy()
-        distinct_six = [card(f"z-{index}", cost=0) for index in range(6)]
+        base = legal_cards(34)
+        distinct_six = base + [card(f"z-{index}", cost=0) for index in range(6)]
         self.assertTrue(policy.validate(distinct_six).is_valid)
         self.assertFalse(policy.validate(distinct_six + [card("seventh", cost=0)]).is_valid)
-        self.assertFalse(policy.validate([card("same", cost=0), card("same", cost=0)]).is_valid)
+        self.assertFalse(policy.validate(base + [card("same", cost=0), card("same", cost=0)] + legal_cards(4)).is_valid)
 
-    def test_classic_general_copy_limits_are_only_opt_in(self):
-        repeated = [card("same")] * 9
-        self.assertTrue(classic_deck_policy().validate(repeated).is_valid)
-        self.assertFalse(classic_deck_policy(max_standard_copies=8).validate(repeated).is_valid)
+    def test_classic_exact_general_size_and_copy_limits(self):
+        policy = classic_deck_policy()
+        for size, valid in ((39, False), (40, True), (60, True), (61, False)):
+            with self.subTest(size=size):
+                self.assertEqual(policy.validate(legal_cards(size)).is_valid, valid)
+        base = legal_cards(40)
+        for repeated, valid in (
+            ([card("ordinary")] * 5, True),
+            ([card("ordinary")] * 6, False),
+            ([card("legend", rank=CardRank.LEGENDARY)] * 4, True),
+            ([card("legend", rank=CardRank.LEGENDARY)] * 5, False),
+        ):
+            deck = repeated + base[len(repeated):]
+            self.assertEqual(policy.validate(deck).is_valid, valid)
 
     def test_factories_have_no_default_points_budget_n_points_01(self):
         self.assertIsNone(mythic_deck_policy().point_budget)
         self.assertIsNone(classic_deck_policy().point_budget)
-        self.assertFalse(classic_deck_policy(point_budget=4).validate([card("x", cost=5)]).is_valid)
+        self.assertFalse(classic_deck_policy(point_budget=4).validate(legal_cards(40)).is_valid)
 
     def test_one_shot_generator_is_materialized_once_and_returned(self):
         iterations = 0
@@ -95,7 +191,10 @@ class DeckConstructionPolicyTests(unittest.TestCase):
         self.assertEqual(result.cards, tuple(source))
 
     def test_issue_order_is_deterministic(self):
-        policy = mythic_deck_policy(allowed_set_ids=frozenset({"new"}), mythic_set_ids=frozenset({"bad"}))
+        policy = mythic_deck_policy(
+            set_predicate=lambda set_id: set_id == "new",
+            mythic_set_ids=frozenset({"bad"}),
+        )
         deck = [card("z", cost=0, set_id="bad")] * 6
         first = policy.validate(deck).issues
         second = policy.validate(iter(deck)).issues
@@ -104,6 +203,7 @@ class DeckConstructionPolicyTests(unittest.TestCase):
 
     def test_service_rejection_happens_before_engine_or_catalog_mutation(self):
         catalog = CardCatalog()
+        store = InMemoryMatchStore()
         calls = 0
 
         def factory():
@@ -111,12 +211,16 @@ class DeckConstructionPolicyTests(unittest.TestCase):
             calls += 1
             raise AssertionError("no debe construirse el motor")
 
-        service = MatchService(InMemoryMatchStore(), engine_factory=factory, deck_policy=mythic_deck_policy())
+        service = MatchService(store, engine_factory=factory, deck_policy=mythic_deck_policy())
         before = catalog.definitions()
-        with self.assertRaises(DeckValidationFailure):
+        with self.assertRaises(DeckValidationFailure) as caught:
             service.create_match("rejected", {"A": legal_cards(39), "B": legal_cards(40)})
         self.assertEqual(calls, 0)
         self.assertEqual(catalog.definitions(), before)
+        self.assertIsNone(caught.exception.__cause__)
+        self.assertEqual(str(caught.exception), "")
+        with self.assertRaises(MatchNotFound):
+            store.load("rejected")
 
 
 if __name__ == "__main__":

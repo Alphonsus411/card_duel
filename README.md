@@ -4,7 +4,7 @@ Primera estructura del backend headless para el futuro juego de cartas. El
 paquete implementa el armazón de las reglas universales de Fantasy Tokens sin
 incluir ninguna carta, personaje ni colección antigua.
 
-## Alcance de la versión 0.19.0
+## Alcance de la versión 0.20.0
 
 - Catálogo de cartas vacío y extensible.
 - Contratos pequeños de gestores verificados por `mypy` y dobles mínimos independientes.
@@ -113,6 +113,8 @@ incluir ninguna carta, personaje ni colección antigua.
 
 Las únicas cartas utilizadas están en `tests/fixtures.py` y sirven para probar
 el motor. El catálogo de producción comienza vacío.
+
+Los reglamentos primarios son `Fantasy Tokens.pdf` y `Fantasy Tokens Edicion Mitica.pdf`. Se conservan en el repositorio para trazabilidad, pero **ninguno de los dos PDF se empaqueta en el wheel**. El catálogo distribuido continúa vacío: no se ha incorporado ninguna carta de producción.
 
 ## Desarrollo reproducible
 

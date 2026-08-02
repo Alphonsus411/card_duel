@@ -232,6 +232,15 @@ class WheelAuditTests(unittest.TestCase):
     def test_database_is_rejected(self):
         self.assert_rejected(lambda es: es + [("card_duel_engine/data.sqlite", b"x")], "Ruta peligrosa")
 
+    def test_both_primary_rule_pdfs_are_rejected(self):
+        for filename in ("Fantasy Tokens.pdf", "Fantasy Tokens Edicion Mitica.pdf"):
+            with self.subTest(filename=filename):
+                self.assert_rejected(
+                    lambda entries, name=filename: entries
+                    + [(f"card_duel_engine/{name}", b"not packaged")],
+                    "Ruta peligrosa",
+                )
+
     def test_secret_is_rejected(self):
         target = "card_duel_engine/__init__.py"
         secret = b"-----BEGIN PRIVATE KEY-----"

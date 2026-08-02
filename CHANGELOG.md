@@ -2,6 +2,26 @@
 
 ## Sin publicar
 
+## 0.20.0
+
+- Integradas como fuentes primarias verificables tanto las reglas base como la
+  actualización Mítica, con hashes, tamaño y doble paginación física/interna.
+- Reorganizada la trazabilidad paginada en reglas universales, formatos de mazo,
+  normalizaciones del motor, bloqueos y contenido de cartas.
+- Formalizada la política de mazos mediante perfiles optativos Clásico/Mística,
+  sin resolver las cifras contradictorias de `N-POINTS-01`.
+- Documentadas las correcciones mecánicas ya realizadas: secuencia Legendaria,
+  Divinos transmutables con inmunidad Mítica, Desafío, Señores, sustituciones,
+  regeneración y consolidación de combate y zonas, sin atribuir cambios nuevos.
+- Añadidas regresiones con artefactos 0.19.0 de esquemas v1/v2 que conservan
+  huella final, historial, contadores, orden e identificadores.
+- Conservada la compatibilidad persistente: esquemas v1/v2 y migración v1 → v2;
+  no se introduce v3 ni se alteran condiciones terminales multijugador.
+- Excluidos explícitamente del wheel ambos PDF, las dependencias runtime y todo
+  catálogo de producción; el catálogo distribuido sigue vacío.
+- Centralizada la versión vigente en `project.version`; paquete, `RuleSet`,
+  scripts y workflow la resuelven dinámicamente.
+
 - Añadida `docs/MYTHIC_RULES_AUDIT.md` con jerarquía de fuentes, doble paginación
   Mítica, categorías A–E y separación exacta entre reglas y cartas concretas.
 - Registrados como bloqueos `N-POINTS-01` (200, 300, 300–400 y recomendación de

@@ -23,7 +23,9 @@ ROOT = Path(__file__).resolve().parents[1]
 VERSION = read_project_version(ROOT)
 WHEEL_NAME = f"card_duel_engine-{VERSION}-py3-none-any.whl"
 DIST_INFO = f"card_duel_engine-{VERSION}.dist-info"
-FORBIDDEN_SUFFIXES = {".db", ".sqlite", ".sqlite3", ".pyc", ".pyo", ".pem", ".key"}
+FORBIDDEN_SUFFIXES = {
+    ".db", ".sqlite", ".sqlite3", ".pyc", ".pyo", ".pem", ".key", ".pdf"
+}
 FORBIDDEN_PARTS = {"tests", "test", "__pycache__", ".git", ".github", ".idea"}
 SECRET_PATTERN = re.compile(rb"(BEGIN (RSA |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{16})")
 

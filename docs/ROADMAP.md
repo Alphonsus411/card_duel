@@ -128,6 +128,10 @@ en `RULES_TRACEABILITY.md`:
 - **R-03B.4 — Futuro corpus:** mantener las cartas fuera del paquete y preparar
   una carga futura por manifiestos, según `MYTHIC_CARD_CORPUS_SCOPE.md`.
 
+Estas cuatro líneas son seguimiento separado, no una orden de incorporar el
+catálogo completo. En particular, `N-POINTS-01` permanece bloqueado y R-03B.4
+solo define la frontera externa para un trabajo futuro expresamente autorizado.
+
 **Criterio de cierre:** R-03B sólo podrá declararse completada cuando código,
 documentación y pruebas estén alineados en todas las filas. Una aclaración
 oficial sigue siendo obligatoria para puntos, reclasificación de habilidades de

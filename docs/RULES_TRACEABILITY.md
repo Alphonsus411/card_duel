@@ -15,6 +15,40 @@ No convierte normalizaciones ni pendientes en reglas nuevas.
 | Documentos v2 y migraciones v1 | `persistence/`, `content/manifest.py` | `test_persistence_v090.py`, `test_hardening_v0100.py` |
 | Persistencia CAS | `storage/`, `service.py` | `test_service_v0110.py`, `test_hardening_v0100.py` |
 
+## Matriz de decisiones base–Mítica (R-03B)
+
+Las páginas de esta matriz son páginas físicas del PDF base y, para Mítica, el
+par **física / interna**. «Backend actual» describe el estado observado, no le
+otorga autoridad normativa. La decisión usa un vocabulario cerrado: **ya
+cumple**, **requiere prueba**, **requiere corrección**, **bloqueada** o **sólo
+documentación**. Una fila sólo puede pasar a «ya cumple» cuando fuente, código,
+documentación y pruebas coincidan.
+
+| ID | Materia | Reglamento base | Edición Mítica | Clasificación | Backend actual | Decisión |
+|---|---|---|---|---|---|---|
+| R-03B.3-DECK | Construcción de mazos | Reglas básicas 1–2, p. 5: igualdad y mínimo de 50 puntos; no fija cantidad de cartas. | Física 2 / interna 1: 40–60 cartas; el presupuesto de puntos es contradictorio (`N-POINTS-01`). | B — formato de mazo, con extremo E en puntos. | Acepta mazos sin validar 40–60 cartas ni presupuesto. | **requiere corrección**: aplicar 40–60 sólo mediante un formato explícito; los puntos siguen bloqueados. |
+| R-03B.3-COPIES | Copias máximas | P. 5: no establece un máximo de copias verificable. | Física 2 / interna 1: hasta cinco no Legendarias y cuatro Legendarias. | B — formato de mazo. | No cuenta copias por identidad y rango al crear la partida. | **requiere corrección**: la validación de formato aún no existe. |
+| R-03B.3-ZERO | Cartas de coste cero | Reglas básicas 1 y 3, p. 5: el coste interviene en el ajuste de mazo y las cartas se pagan para jugarse. | Física 2 / interna 1: Clásico limita las de coste cero; Mística fija costes 5–50 para sus cartas. | B — restricción de formato. | El modelo admite coste cero, pero no conoce formatos ni aplica su límite. | **requiere corrección**: no debe prohibirse universalmente; debe validarse por formato. |
+| R-03B.3-FORMATS | Formatos Clásico y Mística | Sin esos formatos en las reglas básicas verificadas, pp. 5–8. | Física 2 / interna 1 y física 3 / interna 2: ediciones admitidas y circuito de cada formato. | B — formato de mazo. | `RuleSet` es universal y no representa Clásico/Mística. | **requiere corrección**: introducir perfiles sólo antes de validar mazos del formato. |
+| R-03B.2-DRAIN | Drenaje | Sin Drenaje en las reglas básicas verificadas, pp. 5–8. | Física 3 / interna 2: una vez en turno activo, 1–5 Pasos y Heridas escalonadas. | A — regla universal Mítica. | `DrainSteps` aplica ventana, frecuencia, rango y coste; `test_mythic_v040.py` cubre el camino principal. | **ya cumple**. |
+| R-03B.2-LEGENDARY | Legendarios | Regla básica 19, p. 8: protección antigua dentro del tratamiento conjunto de especiales. | Física 3 / interna 2: subtipo y afectación normal salvo inmunidad expresa. | A — actualización universal. | Representa rango, subtipos y efectos de Fase Legendaria, pero no hay una prueba documental/mecánica dedicada a toda la actualización de afectación. | **requiere prueba**. |
+| R-03B.2-DIVINE | Divinos | Regla básica 19, p. 8: inmunidad antigua, incluso frente al descarte. | **Página física 3 / página interna 2**: inmunidad limitada y Transmutación permitida. | A — modificación posterior expresa. | Permite Transmutación, pero bloquea toda habilidad como fuente, no sólo habilidades de criaturas permanentes. | **requiere corrección**: alinear el alcance exacto y su prueba antes de cerrar. |
+| R-03B.2-ABYSS | Señores del Abismo | Sin este tipo en las reglas básicas verificadas, pp. 5–8. | Física 3 / interna 2: Fuerza derivada del coste, pago de Fuerza, descarte a cero y límites de combate. | A — regla universal Mítica. | Modela dominio, Fuerza y descarte a cero; comparte caminos genéricos con otros Señores. | **requiere prueba**: falta una prueba de contrato completa por dominio. |
+| R-03B.2-ELYSIUM | Señores del Elíseo | Sin este tipo en las reglas básicas verificadas, pp. 5–8. | Física 3 / interna 2: mismas propiedades mecánicas generales del bloque de Señores. | A — regla universal Mítica. | Existe el dominio, sin cobertura específica del Elíseo. | **requiere prueba**. |
+| R-03B.2-MAGIC | Señores de la Magia | Sin este tipo en las reglas básicas verificadas, pp. 5–8. | Física 3 / interna 2: análogo general y neutral respecto de facción. | A — regla universal Mítica. | Existe el dominio y una prueba de conversión a criatura, pero esa conversión procede de una habilidad de prueba, no de una regla universal del dominio. | **requiere prueba**. |
+| R-03B.2-REALMS | Señores de los Reinos | Sin este tipo en las reglas básicas verificadas, pp. 5–8. | Física 4 / interna 3: puede transformarse en criatura para combatir y usar capacidades. | A — regla universal Mítica. | El motor sólo lo transforma mediante efectos declarados por contenido; no garantiza la capacidad por ser de Reinos. | **requiere corrección**. |
+| R-03B.2-CHALLENGE | Desafío | Combate ordinario, reglas básicas 13–18, pp. 7–8; no define Desafío. | Física 4 / interna 3: una vez por turno en Fase Activa y sustitución del combate. | A — regla universal Mítica. | Resuelve el duelo sin daño sobrante, pero lo sitúa en Combate y no registra un límite independiente de una vez por turno. | **requiere corrección**. |
+| R-03B.2-LEGENDARY-PHASE | Fase Legendaria | Secuencia de turno y Fase Legendaria, pp. 3–4. | Física 3 / interna 2: mantiene el tratamiento de Legendarios dentro de la actualización. | A — regla universal. | `RuleSet` exige Robo, Mantenimiento, Efectos, Combate, Legendaria y Descarte; existen pruebas de fase y disparos. | **ya cumple**. |
+| R-03B.2-MULTIPLAYER-END | Condiciones terminales multijugador | Objetivo, p. 3; Heridas, p. 4; regla básica 2, p. 5; empate de dos, pp. 7–8. Admite uno o más adversarios, pero no define continuidad ni ganadores para 3+. | Sin aclaración en la sección normativa, físicas 2–4 / internas 1–3. | E — silencio normativo. | Para 3+ detiene en `BLOCKED` sin inventar ganadores; conserva los finales de dos jugadores. | **bloqueada**: requiere aclaración oficial, no una inferencia de código. |
+| R-03B.1-TOURNAMENT | Administración de torneos | Organización general y modalidades, pp. 9–10. | Física 2 / interna 1 y física 3 / interna 2: circuito, legibilidad, sustitución y sanciones. | C — organización física. | El motor headless no administra torneos ni inspecciona soportes físicos. | **sólo documentación**. |
+| R-03B.4-CORPUS | Comienzo del catálogo de cartas | El catálogo sucede a las reglas y organización; no es regla universal. | Física 4 / interna 3: `EDICION MITICA`, anuncio del descriptivo y primera carta nº 001. | D — texto particular de carta. | El paquete de producción no instancia ni incorpora cartas; sólo ofrece contratos para colecciones externas. | **sólo documentación**: esta entrega no importa el corpus. |
+
+Los cuatro frentes de R-03B son: `R-03B.1`, **fuente verificable** y decisiones
+documentales; `R-03B.2`, **reglas universales**; `R-03B.3`, **formatos de mazo**;
+y `R-03B.4`, **futuro corpus**. Esta matriz no declara R-03B completada: las
+filas bloqueadas, con corrección o sin prueba impiden cerrarla hasta alinear
+código, documentación y pruebas.
+
 ## Auditoría base–Mítica (R-03A)
 
 El inventario completo, su jerarquía, las categorías A–E y la frontera exacta

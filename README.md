@@ -100,8 +100,10 @@ incluir ninguna carta, personaje ni colección antigua.
   R-07.1 (combate, incluida su enumeración) y R-07.2 (movimientos y
   sustituciones) completadas. También se completó R-03A como inventario
   exclusivamente documental de la contradicción verificable sobre Divinos, sin
-  cartas ni cambios de reglas; R-02, la decisión normativa R-03B y R-05
-  permanecen bloqueadas. La
+  cartas ni cambios de reglas. R-03B se divide ahora en fuente verificable,
+  reglas universales, formatos de mazo y futuro corpus, y permanece abierta
+  hasta alinear código, documentación y pruebas; R-02, los extremos normativos
+  de R-03B y R-05 permanecen bloqueados. La
   frontera de R-06 es agnóstica del transporte; un adaptador HTTP
   u otro servicio de red concreto continúa fuera de alcance, no tiene entrega de
   hoja de ruta asignada y no es un pendiente implementable. Cualquier decisión

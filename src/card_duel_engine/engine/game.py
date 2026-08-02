@@ -18,6 +18,7 @@ from ..domain.enums import (
     ControllerScope,
     EffectDuration,
     EffectKind,
+    LordDomain,
     MatchStatus,
     MoveReason,
     Phase,
@@ -585,7 +586,7 @@ class GameEngine:
             actions.append(Concede(player_id))
             return tuple(actions)
 
-        if state.phase is Phase.COMBAT:
+        if state.phase in {Phase.EFFECTS, Phase.COMBAT}:
             actions.extend(self._combat.legal_actions(player_id))
 
         if player_id == state.priority_player_id:
@@ -1255,6 +1256,10 @@ class GameEngine:
         for ability in definition.abilities:
             if ability.trigger is not None:
                 continue
+            # La naturaleza de Señor no convierte implícitamente la habilidad
+            # en Evento: únicamente conserva la ventana general de Fase Activa.
+            if definition.lord_domain is not None and state.phase is not Phase.EFFECTS:
+                continue
             if ability.allowed_phases and state.phase not in ability.allowed_phases:
                 continue
             if ability.once_per_turn and ability.ability_id in source.activated_this_turn:
@@ -1365,6 +1370,8 @@ class GameEngine:
         )
         if ability is None or ability.trigger is not None:
             raise IllegalAction("Habilidad activada inexistente")
+        if definition.lord_domain is not None and state.phase is not Phase.EFFECTS:
+            raise IllegalAction("Las habilidades generales de Señor requieren la Fase Activa")
         if ability.allowed_phases and state.phase not in ability.allowed_phases:
             raise IllegalAction("La habilidad no puede activarse en esta fase")
         if ability.once_per_turn and ability.ability_id in source.activated_this_turn:
@@ -1983,8 +1990,12 @@ class GameEngine:
 
     def _is_lord_creature(self, card_id: str) -> bool:
         state = self._require_state()
+        instance = state.cards[card_id]
         definition = self._definition(card_id)
-        return definition.lord_domain is not None and self._is_creature(card_id)
+        return definition.lord_domain is not None and instance.transformed_as_creature
+
+    def _lord_domain(self, card_id: str) -> LordDomain | None:
+        return self._definition(card_id).lord_domain
 
     def _current_strength(self, card_id: str) -> int:
         state = self._require_state()

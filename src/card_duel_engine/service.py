@@ -14,6 +14,7 @@ from .domain.models import CardDefinition
 from .engine.commands import EXECUTABLE_COMMAND_TYPE_SET, GameCommand
 from .engine.game import GameEngine
 from .rules.config import RuleSet
+from .rules.deck import DeckConstructionPolicy, InvalidDeckConstruction
 from .storage.base import StoredMatch, validate_expected_version
 
 
@@ -58,11 +59,13 @@ class MatchService:
         *,
         engine_factory: Callable[[], GameEngine] | None = None,
         catalog: CardCatalog | CollectionRegistry | None = None,
+        deck_policy: DeckConstructionPolicy | None = None,
     ) -> None:
         self.store = store
         if engine_factory is not None and catalog is not None:
             raise ValueError("No se puede combinar engine_factory y catalog")
         self._engine_factory = engine_factory or (lambda: GameEngine(catalog=catalog))
+        self._deck_policy = deck_policy
 
     def create_match(
         self,
@@ -72,9 +75,18 @@ class MatchService:
         seed: int = 0,
         auto_start: bool = True,
     ) -> int:
+        prepared_decks: Mapping[str, Iterable[CardDefinition]] = decks
+        if self._deck_policy is not None:
+            try:
+                prepared_decks = {
+                    player_id: self._deck_policy.require_valid(deck)
+                    for player_id, deck in decks.items()
+                }
+            except InvalidDeckConstruction:
+                raise DeckValidationFailure from None
         engine = self._engine_factory()
         try:
-            engine.new_match(decks, seed=seed, auto_start=auto_start)
+            engine.new_match(prepared_decks, seed=seed, auto_start=auto_start)
         except InvalidDeckDefinition:
             raise DeckValidationFailure from None
         return self.store.create(match_id, engine)

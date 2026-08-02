@@ -37,7 +37,15 @@ from .content import (
 )
 from .engine.game import GameEngine
 from .persistence import dump_replay, dump_snapshot, load_snapshot, replay_from_log
-from .rules.config import RuleSet
+from .rules import (
+    DeckConstructionPolicy,
+    DeckValidationIssue,
+    DeckValidationResult,
+    InvalidDeckConstruction,
+    RuleSet,
+    classic_deck_policy,
+    mythic_deck_policy,
+)
 from .service import CommandSource, MatchService, MatchView
 from .storage import InMemoryMatchStore, SQLiteMatchStore, VersionConflict
 
@@ -74,7 +82,13 @@ __all__ = [
     "MatchService",
     "MatchView",
     "CommandSource",
+    "DeckConstructionPolicy",
+    "DeckValidationIssue",
+    "DeckValidationResult",
+    "InvalidDeckConstruction",
     "RuleSet",
+    "classic_deck_policy",
+    "mythic_deck_policy",
     "SQLiteMatchStore",
     "VersionConflict",
     "dump_replay",

@@ -135,13 +135,14 @@ uv run python -m mypy
 uv run python -m compileall -q src tests
 uv run python -m unittest discover -s tests -v
 uv run python scripts/verify_release.py --profile runtime
-uv run python scripts/verify_release.py --profile full --json release-verification.json
+uv run python scripts/verify_release.py --profile full --json dist/release-verification.json
 uv run python scripts/verify_reproducible_wheel.py
 ```
 
-El verificador obtiene `SOURCE_DATE_EPOCH` de la fecha del commit `HEAD`, construye
-dos veces en directorios temporales limpios y compara nombre, bytes, SHA-256 y
-metadatos.
+El verificador obtiene `SOURCE_DATE_EPOCH` de la fecha del commit auditado (no
+de una constante arbitraria), construye dos veces ese mismo commit en
+directorios temporales limpios y compara nombre, bytes, SHA-256 y metadatos. No
+compara artefactos procedentes de commits diferentes.
 
 ## Ejecutar las pruebas
 

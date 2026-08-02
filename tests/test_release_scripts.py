@@ -124,11 +124,13 @@ class ReleaseVerifierTests(unittest.TestCase):
             "dist/${{ steps.package.outputs.wheel }}",
             "dist/SHA256SUMS",
             "dist/wheel-audit.json",
-            "release-verification.json",
+            "dist/release-verification.json",
         }
         upload_lines = {line.strip() for line in upload.splitlines()}
-        self.assertTrue(expected_paths.issubset(upload_lines))
+        uploaded = {line for line in upload_lines if line.startswith("dist/")}
+        self.assertEqual(uploaded, expected_paths)
         self.assertIn("if-no-files-found: error", upload)
+        self.assertIn("--json dist/release-verification.json", full_job)
 
         verifier = (ROOT / "scripts" / "verify_release.py").read_text(encoding="utf-8")
         wheel_audit = (ROOT / "scripts" / "verify_reproducible_wheel.py").read_text(encoding="utf-8")
@@ -136,6 +138,25 @@ class ReleaseVerifierTests(unittest.TestCase):
         self.assertIn('(destination / "SHA256SUMS").write_text', wheel_audit)
         self.assertIn('(destination / "wheel-audit.json").write_text', wheel_audit)
         self.assertIn("destination / WHEEL_NAME", wheel_audit)
+
+        # La selección/copia precede al checksum y a ambos informes; el perfil
+        # completo no vuelve a construir después de producir su JSON.
+        self.assertLess(wheel_audit.index("shutil.copyfile(first, final_wheel)"),
+                        wheel_audit.index('(destination / "SHA256SUMS").write_text'))
+        self.assertLess(wheel_audit.index('(destination / "SHA256SUMS").write_text'),
+                        wheel_audit.index('(destination / "wheel-audit.json").write_text'))
+        self.assertEqual(verifier.count("scripts/verify_reproducible_wheel.py"), 1)
+
+    def test_validation_document_does_not_claim_a_manual_sha_is_final(self):
+        validation = (ROOT / "docs" / "VALIDATION_0.20.1.md").read_text(encoding="utf-8")
+        sha = r"[0-9a-f]{64}"
+        forbidden = re.compile(
+            rf"(?:hash final|artefacto definitivo).{{0,160}}{sha}|"
+            rf"{sha}.{{0,160}}(?:hash final|artefacto definitivo)",
+            re.IGNORECASE | re.DOTALL,
+        )
+        self.assertNotRegex(validation, forbidden)
+        self.assertIn("candidato local", validation)
 
 
 class WheelAuditTests(unittest.TestCase):
@@ -262,6 +283,20 @@ class WheelAuditTests(unittest.TestCase):
 
     def test_explicit_manifest_rejects_extra_content(self):
         self.assert_rejected(lambda es: es[:-1], "Contenido divergente")
+
+    def test_audit_has_mandatory_release_evidence(self):
+        report = self.wheel.audit(self.original)
+        required = {
+            "version", "filename", "sha256", "files", "record_integrity",
+            "runtime_dependencies", "tag", "root_is_purelib", "pdfs_absent",
+            "fixtures_absent", "production_cards_absent",
+        }
+        self.assertTrue(required.issubset(report))
+        self.assertEqual(report["version"], project_version())
+        self.assertEqual(report["runtime_dependencies"], [])
+        self.assertEqual(set(report["pdfs_absent"]), {
+            "Fantasy Tokens.pdf", "Fantasy Tokens Edicion Mitica.pdf"
+        })
 
 
 if __name__ == "__main__":

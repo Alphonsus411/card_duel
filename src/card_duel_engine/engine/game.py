@@ -1237,6 +1237,16 @@ class GameEngine:
         source_card_id: str | None = None,
     ) -> bool:
         state = self._require_state()
+        if from_ability:
+            source_instance = (
+                state.cards.get(source_card_id)
+                if source_card_id is not None
+                else None
+            )
+            if source_instance is None or source_instance.zone is not Zone.BATTLEFIELD:
+                raise IllegalAction(
+                    "La fuente de la habilidad debe existir en el campo de batalla"
+                ) from None
         target = self._definition(target_card_id)
         keywords = self._effective_keywords(target_card_id)
         if target.rank is CardRank.DIVINE:
@@ -1244,10 +1254,8 @@ class GameEngine:
                 return False
             if (
                 from_ability
-                and source.kind is CardKind.CREATURE
-                and source_card_id is not None
-                and state.cards[source_card_id].zone is Zone.BATTLEFIELD
                 and source_card_id != target_card_id
+                and self._is_creature(source_card_id)
             ):
                 return False
         if "IMMUNE_ABILITIES" in keywords and from_ability:

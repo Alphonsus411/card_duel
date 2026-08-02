@@ -79,3 +79,32 @@ para generalizar una mecánica.
 - Las demás dudas que requieran completar silencios del texto siguen bloqueadas.
 - Una implementación o una prueba que elija una conducta puede proteger el
   estado técnico existente, pero no resolver ninguno de esos bloqueos.
+
+## Auditoría de implementación de Drenaje, Legendarios y Divinos
+
+- **Drenaje:** la entrada del motor valida, antes de escribir, jugador activo,
+  prioridad, Fase de Efectos (la Fase Activa del modelo), uso único por número
+  de turno y un `int` estricto entre 1 y 5. La fórmula implementada es
+  `max(0, pasos - 1) * 3`. El número de turno hace que el permiso se renueve al
+  cambiar de turno sin añadir un campo persistente. La transacción general de
+  comandos restaura estado, historial observable y contadores si falla
+  cualquier publicación o validación posterior.
+- **Persistencia:** `drainage_used_turn_serial` ya pertenecía a `PlayerState` y
+  los comandos ya se guardaban en el historial reproducible. Por ello snapshot
+  y replay conservan el uso durante el turno con sus esquemas 2 existentes; no
+  se introduce migración ni representación paralela.
+- **Legendarios:** `CardKind` (criatura, evento, artefacto, etc.) y `CardRank`
+  (normal, legendario, divino) permanecen dimensiones independientes. La
+  permanencia y las inmunidades siguen siendo propiedades explícitas; el rango
+  Legendario no las infiere. La política Mística consulta exclusivamente
+  `CardDefinition.rank is CardRank.LEGENDARY` para el máximo de cuatro copias.
+- **Divinos y procedencia:** la referencia de fuente que ya transporta cada
+  comando/elemento de pila basta para comparar la fuente con el objetivo. La
+  selección bloquea Eventos, Recursos Rápidos y habilidades cuya definición de
+  fuente es una Criatura, salvo la habilidad del propio permanente Divino. No
+  bloquea por defecto habilidades de artefactos u otras fuentes no criatura.
+  Transmutación no pasa por esta selección de objetivos y continúa permitida.
+  No se creó un segundo sistema de procedencia.
+- **Límite deliberado:** esta inmunidad de selección no se consulta para
+  descarte, sacrificio, costes, acciones basadas en estado ni movimientos por
+  otras reglas. Tampoco se atribuye inmunidad automática a los Legendarios.

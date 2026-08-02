@@ -305,11 +305,12 @@ class GameEngine:
         self, command: GameCommand, replay_choices: tuple[int, ...]
     ) -> None:
         state = self._require_running_state()
-        transactional = bool(replay_choices) or any(
-            definition.deferred_replacement_choice
-            for definition in self.catalog.definitions()
-        )
-        snapshot = deepcopy(state) if transactional else None
+        # Todo comando se ejecuta contra un respaldo. Además de las elecciones
+        # diferidas, esto protege las operaciones compuestas (Drenaje y
+        # Transmutación incluidas) frente a cualquier fallo posterior a una
+        # primera escritura, incluida la validación final de invariantes.
+        snapshot = deepcopy(state)
+        next_instance = self._next_instance
         next_stack_item = self._next_stack_item
         self._replacement_replay_choices = replay_choices
         self._replacement_replay_cursor = 0
@@ -323,6 +324,7 @@ class GameEngine:
                     "Se solicitó una sustitución sin respaldo transaccional"
                 )
             self.state = snapshot
+            self._next_instance = next_instance
             self._next_stack_item = next_stack_item
             assert snapshot.priority_player_id is not None
             self.state.pending_move_replacement = PendingMoveReplacement(
@@ -350,9 +352,9 @@ class GameEngine:
             )
             self.validate_invariants()
         except Exception:
-            if snapshot is not None:
-                self.state = snapshot
-                self._next_stack_item = next_stack_item
+            self.state = snapshot
+            self._next_instance = next_instance
+            self._next_stack_item = next_stack_item
             raise
         finally:
             self._replacement_replay_choices = ()
@@ -590,6 +592,7 @@ class GameEngine:
             actions.extend(self._legal_plays(player_id))
             if (
                 player_id == state.active_player_id
+                and state.phase is Phase.EFFECTS
                 and player.drainage_used_turn_serial != state.turn_serial
             ):
                 actions.extend(DrainSteps(player_id, amount) for amount in range(1, 6))
@@ -664,7 +667,7 @@ class GameEngine:
             for player in state.players.values()
             for card_id in player.zones[Zone.BATTLEFIELD]
             if self._card_can_be_targeted(
-                definition, card_id, item.ability_id is not None
+                definition, card_id, item.ability_id is not None, item.source_card_id
             )
         )
         card_targets = self._target_selections(
@@ -675,6 +678,7 @@ class GameEngine:
             item.effects,
             definition,
             from_ability=item.ability_id is not None,
+            source_card_id=item.source_card_id,
         )
         return [
             ChooseTriggeredTargets(
@@ -913,6 +917,7 @@ class GameEngine:
         source_definition: CardDefinition,
         *,
         from_ability: bool = False,
+        source_card_id: str | None = None,
         x_value: int = 0,
     ) -> tuple[tuple[TargetAllocation, ...], ...]:
         state = self._require_state()
@@ -924,7 +929,9 @@ class GameEngine:
             card_id
             for player in state.players.values()
             for card_id in player.zones[Zone.BATTLEFIELD]
-            if self._card_can_be_targeted(source_definition, card_id, from_ability)
+            if self._card_can_be_targeted(
+                source_definition, card_id, from_ability, source_card_id
+            )
         )
         results: list[tuple[TargetAllocation, ...]] = []
         for count in range(effect.minimum_targets, min(effect.maximum_targets, len(candidates)) + 1):
@@ -1129,6 +1136,7 @@ class GameEngine:
         source_definition: CardDefinition,
         *,
         from_ability: bool = False,
+        source_card_id: str | None = None,
         x_value: int = 0,
     ) -> None:
         state = self._require_running_state()
@@ -1161,7 +1169,9 @@ class GameEngine:
         for card_id in chosen_card_ids:
             if card_id not in state.cards or state.cards[card_id].zone is not Zone.BATTLEFIELD:
                 raise IllegalAction("Permanente objetivo inexistente")
-            if not self._card_can_be_targeted(source_definition, card_id, from_ability):
+            if not self._card_can_be_targeted(
+                source_definition, card_id, from_ability, source_card_id
+            ):
                 raise IllegalAction("El permanente es inmune a esta fuente")
         zone_effects = tuple(
             effect for effect in effects if effect.target is TargetMode.CHOSEN_ZONE
@@ -1200,7 +1210,9 @@ class GameEngine:
                     continue
                 if target_id not in state.cards or state.cards[target_id].zone is not Zone.BATTLEFIELD:
                     raise IllegalAction("Objetivo de reparto inexistente")
-                if not self._card_can_be_targeted(source_definition, target_id, from_ability):
+                if not self._card_can_be_targeted(
+                    source_definition, target_id, from_ability, source_card_id
+                ):
                     raise IllegalAction("Un objetivo del reparto es inmune a esta fuente")
 
     def _card_can_be_targeted(
@@ -1208,14 +1220,22 @@ class GameEngine:
         source: CardDefinition,
         target_card_id: str,
         from_ability: bool = False,
+        source_card_id: str | None = None,
     ) -> bool:
         state = self._require_state()
         target = self._definition(target_card_id)
         keywords = self._effective_keywords(target_card_id)
-        if target.rank is CardRank.DIVINE and (
-            from_ability or source.kind in {CardKind.EVENT, CardKind.QUICK_RESOURCE}
-        ):
-            return False
+        if target.rank is CardRank.DIVINE:
+            if source.kind in {CardKind.EVENT, CardKind.QUICK_RESOURCE}:
+                return False
+            if (
+                from_ability
+                and source.kind is CardKind.CREATURE
+                and source_card_id is not None
+                and state.cards[source_card_id].zone is Zone.BATTLEFIELD
+                and source_card_id != target_card_id
+            ):
+                return False
         if "IMMUNE_ABILITIES" in keywords and from_ability:
             return False
         if "IMMUNE_QUICK" in keywords and source.kind is CardKind.QUICK_RESOURCE:
@@ -1281,7 +1301,9 @@ class GameEngine:
                     card_id
                     for owner in state.players.values()
                     for card_id in owner.zones[Zone.BATTLEFIELD]
-                    if self._card_can_be_targeted(definition, card_id, True)
+                    if self._card_can_be_targeted(
+                        definition, card_id, True, source_card_id
+                    )
                 )
                 card_targets = self._target_selections(
                     ability.effects, TargetMode.CHOSEN_PERMANENT, eligible_cards
@@ -1291,6 +1313,7 @@ class GameEngine:
                     ability.effects,
                     definition,
                     from_ability=True,
+                    source_card_id=source_card_id,
                     x_value=x_value or 0,
                 )
                 for (
@@ -1354,6 +1377,7 @@ class GameEngine:
             command.allocations,
             definition,
             from_ability=True,
+            source_card_id=command.source_card_id,
             x_value=command.x_value or 0,
         )
         if ability.x_cost is not None:
@@ -1505,12 +1529,14 @@ class GameEngine:
             raise IllegalAction("El jugador no posee prioridad")
         if command.player_id != state.active_player_id:
             raise IllegalAction("Drenaje solo puede usarse durante la Fase Activa propia")
+        if state.phase is not Phase.EFFECTS:
+            raise IllegalAction("Drenaje solo puede usarse durante la Fase Activa propia")
         player = state.players[command.player_id]
         if player.drainage_used_turn_serial == state.turn_serial:
             raise IllegalAction("Drenaje ya se utilizó este turno")
-        if not 1 <= command.amount <= 5:
+        if type(command.amount) is not int or not 1 <= command.amount <= 5:
             raise IllegalAction("Drenaje permite recuperar entre uno y cinco Pasos")
-        wounds = (command.amount - 1) * 3
+        wounds = max(0, command.amount - 1) * 3
         player.steps += command.amount
         player.wounds += wounds
         player.drainage_used_turn_serial = state.turn_serial
@@ -1571,6 +1597,7 @@ class GameEngine:
             command.allocations,
             definition,
             from_ability=item.ability_id is not None,
+            source_card_id=item.source_card_id,
         )
         state.pending_triggers[index] = replace(
             item,

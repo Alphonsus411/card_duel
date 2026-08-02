@@ -38,12 +38,10 @@ Las entradas requieren priorización y alcance propios antes de implementarse.
 
 ## CI y release
 
-- Ejecutar en CI los perfiles `runtime` y `full` de verificación de release y
-  conservar sus diagnósticos como artefactos de la ejecución.
-- Añadir una comprobación reproducible del wheel en el flujo de release antes
-  de publicar cualquier artefacto.
+- **AUD-01 — deriva de versión:** automatizar una comprobación cerrada entre
+  `project.version`, `uv.lock`, el changelog y la validación vigente.
 - Documentar y ensayar un procedimiento de rollback de artefactos de release
-  que no altere formatos persistidos ni decisiones normativas.
+  que no altere formatos persistidos ni decisiones normativas (**AUD-03**).
 
 ### Recomendación operativa sobre ramas
 
@@ -58,8 +56,10 @@ Las entradas requieren priorización y alcance propios antes de implementarse.
 
 - Elaborar un modelo de amenazas para las fronteras de autenticación,
   persistencia y carga de manifiestos, sin ampliar sus contratos funcionales.
-- Incorporar análisis estático de seguridad y detección de secretos a CI, con
-  reglas versionadas y falsos positivos justificados.
+- Incorporar análisis estático de seguridad y detección de secretos del
+  checkout a CI, con reglas versionadas y falsos positivos justificados
+  (**AUD-02**). No confundirlo con la detección ya aplicada al contenido del
+  wheel.
 - Añadir fuzzing de entradas serializadas y manifiestos no confiables para
   verificar rechazos acotados y ausencia de filtraciones de estado privado.
 

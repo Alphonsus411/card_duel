@@ -56,6 +56,7 @@ PACKAGE_FILES = frozenset({
     "card_duel_engine/persistence/snapshot.py",
     "card_duel_engine/rules/__init__.py",
     "card_duel_engine/rules/config.py",
+    "card_duel_engine/rules/deck.py",
     "card_duel_engine/rules/resolvers.py",
     "card_duel_engine/service.py",
     "card_duel_engine/simulation/__init__.py",

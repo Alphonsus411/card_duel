@@ -113,14 +113,26 @@ el formato, invocar la aplicación y serializar sus DTO públicos seguros.
 - Contrastar el orden actualmente normalizado con una aclaración oficial.
 - No cambiar el algoritmo hasta disponer de esa aclaración.
 
-### R-03B — Decidir una eventual modificación normativa
+### R-03B — Alinear fuentes, reglas, formatos y futuro corpus
 
-- **Estado bloqueado:** no modificar `src/card_duel_engine/` ni las expectativas
-  reglamentarias de las pruebas a partir del inventario de R-03A.
-- **Criterio de salida:** recibir una aclaración oficial que resuelva el hallazgo
-  correspondiente. Hasta entonces se conserva la precedencia Mítica ya
-  documentada para Divinos y no se elige cifra de puntos ni reclasificación de
-  habilidades de Señor.
+R-03A permanece completada **únicamente como inventario histórico**. R-03B no
+está completada y se divide en entregas independientes, trazadas fila por fila
+en `RULES_TRACEABILITY.md`:
+
+- **R-03B.1 — Fuente verificable:** conservar los PDF, hashes, paginación
+  física/interna y decisiones documentales comprobables.
+- **R-03B.2 — Reglas universales:** contrastar cada mecánica con el backend y
+  añadir o corregir pruebas sin convertir silencios en reglas.
+- **R-03B.3 — Formatos de mazo:** modelar Clásico/Mística y sus validaciones sin
+  elegir un presupuesto de puntos mientras `N-POINTS-01` siga bloqueado.
+- **R-03B.4 — Futuro corpus:** mantener las cartas fuera del paquete y preparar
+  una carga futura por manifiestos, según `MYTHIC_CARD_CORPUS_SCOPE.md`.
+
+**Criterio de cierre:** R-03B sólo podrá declararse completada cuando código,
+documentación y pruebas estén alineados en todas las filas. Una aclaración
+oficial sigue siendo obligatoria para puntos, reclasificación de habilidades de
+Señor y condiciones terminales multijugador; ninguna implementación resuelve
+por sí misma esos bloqueos.
 
 ## Pendientes técnicos bloqueados
 

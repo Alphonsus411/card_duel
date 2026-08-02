@@ -43,14 +43,19 @@ Edición Mítica. No incluye textos de cartas antiguas.
 - Un efecto puede exigir un intervalo de objetivos distintos y se aplica a cada
   objetivo que siga siendo legal al resolverse.
 - Los efectos continuos pueden seleccionar por controlador, tipo y subtipo.
-- Un Divino no puede ser objetivo de Eventos, Recursos Rápidos ni habilidades,
-  pero conserva Transmutación y sus propias habilidades.
+- Un Divino no puede ser objetivo de Eventos, Recursos Rápidos ni habilidades
+  de criaturas permanentes según el tipo efectivo de la fuente; conserva
+  Transmutación y sus propias habilidades.
 - Los Señores poseen los dominios Abismo, Elíseo, Magia o Reinos. Si su Fuerza
   llega a cero se envían al descarte incluso si son indestructibles.
 - Pagar Fuerza forma parte del coste atómico de una habilidad de Señor.
-- Un Señor no criatura solo puede iniciar Desafío mientras esté transformado.
-- Desafío sustituye el combate normal: enfrenta un Señor criatura con una sola
-  criatura contraria, sin daño sobrante al jugador y sin girarlas automáticamente.
+- Un Señor de Reinos sólo es elegible para Desafío cuando ya está transformado
+  en criatura y enderezado; el dominio no le concede una transformación gratis.
+  Abismo, Elíseo y Magia requieren además la autorización declarativa
+  `CAN_CHALLENGE`, que no los reclasifica como Eventos.
+- Desafío se declara una vez por turno en Fase de Efectos (Fase Activa) y
+  sustituye el combate normal en ambos sentidos: enfrenta un Señor criatura con
+  una sola criatura contraria, sin daño sobrante ni giro automático.
 - Los disparos simultáneos esperan a que su controlador indique el orden exacto.
 - Una zona puede ser objetivo sin mostrar sus cartas; mover desde mazo usa su parte superior.
 - Una cantidad de daño puede repartirse entre jugadores y criaturas. Cada parte
@@ -117,6 +122,9 @@ Edición Mítica. No incluye textos de cartas antiguas.
 - Los términos visibles podrán cambiarse en la capa de presentación.
 - En Drenaje se interpreta “hasta 1 Paso” como el primer Paso gratuito y el
   máximo de cinco como cuatro Pasos adicionales a tres Heridas cada uno.
+- En partidas actuales Drenaje sólo se acepta en Fase de Efectos (Fase Activa).
+  La semántica 0.19 fuera de esa fase existe únicamente durante la reproducción
+  de fixtures históricos y nunca habilita comandos nuevos.
 - Se exige que el Señor que inicia Desafío esté enderezado, por herencia de las
   condiciones generales para declarar combate.
 - “Regenerar criaturas” aparece en las reglas generales, pero Mítica no define
@@ -281,8 +289,12 @@ esquema v2; el sobre de firma usa su propio esquema v1 separado.
 
 ## Compatibilidad 0.20.0
 
-La integración documental de ambas fuentes y las políticas optativas de mazo no
-modifican resultados históricos. Continúan aceptándose artefactos 0.19.0 y
-documentos v1/v2, con la migración explícita v1 → v2. Se conservan huella,
-historial, contadores, orden e identificadores; no se crea v3, no se añaden cartas
-de producción y no cambian las condiciones terminales multijugador.
+La deserialización de documentos v1/v2 y la reproducción semántica son garantías
+distintas. `R-COMPAT-019-REPLAY` activa sólo durante replays cuyo `RuleSet` es
+0.19 la conducta histórica necesaria para los fixtures generados con el commit
+documentado en `tests/artifacts/0.19.0/README.md`; después restaura el modo
+normal. En partidas actuales Drenaje exige Fase de Efectos y Desafío exige Fase
+Activa, uso único, exclusión de combate y elegibilidad declarada. El puente
+legacy tiene vida limitada y sólo podrá retirarse mediante una decisión de
+compatibilidad versionada. No se crea v3, no se añaden cartas de producción y
+no cambian las condiciones terminales multijugador.

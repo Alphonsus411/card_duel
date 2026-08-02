@@ -90,6 +90,20 @@ materiales derivados, no prueba normativa.
 - **Límite:** no usa cartas particulares para justificar reglas universales ni
   convierte adiciones en contradicciones.
 
+### R-COMPAT-019-REPLAY — Puente semántico temporal
+
+- **Entrega:** los documentos v2 se deserializan normalmente, pero los replays
+  cuyo `RuleSet` es 0.19 activan sólo durante su reproducción la semántica
+  histórica de Drenaje, fase de Desafío y elegibilidad de Señores.
+- **Evidencia:** los fixtures fueron generados con el commit histórico fijado en
+  `tests/artifacts/0.19.0/README.md`; las pruebas verifican sus hashes y
+  observables, restauración del modo ante éxito o error y aislamiento frente a
+  replays 0.20 y partidas actuales.
+- **Vida limitada:** no habilita comandos legacy en juego nuevo y no promete
+  soporte indefinido. Su retirada exige una decisión de compatibilidad
+  versionada; no debe confundirse deserialización estructural con reproducción
+  semántica.
+
 ## Decisión sobre transportes
 
 Un adaptador HTTP, HTTPS u otro servicio de red **permanece fuera de alcance** de
@@ -121,10 +135,14 @@ en `RULES_TRACEABILITY.md`:
 
 - **R-03B.1 — Fuente verificable:** conservar los PDF, hashes, paginación
   física/interna y decisiones documentales comprobables.
-- **R-03B.2 — Reglas universales:** contrastar cada mecánica con el backend y
-  añadir o corregir pruebas sin convertir silencios en reglas.
-- **R-03B.3 — Formatos de mazo:** modelar Clásico/Mística y sus validaciones sin
-  elegir un presupuesto de puntos mientras `N-POINTS-01` siga bloqueado.
+- **R-03B.2 — Reglas universales:** la conducta verificable de Drenaje,
+  Legendarios, Divinos, los cuatro dominios y Desafío ya está alineada con sus
+  identificadores y pruebas; permanecen bloqueados los silencios normativos.
+- **R-03B.3 — Formatos de mazo:** conservar los perfiles Clásico/Mística ya
+  probados sin elegir un presupuesto de puntos
+  mientras `N-POINTS-01` siga bloqueado. La aplicación de 40–60 y 5/4 a Clásico
+  se vincula a la conclusión textual de físicas 2–3 / internas 1–2 y no se
+  presenta como una regla independiente inferida.
 - **R-03B.4 — Futuro corpus:** mantener las cartas fuera del paquete y preparar
   una carga futura por manifiestos, según `MYTHIC_CARD_CORPUS_SCOPE.md`.
 
@@ -134,8 +152,9 @@ solo define la frontera externa para un trabajo futuro expresamente autorizado.
 
 **Criterio de cierre:** R-03B sólo podrá declararse completada cuando código,
 documentación y pruebas estén alineados en todas las filas. Una aclaración
-oficial sigue siendo obligatoria para puntos, reclasificación de habilidades de
-Señor y condiciones terminales multijugador; ninguna implementación resuelve
+oficial sigue siendo obligatoria para puntos (`N-POINTS-01`), reclasificación de
+habilidades de Señor (`M-LORD-EVENT-01`) y condiciones terminales multijugador;
+ninguna implementación resuelve
 por sí misma esos bloqueos.
 
 ## Pendientes técnicos bloqueados

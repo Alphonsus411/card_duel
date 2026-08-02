@@ -17,8 +17,16 @@ Las entradas requieren priorización y alcance propios antes de implementarse.
   transcribir ahora el catálogo completo.
 - **N-POINTS-01 (bloqueado):** no elegir entre 200, 300, 300–400 o «unos 300»
   hasta recibir una aclaración normativa trazable.
+- **M-LORD-EVENT-01 (bloqueado):** mantener la Fase Activa sin reclasificar como
+  Eventos todas las habilidades de Señor hasta recibir aclaración normativa.
 
 ## Mantenimiento técnico
+
+- Revisar en cada cambio mayor el puente `R-COMPAT-019-REPLAY`. Su alcance se
+  limita a reproducir semánticamente los fixtures generados con el commit 0.19
+  documentado: no es sólo deserialización v2, no se activa en juego nuevo y no
+  es compatibilidad perpetua. Retirarlo únicamente mediante una decisión
+  versionada con criterio de soporte y prueba explícitos.
 
 - Revisar periódicamente las dependencias bloqueadas en `uv.lock`, aplicar las
   actualizaciones compatibles en cambios aislados y documentar cualquier

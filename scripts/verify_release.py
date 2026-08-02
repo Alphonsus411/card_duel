@@ -71,6 +71,12 @@ def _quality(runner: CommandRunner) -> dict[str, object]:
 def _package(runner: CommandRunner) -> dict[str, object]:
     _run([sys.executable, "scripts/verify_reproducible_wheel.py"], stage="package:build-audit", runner=runner)
     report = json.loads((ROOT / "dist" / "wheel-audit.json").read_text(encoding="utf-8")); wheel = ROOT / "dist" / WHEEL_NAME
+    digest = hashlib.sha256(wheel.read_bytes()).hexdigest()
+    checksum = (ROOT / "dist" / "SHA256SUMS").read_text(encoding="utf-8")
+    if report.get("filename") != wheel.name or report.get("sha256") != digest:
+        raise VerificationStageError("package:artifact-coherence", ["wheel-audit.json"], 1, "", "La auditoría no identifica el wheel seleccionado")
+    if checksum != f"{digest}  {wheel.name}\n":
+        raise VerificationStageError("package:artifact-coherence", ["SHA256SUMS"], 1, "", "SHA256SUMS no identifica el wheel seleccionado")
     with tempfile.TemporaryDirectory(prefix="card-duel-install-") as temporary:
         for version in PYTHONS:
             _run(["uv", "python", "install", version], stage=f"package:python-{version}", runner=runner)
@@ -79,7 +85,8 @@ def _package(runner: CommandRunner) -> dict[str, object]:
             python = environment / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
             _run(["uv", "pip", "install", "--python", str(python), "--no-deps", str(wheel)], stage=f"package:install-{version}", runner=runner)
             _run([str(python), "-c", f"import card_duel_engine; assert card_duel_engine.__version__ == '{VERSION}'"], stage=f"package:import-{version}", runner=runner)
-    return {"status": "ok", "audit": report, "installed_python_versions": list(PYTHONS)}
+    return {"status": "ok", "wheel": wheel.name, "sha256": digest,
+            "audit": report, "installed_python_versions": list(PYTHONS)}
 
 
 def _rules_sources(runner: CommandRunner) -> dict[str, object]:

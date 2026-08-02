@@ -89,8 +89,9 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def build(root: Path, output: Path, epoch: str) -> Path:
-    env = {**os.environ, "SOURCE_DATE_EPOCH": epoch}
+def build(root: Path, output: Path, source_date_epoch: str) -> Path:
+    """Build one wheel using the timestamp of the commit being audited."""
+    env = {**os.environ, "SOURCE_DATE_EPOCH": source_date_epoch}
     subprocess.run(
         [sys.executable, "-m", "build", "--wheel", "--outdir", str(output), str(root)],
         check=True, env=env,
@@ -158,8 +159,10 @@ def audit(wheel: Path) -> dict[str, object]:
         return {
             "filename": wheel.name, "sha256": sha256(wheel), "files": len(infos),
             "version": VERSION, "license": "Apache-2.0", "tag": "py3-none-any",
-            "root_is_purelib": True, "runtime_dependencies": 0,
+            "root_is_purelib": True, "runtime_dependencies": [],
             "record_integrity": True,
+            "pdfs_absent": ["Fantasy Tokens.pdf", "Fantasy Tokens Edicion Mitica.pdf"],
+            "fixtures_absent": True, "production_cards_absent": True,
             "zip_order": names,
             "zip_entries": [metadata_signature(info) for info in infos],
         }
@@ -167,7 +170,13 @@ def audit(wheel: Path) -> dict[str, object]:
 
 def main() -> None:
     root = ROOT
-    epoch = subprocess.check_output(["git", "show", "-s", "--format=%ct", "HEAD"], cwd=root, text=True).strip()
+    commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+    # It is not an arbitrary constant: both builds use the timestamp belonging
+    # to the exact commit recorded in the audit. Different commits are never
+    # compared with each other.
+    epoch = subprocess.check_output(
+        ["git", "show", "-s", "--format=%ct", commit], cwd=root, text=True
+    ).strip()
     destination = root / "dist"
     destination.mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="card-duel-wheel-") as temporary:
@@ -181,10 +190,17 @@ def main() -> None:
             raise SystemExit("Timestamps, permisos, contenido u orden ZIP divergentes")
         final_wheel = destination / WHEEL_NAME
         shutil.copyfile(first, final_wheel)
+        if final_wheel.read_bytes() != first.read_bytes():
+            raise SystemExit("El wheel copiado no coincide con el wheel auditado")
         digest = sha256(final_wheel)
         (destination / "SHA256SUMS").write_text(f"{digest}  {WHEEL_NAME}\n", encoding="utf-8")
         public_report = {key: value for key, value in first_report.items() if key != "zip_entries"}
-        public_report.update({"binary_identical_builds": 2, "source_date_epoch": int(epoch)})
+        public_report.update({
+            "binary_identical_builds": True,
+            "builds_compared": 2,
+            "source_commit": commit,
+            "source_date_epoch": int(epoch),
+        })
         (destination / "wheel-audit.json").write_text(json.dumps(public_report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         print(json.dumps(public_report, sort_keys=True))
 

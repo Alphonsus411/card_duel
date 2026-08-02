@@ -78,6 +78,40 @@ class MythicV040Tests(unittest.TestCase):
         )
         return engine
 
+    def observable_state(self, engine):
+        return {
+            "digest": state_digest(engine),
+            "replay": dump_replay(engine),
+            "stack": deepcopy(engine.state.stack),
+            "zones": {
+                player_id: deepcopy(player.zones)
+                for player_id, player in engine.state.players.items()
+            },
+            "resources": {
+                player_id: (player.steps, player.wounds)
+                for player_id, player in engine.state.players.items()
+            },
+            "events": deepcopy(engine.state.event_log),
+        }
+
+    def assert_rejected_without_observable_changes(
+        self, engine, command, message=None
+    ):
+        self.assert_callable_rejected_without_observable_changes(
+            engine, lambda: engine.execute(command), message
+        )
+
+    def assert_callable_rejected_without_observable_changes(
+        self, engine, operation, message=None
+    ):
+        before = self.observable_state(engine)
+        with self.assertRaises(IllegalAction) as caught:
+            operation()
+        if message is not None:
+            self.assertEqual(caught.exception.args, (message,))
+        self.assertIsNone(caught.exception.__cause__)
+        self.assertEqual(self.observable_state(engine), before)
+
     def prepare_drainage(self):
         engine = self.make_engine()
         for _ in range(2):
@@ -216,20 +250,59 @@ class MythicV040Tests(unittest.TestCase):
     def test_divine_blocks_event(self):
         engine, divine_id, _ = self.divine_and_effect_source(CardKind.EVENT)
         source_id = force_zone(engine, "SRC", "A", Zone.HAND)
-        with self.assertRaises(IllegalAction):
-            engine.execute(PlayCard("A", source_id, (), (divine_id,)))
+        self.assert_rejected_without_observable_changes(
+            engine, PlayCard("A", source_id, (), (divine_id,))
+        )
 
     def test_divine_blocks_quick_resource(self):
         engine, divine_id, _ = self.divine_and_effect_source(CardKind.QUICK_RESOURCE)
         source_id = force_zone(engine, "SRC", "A", Zone.HAND)
-        with self.assertRaises(IllegalAction):
-            engine.execute(PlayCard("A", source_id, (), (divine_id,)))
+        self.assert_rejected_without_observable_changes(
+            engine, PlayCard("A", source_id, (), (divine_id,))
+        )
 
     def test_divine_blocks_ability_from_permanent_creature(self):
         engine, divine_id, _ = self.divine_and_effect_source(CardKind.CREATURE, ability=True)
         source_id = force_zone(engine, "SRC", "A", Zone.BATTLEFIELD)
-        with self.assertRaises(IllegalAction):
-            engine.execute(ActivateAbility("A", source_id, "hit", (), (divine_id,)))
+        self.assert_rejected_without_observable_changes(
+            engine, ActivateAbility("A", source_id, "hit", (), (divine_id,))
+        )
+
+    def divine_and_transformed_lord(self, domain):
+        divine = CardDefinition(
+            "DIV", "Divino", CardKind.CREATURE, 7,
+            rank=CardRank.DIVINE, base_strength=7,
+        )
+        effect = EffectDefinition(
+            EffectKind.DESTROY, 1, TargetMode.CHOSEN_PERMANENT
+        )
+        lord = CardDefinition(
+            "LORD", "Señor", CardKind.LORD, 5,
+            lord_domain=domain, abilities=(AbilityDefinition("hit", (effect,)),),
+        )
+        engine = self.make_engine((divine, lord))
+        divine_id = force_zone(engine, "DIV", "A", Zone.BATTLEFIELD)
+        lord_id = force_zone(engine, "LORD", "A", Zone.BATTLEFIELD)
+        engine.state.cards[lord_id].transformed_as_creature = True
+        engine.state.phase = Phase.EFFECTS
+        engine.state.priority_player_id = "A"
+        return engine, divine_id, lord_id
+
+    def test_divine_blocks_transformed_realms_lord_ability(self):
+        engine, divine_id, lord_id = self.divine_and_transformed_lord(
+            LordDomain.REALMS
+        )
+        self.assert_rejected_without_observable_changes(
+            engine, ActivateAbility("A", lord_id, "hit", (), (divine_id,))
+        )
+
+    def test_divine_blocks_another_transformed_lord_ability(self):
+        engine, divine_id, lord_id = self.divine_and_transformed_lord(
+            LordDomain.ABYSS
+        )
+        self.assert_rejected_without_observable_changes(
+            engine, ActivateAbility("A", lord_id, "hit", (), (divine_id,))
+        )
 
     def test_divine_allows_ability_from_noncreature_permanent(self):
         engine, divine_id, _ = self.divine_and_effect_source(CardKind.ARTIFACT, ability=True)
@@ -247,6 +320,31 @@ class MythicV040Tests(unittest.TestCase):
         divine_id = force_zone(engine, "SELF", "A", Zone.BATTLEFIELD)
         engine.execute(ActivateAbility("A", divine_id, "self", (), (divine_id,)))
         self.assertEqual(engine.state.stack[-1].chosen_card_ids, (divine_id,))
+
+    def test_ability_source_outside_battlefield_is_public_error_and_atomic(self):
+        engine, divine_id, source = self.divine_and_effect_source(
+            CardKind.CREATURE, ability=True
+        )
+        source_id = force_zone(engine, "SRC", "A", Zone.DISCARD)
+        self.assert_callable_rejected_without_observable_changes(
+            engine,
+            lambda: engine._card_can_be_targeted(
+                source, divine_id, True, source_id
+            ),
+            "La fuente de la habilidad debe existir en el campo de batalla",
+        )
+
+    def test_missing_ability_source_is_public_error_and_atomic(self):
+        engine, divine_id, source = self.divine_and_effect_source(
+            CardKind.CREATURE, ability=True
+        )
+        self.assert_callable_rejected_without_observable_changes(
+            engine,
+            lambda: engine._card_can_be_targeted(
+                source, divine_id, True, "card-inexistente"
+            ),
+            "La fuente de la habilidad debe existir en el campo de batalla",
+        )
 
     def test_divine_transmutation_is_atomic(self):
         divine = CardDefinition("DIV", "Divino", CardKind.CREATURE, 7, rank=CardRank.DIVINE, base_strength=7)

@@ -16,7 +16,7 @@ class Release020PolicyTests(unittest.TestCase):
     def test_project_is_the_only_current_version_literal(self):
         project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
         current = project["project"]["version"]
-        self.assertEqual(current, "0.20.0")
+        self.assertEqual(current, "0.20.1")
         consumers = [*sorted((ROOT / "scripts").glob("*.py")), ROOT / ".github/workflows/tests.yml"]
         for path in consumers:
             with self.subTest(path=path.relative_to(ROOT)):

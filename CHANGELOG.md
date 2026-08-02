@@ -2,6 +2,23 @@
 
 ## Sin publicar
 
+## 0.20.1
+
+- Conservada la compatibilidad semántica real con 0.19.0 para los cuatro
+  replays históricos, además de los esquemas persistentes v1/v2, sin crear un
+  esquema v3 ni alterar la estructura de snapshots o replays.
+- Alineadas las políticas Clásica y Mítica de construcción, los tipos estrictos
+  y la trazabilidad normativa y de CI; `N-POINTS-01` y `M-LORD-EVENT-01`
+  permanecen expresamente abiertos.
+- Corregidas la inmunidad Divina para que atienda al tipo efectivo de criatura
+  permanente y la capacidad declarativa `CAN_CHALLENGE`, manteniendo Desafío
+  una vez por turno, excluyente del combate y sin transformación automática.
+- Verificadas las rutas actuales de Drenaje y Desafío, las reglas terminales
+  multijugador sin cambios, los perfiles runtime/full, las simulaciones, los
+  roundtrips y la construcción reproducible del wheel en CI.
+- No se incorporan cartas, nombres de cartas ni catálogo Mítico de producción;
+  tampoco se añaden transportes ni dependencias de ejecución.
+
 - Alineada la matriz base–Mítica con las pruebas finales de construcción,
   copias, coste cero, formatos, Drenaje, Legendarios, Divinos y los cuatro
   dominios de Señor; la columna `Decisión` usa ahora un vocabulario cerrado.

@@ -2,12 +2,18 @@
 
 ## Sin publicar
 
+- Añadida `docs/MYTHIC_RULES_AUDIT.md` con jerarquía de fuentes, doble paginación
+  Mítica, categorías A–E y separación exacta entre reglas y cartas concretas.
+- Registrados como bloqueos `N-POINTS-01` (200, 300, 300–400 y recomendación de
+  unos 300 puntos) y la ambigüedad de «a modo de Eventos», que solo respalda la
+  temporización de Fase Activa para habilidades de Señor.
+- Corregidas las afirmaciones obsoletas sobre la ausencia del PDF Mítico o de su
+  paginación; el inventario usa física 3 / interna 2 para Divinos y física 4 /
+  interna 3 para Señores de los Reinos, Desafío y comienzo del corpus de cartas.
 - Dividida R-03 en el inventario documental R-03A, ya completado, y la
   eventual decisión normativa R-03B, bloqueada hasta recibir aclaración oficial.
-- Registrada la única contradicción base–Mítica identificable en la documentación
-  vigente —inmunidad y Transmutación de Divinos— con la página base, la falta
-  explícita de una página Mítica verificable, ambas formulaciones, el
-  comportamiento conservado y la precedencia ya documentada.
+- Registrada la modificación base–Mítica de inmunidad y Transmutación de Divinos
+  con referencias verificables y la precedencia documentada.
 - Conservados sin cambios el motor y las expectativas reglamentarias de pruebas;
   el inventario no incorpora cartas ni resuelve nuevas ambigüedades.
 - Decidido de forma uniforme que HTTP y cualquier otro transporte permanecen

@@ -15,21 +15,19 @@ No convierte normalizaciones ni pendientes en reglas nuevas.
 | Documentos v2 y migraciones v1 | `persistence/`, `content/manifest.py` | `test_persistence_v090.py`, `test_hardening_v0100.py` |
 | Persistencia CAS | `storage/`, `service.py` | `test_service_v0110.py`, `test_hardening_v0100.py` |
 
-## Inventario de contradicciones base–Mítica (R-03A)
+## Auditoría base–Mítica (R-03A)
 
-Este inventario se limita a formulaciones universales que ya estaban señaladas
-en esta documentación. La revisión no incorpora textos de cartas y no trata como
-contradicción una mera ampliación de Mítica. Con ese criterio existe **una sola
-contradicción identificable** en el corpus documental actual:
+El inventario completo, su jerarquía, las categorías A–E y la frontera exacta
+entre reglas generales y cartas están en `MYTHIC_RULES_AUDIT.md`. El PDF Mítico
+sí está versionado y paginado: Divinos se documenta en física 3 / interna 2.
+La actualización limita su inmunidad y conserva Transmutación, frente a la regla
+básica 19 (`Fantasy Tokens.pdf`, p. 8), por lo que prevalece como modificación
+posterior expresa. Las adiciones no se cuentan automáticamente como conflictos.
 
-| Materia | Reglamento base | Actualización Mítica | Comportamiento conservado | Precedencia documentada |
-|---|---|---|---|---|
-| Inmunidad y Transmutación de Divinos | `Fantasy Tokens.pdf`, regla básica 19, p. 8: un Divino es «inmune completamente incluso al descarte». | Página **no consignada ni verificable en los artefactos versionados**: la formulación recogida en `RULES_BASELINE.md` limita la inmunidad a Eventos, Recursos Rápidos y habilidades, y permite expresamente la Transmutación. La ausencia de página se registra; no se inventa una referencia. | Se mantiene la conducta vigente: un Divino no puede ser objetivo de esas tres clases de fuente, pero sí conserva Transmutación y sus propias habilidades. No se cambia el motor ni ninguna expectativa reglamentaria de pruebas. | La sección «Precedencia normativa» de `RULES_BASELINE.md` aplica Mítica porque es posterior y más específica. El inventario describe esa decisión existente; no adopta otra nueva. |
-
-La falta de una copia paginada y oficialmente identificada de la actualización
-Mítica impide completar la referencia secundaria y, sobre todo, reevaluar la
-decisión normativa. Cualquier modificación de `src/card_duel_engine/` o de las
-expectativas reglamentarias de las pruebas queda bloqueada en R-03B hasta recibir
+Permanecen bloqueados `N-POINTS-01` (200, 300, intervalo 300–400 y recomendación
+aproximada de 300) y `M-LORD-EVENT-01`: «a modo de Eventos» respalda la ventana
+de Fase Activa, no una reclasificación universal de habilidades de Señor.
+Cualquier cambio del motor o de pruebas que resolviese esos extremos requiere
 aclaración oficial.
 
 ## Ambigüedades y deuda normativa conservadas
@@ -49,9 +47,9 @@ aclaración oficial.
   de esas posibles mecánicas multijugador.
 - Reparto entre bloqueadores en orden declarado, pendiente de aclaración.
 - Regeneración como escudo consumible, sin inferir un procedimiento ausente.
-- La precedencia Mítica para la inmunidad de Divinos se conserva; su inventario
-  documental R-03A está completado y cualquier cambio normativo pertenece a
-  R-03B, que continúa bloqueado.
+- La precedencia Mítica para Divinos se conserva con referencia física 3 /
+  interna 2; los bloqueos de puntos y habilidades de Señor están inventariados en
+  `MYTHIC_RULES_AUDIT.md` y cualquier decisión normativa pertenece a R-03B.
 - Los esquemas 3+ siguen siendo pendientes,
   no reglas. Un adaptador HTTP u otro transporte está excluido del alcance y no
   es un pendiente implementable. La firma y política de

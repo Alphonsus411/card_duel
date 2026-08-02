@@ -2,8 +2,10 @@
 
 Esta hoja de ruta convierte únicamente trabajo ya documentado en tareas
 separadas. No completa ambigüedades del reglamento ni añade cartas o mecánicas.
-La fuente normativa continúa siendo `Fantasy Tokens.pdf`, interpretada mediante
-`RULES_BASELINE.md` y su matriz `RULES_TRACEABILITY.md`.
+La fuente base es `Fantasy Tokens.pdf`; la actualización de 2018-06-13
+`Fantasy Tokens Edicion Mitica.pdf` prevalece ante modificaciones expresas.
+`MYTHIC_RULES_AUDIT.md`, `RULES_BASELINE.md` y `RULES_TRACEABILITY.md` son
+materiales derivados, no prueba normativa.
 
 ## Entregas completadas
 
@@ -77,14 +79,16 @@ La fuente normativa continúa siendo `Fantasy Tokens.pdf`, interpretada mediante
 
 ### R-03A — Inventariar contradicciones entre reglamento base y Mítica
 
-- **Resultado documental completado:** `RULES_TRACEABILITY.md` separa y registra
-  la única contradicción verificable ya documentada: la inmunidad y
-  Transmutación de Divinos. El inventario identifica la página del reglamento
-  base, deja explícita la ausencia de una página verificable de Mítica en el
-  corpus versionado, reproduce las formulaciones en conflicto, describe el
-  comportamiento conservado y enlaza el fundamento de precedencia existente.
-- **Límite:** no incorpora cartas, no convierte adiciones de Mítica en
-  contradicciones y no completa páginas ni formulaciones mediante suposiciones.
+- **Resultado documental completado:** `MYTHIC_RULES_AUDIT.md` registra la
+  jerarquía, paginación física/interna, categorías A–E, reglas, formatos,
+  torneos y el comienzo exacto del corpus de cartas. El PDF Mítico está
+  disponible en el repositorio.
+- **Bloqueos:** `N-POINTS-01` conserva sin elección las cifras 200, 300, el
+  intervalo 300–400 y la recomendación aproximada de 300. La expresión «a modo
+  de Eventos» solo respalda Fase Activa y no reclasifica universalmente las
+  habilidades de Señor.
+- **Límite:** no usa cartas particulares para justificar reglas universales ni
+  convierte adiciones en contradicciones.
 
 ## Decisión sobre transportes
 
@@ -113,9 +117,10 @@ el formato, invocar la aplicación y serializar sus DTO públicos seguros.
 
 - **Estado bloqueado:** no modificar `src/card_duel_engine/` ni las expectativas
   reglamentarias de las pruebas a partir del inventario de R-03A.
-- **Criterio de salida:** recibir una aclaración oficial que identifique la fuente
-  y página de Mítica y determine si debe sustituirse el comportamiento vigente.
-  Hasta entonces se conserva la precedencia Mítica ya documentada para Divinos.
+- **Criterio de salida:** recibir una aclaración oficial que resuelva el hallazgo
+  correspondiente. Hasta entonces se conserva la precedencia Mítica ya
+  documentada para Divinos y no se elige cifra de puntos ni reclasificación de
+  habilidades de Señor.
 
 ## Pendientes técnicos bloqueados
 

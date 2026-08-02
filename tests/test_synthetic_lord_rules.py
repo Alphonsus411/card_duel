@@ -4,13 +4,14 @@ from copy import deepcopy
 from card_duel_engine import GameEngine, RuleSet
 from card_duel_engine.domain import (
     AbilityDefinition, CardDefinition, CardKind, CompositeCost, EffectDefinition,
-    EffectDuration, EffectKind, LordDomain, Phase, TargetMode, Zone,
+    EffectDuration, EffectKind, Keyword, LordDomain, Phase, TargetMode, Zone,
 )
 from card_duel_engine.domain.errors import IllegalAction
 from card_duel_engine.engine import (
     ActivateAbility, DeclareAttackers, DeclareBlockers, DeclareChallenge, PassPriority,
     ResolveCombat,
 )
+from card_duel_engine.persistence import dump_replay, replay_from_log
 from card_duel_engine.persistence.snapshot import dump_snapshot, load_snapshot, state_digest
 from fixtures import test_deck
 
@@ -190,6 +191,120 @@ class TestSyntheticRealms(unittest.TestCase):
         engine.state.cards[lord_id].transformed_as_creature = True
         with self.assertRaises(IllegalAction):
             engine.execute(DeclareChallenge("A", lord_id, victim_id, "B"))
+
+
+class TestDeclarativeChallengeCapability(unittest.TestCase):
+    def make_case(self, domain, *, keyword=False, kind=CardKind.LORD, seed=301):
+        challenger = CardDefinition(
+            f"challenge-{domain.name.lower()}-{kind.name.lower()}-{keyword}",
+            "Desafiante sintético", kind, 6,
+            base_strength=6 if kind is CardKind.CREATURE else None,
+            lord_domain=domain if kind is CardKind.LORD else None,
+            keywords=frozenset({Keyword.CAN_CHALLENGE}) if keyword else frozenset(),
+        )
+        target = CardDefinition(
+            f"challenge-target-{seed}", "Objetivo sintético", CardKind.CREATURE,
+            0, base_strength=2,
+        )
+        engine = engine_with((challenger,), (target,), seed)
+        challenger_id = put(engine, challenger.card_id, "A")
+        target_id = put(engine, target.card_id, "B")
+        return engine, challenger_id, target_id
+
+    def assert_parity(self, engine, command, expected):
+        self.assertEqual(command in engine.legal_actions(command.player_id), expected)
+        before = deepcopy(engine.state)
+        if expected:
+            engine.execute(command)
+        else:
+            with self.assertRaises(IllegalAction):
+                engine.execute(command)
+            self.assertEqual(engine.state, before)
+
+    def test_domain_identity_transformation_keyword_and_exhaustion_matrix(self):
+        cases = (
+            (LordDomain.REALMS, False, CardKind.LORD, True),
+            (LordDomain.ABYSS, False, CardKind.LORD, False),
+            (LordDomain.ABYSS, True, CardKind.LORD, True),
+            (LordDomain.ELYSIUM, True, CardKind.LORD, True),
+            (LordDomain.MAGIC, True, CardKind.LORD, True),
+            (LordDomain.ABYSS, True, CardKind.CREATURE, False),
+        )
+        for seed, (domain, keyword, kind, expected) in enumerate(cases, 310):
+            with self.subTest(domain=domain, keyword=keyword, kind=kind):
+                engine, challenger, target = self.make_case(
+                    domain, keyword=keyword, kind=kind, seed=seed
+                )
+                command = DeclareChallenge("A", challenger, target, "B")
+                # La capacidad nunca transforma automáticamente una carta.
+                self.assert_parity(engine, command, False)
+                if kind is CardKind.LORD:
+                    engine.state.cards[challenger].transformed_as_creature = True
+                    self.assert_parity(engine, command, expected)
+
+        engine, challenger, target = self.make_case(
+            LordDomain.ABYSS, keyword=True, seed=320
+        )
+        engine.state.cards[challenger].transformed_as_creature = True
+        engine.state.cards[challenger].exhausted = True
+        self.assert_parity(
+            engine, DeclareChallenge("A", challenger, target, "B"), False
+        )
+
+    def test_legal_execution_parity_and_challenge_damage_does_not_overflow(self):
+        engine, challenger, target = self.make_case(
+            LordDomain.ELYSIUM, keyword=True, seed=330
+        )
+        engine.state.cards[challenger].transformed_as_creature = True
+        command = DeclareChallenge("A", challenger, target, "B")
+        engine.state.phase = Phase.DRAW
+        self.assert_parity(engine, command, False)
+        engine.state.phase = Phase.EFFECTS
+        self.assert_parity(engine, command, True)
+        close_window(engine)
+        engine.execute(ResolveCombat("A"))
+        self.assertEqual(engine.state.players["B"].wounds, 0)
+        engine.state.combat = None
+        self.assert_parity(engine, command, False)  # segundo Desafío
+        engine.state.phase = Phase.COMBAT
+        engine.state.phase_priority_complete = True
+        with self.assertRaises(IllegalAction):
+            engine.execute(DeclareAttackers("A", (challenger,), "B"))
+
+        prior_combat, prior_challenger, prior_target = self.make_case(
+            LordDomain.ABYSS, keyword=True, seed=331
+        )
+        prior_combat.state.cards[prior_challenger].transformed_as_creature = True
+        prior_combat._emit(
+            "ATTACKERS_DECLARED", "A",
+            payload={"turn_serial": prior_combat.state.turn_serial},
+        )
+        self.assert_parity(
+            prior_combat,
+            DeclareChallenge("A", prior_challenger, prior_target, "B"),
+            False,
+        )
+
+    def test_current_snapshot_and_replay_roundtrip_keyword_generically(self):
+        engine, challenger, _ = self.make_case(
+            LordDomain.MAGIC, keyword=True, seed=340
+        )
+        restored = load_snapshot(dump_snapshot(engine))
+        self.assertIn(
+            Keyword.CAN_CHALLENGE,
+            restored.catalog.get(restored.state.cards[challenger].definition_id).keywords,
+        )
+        replay_source = GameEngine(RuleSet())
+        replay_source.new_match(
+            {
+                "A": [engine.catalog.get(engine.state.cards[challenger].definition_id),
+                      *test_deck("replay-a", 12)],
+                "B": test_deck("replay-b", 12),
+            },
+            seed=341,
+        )
+        replayed = replay_from_log(dump_replay(replay_source))
+        self.assertEqual(state_digest(replayed), state_digest(replay_source))
 
 
 if __name__ == "__main__":

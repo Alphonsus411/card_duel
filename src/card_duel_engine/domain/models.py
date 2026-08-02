@@ -13,6 +13,7 @@ from .enums import (
     EffectKind,
     MatchStatus,
     LordDomain,
+    Keyword,
     MoveReason,
     Phase,
     TargetMode,
@@ -102,8 +103,8 @@ class EffectPatchDefinition:
 
 @dataclass(frozen=True)
 class TextPatchDefinition:
-    grant_keywords: frozenset[str] = frozenset()
-    remove_keywords: frozenset[str] = frozenset()
+    grant_keywords: frozenset[str | Keyword] = frozenset()
+    remove_keywords: frozenset[str | Keyword] = frozenset()
     grant_subtypes: frozenset[str] = frozenset()
     remove_subtypes: frozenset[str] = frozenset()
     add_abilities: tuple[AbilityDefinition, ...] = ()
@@ -276,8 +277,8 @@ class MoveReplacementDefinition:
 @dataclass(frozen=True)
 class ContinuousEffectDefinition:
     strength_delta: int = 0
-    grant_keywords: frozenset[str] = frozenset()
-    remove_keywords: frozenset[str] = frozenset()
+    grant_keywords: frozenset[str | Keyword] = frozenset()
+    remove_keywords: frozenset[str | Keyword] = frozenset()
     controller_scope: ControllerScope = ControllerScope.SELF
     affected_kinds: frozenset[CardKind] = frozenset()
     affected_subtypes: frozenset[str] = frozenset()
@@ -288,7 +289,8 @@ class ContinuousEffectDefinition:
         overlap = self.grant_keywords & self.remove_keywords
         if overlap:
             raise ValueError(
-                f"Un efecto continuo no puede conceder y retirar a la vez: {sorted(overlap)}"
+                "Un efecto continuo no puede conceder y retirar a la vez: "
+                f"{sorted(overlap, key=str)}"
             )
 
 
@@ -332,12 +334,12 @@ class CardDefinition:
     transmutable: bool = True
     set_id: str = "test"
     revision: int = 1
-    keywords: frozenset[str] = frozenset()
+    keywords: frozenset[str | Keyword] = frozenset()
     effects: tuple[EffectDefinition, ...] = ()
     legendary_effects: tuple[EffectDefinition, ...] = ()
     abilities: tuple[AbilityDefinition, ...] = ()
     equipment_strength_bonus: int = 0
-    equipment_granted_keywords: frozenset[str] = frozenset()
+    equipment_granted_keywords: frozenset[str | Keyword] = frozenset()
     subtypes: frozenset[str] = frozenset()
     lord_domain: LordDomain | None = None
     continuous_effects: tuple[ContinuousEffectDefinition, ...] = ()

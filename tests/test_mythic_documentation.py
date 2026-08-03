@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
 PACKAGE = ROOT / "src" / "card_duel_engine"
 TRACEABILITY = DOCS / "RULES_TRACEABILITY.md"
+LEGACY_REPLAY_README = ROOT / "tests" / "artifacts" / "0.19.0" / "README.md"
 
 TRACEABILITY_DECISIONS = {
     "ya cumple",
@@ -58,6 +59,11 @@ STALE_DOCUMENTATION = {
         r"(?:incluye|contiene|incorpora|trae)[^\n.]{0,30}cartas? M[ií]ticas?",
         re.IGNORECASE,
     ),
+    "Desafío actual restringido exclusivamente a Reinos": re.compile(
+        r"(?:actualmente|backend actual)[^\n.]{0,80}"
+        r"(?:exige|requiere)[^\n.]{0,30}(?:dominio )?Reinos",
+        re.IGNORECASE,
+    ),
 }
 
 
@@ -87,13 +93,16 @@ class MythicDocumentationTests(unittest.TestCase):
             "Según el reglamento Mítico, p. 3, cambia la inmunidad.",
             "La baraja debe tener 300 puntos.",
             "El paquete incluye las cartas Míticas.",
+            "Actualmente Desafío exige dominio Reinos.",
         }
         detected = {claim for example in examples for claim in stale_claims(example)}
         self.assertEqual(detected, set(STALE_DOCUMENTATION))
 
     def test_repository_documentation_has_no_obsolete_mythic_claims(self):
         failures: list[str] = []
-        for path in sorted((*DOCS.glob("*.md"), ROOT / "README.md")):
+        for path in sorted(
+            (*DOCS.glob("*.md"), ROOT / "README.md", LEGACY_REPLAY_README)
+        ):
             for claim in stale_claims(path.read_text(encoding="utf-8")):
                 failures.append(f"{path.relative_to(ROOT)}: {claim}")
         self.assertEqual(failures, [])

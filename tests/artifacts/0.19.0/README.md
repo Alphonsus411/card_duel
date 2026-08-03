@@ -47,7 +47,9 @@ siguientes diferencias necesarias para este corpus:
   las partidas vivas exigen `Phase.EFFECTS`.
 * Desafío se declaraba en `Phase.COMBAT`, aceptaba cualquier Señor convertido en
   criatura y no registraba `turn_serial`; actualmente se declara en `EFFECTS`,
-  exige dominio Reinos y usa el serial para impedir repeticiones/conflictos.
+  concede elegibilidad general a Reinos transformado y exige `CAN_CHALLENGE`
+  para otros dominios, además de usar el serial para impedir
+  repeticiones/conflictos.
 * `ATTACKERS_DECLARED` tampoco incluía `turn_serial` en 0.19.0.
 
 No hay otra diferencia de emisor o payload necesaria para reproducir exactamente

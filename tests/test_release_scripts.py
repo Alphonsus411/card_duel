@@ -52,8 +52,9 @@ class RepositorySecretPatternTests(unittest.TestCase):
     @staticmethod
     def synthetic_fine_grained_token() -> bytes:
         """Credencial deliberadamente inválida que conserva la forma a analizar."""
-        payload = "INVALID_TEST_TOKEN_" + "X" * (82 - len("INVALID_TEST_TOKEN_"))
-        return ("github" + "_pat_" + payload).encode()
+        identifier = "0" * 22
+        secret = "INVALIDTESTTOKEN" + "X" * (59 - len("INVALIDTESTTOKEN"))
+        return ("github" + "_pat_" + identifier + "_" + secret).encode()
 
     def verify_content(self, content: bytes) -> dict[str, int]:
         with tempfile.TemporaryDirectory() as temporary:
@@ -71,6 +72,11 @@ class RepositorySecretPatternTests(unittest.TestCase):
         result = self.verify_content(
             b"Documentation mentions github_pat_ but contains no credential.\n"
         )
+        self.assertEqual(result["tracked_files_scanned"], 1)
+
+    def test_github_pat_with_malformed_segments_is_accepted(self):
+        malformed = b"github" + b"_pat_" + b"0" * 21 + b"_" + b"X" * 59
+        result = self.verify_content(malformed)
         self.assertEqual(result["tracked_files_scanned"], 1)
 
     def test_synthetic_token_inserted_in_historical_fixture_is_detected(self):

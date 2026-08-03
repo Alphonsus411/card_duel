@@ -60,15 +60,20 @@ STALE_DOCUMENTATION = {
         re.IGNORECASE,
     ),
     "Desafío actual restringido exclusivamente a Reinos": re.compile(
-        r"(?:actualmente|backend actual)[^\n.]{0,80}"
-        r"(?:exige|requiere)[^\n.]{0,30}(?:dominio )?Reinos",
+        r"\bDesaf[ií]o\b[^.]{0,80}"
+        r"\b(?:exclusivamente|s[oó]lo permite)\b[^.]{0,40}\bReinos\b",
         re.IGNORECASE,
     ),
 }
 
 
 def stale_claims(text: str) -> list[str]:
-    return [label for label, pattern in STALE_DOCUMENTATION.items() if pattern.search(text)]
+    normalized_text = re.sub(r"\s+", " ", text)
+    return [
+        label
+        for label, pattern in STALE_DOCUMENTATION.items()
+        if pattern.search(normalized_text)
+    ]
 
 
 class MythicDocumentationTests(unittest.TestCase):
@@ -93,10 +98,31 @@ class MythicDocumentationTests(unittest.TestCase):
             "Según el reglamento Mítico, p. 3, cambia la inmunidad.",
             "La baraja debe tener 300 puntos.",
             "El paquete incluye las cartas Míticas.",
-            "Actualmente Desafío exige dominio Reinos.",
+            "Actualmente Desafío está restringido exclusivamente a Reinos.",
         }
         detected = {claim for example in examples for claim in stale_claims(example)}
         self.assertEqual(detected, set(STALE_DOCUMENTATION))
+
+    def test_detector_recognizes_exclusive_challenge_claims(self):
+        claim = "Desafío actual restringido exclusivamente a Reinos"
+        examples = (
+            "Actualmente Desafío está disponible exclusivamente para Reinos.",
+            "El backend indica que Desafío  \n\tsólo permite Señores de  \nReinos.",
+        )
+        for example in examples:
+            with self.subTest(example=example):
+                self.assertIn(claim, stale_claims(example))
+
+    def test_detector_ignores_non_exclusive_challenge_and_realms_claims(self):
+        claim = "Desafío actual restringido exclusivamente a Reinos"
+        examples = (
+            "Desafío requiere que el Señor se haya transformado antes de declararlo.",
+            "Un Señor de Reinos transformado es elegible para declarar Desafío.",
+            "Las reglas de Reinos describen cómo se obtiene el control de un dominio.",
+        )
+        for example in examples:
+            with self.subTest(example=example):
+                self.assertNotIn(claim, stale_claims(example))
 
     def test_repository_documentation_has_no_obsolete_mythic_claims(self):
         failures: list[str] = []

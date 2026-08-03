@@ -8,6 +8,7 @@ from ..domain.enums import EffectDuration, EffectKind, MoveReason, TargetMode, Z
 from ..domain.errors import UnsupportedEffectError
 from ..domain.models import (
     AppliedTextPatch,
+    AbilitySourceProfile,
     CardDefinition,
     ControlChange,
     EffectDefinition,
@@ -36,6 +37,7 @@ class EffectContext(Protocol):
         target_id: str,
         from_ability: bool,
         source_card_id: str | None = None,
+        source_profile: AbilitySourceProfile | None = None,
     ) -> bool: ...
     def _draw(self, player_id: str, amount: int) -> None: ...
     def _deal_wounds(self, player_id: str, amount: int, source_card_id: str | None = None) -> None: ...
@@ -116,6 +118,7 @@ class EffectManager:
                 target_id,
                 item.ability_id is not None,
                 item.source_card_id,
+                item.ability_source_profile,
             ):
                 self._fizzle(item, target_id, "immune")
                 return
@@ -144,6 +147,7 @@ class EffectManager:
             target_id,
             item.ability_id is not None,
             item.source_card_id,
+            item.ability_source_profile,
         ):
             self._fizzle(item, target_id, "immune")
         else:

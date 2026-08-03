@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 from decimal import Decimal
+from unittest.mock import patch
 
 from card_duel_engine import (
     CardCatalog,
@@ -96,12 +97,69 @@ class DeckConstructionPolicyTests(unittest.TestCase):
                 allowed_set_ids={"current"}, mythic_set_ids={"future"}
             )
 
+    def test_general_collection_filter_requires_explicit_mythic_classifier(self):
+        for arguments in (
+            {"allowed_set_ids": (value for value in ("current",))},
+            {"set_predicate": lambda _set_id: True},
+        ):
+            with self.subTest(filter=next(iter(arguments))):
+                with self.assertRaisesRegex(ValueError, "configuración de colecciones"):
+                    mythic_deck_policy(**arguments)
+
+    def test_mythic_ids_must_satisfy_general_predicate(self):
+        with self.assertRaisesRegex(ValueError, "configuración de colecciones"):
+            mythic_deck_policy(
+                set_predicate=lambda set_id: set_id == "current",
+                mythic_set_ids=(set_id for set_id in ("private-mythic",)),
+            )
+
+    def test_factory_materializes_id_generators_once_and_future_sets_are_not_mythic(self):
+        iterations = {"allowed": 0, "mythic": 0}
+
+        def one_shot(kind, values):
+            iterations[kind] += 1
+            if iterations[kind] > 1:
+                raise AssertionError("segunda iteración")
+            yield from values
+
+        policy = mythic_deck_policy(
+            allowed_set_ids=one_shot("allowed", ("myth", "future")),
+            mythic_set_ids=one_shot("mythic", ("myth",)),
+        )
+        self.assertEqual(iterations, {"allowed": 1, "mythic": 1})
+        for cost in (4, 60):
+            with self.subTest(cost=cost):
+                future_deck = legal_cards(39, set_id="future") + [
+                    card("future-edge", cost=cost, set_id="future")
+                ]
+                mythic_deck = legal_cards(39, set_id="future") + [
+                    card("mythic-edge", cost=cost, set_id="myth")
+                ]
+                self.assertTrue(policy.validate(future_deck).is_valid)
+                self.assertFalse(policy.validate(mythic_deck).is_valid)
+
+    def test_general_predicate_accepts_explicit_mythic_ids(self):
+        policy = mythic_deck_policy(
+            set_predicate=lambda set_id: set_id in {"myth", "future"},
+            mythic_set_ids=(set_id for set_id in ("myth",)),
+        )
+        self.assertTrue(policy.validate(legal_cards(40, set_id="future")).is_valid)
+
+    def test_mythic_factory_rejects_non_callable_predicates_first(self):
+        for field in ("set_predicate", "mythic_set_predicate"):
+            with self.subTest(field=field):
+                with self.assertRaisesRegex(TypeError, "invocable") as caught:
+                    mythic_deck_policy(**{field: "private predicate"})
+                self.assertNotIn("private predicate", str(caught.exception))
+
     def test_mythic_limits_require_an_applicable_classifier(self):
         with self.assertRaisesRegex(ValueError, "clasificación aplicable"):
             DeckConstructionPolicy(mythic_min_cost=5, mythic_max_cost=50)
 
     def test_mythic_size_boundaries(self):
-        policy = mythic_deck_policy(allowed_set_ids=frozenset({"new"}))
+        policy = mythic_deck_policy(
+            allowed_set_ids=frozenset({"new"}), mythic_set_ids=frozenset({"new"})
+        )
         for size, valid in ((39, False), (40, True), (60, True), (61, False)):
             with self.subTest(size=size):
                 self.assertEqual(policy.validate(legal_cards(size)).is_valid, valid)
@@ -121,21 +179,26 @@ class DeckConstructionPolicyTests(unittest.TestCase):
 
     def test_mythic_zero_and_identified_mythic_cost_interval(self):
         policy = mythic_deck_policy(mythic_set_ids=frozenset({"myth"}))
-        for cost, set_id, valid in ((0, "old", False), (4, "myth", False), (5, "myth", True), (50, "myth", True), (51, "myth", False), (4, "old", True)):
+        for cost, set_id, valid in ((0, "old", False), (4, "myth", False), (5, "myth", True), (50, "myth", True), (60, "myth", False), (4, "old", True), (60, "old", True)):
             with self.subTest(cost=cost, set_id=set_id):
                 deck = legal_cards(39) + [card("edge", cost=cost, set_id=set_id)]
                 self.assertEqual(policy.validate(deck).is_valid, valid)
 
-    def test_default_mythic_profile_applies_cost_interval_to_every_allowed_card(self):
-        policy = mythic_deck_policy(allowed_set_ids={"new"})
-        for cost, valid in ((4, False), (5, True), (50, True), (51, False)):
+    def test_isolated_mythic_profile_applies_cost_interval_to_every_card(self):
+        policy = mythic_deck_policy()
+        for cost, valid in ((4, False), (5, True), (50, True), (60, False)):
             with self.subTest(cost=cost):
                 deck = legal_cards(39) + [card("edge", cost=cost)]
                 self.assertEqual(policy.validate(deck).is_valid, valid)
 
     def test_set_allowlist_and_predicate_are_injected(self):
-        allowed = mythic_deck_policy(allowed_set_ids=frozenset({"new"}))
-        predicate = mythic_deck_policy(set_predicate=lambda value: value.startswith("season-"))
+        allowed = mythic_deck_policy(
+            allowed_set_ids=frozenset({"new"}), mythic_set_ids=frozenset({"new"})
+        )
+        predicate = mythic_deck_policy(
+            set_predicate=lambda value: value.startswith("season-"),
+            mythic_set_predicate=lambda value: value == "season-mythic",
+        )
         self.assertTrue(allowed.validate(legal_cards(40, set_id="new")).is_valid)
         self.assertFalse(allowed.validate(legal_cards(40, set_id="old")).is_valid)
         self.assertTrue(predicate.validate(legal_cards(40, set_id="season-7")).is_valid)
@@ -193,13 +256,20 @@ class DeckConstructionPolicyTests(unittest.TestCase):
     def test_issue_order_is_deterministic(self):
         policy = mythic_deck_policy(
             set_predicate=lambda set_id: set_id == "new",
-            mythic_set_ids=frozenset({"bad"}),
+            mythic_set_predicate=lambda set_id: set_id == "bad",
         )
         deck = [card("z", cost=0, set_id="bad")] * 6
         first = policy.validate(deck).issues
         second = policy.validate(iter(deck)).issues
         self.assertEqual(first, second)
         self.assertEqual([issue.code for issue in first], ["deck.too_small", "copies.exceeded", "set.not_allowed", "cost.zero_forbidden", "mythic.cost_range"])
+
+    def test_invalid_policy_configuration_prevents_game_engine_construction(self):
+        with patch("card_duel_engine.engine.game.GameEngine") as engine_class:
+            with self.assertRaises(ValueError):
+                policy = mythic_deck_policy(allowed_set_ids={"current"})
+                engine_class(deck_policy=policy)
+        engine_class.assert_not_called()
 
     def test_service_rejection_happens_before_engine_or_catalog_mutation(self):
         catalog = CardCatalog()

@@ -1259,7 +1259,7 @@ class GameEngine:
 
     def _card_can_be_targeted(
         self,
-        source: CardDefinition,
+        source: CardDefinition | None,
         target_card_id: str,
         from_ability: bool = False,
         source_card_id: str | None = None,
@@ -1278,8 +1278,18 @@ class GameEngine:
                 ) from None
         target = self._definition(target_card_id)
         keywords = self._effective_keywords(target_card_id)
+        if from_ability and source_profile is not None and not source_profile.nature_is_certain:
+            return not (
+                target.rank is CardRank.DIVINE
+                or bool(
+                    keywords
+                    & {"IMMUNE_ABILITIES", "IMMUNE_EVENT", "IMMUNE_QUICK"}
+                )
+            )
         source_kind = (
-            source_profile.printed_kind if source_profile is not None else source.kind
+            source_profile.printed_kind
+            if source_profile is not None
+            else source.kind if source is not None else CardKind.EVENT
         )
         if target.rank is CardRank.DIVINE:
             if source_kind in {CardKind.EVENT, CardKind.QUICK_RESOURCE}:

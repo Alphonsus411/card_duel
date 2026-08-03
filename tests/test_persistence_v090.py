@@ -149,7 +149,7 @@ class PersistenceV090Tests(unittest.TestCase):
             engine.state.stack[-1].ability_source_profile,
         )
 
-    def test_old_v2_stack_item_derives_profile_only_for_present_source(self):
+    def test_old_v2_stack_item_derives_profile_for_present_and_moved_source(self):
         engine = GameEngine(RuleSet())
         engine.new_match({"A": test_deck("OA"), "B": test_deck("OB")}, seed=910)
         source = force_zone(engine, "OA-000", "A", Zone.BATTLEFIELD)
@@ -178,7 +178,13 @@ class PersistenceV090Tests(unittest.TestCase):
         remove_profile(envelope["body"]["state"])
         recalculate_snapshot_fingerprints(envelope)
         restored = load_snapshot(envelope)
-        self.assertIsNone(restored.state.stack[-1].ability_source_profile)
+        profile = restored.state.stack[-1].ability_source_profile
+        self.assertIsNotNone(profile)
+        self.assertFalse(profile.was_on_battlefield)
+        self.assertTrue(profile.was_effective_creature)
+        self.assertFalse(profile.nature_is_certain)
+        roundtrip = load_snapshot(dump_snapshot(restored))
+        self.assertEqual(roundtrip.state.stack[-1].ability_source_profile, profile)
 
     def make_pending_search_snapshot(self):
         prize = CardDefinition(

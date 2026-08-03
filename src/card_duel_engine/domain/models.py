@@ -481,6 +481,7 @@ class AbilitySourceProfile:
     was_effective_creature: bool
     was_permanent: bool
     was_on_battlefield: bool
+    nature_is_certain: bool = True
 
 
 @dataclass(frozen=True)

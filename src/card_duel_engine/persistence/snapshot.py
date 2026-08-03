@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from ..catalog import CardCatalog
-from ..domain.enums import Zone
-from ..domain.models import CardDefinition, GameState, StackItem
+from ..domain.enums import CardKind, Zone
+from ..domain.models import AbilitySourceProfile, CardDefinition, GameState, StackItem
 from ..engine.game import EngineSemantics, GameEngine
 from ..rules.config import RuleSet
 from .codec import canonical_json, decode_value, encode_value
@@ -147,7 +147,13 @@ def load_snapshot(payload: str | bytes | Mapping[str, Any]) -> GameEngine:
 
 
 def _restore_safe_ability_source_profiles(engine: GameEngine) -> None:
-    """Completa snapshots v2 antiguos solo si la fuente conserva datos inequívocos."""
+    """Reconstruye perfiles históricos sin revalidar una activación ya apilada.
+
+    Los snapshots anteriores al perfil conservan el id de instancia y el catálogo.
+    Esos datos permiten recuperar la naturaleza impresa y, cuando sigue registrada,
+    la definición sustituida. Si falta alguna pieza se materializa un perfil marcado
+    como incierto; resolución lo tratará de forma conservadora ante inmunidades.
+    """
 
     assert engine.state is not None
     state = engine.state
@@ -156,11 +162,58 @@ def _restore_safe_ability_source_profiles(engine: GameEngine) -> None:
         if item.ability_id is None or item.ability_source_profile is not None:
             return item
         source = state.cards.get(item.source_card_id)
-        if source is None or source.zone is not Zone.BATTLEFIELD:
-            return item
+        printed = (
+            engine.catalog.get(source.definition_id)
+            if source is not None and source.definition_id in engine.catalog
+            else None
+        )
+        effective_id = (
+            source.overridden_definition_id or source.definition_id
+            if source is not None
+            else None
+        )
+        effective = (
+            engine.catalog.get(effective_id)
+            if effective_id is not None and effective_id in engine.catalog
+            else None
+        )
+        ability_definition = next(
+            (
+                definition
+                for definition in (effective, printed)
+                if definition is not None
+                and any(
+                    ability.ability_id == item.ability_id
+                    for ability in definition.abilities
+                )
+            ),
+            None,
+        )
+        nature_is_certain = (
+            source is not None
+            and printed is not None
+            and effective is not None
+            and ability_definition is not None
+            and (
+                effective.kind is CardKind.CREATURE
+                or source.transformed_as_creature
+                or source.zone is Zone.BATTLEFIELD
+            )
+        )
         return replace(
             item,
-            ability_source_profile=engine._ability_source_profile(item.source_card_id),
+            ability_source_profile=AbilitySourceProfile(
+                source_card_id=item.source_card_id,
+                printed_kind=(printed.kind if printed is not None else CardKind.EVENT),
+                was_effective_creature=(
+                    effective.kind is CardKind.CREATURE
+                    if effective is not None
+                    else True
+                ) or bool(source and source.transformed_as_creature),
+                was_permanent=(printed.permanent if printed is not None else True),
+                was_on_battlefield=bool(source and source.zone is Zone.BATTLEFIELD),
+                nature_is_certain=nature_is_certain,
+            ),
         )
 
     state.stack[:] = [restore(item) for item in state.stack]

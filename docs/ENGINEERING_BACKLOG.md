@@ -31,8 +31,6 @@ Las entradas requieren priorización y alcance propios antes de implementarse.
 - Revisar periódicamente las dependencias bloqueadas en `uv.lock`, aplicar las
   actualizaciones compatibles en cambios aislados y documentar cualquier
   incompatibilidad antes de adoptarla.
-- Automatizar una comprobación de deriva entre los metadatos de versión del
-  paquete, el changelog y la documentación de release.
 - Inventariar y retirar utilidades internas obsoletas sólo después de confirmar
   mediante búsqueda y pruebas que no tienen consumidores.
 

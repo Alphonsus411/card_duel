@@ -1,0 +1,13 @@
+{
+  "allowed_shell_true": [],
+  "excluded_paths": [
+    "Fantasy Tokens Edicion Mitica.pdf",
+    "Fantasy Tokens.pdf",
+    "tests/artifacts/0.19.0/*.json"
+  ],
+  "secret_patterns": {
+    "aws_access_key": "AKIA[0-9A-Z]{16}",
+    "github_token": "gh[pousr]_[A-Za-z0-9]{36,255}",
+    "private_key": "-----BEGIN (?:[A-Z]+ )?PRIVATE KEY-----"
+  }
+}

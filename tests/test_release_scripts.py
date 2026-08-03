@@ -50,6 +50,8 @@ class ReleaseVerifierTests(unittest.TestCase):
 
     def test_correct_results_and_deterministic_json(self):
         with patch.object(self.release, "_lockfile", return_value={"status": "ok"}), \
+             patch.object(self.release, "_metadata", return_value={"status": "ok"}), \
+             patch.object(self.release, "_security", return_value={"status": "ok"}), \
              patch.object(self.release, "_quality", return_value={"status": "ok"}), \
              patch.object(self.release, "verify_simulations", return_value={"simulations": 300}), \
              patch.object(self.release, "verify_persistence", return_value={"roundtrips": 30}), \
@@ -63,6 +65,8 @@ class ReleaseVerifierTests(unittest.TestCase):
 
     def test_runtime_profile_skips_expensive_stages(self):
         with patch.object(self.release, "_lockfile", return_value={"status": "ok"}), \
+             patch.object(self.release, "_metadata", return_value={"status": "ok"}), \
+             patch.object(self.release, "_security", return_value={"status": "ok"}), \
              patch.object(self.release, "_quality", return_value={"status": "ok"}), \
              patch.object(self.release, "verify_simulations") as simulations, \
              patch.object(self.release, "verify_persistence") as persistence, \
@@ -70,7 +74,7 @@ class ReleaseVerifierTests(unittest.TestCase):
              patch.object(self.release, "_package") as package:
             result = self.release.verify("runtime")
         self.assertEqual(result["profile"], "runtime")
-        self.assertEqual(result["executed_stages"], ["lockfile", "quality"])
+        self.assertEqual(result["executed_stages"], ["metadata", "lockfile", "security", "quality"])
         simulations.assert_not_called(); persistence.assert_not_called(); rules_sources.assert_not_called(); package.assert_not_called()
 
     def test_runtime_never_invokes_build_or_wheel_auditor(self):
@@ -265,7 +269,7 @@ class WheelAuditTests(unittest.TestCase):
 
     def test_secret_is_rejected(self):
         target = "card_duel_engine/__init__.py"
-        secret = b"-----BEGIN PRIVATE KEY-----"
+        secret = b"-----BEGIN " + b"PRIVATE KEY-----"
         self.assert_rejected(
             lambda es: [(name, secret if name == target else data) for name, data in es],
             "Posible secreto",

@@ -32,6 +32,7 @@ def dump_replay(engine: GameEngine, *, indent: int | None = 2) -> str:
             if engine.semantics is EngineSemantics.LEGACY_019
             else engine.rules.version
         ),
+        "engine_semantics": engine.semantics.name,
         "rules": encode_value(engine.rules),
         "catalog": encode_value(engine.catalog.definitions()),
         "initial_decks": encode_value(state.initial_decks),
@@ -100,11 +101,28 @@ def replay_from_log(
         }
     except (AttributeError, KeyError, TypeError) as exc:
         raise ValueError("Mazos iniciales no válidos") from exc
-    semantics = (
-        EngineSemantics.LEGACY_019
-        if engine_version == "0.19.0"
-        else EngineSemantics.CURRENT
-    )
+    if "engine_semantics" not in body:
+        semantics = (
+            EngineSemantics.LEGACY_019
+            if engine_version == "0.19.0"
+            else EngineSemantics.CURRENT
+        )
+    else:
+        semantics_name = body["engine_semantics"]
+        if not isinstance(semantics_name, str):
+            raise ValueError("Semántica de motor de reproducción no válida")
+        try:
+            semantics = EngineSemantics[semantics_name]
+        except KeyError as exc:
+            raise ValueError(
+                "Semántica de motor de reproducción no válida"
+            ) from exc
+        if semantics not in (EngineSemantics.CURRENT, EngineSemantics.LEGACY_019):
+            raise ValueError("Semántica de motor de reproducción no válida")
+        if semantics is EngineSemantics.LEGACY_019 and engine_version != "0.19.0":
+            raise ValueError(
+                "La semántica LEGACY_019 requiere la versión 0.19.0"
+            )
     engine = GameEngine._for_restoration(rules, catalog, semantics)
     engine.new_match(decks, seed=int(body["seed"]), auto_start=False)
     for player_id in mulligans:

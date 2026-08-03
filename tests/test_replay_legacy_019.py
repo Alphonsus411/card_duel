@@ -10,7 +10,13 @@ from card_duel_engine.domain import Phase
 from card_duel_engine.domain.errors import IllegalAction
 from card_duel_engine.engine import AdvancePhase, DrainSteps, PassPriority
 from card_duel_engine.engine.game import EngineSemantics
-from card_duel_engine.persistence import dump_replay, replay_from_log, state_digest
+from card_duel_engine.persistence import (
+    dump_replay,
+    dump_snapshot,
+    load_snapshot,
+    replay_from_log,
+    state_digest,
+)
 from card_duel_engine.persistence.codec import canonical_json
 from card_duel_engine.storage import InMemoryMatchStore, SQLiteMatchStore
 
@@ -129,7 +135,52 @@ class Legacy019ReplayTests(unittest.TestCase):
 
     def test_manual_019_rules_do_not_enable_historical_semantics(self) -> None:
         engine = GameEngine(RuleSet(version="0.19.0"))
+        engine.new_match({"A": test_deck("A"), "B": test_deck("B")}, seed=200)
+        document = json.loads(dump_replay(engine))
+        self.assertEqual(document["body"]["engine_semantics"], "CURRENT")
+        restored = replay_from_log(document)
         self.assertIs(engine.semantics, EngineSemantics.CURRENT)
+        self.assertIs(restored.semantics, EngineSemantics.CURRENT)
+        self.assertEqual(_observables(restored), _observables(engine))
+
+    def test_new_legacy_replay_preserves_explicit_semantics_twice(self) -> None:
+        source = (ARTIFACTS / "drainage-outside-effects.replay-v2.json").read_text()
+        legacy = replay_from_log(source)
+        first_document = json.loads(dump_replay(legacy))
+        self.assertEqual(first_document["body"]["engine_semantics"], "LEGACY_019")
+        first = replay_from_log(first_document)
+        second = replay_from_log(dump_replay(first))
+        self.assertIs(first.semantics, EngineSemantics.LEGACY_019)
+        self.assertIs(second.semantics, EngineSemantics.LEGACY_019)
+        self.assertEqual(_observables(second), _observables(legacy))
+
+    def test_replay_rejects_invalid_semantics_names_and_types(self) -> None:
+        engine = GameEngine()
+        engine.new_match({"A": test_deck("A"), "B": test_deck("B")}, seed=204)
+        baseline = json.loads(dump_replay(engine))
+        for value in ("UNKNOWN", "legacy_019", 1, None, ["CURRENT"]):
+            with self.subTest(value=value):
+                document = json.loads(json.dumps(baseline))
+                document["body"]["engine_semantics"] = value
+                with self.assertRaisesRegex(ValueError, "Semántica"):
+                    replay_from_log(_rechecksum(document))
+
+    def test_replay_rejects_legacy_semantics_with_non_019_version(self) -> None:
+        engine = GameEngine(RuleSet(version="0.20.9"))
+        engine.new_match({"A": test_deck("A"), "B": test_deck("B")}, seed=205)
+        document = json.loads(dump_replay(engine))
+        document["body"]["engine_semantics"] = "LEGACY_019"
+        with self.assertRaisesRegex(ValueError, "requiere la versión 0.19.0"):
+            replay_from_log(_rechecksum(document))
+
+    def test_snapshot_and_replay_of_same_match_preserve_current_semantics(self) -> None:
+        engine = GameEngine(RuleSet(version="0.19.0"))
+        engine.new_match({"A": test_deck("A"), "B": test_deck("B")}, seed=206)
+        from_snapshot = load_snapshot(dump_snapshot(engine))
+        from_replay = replay_from_log(dump_replay(engine))
+        self.assertIs(from_snapshot.semantics, EngineSemantics.CURRENT)
+        self.assertIs(from_replay.semantics, EngineSemantics.CURRENT)
+        self.assertEqual(_observables(from_snapshot), _observables(from_replay))
 
     def test_legacy_continuations_survive_two_roundtrips_repeatedly(self) -> None:
         # Los cinco documentos cubren ataque, Drenaje, los dos Desafíos y la
@@ -187,8 +238,11 @@ class Legacy019ReplayTests(unittest.TestCase):
     def test_020_replay_never_enables_legacy_mode(self) -> None:
         engine = GameEngine(RuleSet(version="0.20.9"))
         engine.new_match({"A": test_deck("A"), "B": test_deck("B")}, seed=202)
-        restored = replay_from_log(dump_replay(engine))
-        self.assertIs(restored.semantics, EngineSemantics.CURRENT)
+        document = json.loads(dump_replay(engine))
+        self.assertIs(replay_from_log(document).semantics, EngineSemantics.CURRENT)
+        del document["body"]["engine_semantics"]
+        restored_without_field = replay_from_log(_rechecksum(document))
+        self.assertIs(restored_without_field.semantics, EngineSemantics.CURRENT)
 
     def test_unknown_replay_version_is_rejected_explicitly(self) -> None:
         engine = GameEngine(RuleSet(version="9.9.9"))

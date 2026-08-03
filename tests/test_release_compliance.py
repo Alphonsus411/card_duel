@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import importlib.util
 from pathlib import Path
+import re
 import sys
 import tempfile
 import unittest
@@ -118,6 +119,14 @@ class RepositorySecurityTests(unittest.TestCase):
 
 
 class RollbackProcedureTests(unittest.TestCase):
+    FIXED_WHEEL = re.compile(r"card_duel_engine-\d+\.\d+\.\d+-py3-none-any\.whl")
+
+    def assert_no_fixed_wheel_in_operational_steps(self, procedure: str):
+        operational_steps = "\n".join(
+            re.findall(r"```(?:bash|sh)\s*\n(.*?)```", procedure, flags=re.DOTALL)
+        )
+        self.assertNotRegex(operational_steps, self.FIXED_WHEEL)
+
     def test_procedure_is_non_destructive_and_preserves_persistence(self):
         procedure = (ROOT / "docs" / "RELEASE_ROLLBACK.md").read_text(encoding="utf-8")
         self.assertIn("sha256sum --check SHA256SUMS", procedure)
@@ -126,3 +135,19 @@ class RollbackProcedureTests(unittest.TestCase):
         self.assertIn("Ningún replay, snapshot, manifiesto", procedure)
         self.assertNotIn("git push --force", procedure)
         self.assertNotIn("rm dist/", procedure)
+
+    def test_operational_steps_derive_wheel_from_version(self):
+        procedure = (ROOT / "docs" / "RELEASE_ROLLBACK.md").read_text(encoding="utf-8")
+        self.assertIn('VERSION="<VERSION_AFECTADA>"', procedure)
+        self.assertIn('ARTIFACT_DIR="/tmp/card-duel-rollback-evidence/${VERSION}"', procedure)
+        self.assertIn('WHEEL="card_duel_engine-${VERSION}-py3-none-any.whl"', procedure)
+        self.assert_no_fixed_wheel_in_operational_steps(procedure)
+
+    def test_fixed_wheel_guard_rejects_operational_command(self):
+        procedure = """Referencia histórica: card_duel_engine-0.20.1-py3-none-any.whl.
+```bash
+cp card_duel_engine-0.20.1-py3-none-any.whl /tmp/evidence/
+```
+"""
+        with self.assertRaises(AssertionError):
+            self.assert_no_fixed_wheel_in_operational_steps(procedure)

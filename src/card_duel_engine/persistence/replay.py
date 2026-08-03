@@ -8,7 +8,7 @@ from ..catalog import CardCatalog
 from ..domain.enums import MatchStatus
 from ..domain.models import CardDefinition
 from ..engine.commands import EXECUTABLE_COMMAND_TYPE_SET
-from ..engine.game import GameEngine, ReplayCompatibilityMode
+from ..engine.game import EngineSemantics, GameEngine
 from ..rules.config import RuleSet
 from .codec import canonical_json, decode_value, encode_value
 from .migrations import migrate_document
@@ -27,7 +27,11 @@ def dump_replay(engine: GameEngine, *, indent: int | None = 2) -> str:
         raise RuntimeError("No hay una partida que reproducir")
     body = {
         "schema_version": REPLAY_SCHEMA_VERSION,
-        "engine_version": engine.rules.version,
+        "engine_version": (
+            "0.19.0"
+            if engine.semantics is EngineSemantics.LEGACY_019
+            else engine.rules.version
+        ),
         "rules": encode_value(engine.rules),
         "catalog": encode_value(engine.catalog.definitions()),
         "initial_decks": encode_value(state.initial_decks),
@@ -96,20 +100,19 @@ def replay_from_log(
         }
     except (AttributeError, KeyError, TypeError) as exc:
         raise ValueError("Mazos iniciales no válidos") from exc
-    engine = GameEngine(rules, catalog)
-    previous_mode = engine._replay_compatibility_mode
-    if engine_version == "0.19.0":
-        engine._replay_compatibility_mode = ReplayCompatibilityMode.LEGACY_019
-    try:
-        engine.new_match(decks, seed=int(body["seed"]), auto_start=False)
-        for player_id in mulligans:
-            engine.mulligan(player_id)
-        if body["started"]:
-            engine.start_match()
-        for command in commands:
-            engine.execute(command)
-        if verify_digest and state_digest(engine) != body["final_digest"]:
-            raise ValueError("La reproducción diverge de la huella final registrada")
-    finally:
-        engine._replay_compatibility_mode = previous_mode
+    semantics = (
+        EngineSemantics.LEGACY_019
+        if engine_version == "0.19.0"
+        else EngineSemantics.CURRENT
+    )
+    engine = GameEngine._for_replay(rules, catalog, semantics)
+    engine.new_match(decks, seed=int(body["seed"]), auto_start=False)
+    for player_id in mulligans:
+        engine.mulligan(player_id)
+    if body["started"]:
+        engine.start_match()
+    for command in commands:
+        engine.execute(command)
+    if verify_digest and state_digest(engine) != body["final_digest"]:
+        raise ValueError("La reproducción diverge de la huella final registrada")
     return engine

@@ -35,7 +35,7 @@ from .content import (
     TrustedKey,
     load_manifest,
 )
-from .engine.game import GameEngine
+from .engine.game import EngineSemantics, GameEngine
 from .persistence import dump_replay, dump_snapshot, load_snapshot, replay_from_log
 from .rules import (
     DeckConstructionPolicy,
@@ -78,6 +78,7 @@ __all__ = [
     "PermissiveCollectionTrustPolicy",
     "TrustedKey",
     "GameEngine",
+    "EngineSemantics",
     "InMemoryMatchStore",
     "MatchService",
     "MatchView",

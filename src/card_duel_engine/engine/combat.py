@@ -24,7 +24,7 @@ class CombatContext(Protocol):
     def _lord_domain(self, card_id: str) -> LordDomain | None: ...
     def _effective_keywords(self, card_id: str) -> frozenset[str | Keyword]: ...
     @property
-    def _legacy_019_replay(self) -> bool: ...
+    def _legacy_019(self) -> bool: ...
     def _is_creature(self, card_id: str) -> bool: ...
     @property
     def _combat_action_enumeration_limit(self) -> int: ...
@@ -40,9 +40,9 @@ class CombatManager:
         self._context = context
 
     @property
-    def _legacy_019_replay(self) -> bool:
+    def _legacy_019(self) -> bool:
         """Mantiene compatibles los contextos mínimos externos del gestor."""
-        return getattr(self._context, "_legacy_019_replay", False)
+        return getattr(self._context, "_legacy_019", False)
 
     def legal_actions(self, player_id: str) -> tuple[GameCommand, ...]:
         """Construye solo las acciones propias del combate, en orden estable."""
@@ -99,14 +99,15 @@ class CombatManager:
                         self._context._combat_action_enumeration_limit,
                     )
                 )
+        challenge_phase = Phase.COMBAT if self._legacy_019 else Phase.EFFECTS
         if (
-            state.phase is Phase.EFFECTS
+            state.phase is challenge_phase
             and player_id == state.active_player_id
             and state.phase_priority_complete
             and not state.stack
             and combat is None
-            and not self._challenge_used_this_turn(player_id)
-            and not self._normal_combat_used_this_turn(player_id)
+            and (self._legacy_019 or not self._challenge_used_this_turn(player_id))
+            and (self._legacy_019 or not self._normal_combat_used_this_turn(player_id))
         ):
             for challenger_id in state.players[player_id].zones[Zone.BATTLEFIELD]:
                 if self._can_initiate_challenge(challenger_id):
@@ -144,7 +145,7 @@ class CombatManager:
             and self._context._is_lord_creature(card_id)
         ):
             return False
-        if self._legacy_019_replay:
+        if self._legacy_019:
             return True
         if self._context._lord_domain(card_id) is LordDomain.REALMS:
             return True
@@ -192,12 +193,12 @@ class CombatManager:
 
     def _declare_challenge(self, command: DeclareChallenge) -> None:
         state = self._context._require_running_state()
-        expected_phase = Phase.COMBAT if self._legacy_019_replay else Phase.EFFECTS
+        expected_phase = Phase.COMBAT if self._legacy_019 else Phase.EFFECTS
         if command.player_id != state.active_player_id or state.phase is not expected_phase:
             raise IllegalAction("Desafío solo puede declararse en la Fase Activa propia")
-        if not self._legacy_019_replay and self._challenge_used_this_turn(command.player_id):
+        if not self._legacy_019 and self._challenge_used_this_turn(command.player_id):
             raise IllegalAction("Desafío solo puede declararse una vez por turno")
-        if not self._legacy_019_replay and self._normal_combat_used_this_turn(command.player_id):
+        if not self._legacy_019 and self._normal_combat_used_this_turn(command.player_id):
             raise IllegalAction("Desafío sustituye al combate normal de este turno")
         if state.stack or not state.phase_priority_complete or state.combat is not None:
             raise IllegalAction("Desafío sustituye a un combate todavía no declarado")
@@ -233,7 +234,7 @@ class CombatManager:
             "challenged_id": command.challenged_id,
             "defender": command.defending_player_id,
         }
-        if not self._legacy_019_replay:
+        if not self._legacy_019:
             payload["turn_serial"] = state.turn_serial
         self._context._emit(
             "CHALLENGE_DECLARED",
@@ -276,7 +277,7 @@ class CombatManager:
             "attackers": command.attacker_ids,
             "defender": command.defending_player_id,
         }
-        if not self._legacy_019_replay:
+        if not self._legacy_019:
             payload["turn_serial"] = state.turn_serial
         self._context._emit(
             "ATTACKERS_DECLARED",

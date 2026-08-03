@@ -9,7 +9,7 @@ from typing import Any, Mapping
 from ..catalog import CardCatalog
 from ..domain.enums import Zone
 from ..domain.models import CardDefinition, GameState, StackItem
-from ..engine.game import GameEngine
+from ..engine.game import EngineSemantics, GameEngine
 from ..rules.config import RuleSet
 from .codec import canonical_json, decode_value, encode_value
 from .migrations import migrate_document
@@ -23,6 +23,7 @@ def _body(engine: GameEngine) -> dict[str, Any]:
     body = {
         "schema_version": SNAPSHOT_SCHEMA_VERSION,
         "engine_version": engine.rules.version,
+        "engine_semantics": engine.semantics.name,
         "rules": encode_value(engine.rules),
         "catalog": encode_value(engine.catalog.definitions()),
         "state": _canonical_encoded_state(engine),
@@ -101,6 +102,15 @@ def _parse(payload: str | bytes | Mapping[str, Any]) -> dict[str, Any]:
 
 def load_snapshot(payload: str | bytes | Mapping[str, Any]) -> GameEngine:
     body = _parse(payload)
+    semantics_name = body.get("engine_semantics", EngineSemantics.CURRENT.name)
+    if not isinstance(semantics_name, str):
+        raise ValueError("La semántica declarada debe ser una cadena")
+    try:
+        semantics = EngineSemantics[semantics_name]
+    except KeyError as exc:
+        raise ValueError(
+            f"Semántica de motor desconocida: {semantics_name!r}"
+        ) from exc
     rules = decode_value(body["rules"])
     definitions = decode_value(body["catalog"])
     state = decode_value(body["state"])
@@ -108,6 +118,11 @@ def load_snapshot(payload: str | bytes | Mapping[str, Any]) -> GameEngine:
         raise ValueError("La instantánea no contiene reglas y estado válidos")
     if body.get("engine_version") != rules.version:
         raise ValueError("La versión declarada no coincide con las reglas persistidas")
+    if (
+        semantics is EngineSemantics.LEGACY_019
+        and body["engine_version"] != "0.19.0"
+    ):
+        raise ValueError("LEGACY_019 solo es compatible con engine_version 0.19.0")
     encoded_state_digest = hashlib.sha256(
         canonical_json(body["state"]).encode("utf-8")
     ).hexdigest()
@@ -120,7 +135,7 @@ def load_snapshot(payload: str | bytes | Mapping[str, Any]) -> GameEngine:
     catalog = CardCatalog()
     for definition in definitions:
         catalog.register(definition)
-    engine = GameEngine(rules, catalog)
+    engine = GameEngine._for_restoration(rules, catalog, semantics)
     engine.state = state
     engine._next_instance = int(body["next_instance"])
     engine._next_stack_item = int(body["next_stack_item"])

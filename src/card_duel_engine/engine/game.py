@@ -88,10 +88,10 @@ from .commands import (
 )
 
 
-class ReplayCompatibilityMode(Enum):
-    """Ajustes efímeros reservados a reproducciones históricas exactas."""
+class EngineSemantics(Enum):
+    """Semántica permanente con la que un motor interpreta sus comandos."""
 
-    NORMAL = auto()
+    CURRENT = auto()
     LEGACY_019 = auto()
 
 
@@ -113,7 +113,9 @@ class GameEngine:
         self._next_stack_item = 1
         self._replacement_replay_choices: tuple[int, ...] = ()
         self._replacement_replay_cursor = 0
-        self._replay_compatibility_mode = ReplayCompatibilityMode.NORMAL
+        # La versión declarativa de RuleSet no selecciona comportamiento. Solo
+        # el cargador de replays puede construir una instancia histórica.
+        self._semantics = EngineSemantics.CURRENT
         self._combat = CombatManager(self)
         self._stack = StackManager(self)
         self._zones = ZoneManager(self)
@@ -124,9 +126,26 @@ class GameEngine:
         """Expone al gestor de combate únicamente su límite de enumeración."""
         return self.rules.legal_action_enumeration_limit
 
+    @classmethod
+    def _for_replay(
+        cls,
+        rules: RuleSet,
+        catalog: CardCatalog,
+        semantics: EngineSemantics,
+    ) -> GameEngine:
+        """Construye el candidato privado usado exclusivamente por replay_from_log."""
+        engine = cls(rules, catalog)
+        engine._semantics = semantics
+        return engine
+
     @property
-    def _legacy_019_replay(self) -> bool:
-        return self._replay_compatibility_mode is ReplayCompatibilityMode.LEGACY_019
+    def semantics(self) -> EngineSemantics:
+        """Expone la autoridad semántica como una propiedad de solo lectura."""
+        return self._semantics
+
+    @property
+    def _legacy_019(self) -> bool:
+        return self.semantics is EngineSemantics.LEGACY_019
 
     def _consume_replacement_replay_choice(self) -> int | None:
         """Consume una elección grabada sin exponer el cursor al gestor de zonas."""
@@ -202,6 +221,7 @@ class GameEngine:
         # Las operaciones de arranque siguen exactamente los mismos caminos del
         # motor, pero sobre un coordinador candidato que aún no está publicado.
         candidate = GameEngine(self.rules)
+        candidate._semantics = self.semantics
         candidate.catalog = candidate_catalog
         candidate.state = candidate_state
         candidate._next_instance = next_instance
@@ -608,7 +628,7 @@ class GameEngine:
             actions.extend(self._legal_plays(player_id))
             if (
                 player_id == state.active_player_id
-                and state.phase is Phase.EFFECTS
+                and (self._legacy_019 or state.phase is Phase.EFFECTS)
                 and player.drainage_used_turn_serial != state.turn_serial
             ):
                 actions.extend(DrainSteps(player_id, amount) for amount in range(1, 6))
@@ -1303,7 +1323,11 @@ class GameEngine:
                 continue
             # La naturaleza de Señor no convierte implícitamente la habilidad
             # en Evento: únicamente conserva la ventana general de Fase Activa.
-            if definition.lord_domain is not None and state.phase is not Phase.EFFECTS:
+            if (
+                not self._legacy_019
+                and definition.lord_domain is not None
+                and state.phase is not Phase.EFFECTS
+            ):
                 continue
             if ability.allowed_phases and state.phase not in ability.allowed_phases:
                 continue
@@ -1416,7 +1440,11 @@ class GameEngine:
         )
         if ability is None or ability.trigger is not None:
             raise IllegalAction("Habilidad activada inexistente")
-        if definition.lord_domain is not None and state.phase is not Phase.EFFECTS:
+        if (
+            not self._legacy_019
+            and definition.lord_domain is not None
+            and state.phase is not Phase.EFFECTS
+        ):
             raise IllegalAction("Las habilidades generales de Señor requieren la Fase Activa")
         if ability.allowed_phases and state.phase not in ability.allowed_phases:
             raise IllegalAction("La habilidad no puede activarse en esta fase")
@@ -1600,7 +1628,7 @@ class GameEngine:
             raise IllegalAction("El jugador no posee prioridad")
         if command.player_id != state.active_player_id:
             raise IllegalAction("Drenaje solo puede usarse durante la Fase Activa propia")
-        if not self._legacy_019_replay and state.phase is not Phase.EFFECTS:
+        if not self._legacy_019 and state.phase is not Phase.EFFECTS:
             raise IllegalAction("Drenaje solo puede usarse durante la Fase Activa propia")
         player = state.players[command.player_id]
         if player.drainage_used_turn_serial == state.turn_serial:

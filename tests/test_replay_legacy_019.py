@@ -4,13 +4,12 @@ import hashlib
 import json
 from pathlib import Path
 import unittest
-from unittest.mock import patch
 
 from card_duel_engine import GameEngine, RuleSet
 from card_duel_engine.domain import Phase
 from card_duel_engine.domain.errors import IllegalAction
 from card_duel_engine.engine import AdvancePhase, DrainSteps, PassPriority
-from card_duel_engine.engine.game import ReplayCompatibilityMode
+from card_duel_engine.engine.game import EngineSemantics
 from card_duel_engine.persistence import dump_replay, replay_from_log, state_digest
 from card_duel_engine.persistence.codec import canonical_json
 
@@ -40,7 +39,7 @@ class Legacy019ReplayTests(unittest.TestCase):
                 engine = replay_from_log((ARTIFACTS / name).read_text(encoding="utf-8"))
                 self.assertEqual(state_digest(engine), digest)
                 self.assertIs(engine.state.phase, Phase.COMBAT)
-                self.assertIs(engine._replay_compatibility_mode, ReplayCompatibilityMode.NORMAL)
+                self.assertIs(engine.semantics, EngineSemantics.LEGACY_019)
                 event = engine.state.event_log[-1]
                 self.assertNotIn("turn_serial", event.payload)
                 if name.startswith("drainage"):
@@ -57,25 +56,34 @@ class Legacy019ReplayTests(unittest.TestCase):
                         all(len(player.zones) == 6 for player in engine.state.players.values())
                     )
 
-    def test_mode_is_restored_when_legacy_replay_raises(self) -> None:
+    def test_failed_load_does_not_return_a_partially_built_engine(self) -> None:
         document = json.loads(
             (ARTIFACTS / "drainage-outside-effects.replay-v2.json").read_text()
         )
         document["body"]["final_digest"] = "0" * 64
-        captured: list[GameEngine] = []
-        real_engine = GameEngine
+        with self.assertRaisesRegex(ValueError, "diverge"):
+            replay_from_log(_rechecksum(document))
 
-        def capture(*args, **kwargs):
-            engine = real_engine(*args, **kwargs)
-            captured.append(engine)
-            return engine
+    def test_manual_019_rules_do_not_enable_historical_semantics(self) -> None:
+        engine = GameEngine(RuleSet(version="0.19.0"))
+        self.assertIs(engine.semantics, EngineSemantics.CURRENT)
 
-        with patch("card_duel_engine.persistence.replay.GameEngine", side_effect=capture):
-            with self.assertRaisesRegex(ValueError, "diverge"):
-                replay_from_log(_rechecksum(document))
-        self.assertIs(
-            captured[0]._replay_compatibility_mode, ReplayCompatibilityMode.NORMAL
-        )
+    def test_legacy_continuations_survive_two_roundtrips_repeatedly(self) -> None:
+        # Los cuatro documentos cubren ataque, Drenaje, Desafío y la habilidad
+        # de Señor que transforma al desafiante. Cada ruta se repite cinco veces.
+        for name in EXPECTED:
+            source = (ARTIFACTS / name).read_text(encoding="utf-8")
+            for repetition in range(5):
+                with self.subTest(name=name, repetition=repetition):
+                    continued = replay_from_log(source)
+                    continued.execute(PassPriority(continued.state.priority_player_id))
+                    first = replay_from_log(dump_replay(continued))
+                    second = replay_from_log(dump_replay(first))
+                    self.assertIs(second.semantics, EngineSemantics.LEGACY_019)
+                    self.assertEqual(state_digest(second), state_digest(continued))
+                    self.assertEqual(second.state.event_log, continued.state.event_log)
+                    document = json.loads(dump_replay(second))
+                    self.assertEqual(document["body"]["engine_version"], "0.19.0")
 
     def test_live_drainage_still_requires_effects_phase(self) -> None:
         engine = GameEngine()
@@ -91,9 +99,7 @@ class Legacy019ReplayTests(unittest.TestCase):
         engine = GameEngine(RuleSet(version="0.20.9"))
         engine.new_match({"A": test_deck("A"), "B": test_deck("B")}, seed=202)
         restored = replay_from_log(dump_replay(engine))
-        self.assertIs(
-            restored._replay_compatibility_mode, ReplayCompatibilityMode.NORMAL
-        )
+        self.assertIs(restored.semantics, EngineSemantics.CURRENT)
 
     def test_unknown_replay_version_is_rejected_explicitly(self) -> None:
         engine = GameEngine(RuleSet(version="9.9.9"))

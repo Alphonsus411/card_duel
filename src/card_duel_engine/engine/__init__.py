@@ -18,7 +18,7 @@ from .commands import (
     SetReplacementOrder,
     TransmutePermanent,
 )
-from .game import GameEngine
+from .game import EngineSemantics, GameEngine
 
 __all__ = [
     "AdvancePhase",
@@ -31,6 +31,7 @@ __all__ = [
     "DiscardCards",
     "DrainSteps",
     "EquipCard",
+    "EngineSemantics",
     "GameEngine",
     "PassPriority",
     "OrderTriggeredAbilities",

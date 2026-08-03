@@ -107,6 +107,15 @@ class DeckConstructionPolicy:
             raise ValueError("Use conjuntos permitidos o un predicado, no ambos")
         if allowed_set_ids is not None and not mythic_set_ids.issubset(allowed_set_ids):
             raise ValueError("Las colecciones Míticas deben pertenecer a las colecciones permitidas")
+        if self.set_predicate is not None and mythic_set_ids:
+            try:
+                mythic_sets_are_allowed = all(
+                    self.set_predicate(set_id) for set_id in mythic_set_ids
+                )
+            except Exception:
+                raise ValueError("La configuración de colecciones es incoherente") from None
+            if not mythic_sets_are_allowed:
+                raise ValueError("La configuración de colecciones es incoherente")
         has_mythic_limits = self.mythic_min_cost is not None or self.mythic_max_cost is not None
         if has_mythic_limits and not mythic_set_ids and self.mythic_set_predicate is None:
             raise ValueError("Los límites Míticos requieren un mecanismo de clasificación aplicable")
@@ -193,10 +202,28 @@ def mythic_deck_policy(
     mythic_set_predicate: SetPredicate | None = None,
     point_budget: int | None = None,
 ) -> DeckConstructionPolicy:
-    # Sin una clasificación más estrecha, el perfil Místico clasifica todas
-    # las cartas que admite; así el intervalo nunca queda configurado sin uso.
-    if mythic_set_ids is None and mythic_set_predicate is None:
+    for name, predicate in (
+        ("set_predicate", set_predicate),
+        ("mythic_set_predicate", mythic_set_predicate),
+    ):
+        if predicate is not None and not callable(predicate):
+            raise TypeError(f"{name} debe ser invocable o None")
+
+    has_general_classifier = allowed_set_ids is not None or set_predicate is not None
+    has_mythic_classifier = (
+        mythic_set_ids is not None or mythic_set_predicate is not None
+    )
+    if has_general_classifier and not has_mythic_classifier:
+        raise ValueError("La configuración de colecciones es incompleta")
+
+    # El perfil aislado sigue siendo exclusivamente Mítico. En cuanto el
+    # llamador abre el formato a colecciones explícitas, debe clasificarlas
+    # también de forma explícita para que futuras ediciones no hereden 5–50.
+    if not has_general_classifier and not has_mythic_classifier:
         mythic_set_predicate = lambda _set_id: True
+    elif mythic_set_ids is not None and mythic_set_predicate is None:
+        # Incluso el conjunto vacío es un clasificador explícito y válido.
+        mythic_set_predicate = lambda _set_id: False
     return DeckConstructionPolicy(
         min_cards=40, max_cards=60, max_standard_copies=5,
         max_legendary_copies=4, forbid_zero_cost=True,

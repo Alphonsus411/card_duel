@@ -5,8 +5,8 @@ Fecha de revisión: **2026-08-02**.
 ## Decisión sobre la base
 
 El objeto de esta revisión es el SHA
-`f757ac2e70f5e4c4766a1c901cb0ce403973a467`. Es una implementación previa y
-completa de la candidata 0.20.1, no una base desde la que repetir el desarrollo:
+`f757ac2e70f5e4c4766a1c901cb0ce403973a467`. Era una candidata previa 0.20.1,
+no una demostración de conformidad ni una base desde la que repetir el desarrollo:
 
 - `pyproject.toml` y la entrada del paquete en `uv.lock` declaran `0.20.1`;
 - el commit es el merge del cambio que preparó esa versión y contiene todos los
@@ -45,33 +45,64 @@ La inspección cubrió todos los archivos rastreados bajo
 | Criterio | Evidencia encontrada | Resultado |
 |---|---|---|
 | Metadatos 0.20.1 coherentes | Proyecto, lock, pruebas de release, changelog y guía de validación nombran 0.20.1. | Implementado. |
-| Reglas Míticas | Las políticas Clásica/Mítica, Drenaje, Desafío, objetivos Divinos, capacidades declarativas y eventos con serial tienen implementación y regresiones específicas. | Implementado. |
-| Compatibilidad exacta con replays 0.19.0 | El adaptador se limita a ejecución de replay 0.19.0; las pruebas cubren los cuatro fixtures históricos, restauración del modo y rechazo de versiones desconocidas. | Implementado. |
+| Reglas Míticas | Se corrigieron procedencia de habilidades al resolver la pila y clasificación explícita de conjuntos Míticos; Drenaje, Desafío y objetivos Divinos conservan regresiones específicas. | Corregido y verificado, con bloqueos normativos pendientes. |
+| Compatibilidad exacta con replays 0.19.0 | El adaptador se limita a ejecución de replay 0.19.0; la prueba final cubre cinco fixtures, diez repeticiones de observables por fixture, continuación y dos roundtrips. | Corregido y verificado. |
 | Trazabilidad normativa | Baseline, auditoría Mítica, roadmap y matriz de trazabilidad distinguen reglas implementadas, interpretaciones y decisiones bloqueadas. | Implementado. |
 | Calidad y runtimes | `mypy`, `compileall`, suite con cobertura de ramas y simulaciones forman parte de los perfiles; CI ejecuta runtime en 3.11/3.12/3.13 y full en 3.13. | Implementado. |
 | Wheel reproducible | El perfil full construye dos veces, audita igualdad y contenido, publica un solo wheel y sus tres informes. | Implementado. |
 | Fuente única de dependencias | El proyecto no declara dependencias runtime; el extra de desarrollo y `uv.lock` están alineados. | Implementado. |
 
-No se hallaron carencias funcionales o de release que obliguen a cambiar la
-candidata 0.20.1. En particular, no se crean tareas para criterios ya cubiertos
-ni se reabre una decisión normativa bloqueada.
+La inspección inicial no bastaba para cerrar la candidata: después se localizaron
+defectos de resolución de pila, compatibilidad semántica, clasificación Mítica y
+procedencia de construcción. La candidata sólo se selecciona como **0.20.1**
+tras integrar las correcciones y ejecutar sus pruebas. Siguen fuera del cierre
+`N-POINTS-01`, `M-LORD-EVENT-01`, los finales multijugador no definidos y los
+límites de alcance sobre catálogo, transporte y formatos persistentes nuevos.
 
-## Tareas separadas para carencias reales no bloqueantes
+## Causas, correcciones y regresiones
 
-Estas tareas son mejoras de ingeniería observadas estáticamente; no cambian la
-conclusión de conformidad ni autorizan reglas nuevas:
+- **Bloqueo de pila y procedencia de habilidades.** Al sacar el elemento superior
+  antes de resolverlo, la revalidación consultaba la carta fuente viva. Si esa
+  fuente había abandonado el tapiz, se perdían su tipo efectivo y su condición de
+  habilidad propia; la selección podía rechazarse y dejar la resolución sin una
+  procedencia estable. `AbilitySourceProfile` congela al crear el elemento la
+  identidad, tipo efectivo, permanencia y relación con el objetivo. Las pruebas de
+  pila cubren la salida de la fuente, la inmunidad Divina y el vaciado LIFO; las de
+  persistencia cubren el perfil en snapshot y su derivación compatible al leer v2.
+- **Semántica legacy 0.19.** Usar sólo `RuleSet(version="0.19.0")` no restauraba el
+  significado histórico de Drenaje, Desafío, elegibilidad y habilidades de Señor.
+  El replay conserva ahora `EngineSemantics.LEGACY_019` en el motor restaurado,
+  incluso al continuarlo y volverlo a serializar. `R-COMPAT-019-REPLAY` se mantuvo
+  como «requiere corrección» durante el trabajo y pasó a «ya cumple» únicamente
+  después de quedar verdes los cinco fixtures, diez repeticiones por fixture, la
+  continuación y el segundo roundtrip de `test_replay_legacy_019.py`.
+- **Clasificación Mítica.** Un filtro general de colecciones permitidas no prueba
+  que una colección sea Mítica; aplicarle implícitamente el intervalo 5–50 podía
+  clasificar contenido futuro o privado sin autorización. La fábrica exige ahora
+  `mythic_set_ids` o `mythic_set_predicate` cuando el universo permitido es mixto,
+  materializa iterables una sola vez y rechaza clasificadores incoherentes. Las
+  regresiones de `test_deck_construction_policy.py` enlazan esos casos. Esto no
+  incorpora ningún catálogo Mítico.
+- **Procedencia del wheel.** La construcción anterior podía tomar el árbol de
+  trabajo mutable mientras atribuía el artefacto a `HEAD`. El constructor crea
+  ahora un worktree *detached* del commit auditado, deriva de ese commit
+  `SOURCE_DATE_EPOCH`, construye dos veces allí y sólo copia el wheel auditado.
+  `test_release_scripts.py` verifica aislamiento, igualdad y coherencia de los
+  tres informes; no se afirma reproducibilidad entre commits distintos.
 
-- **AUD-01 — deriva de versión:** automatizar la comparación entre
-  `project.version`, `uv.lock`, el encabezado de `CHANGELOG.md` y el documento
-  de validación vigente. Hoy existen comprobaciones parciales, pero no una sola
-  comprobación cerrada de los cuatro valores.
-- **AUD-02 — seguridad del repositorio:** añadir a CI análisis estático de
-  seguridad y detección de secretos del checkout con reglas versionadas. La
-  auditoría actual detecta secretos dentro del wheel, que es una frontera más
-  estrecha.
-- **AUD-03 — rollback de publicación:** documentar y ensayar cómo retirar o
-  sustituir un artefacto publicado sin alterar formatos persistidos. El
-  checklist cubre construcción/publicación, no ese procedimiento operativo.
+## Auditorías técnicas integradas
 
-Cada tarea debe abordarse en un cambio independiente. Ninguna requiere elevar
-la versión ni tocar los replays heredados.
+Estas tareas sí se implementaron y probaron en la rama revisada; no autorizan
+reglas nuevas:
+
+- **AUD-01:** `verify_release_metadata.py` compara proyecto, lock, changelog,
+  validación vigente y alcance del README; sus casos de deriva están probados.
+- **AUD-02:** `verify_repository_security.py` y reglas versionadas inspeccionan
+  el checkout para secretos, ejecución dinámica y `shell=True`; el perfil de
+  release y sus pruebas ejercitan aceptación y rechazo.
+- **AUD-03:** `RELEASE_ROLLBACK.md` define y prueba un procedimiento no
+  destructivo, parametrizado por versión, que preserva replays, snapshots,
+  manifiestos y artefactos de evidencia.
+
+Ninguna requirió elevar la versión ni modificar manualmente los replays
+heredados.

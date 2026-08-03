@@ -10,8 +10,9 @@
   dinámica y usos no autorizados de `shell=True`.
 - Documentado y cubierto por pruebas un procedimiento no destructivo de rollback
   de publicaciones que preserva artefactos y formatos persistidos.
-- Conservada la compatibilidad semántica real con 0.19.0 para los cuatro
-  replays históricos, además de los esquemas persistentes v1/v2, sin crear un
+- Conservada la compatibilidad semántica real con 0.19.0 para cinco replays
+  históricos, diez repeticiones por fixture, continuación y dos roundtrips,
+  además de los esquemas persistentes v1/v2, sin crear un
   esquema v3 ni alterar la estructura de snapshots o replays.
 - Alineadas las políticas Clásica y Mítica de construcción, los tipos estrictos
   y la trazabilidad normativa y de CI; `N-POINTS-01` y `M-LORD-EVENT-01`
@@ -24,6 +25,13 @@
   roundtrips y la construcción reproducible del wheel en CI.
 - No se incorporan cartas, nombres de cartas ni catálogo Mítico de producción;
   tampoco se añaden transportes ni dependencias de ejecución.
+- Corregida la revalidación de objetivos de habilidades cuya fuente abandona el
+  tapiz mediante un perfil de procedencia congelado en la pila y persistido sin
+  introducir un esquema nuevo.
+- Exigida clasificación explícita para aplicar límites de colección Mítica; un
+  filtro general de conjuntos permitidos ya no reclasifica contenido futuro.
+- Construidos los dos wheels reproducibles desde un worktree *detached* del SHA
+  auditado, evitando atribuir a `HEAD` contenido mutable del checkout.
 
 - Alineada la matriz base–Mítica con las pruebas finales de construcción,
   copias, coste cero, formatos, Drenaje, Legendarios, Divinos y los cuatro

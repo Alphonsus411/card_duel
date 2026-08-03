@@ -43,12 +43,20 @@ class ReleaseMetadataTests(unittest.TestCase):
         (root / "docs" / f"VALIDATION_{version}.md").write_text(
             f"# Validación candidata {version}\n", encoding="utf-8"
         )
+        (root / "README.md").write_text(
+            f"# Proyecto\n\n## Alcance de la versión {version}\n\n"
+            "Referencia histórica legítima: 0.19.0 y 0.20.0.\n",
+            encoding="utf-8",
+        )
         return root
 
-    def test_accepts_all_four_matching_versions(self):
+    def test_accepts_matching_normative_versions_and_historical_references(self):
         values = self.metadata.verify(self.make_repository())
         self.assertEqual(set(values.values()), {"0.20.1"})
-        self.assertEqual(set(values), {"pyproject", "uv_lock", "changelog", "validation"})
+        self.assertEqual(
+            set(values),
+            {"pyproject", "uv_lock", "changelog", "validation", "readme_scope"},
+        )
 
     def test_rejects_lockfile_drift(self):
         root = self.make_repository()
@@ -56,6 +64,14 @@ class ReleaseMetadataTests(unittest.TestCase):
             '[[package]]\nname = "card-duel-engine"\nversion = "9.9.9"\n', encoding="utf-8"
         )
         with self.assertRaisesRegex(ValueError, "uv_lock=9.9.9"):
+            self.metadata.verify(root)
+
+    def test_rejects_readme_scope_drift(self):
+        root = self.make_repository()
+        (root / "README.md").write_text(
+            "# Proyecto\n\n## Alcance de la versión 0.20.0\n", encoding="utf-8"
+        )
+        with self.assertRaisesRegex(ValueError, "readme_scope=0.20.0"):
             self.metadata.verify(root)
 
 

@@ -153,7 +153,9 @@ class ReleaseVerifierTests(unittest.TestCase):
         self.assertEqual(verifier.count("scripts/verify_reproducible_wheel.py"), 1)
 
     def test_validation_document_does_not_claim_a_manual_sha_is_final(self):
-        validation = (ROOT / "docs" / "VALIDATION_0.20.1.md").read_text(encoding="utf-8")
+        validation = (
+            ROOT / "docs" / f"VALIDATION_{project_version()}.md"
+        ).read_text(encoding="utf-8")
         sha = r"[0-9a-f]{64}"
         forbidden = re.compile(
             rf"(?:hash final|artefacto definitivo).{{0,160}}{sha}|"
@@ -375,7 +377,8 @@ class DetachedWorktreeBuildTests(unittest.TestCase):
         target = ROOT / "pyproject.toml"
         original = target.read_bytes()
         try:
-            target.write_bytes(original.replace(b'version = "0.20.1"', b'version = "9.99.9"'))
+            current = f'version = "{self.version}"'.encode()
+            target.write_bytes(original.replace(current, b'version = "9.99.9"'))
             self.assert_immutable_result(*self.run_build())
         finally:
             target.write_bytes(original)

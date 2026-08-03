@@ -35,6 +35,7 @@ from ..domain.errors import (
     PaymentError,
 )
 from ..domain.models import (
+    AbilitySourceProfile,
     AppliedTextPatch,
     CardDefinition,
     CardInstance,
@@ -1236,9 +1237,10 @@ class GameEngine:
         target_card_id: str,
         from_ability: bool = False,
         source_card_id: str | None = None,
+        source_profile: AbilitySourceProfile | None = None,
     ) -> bool:
         state = self._require_state()
-        if from_ability:
+        if from_ability and source_profile is None:
             source_instance = (
                 state.cards.get(source_card_id)
                 if source_card_id is not None
@@ -1250,23 +1252,43 @@ class GameEngine:
                 ) from None
         target = self._definition(target_card_id)
         keywords = self._effective_keywords(target_card_id)
+        source_kind = (
+            source_profile.printed_kind if source_profile is not None else source.kind
+        )
         if target.rank is CardRank.DIVINE:
-            if source.kind in {CardKind.EVENT, CardKind.QUICK_RESOURCE}:
+            if source_kind in {CardKind.EVENT, CardKind.QUICK_RESOURCE}:
                 return False
             if (
                 from_ability
                 and source_card_id != target_card_id
-                and source_card_id is not None
-                and self._is_creature(source_card_id)
+                and (
+                    source_profile.was_effective_creature
+                    if source_profile is not None
+                    else source_card_id is not None and self._is_creature(source_card_id)
+                )
             ):
                 return False
         if "IMMUNE_ABILITIES" in keywords and from_ability:
             return False
-        if "IMMUNE_QUICK" in keywords and source.kind is CardKind.QUICK_RESOURCE:
+        if "IMMUNE_QUICK" in keywords and source_kind is CardKind.QUICK_RESOURCE:
             return False
-        if "IMMUNE_EVENT" in keywords and source.kind is CardKind.EVENT:
+        if "IMMUNE_EVENT" in keywords and source_kind is CardKind.EVENT:
             return False
         return True
+
+    def _ability_source_profile(self, source_card_id: str) -> AbilitySourceProfile:
+        """Congela únicamente los rasgos de fuente que afectan al targeting."""
+
+        state = self._require_state()
+        instance = state.cards[source_card_id]
+        printed = self.catalog.get(instance.definition_id)
+        return AbilitySourceProfile(
+            source_card_id=source_card_id,
+            printed_kind=printed.kind,
+            was_effective_creature=self._is_creature(source_card_id),
+            was_permanent=printed.permanent,
+            was_on_battlefield=instance.zone is Zone.BATTLEFIELD,
+        )
 
     def _legal_ability_activations(
         self, player_id: str, source_card_id: str
@@ -1383,8 +1405,9 @@ class GameEngine:
         if command.player_id != state.priority_player_id:
             raise IllegalAction("El jugador no posee prioridad")
         player = state.players[command.player_id]
-        if command.source_card_id not in player.zones[Zone.BATTLEFIELD]:
-            raise IllegalAction("La fuente debe ser un permanente bajo control propio")
+        self._validate_ability_activation_source(
+            command.player_id, command.source_card_id
+        )
         source = state.cards[command.source_card_id]
         definition = self._definition(command.source_card_id)
         ability = next(
@@ -1399,6 +1422,7 @@ class GameEngine:
             raise IllegalAction("La habilidad no puede activarse en esta fase")
         if ability.once_per_turn and ability.ability_id in source.activated_this_turn:
             raise IllegalAction("La habilidad ya se activó este turno")
+        source_profile = self._ability_source_profile(command.source_card_id)
         self._validate_effect_targets(
             ability.effects,
             command.chosen_player_ids,
@@ -1488,6 +1512,7 @@ class GameEngine:
                 allocations=command.allocations,
                 ability_id=ability.ability_id,
                 x_value=command.x_value or 0,
+                ability_source_profile=source_profile,
             )
         )
         self._next_stack_item += 1
@@ -1522,6 +1547,22 @@ class GameEngine:
             },
         )
         self._run_state_based_actions()
+
+    def _validate_ability_activation_source(
+        self, player_id: str, source_card_id: str
+    ) -> None:
+        """Valida presencia, zona, control y condición permanente al activar."""
+
+        state = self._require_running_state()
+        source = state.cards.get(source_card_id)
+        if (
+            source is None
+            or source.zone is not Zone.BATTLEFIELD
+            or source.controller_id != player_id
+            or source_card_id not in state.players[player_id].zones[Zone.BATTLEFIELD]
+            or not self._definition(source_card_id).permanent
+        ):
+            raise IllegalAction("La fuente debe ser un permanente bajo control propio")
 
     def _equip_card(self, command: EquipCard) -> None:
         state = self._require_running_state()

@@ -22,6 +22,7 @@ from card_duel_engine.domain import (
     ZoneTarget,
 )
 from card_duel_engine.domain.errors import IllegalAction, InvariantViolation
+from card_duel_engine.domain.models import StackItem
 from card_duel_engine.engine import (
     PassPriority,
     PlayCard,
@@ -69,6 +70,70 @@ def recalculate_snapshot_fingerprints(envelope):
 
 
 class PersistenceV090Tests(unittest.TestCase):
+    def test_snapshot_v2_roundtrip_preserves_ability_source_profile_and_counters(self):
+        engine = GameEngine(RuleSet())
+        engine.new_match({"A": test_deck("PA"), "B": test_deck("PB")}, seed=909)
+        source = force_zone(engine, "PA-000", "A", Zone.BATTLEFIELD)
+        target = force_zone(engine, "PB-000", "B", Zone.BATTLEFIELD)
+        engine.state.stack.append(StackItem(
+            "stack-profile", "A", source,
+            (EffectDefinition(EffectKind.DEAL_DAMAGE, 1, TargetMode.CHOSEN_PERMANENT),),
+            chosen_card_ids=(target,), ability_id="captured",
+            ability_source_profile=engine._ability_source_profile(source),
+        ))
+        before = (
+            state_digest(engine),
+            tuple(engine.state.event_log),
+            tuple(engine.state.command_history),
+            engine._next_instance,
+            engine._next_stack_item,
+        )
+        payload = dump_snapshot(engine)
+        restored = load_snapshot(payload)
+        after = (
+            state_digest(restored),
+            tuple(restored.state.event_log),
+            tuple(restored.state.command_history),
+            restored._next_instance,
+            restored._next_stack_item,
+        )
+        self.assertEqual(after, before)
+        self.assertEqual(
+            restored.state.stack[-1].ability_source_profile,
+            engine.state.stack[-1].ability_source_profile,
+        )
+
+    def test_old_v2_stack_item_derives_profile_only_for_present_source(self):
+        engine = GameEngine(RuleSet())
+        engine.new_match({"A": test_deck("OA"), "B": test_deck("OB")}, seed=910)
+        source = force_zone(engine, "OA-000", "A", Zone.BATTLEFIELD)
+        engine.state.stack.append(StackItem(
+            "legacy-stack", "A", source, (), ability_id="legacy"
+        ))
+        envelope = json.loads(dump_snapshot(engine))
+
+        def remove_profile(value):
+            if isinstance(value, dict):
+                if value.get("$type") == "StackItem":
+                    value["fields"].pop("ability_source_profile")
+                for child in value.values():
+                    remove_profile(child)
+            elif isinstance(value, list):
+                for child in value:
+                    remove_profile(child)
+
+        remove_profile(envelope["body"]["state"])
+        recalculate_snapshot_fingerprints(envelope)
+        restored = load_snapshot(envelope)
+        self.assertIsNotNone(restored.state.stack[-1].ability_source_profile)
+
+        engine._move_card(source, Zone.DISCARD, "A")
+        envelope = json.loads(dump_snapshot(engine))
+        remove_profile(envelope["body"]["state"])
+        recalculate_snapshot_fingerprints(envelope)
+        restored = load_snapshot(envelope)
+        self.assertIsNone(restored.state.stack[-1].ability_source_profile)
+
     def make_pending_search_snapshot(self):
         prize = CardDefinition(
             "SNAP_SEARCH_PRIZE", "Objetivo", CardKind.CREATURE, 2, base_strength=2

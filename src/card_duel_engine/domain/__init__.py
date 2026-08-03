@@ -18,6 +18,7 @@ from .enums import (
 )
 from .models import (
     AbilityDefinition,
+    AbilitySourceProfile,
     AppliedTextPatch,
     CardFilter,
     CardDefinition,
@@ -44,6 +45,7 @@ from .models import (
 
 __all__ = [
     "AbilityDefinition",
+    "AbilitySourceProfile",
     "AppliedTextPatch",
     "CardFilter",
     "CardDefinition",

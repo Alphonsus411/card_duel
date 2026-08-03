@@ -4,7 +4,7 @@ import random
 from typing import Protocol
 from ..domain.enums import CardRank, EffectKind, MoveReason, TargetMode, TriggerKind, Zone
 from ..domain.errors import IllegalAction, InvariantViolation
-from ..domain.models import CardDefinition, EffectDefinition, GameState, PendingSearch, StackItem, TargetAllocation, ZoneTarget
+from ..domain.models import AbilitySourceProfile, CardDefinition, EffectDefinition, GameState, PendingSearch, StackItem, TargetAllocation, ZoneTarget
 from .commands import ChooseTriggeredTargets, ResolveSearchChoice
 
 
@@ -15,6 +15,7 @@ class StackContext(Protocol):
     def _next_player(self, player_id: str) -> str: ...
     def _definition(self, card_id: str) -> CardDefinition: ...
     def _allocate_stack_item_id(self) -> str: ...
+    def _ability_source_profile(self, source_card_id: str) -> AbilitySourceProfile: ...
     def _trigger_target_commands(
         self, player_id: str, item: StackItem
     ) -> list[ChooseTriggeredTargets]: ...
@@ -75,6 +76,7 @@ class StackManager:
                         controller_id=state.active_player_id,
                         source_card_id=card_id,
                         effects=definition.legendary_effects,
+                        ability_source_profile=self._context._ability_source_profile(card_id),
                         targets_locked=not self._effects_need_choices(definition.legendary_effects),
                     )
                 )
@@ -97,6 +99,7 @@ class StackManager:
                     effects=ability.effects,
                     ability_id=ability.ability_id,
                     targets_locked=not self._effects_need_choices(ability.effects),
+                    ability_source_profile=self._context._ability_source_profile(source_card_id),
                 )
             )
             self._context._emit(

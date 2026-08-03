@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, Mapping
 
 from ..catalog import CardCatalog
-from ..domain.models import CardDefinition, GameState
+from ..domain.enums import Zone
+from ..domain.models import CardDefinition, GameState, StackItem
 from ..engine.game import GameEngine
 from ..rules.config import RuleSet
 from .codec import canonical_json, decode_value, encode_value
@@ -95,8 +97,36 @@ def load_snapshot(payload: str | bytes | Mapping[str, Any]) -> GameEngine:
     engine._next_stack_item = int(body["next_stack_item"])
     if engine._next_instance < 1 or engine._next_stack_item < 1:
         raise ValueError("Los contadores persistidos no son válidos")
+    _restore_safe_ability_source_profiles(engine)
     engine.validate_invariants()
     return engine
+
+
+def _restore_safe_ability_source_profiles(engine: GameEngine) -> None:
+    """Completa snapshots v2 antiguos solo si la fuente conserva datos inequívocos."""
+
+    assert engine.state is not None
+    state = engine.state
+
+    def restore(item: StackItem) -> StackItem:
+        if item.ability_id is None or item.ability_source_profile is not None:
+            return item
+        source = state.cards.get(item.source_card_id)
+        if source is None or source.zone is not Zone.BATTLEFIELD:
+            return item
+        return replace(
+            item,
+            ability_source_profile=engine._ability_source_profile(item.source_card_id),
+        )
+
+    state.stack[:] = [restore(item) for item in state.stack]
+    state.pending_triggers[:] = [
+        restore(item) for item in state.pending_triggers
+    ]
+    if state.pending_search is not None:
+        state.pending_search.stack_item = restore(
+            state.pending_search.stack_item
+        )
 
 
 def save_snapshot_file(engine: GameEngine, path: str | Path) -> Path:

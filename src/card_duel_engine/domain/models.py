@@ -473,6 +473,17 @@ class GameEvent:
 
 
 @dataclass(frozen=True)
+class AbilitySourceProfile:
+    """Características de la fuente relevantes al fijar objetivos de una habilidad."""
+
+    source_card_id: str
+    printed_kind: CardKind
+    was_effective_creature: bool
+    was_permanent: bool
+    was_on_battlefield: bool
+
+
+@dataclass(frozen=True)
 class StackItem:
     item_id: str
     controller_id: str
@@ -486,6 +497,7 @@ class StackItem:
     allocations: tuple[TargetAllocation, ...] = ()
     targets_locked: bool = True
     x_value: int = 0
+    ability_source_profile: AbilitySourceProfile | None = None
 
 
 @dataclass(frozen=True)

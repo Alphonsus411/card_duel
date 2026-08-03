@@ -5,6 +5,7 @@ from .snapshot import (
     dump_snapshot,
     load_snapshot,
     load_snapshot_file,
+    legacy_state_digest_without_ability_source_profile,
     save_snapshot_file,
     state_digest,
 )
@@ -16,6 +17,7 @@ __all__ = [
     "encode_value",
     "load_snapshot",
     "load_snapshot_file",
+    "legacy_state_digest_without_ability_source_profile",
     "migrate_document",
     "replay_from_log",
     "save_snapshot_file",

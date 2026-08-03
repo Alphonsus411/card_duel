@@ -12,7 +12,7 @@ from ..engine.game import EngineSemantics, GameEngine
 from ..rules.config import RuleSet
 from .codec import canonical_json, decode_value, encode_value
 from .migrations import migrate_document
-from .snapshot import state_digest
+from .snapshot import legacy_state_digest_without_ability_source_profile, state_digest
 
 REPLAY_SCHEMA_VERSION = "2"
 
@@ -113,6 +113,23 @@ def replay_from_log(
         engine.start_match()
     for command in commands:
         engine.execute(command)
-    if verify_digest and state_digest(engine) != body["final_digest"]:
-        raise ValueError("La reproducción diverge de la huella final registrada")
+    if verify_digest:
+        expected_digest = body["final_digest"]
+        digest_matches = state_digest(engine) == expected_digest
+        if not digest_matches and _is_affected_020_version(engine_version):
+            digest_matches = (
+                legacy_state_digest_without_ability_source_profile(engine)
+                == expected_digest
+            )
+        if not digest_matches:
+            raise ValueError("La reproducción diverge de la huella final registrada")
     return engine
+
+
+def _is_affected_020_version(version: object) -> bool:
+    parts = str(version).split(".")
+    return (
+        len(parts) == 3
+        and parts[:2] == ["0", "20"]
+        and parts[2].isdigit()
+    )

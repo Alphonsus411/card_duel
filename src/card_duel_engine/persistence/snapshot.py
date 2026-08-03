@@ -25,7 +25,7 @@ def _body(engine: GameEngine) -> dict[str, Any]:
         "engine_version": engine.rules.version,
         "rules": encode_value(engine.rules),
         "catalog": encode_value(engine.catalog.definitions()),
-        "state": encode_value(engine.state),
+        "state": _canonical_encoded_state(engine),
         "next_instance": engine._next_instance,
         "next_stack_item": engine._next_stack_item,
     }
@@ -39,12 +39,41 @@ def _checksum(body: Mapping[str, Any]) -> str:
     return hashlib.sha256(canonical_json(body).encode("utf-8")).hexdigest()
 
 
-def state_digest(engine: GameEngine) -> str:
+def _canonical_encoded_state(engine: GameEngine) -> Any:
     if engine.state is None:
         raise RuntimeError("No hay una partida que resumir")
-    return hashlib.sha256(
-        canonical_json(encode_value(engine.state)).encode("utf-8")
-    ).hexdigest()
+    return encode_value(engine.state)
+
+
+def _digest_encoded_state(encoded_state: Any) -> str:
+    return hashlib.sha256(canonical_json(encoded_state).encode("utf-8")).hexdigest()
+
+
+def state_digest(engine: GameEngine) -> str:
+    return _digest_encoded_state(_canonical_encoded_state(engine))
+
+
+def legacy_state_digest_without_ability_source_profile(engine: GameEngine) -> str:
+    """Calcula la huella emitida por 0.20.x antes de AbilitySourceProfile.
+
+    La poda se hace sobre la representación persistente, no sobre el estado vivo,
+    para alcanzar cualquier ``StackItem`` contenido en el grafo codificado sin
+    modificar el motor que se devuelve al llamador.
+    """
+
+    def omit_profile(value: Any) -> Any:
+        if isinstance(value, list):
+            return [omit_profile(item) for item in value]
+        if not isinstance(value, dict):
+            return value
+        transformed = {key: omit_profile(item) for key, item in value.items()}
+        if transformed.get("$type") == "StackItem":
+            fields = transformed.get("fields")
+            if isinstance(fields, dict):
+                fields.pop("ability_source_profile", None)
+        return transformed
+
+    return _digest_encoded_state(omit_profile(_canonical_encoded_state(engine)))
 
 
 def dump_snapshot(engine: GameEngine, *, indent: int | None = 2) -> str:

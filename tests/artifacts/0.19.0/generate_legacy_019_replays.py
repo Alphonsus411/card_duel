@@ -1,9 +1,68 @@
-"""Generate the 0.19.0 replay-v2 compatibility corpus using public APIs only."""
+"""Generate the 0.19.0 replay-v2 corpus with only the historical engine."""
 
 from __future__ import annotations
 
-import json
+import argparse
+import os
 from pathlib import Path
+import shutil
+import subprocess
+import sys
+
+
+GENERATOR_COMMIT = "3f21a1e2e9ba3c05b7bede3c5a7dc375d71ae39d"
+WORKTREE = Path("/tmp/card-duel-019")
+
+
+def run_historical_worker(output: Path) -> None:
+    """Run this file again with imports resolved only from the detached tree."""
+    repository = Path(__file__).resolve().parents[3]
+    if WORKTREE.exists():
+        subprocess.run(
+            ["git", "worktree", "remove", "--force", str(WORKTREE)],
+            cwd=repository,
+            check=True,
+        )
+    try:
+        subprocess.run(
+            ["git", "worktree", "add", "--detach", str(WORKTREE), GENERATOR_COMMIT],
+            cwd=repository,
+            check=True,
+        )
+        worker = WORKTREE / "generate_legacy_019_replays.py"
+        shutil.copy2(__file__, worker)
+        environment = os.environ.copy()
+        environment["PYTHONPATH"] = str(WORKTREE / "src")
+        subprocess.run(
+            [sys.executable, "-I", str(worker), "--historical-worker", "--output", str(output)],
+            cwd=WORKTREE,
+            env=environment,
+            check=True,
+        )
+    finally:
+        subprocess.run(
+            ["git", "worktree", "remove", "--force", str(WORKTREE)],
+            cwd=repository,
+            check=False,
+        )
+        subprocess.run(["git", "worktree", "prune"], cwd=repository, check=True)
+
+
+if "--historical-worker" not in sys.argv:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path(__file__).resolve().parent,
+    )
+    arguments = parser.parse_args()
+    run_historical_worker(arguments.output.resolve())
+    raise SystemExit
+
+# In worker mode this file lives at the root of the detached worktree.  Isolated
+# mode plus this explicit path prevents the checkout containing this script from
+# contributing an installed/current engine to the import resolution.
+sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 
 from card_duel_engine import GameEngine, RuleSet
 from card_duel_engine.domain import (
@@ -26,9 +85,6 @@ from card_duel_engine.engine import (
     PlayCard,
 )
 from card_duel_engine.persistence import dump_replay
-
-
-OUT = Path(__file__).resolve().parents[2] / "generated-replays"
 
 
 def close_priority(engine: GameEngine) -> None:
@@ -123,17 +179,45 @@ def challenge(domain: LordDomain, seed: int) -> GameEngine:
     return engine
 
 
+def lord_ability_during_combat() -> GameEngine:
+    lord = CardDefinition(
+        "COMBAT-LORD",
+        "Señor del combate",
+        CardKind.LORD,
+        0,
+        base_strength=4,
+        lord_domain=LordDomain.REALMS,
+        abilities=(
+            AbilityDefinition(
+                "combat-march",
+                (EffectDefinition(EffectKind.GAIN_STEPS, 2, TargetMode.SELF),),
+                allowed_phases=frozenset({Phase.COMBAT}),
+            ),
+        ),
+    )
+    engine, lord_id, _ = setup_battlefield(lord, filler("B-PERMANENT"), 1905)
+    advance_to(engine, Phase.COMBAT)
+    engine.execute(ActivateAbility("A", lord_id, "combat-march"))
+    close_priority(engine)
+    return engine
+
+
 def main() -> None:
-    OUT.mkdir(exist_ok=True)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--historical-worker", action="store_true")
+    parser.add_argument("--output", type=Path, required=True)
+    arguments = parser.parse_args()
+    output = arguments.output
+    output.mkdir(parents=True, exist_ok=True)
     fixtures = {
         "drainage-outside-effects.replay-v2.json": drainage(),
         "challenge-combat.replay-v2.json": challenge(LordDomain.REALMS, 1903),
         "attackers-declared.replay-v2.json": ordinary_combat(),
         "challenge-non-realms.replay-v2.json": challenge(LordDomain.ABYSS, 1904),
+        "lord-ability-outside-effects.replay-v2.json": lord_ability_during_combat(),
     }
     for name, engine in fixtures.items():
-        document = json.loads(dump_replay(engine))
-        (OUT / name).write_text(json.dumps(document, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        (output / name).write_text(dump_replay(engine) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":

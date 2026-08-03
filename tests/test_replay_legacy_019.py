@@ -22,7 +22,44 @@ EXPECTED = {
     "challenge-combat.replay-v2.json": "044970d424cc449607164dc3df955df3f04d4e8ebdef28670f7348c09edddd31",
     "attackers-declared.replay-v2.json": "1f2f8124a44f4d599587be89b564fea84d8d53b8513dab3e01bbdcb679be117a",
     "challenge-non-realms.replay-v2.json": "ec7f638d0c8897d0549e639731bf13634513a78f3ed1345897fc8895e41f9b6e",
+    "lord-ability-outside-effects.replay-v2.json": "b78a99c291fe95ecc44f5d5f16bbdda02e129088093ff65788ae19f3cc4f5490",
 }
+EXPECTED_OBSERVABLES = {
+    "drainage-outside-effects.replay-v2.json": (1, 10, 21, "DRAINAGE_USED", 5, 1),
+    "challenge-combat.replay-v2.json": (3, 57, 91, "CHALLENGE_DECLARED", 5, 4),
+    "attackers-declared.replay-v2.json": (3, 54, 86, "ATTACKERS_DECLARED", 5, 3),
+    "challenge-non-realms.replay-v2.json": (3, 57, 91, "CHALLENGE_DECLARED", 5, 4),
+    "lord-ability-outside-effects.replay-v2.json": (3, 54, 87, "STACK_ITEM_RESOLVED", 5, 4),
+}
+
+
+def _observables(engine: GameEngine) -> tuple[object, ...]:
+    state = engine.state
+    players = tuple(
+        (
+            player_id,
+            player.wounds,
+            player.steps,
+            player.drainage_used_turn_serial,
+            tuple((zone.name, tuple(cards)) for zone, cards in player.zones.items()),
+        )
+        for player_id, player in state.players.items()
+    )
+    events = tuple(
+        (event.sequence, event.event_type, event.player_id, event.card_id, event.payload)
+        for event in state.event_log
+    )
+    return (
+        state.phase,
+        state.turn_serial,
+        tuple(state.command_history),
+        events,
+        players,
+        tuple(state.stack),
+        engine._next_instance,
+        engine._next_stack_item,
+        engine.semantics,
+    )
 
 
 def _rechecksum(document: dict) -> str:
@@ -35,26 +72,51 @@ def _rechecksum(document: dict) -> str:
 class Legacy019ReplayTests(unittest.TestCase):
     def test_legacy_replays_preserve_digest_and_observables(self) -> None:
         for name, digest in EXPECTED.items():
-            with self.subTest(name=name):
-                engine = replay_from_log((ARTIFACTS / name).read_text(encoding="utf-8"))
-                self.assertEqual(state_digest(engine), digest)
-                self.assertIs(engine.state.phase, Phase.COMBAT)
-                self.assertIs(engine.semantics, EngineSemantics.LEGACY_019)
-                event = engine.state.event_log[-1]
-                self.assertNotIn("turn_serial", event.payload)
-                if name.startswith("drainage"):
-                    player = engine.state.players["A"]
-                    self.assertEqual((player.wounds, player.steps), (6, 8))
-                    self.assertEqual(player.drainage_used_turn_serial, 1)
-                    self.assertEqual(event.event_type, "DRAINAGE_USED")
-                else:
+            source = (ARTIFACTS / name).read_text(encoding="utf-8")
+            expected = EXPECTED_OBSERVABLES[name]
+            baseline = _observables(replay_from_log(source))
+            for repetition in range(10):
+                with self.subTest(name=name, repetition=repetition):
+                    engine = replay_from_log(source)
+                    state = engine.state
+                    event = state.event_log[-1]
+                    self.assertEqual(state_digest(engine), digest)
+                    self.assertEqual(_observables(engine), baseline)
                     self.assertEqual(
-                        [(p.wounds, p.steps) for p in engine.state.players.values()],
-                        [(0, 10), (0, 5)],
+                        (
+                            state.turn_serial,
+                            len(state.command_history),
+                            len(state.event_log),
+                            event.event_type,
+                            engine._next_instance,
+                            engine._next_stack_item,
+                        ),
+                        expected,
                     )
+                    self.assertIs(state.phase, Phase.COMBAT)
+                    self.assertIs(engine.semantics, EngineSemantics.LEGACY_019)
+                    self.assertNotIn("turn_serial", event.payload)
                     self.assertTrue(
-                        all(len(player.zones) == 6 for player in engine.state.players.values())
+                        all(len(player.zones) == 6 for player in state.players.values())
                     )
+                    if name.startswith("drainage"):
+                        self.assertEqual(
+                            (state.players["A"].wounds, state.players["A"].steps),
+                            (6, 8),
+                        )
+                        self.assertEqual(state.players["A"].drainage_used_turn_serial, 1)
+                    elif name.startswith("lord-ability"):
+                        self.assertEqual(
+                            [(p.wounds, p.steps) for p in state.players.values()],
+                            [(0, 12), (0, 5)],
+                        )
+                        self.assertEqual(state.event_log[-2].event_type, "STEPS_GAINED")
+                        self.assertEqual(state.event_log[-2].payload, {"amount": 2})
+                    else:
+                        self.assertEqual(
+                            [(p.wounds, p.steps) for p in state.players.values()],
+                            [(0, 10), (0, 5)],
+                        )
 
     def test_failed_load_does_not_return_a_partially_built_engine(self) -> None:
         document = json.loads(
@@ -69,8 +131,8 @@ class Legacy019ReplayTests(unittest.TestCase):
         self.assertIs(engine.semantics, EngineSemantics.CURRENT)
 
     def test_legacy_continuations_survive_two_roundtrips_repeatedly(self) -> None:
-        # Los cuatro documentos cubren ataque, Drenaje, Desafío y la habilidad
-        # de Señor que transforma al desafiante. Cada ruta se repite cinco veces.
+        # Los cinco documentos cubren ataque, Drenaje, los dos Desafíos y la
+        # habilidad de Señor activada durante combate.
         for name in EXPECTED:
             source = (ARTIFACTS / name).read_text(encoding="utf-8")
             for repetition in range(5):
@@ -81,7 +143,8 @@ class Legacy019ReplayTests(unittest.TestCase):
                     second = replay_from_log(dump_replay(first))
                     self.assertIs(second.semantics, EngineSemantics.LEGACY_019)
                     self.assertEqual(state_digest(second), state_digest(continued))
-                    self.assertEqual(second.state.event_log, continued.state.event_log)
+                    self.assertEqual(_observables(first), _observables(continued))
+                    self.assertEqual(_observables(second), _observables(continued))
                     document = json.loads(dump_replay(second))
                     self.assertEqual(document["body"]["engine_version"], "0.19.0")
 

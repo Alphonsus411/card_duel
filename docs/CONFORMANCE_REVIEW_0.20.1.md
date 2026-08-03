@@ -73,7 +73,5 @@ conclusión de conformidad ni autorizan reglas nuevas:
   sustituir un artefacto publicado sin alterar formatos persistidos. El
   checklist cubre construcción/publicación, no ese procedimiento operativo.
 
-Estado posterior: **AUD-01, AUD-02 y AUD-03 completadas**. La comprobación de
-metadatos y el análisis de seguridad forman ahora parte del verificador de
-release; el procedimiento de rollback incluye un ensayo local no destructivo.
-Ninguna tarea elevó la versión ni tocó los replays heredados.
+Cada tarea debe abordarse en un cambio independiente. Ninguna requiere elevar
+la versión ni tocar los replays heredados.

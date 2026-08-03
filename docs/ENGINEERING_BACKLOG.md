@@ -36,8 +36,10 @@ Las entradas requieren priorización y alcance propios antes de implementarse.
 
 ## CI y release
 
-- Mantener la comprobación cerrada de deriva de versión (**AUD-01**) y el
-  procedimiento ensayable de rollback (**AUD-03**) incorporados en 0.20.1.
+- **AUD-01 — deriva de versión:** automatizar una comprobación cerrada entre
+  `project.version`, `uv.lock`, el changelog y la validación vigente.
+- Documentar y ensayar un procedimiento de rollback de artefactos de release
+  que no altere formatos persistidos ni decisiones normativas (**AUD-03**).
 
 ### Recomendación operativa sobre ramas
 
@@ -52,8 +54,10 @@ Las entradas requieren priorización y alcance propios antes de implementarse.
 
 - Elaborar un modelo de amenazas para las fronteras de autenticación,
   persistencia y carga de manifiestos, sin ampliar sus contratos funcionales.
-- Mantener las reglas versionadas de análisis estático y detección de secretos
-  del checkout (**AUD-02**) y justificar cualquier excepción antes de añadirla.
+- Incorporar análisis estático de seguridad y detección de secretos del
+  checkout a CI, con reglas versionadas y falsos positivos justificados
+  (**AUD-02**). No confundirlo con la detección ya aplicada al contenido del
+  wheel.
 - Añadir fuzzing de entradas serializadas y manifiestos no confiables para
   verificar rechazos acotados y ausencia de filtraciones de estado privado.
 

@@ -127,13 +127,19 @@ class GameEngine:
         return self.rules.legal_action_enumeration_limit
 
     @classmethod
-    def _for_replay(
+    def _for_restoration(
         cls,
         rules: RuleSet,
         catalog: CardCatalog,
         semantics: EngineSemantics,
     ) -> GameEngine:
-        """Construye el candidato privado usado exclusivamente por replay_from_log."""
+        """Construye un motor restaurado con semántica ya identificada.
+
+        La comprobación en tiempo de ejecución evita que los cargadores puedan
+        introducir nombres, versiones u otros sustitutos de ``EngineSemantics``.
+        """
+        if not isinstance(semantics, EngineSemantics):
+            raise TypeError("La semántica del motor no es válida")
         engine = cls(rules, catalog)
         engine._semantics = semantics
         return engine

@@ -105,7 +105,7 @@ def replay_from_log(
         if engine_version == "0.19.0"
         else EngineSemantics.CURRENT
     )
-    engine = GameEngine._for_replay(rules, catalog, semantics)
+    engine = GameEngine._for_restoration(rules, catalog, semantics)
     engine.new_match(decks, seed=int(body["seed"]), auto_start=False)
     for player_id in mulligans:
         engine.mulligan(player_id)

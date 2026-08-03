@@ -12,6 +12,7 @@ from card_duel_engine.engine import AdvancePhase, DrainSteps, PassPriority
 from card_duel_engine.engine.game import EngineSemantics
 from card_duel_engine.persistence import dump_replay, replay_from_log, state_digest
 from card_duel_engine.persistence.codec import canonical_json
+from card_duel_engine.storage import InMemoryMatchStore, SQLiteMatchStore
 
 from fixtures import test_deck
 
@@ -147,6 +148,31 @@ class Legacy019ReplayTests(unittest.TestCase):
                     self.assertEqual(_observables(second), _observables(continued))
                     document = json.loads(dump_replay(second))
                     self.assertEqual(document["body"]["engine_version"], "0.19.0")
+
+    def test_legacy_regressions_survive_snapshot_match_stores(self) -> None:
+        # El conjunto incluye las regresiones históricas de Drenaje, ambos
+        # Desafíos y la habilidad de Señor, además del ataque relacionado.
+        for name in EXPECTED:
+            source = (ARTIFACTS / name).read_text(encoding="utf-8")
+            for store_name, store in (
+                ("memory", InMemoryMatchStore()),
+                ("sqlite", SQLiteMatchStore(":memory:")),
+            ):
+                with self.subTest(name=name, store=store_name):
+                    engine = replay_from_log(source)
+                    before = _observables(engine)
+                    store.create(name, engine)
+                    restored = store.load(name).engine
+                    self.assertIs(restored.semantics, EngineSemantics.LEGACY_019)
+                    self.assertEqual(_observables(restored), before)
+                    self.assertEqual(state_digest(restored), EXPECTED[name])
+
+                    command = PassPriority(engine.state.priority_player_id)
+                    engine.execute(command)
+                    restored.execute(command)
+                    self.assertEqual(_observables(restored), _observables(engine))
+                if isinstance(store, SQLiteMatchStore):
+                    store.close()
 
     def test_live_drainage_still_requires_effects_phase(self) -> None:
         engine = GameEngine()

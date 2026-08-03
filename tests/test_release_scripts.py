@@ -142,7 +142,7 @@ class ReleaseVerifierTests(unittest.TestCase):
         self.assertIn('(ROOT / "dist" / "wheel-audit.json").read_text', verifier)
         self.assertIn('(destination / "SHA256SUMS").write_text', wheel_audit)
         self.assertIn('(destination / "wheel-audit.json").write_text', wheel_audit)
-        self.assertIn("destination / WHEEL_NAME", wheel_audit)
+        self.assertIn("destination / policy.wheel_name", wheel_audit)
 
         # La selección/copia precede al checksum y a ambos informes; el perfil
         # completo no vuelve a construir después de producir su JSON.
@@ -168,16 +168,17 @@ class WheelAuditTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.wheel = load("wheel_audit_tests", "verify_reproducible_wheel.py")
+        cls.policy = cls.wheel.policy_for(ROOT)
         temporary = tempfile.NamedTemporaryFile(suffix=".whl", delete=False)
         temporary.close()
         cls.original = Path(temporary.name)
         content = {}
-        for name in cls.wheel.CANONICAL_ORDER:
-            if name == f"{cls.wheel.DIST_INFO}/METADATA":
-                data = f"Metadata-Version: 2.4\nName: card-duel-engine\nVersion: {cls.wheel.VERSION}\nLicense-Expression: Apache-2.0\n".encode()
-            elif name == f"{cls.wheel.DIST_INFO}/WHEEL":
+        for name in cls.policy.canonical_order:
+            if name == f"{cls.policy.dist_info}/METADATA":
+                data = f"Metadata-Version: 2.4\nName: card-duel-engine\nVersion: {cls.policy.version}\nLicense-Expression: Apache-2.0\n".encode()
+            elif name == f"{cls.policy.dist_info}/WHEEL":
                 data = b"Wheel-Version: 1.0\nRoot-Is-Purelib: true\nTag: py3-none-any\n"
-            elif name == f"{cls.wheel.DIST_INFO}/top_level.txt":
+            elif name == f"{cls.policy.dist_info}/top_level.txt":
                 data = b"card_duel_engine\n"
             elif name.endswith("/RECORD"):
                 continue
@@ -186,19 +187,19 @@ class WheelAuditTests(unittest.TestCase):
             content[name] = data
         record = io.StringIO(newline="")
         writer = csv.writer(record, lineterminator="\n")
-        for name in cls.wheel.CANONICAL_ORDER:
+        for name in cls.policy.canonical_order:
             if name.endswith("/RECORD"):
                 writer.writerow((name, "", "")); continue
             data = content[name]
             digest = base64.urlsafe_b64encode(hashlib.sha256(data).digest()).rstrip(b"=").decode()
             writer.writerow((name, f"sha256={digest}", len(data)))
-        content[f"{cls.wheel.DIST_INFO}/RECORD"] = record.getvalue().encode()
+        content[f"{cls.policy.dist_info}/RECORD"] = record.getvalue().encode()
         with ZipFile(cls.original, "w", ZIP_DEFLATED) as archive:
-            for name in cls.wheel.CANONICAL_ORDER:
+            for name in cls.policy.canonical_order:
                 from zipfile import ZipInfo
                 info = ZipInfo(name); info.external_attr = 0o644 << 16
                 archive.writestr(info, content[name])
-        cls.wheel.audit(cls.original)
+        cls.wheel.audit(cls.original, cls.policy)
 
     @classmethod
     def tearDownClass(cls):
@@ -220,7 +221,7 @@ class WheelAuditTests(unittest.TestCase):
 
     def assert_rejected(self, transform, message):
         with self.assertRaisesRegex(SystemExit, message):
-            self.wheel.audit(self.mutate(transform))
+            self.wheel.audit(self.mutate(transform), self.policy)
 
     def test_package_policy_matches_tracked_python_modules(self):
         tracked = subprocess.check_output(
@@ -237,13 +238,13 @@ class WheelAuditTests(unittest.TestCase):
             and ".." not in Path(path).parts
             and "\\" not in path
         }
-        self.assertIsInstance(self.wheel.PACKAGE_FILES, frozenset)
-        self.assertEqual(python_modules, self.wheel.PACKAGE_FILES)
-        self.assertIn("card_duel_engine/application.py", self.wheel.PACKAGE_FILES)
-        self.assertIn("card_duel_engine/content/signature.py", self.wheel.PACKAGE_FILES)
+        self.assertIsInstance(self.policy.package_files, frozenset)
+        self.assertEqual(python_modules, self.policy.package_files)
+        self.assertIn("card_duel_engine/application.py", self.policy.package_files)
+        self.assertIn("card_duel_engine/content/signature.py", self.policy.package_files)
 
     def test_altered_wheel_and_corrupt_record_are_rejected(self):
-        record = f"{self.wheel.DIST_INFO}/RECORD"
+        record = f"{self.policy.dist_info}/RECORD"
         self.assert_rejected(lambda es: [(n, b"altered" if n == record else d) for n, d in es], "RECORD")
 
     def test_dangerous_path_is_rejected(self):
@@ -276,11 +277,11 @@ class WheelAuditTests(unittest.TestCase):
         )
 
     def test_runtime_dependency_is_rejected(self):
-        metadata = f"{self.wheel.DIST_INFO}/METADATA"
+        metadata = f"{self.policy.dist_info}/METADATA"
         self.assert_rejected(lambda es: [(n, d + b"Requires-Dist: danger\\n" if n == metadata else d) for n, d in es], "dependencias")
 
     def test_wrong_version_or_license_is_rejected(self):
-        metadata = f"{self.wheel.DIST_INFO}/METADATA"
+        metadata = f"{self.policy.dist_info}/METADATA"
         self.assert_rejected(lambda es: [(n, d.replace(b"Apache-2.0", b"MIT") if n == metadata else d) for n, d in es], "Versi.n o licencia")
 
     def test_divergent_zip_order_is_rejected(self):
@@ -290,7 +291,7 @@ class WheelAuditTests(unittest.TestCase):
         self.assert_rejected(lambda es: es[:-1], "Contenido divergente")
 
     def test_audit_has_mandatory_release_evidence(self):
-        report = self.wheel.audit(self.original)
+        report = self.wheel.audit(self.original, self.policy)
         required = {
             "version", "filename", "sha256", "files", "record_integrity",
             "runtime_dependencies", "tag", "root_is_purelib", "pdfs_absent",
@@ -302,6 +303,91 @@ class WheelAuditTests(unittest.TestCase):
         self.assertEqual(set(report["pdfs_absent"]), {
             "Fantasy Tokens.pdf", "Fantasy Tokens Edicion Mitica.pdf"
         })
+
+
+class DetachedWorktreeBuildTests(unittest.TestCase):
+    """Las mutaciones locales nunca cruzan la frontera del worktree de HEAD."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.script = ROOT / "scripts" / "verify_reproducible_wheel.py"
+        cls.version = project_version()
+        cls.wheel_path = ROOT / "dist" / f"card_duel_engine-{cls.version}-py3-none-any.whl"
+        cls.commit = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
+        ).strip()
+        cls.epoch = int(subprocess.check_output(
+            ["git", "show", "-s", "--format=%ct", cls.commit], cwd=ROOT, text=True
+        ).strip())
+        cls.baseline_report, cls.baseline_bytes = cls.run_build()
+
+    @classmethod
+    def run_build(cls):
+        before = subprocess.check_output(
+            ["git", "worktree", "list", "--porcelain"], cwd=ROOT, text=True
+        )
+        completed = subprocess.run(
+            [sys.executable, str(cls.script)], cwd=ROOT, text=True,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True,
+        )
+        after = subprocess.check_output(
+            ["git", "worktree", "list", "--porcelain"], cwd=ROOT, text=True
+        )
+        if before != after:
+            raise AssertionError("el script dejó registrado un worktree temporal")
+        report = json.loads(completed.stdout.splitlines()[-1])
+        return report, cls.wheel_path.read_bytes()
+
+    def assert_immutable_result(self, report, wheel_bytes):
+        self.assertEqual(wheel_bytes, self.baseline_bytes)
+        for field in ("version", "source_date_epoch", "source_commit", "sha256"):
+            self.assertEqual(report[field], self.baseline_report[field])
+        self.assertEqual(report["build_source"], "detached-worktree")
+        self.assertIs(report["source_tree_clean"], True)
+        self.assertIs(report["binary_identical_builds"], True)
+
+    def test_clean_tree_produces_identical_builds_checksum_and_full_audit(self):
+        report = self.baseline_report
+        self.assertEqual(report["source_commit"], self.commit)
+        self.assertEqual(report["source_date_epoch"], self.epoch)
+        self.assertEqual(report["runtime_dependencies"], [])
+        self.assertTrue(report["record_integrity"])
+        self.assertTrue(report["fixtures_absent"])
+        self.assertTrue(report["production_cards_absent"])
+        self.assertEqual(len(report["pdfs_absent"]), 2)
+        checksum = (ROOT / "dist" / "SHA256SUMS").read_text(encoding="utf-8")
+        self.assertEqual(checksum, f"{hashlib.sha256(self.baseline_bytes).hexdigest()}  {self.wheel_path.name}\n")
+        self.assertEqual(
+            json.loads((ROOT / "dist" / "wheel-audit.json").read_text(encoding="utf-8")),
+            report,
+        )
+
+    def test_modified_tracked_file_does_not_change_release(self):
+        target = ROOT / "src" / "card_duel_engine" / "application.py"
+        original = target.read_bytes()
+        try:
+            target.write_bytes(original + b"\n# local tracked mutation\n")
+            self.assert_immutable_result(*self.run_build())
+        finally:
+            target.write_bytes(original)
+
+    def test_modified_pyproject_does_not_change_release_version(self):
+        target = ROOT / "pyproject.toml"
+        original = target.read_bytes()
+        try:
+            target.write_bytes(original.replace(b'version = "0.20.1"', b'version = "9.99.9"'))
+            self.assert_immutable_result(*self.run_build())
+        finally:
+            target.write_bytes(original)
+
+    def test_untracked_source_file_does_not_enter_release(self):
+        target = ROOT / "src" / "card_duel_engine" / "local_untracked.py"
+        self.assertFalse(target.exists())
+        try:
+            target.write_text("raise RuntimeError('must not be packaged')\n", encoding="utf-8")
+            self.assert_immutable_result(*self.run_build())
+        finally:
+            target.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

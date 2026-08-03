@@ -95,10 +95,13 @@ materiales derivados, no prueba normativa.
 - **Entrega:** los documentos v2 se deserializan normalmente, pero los replays
   cuyo `RuleSet` es 0.19 activan sólo durante su reproducción la semántica
   histórica de Drenaje, fase de Desafío y elegibilidad de Señores.
+- **Puerta de estado:** permaneció como `requiere corrección` mientras faltaba
+  cualquiera de las pruebas acordadas. Sólo al final pasó a `ya cumple`, cuando
+  quedaron verdes cinco fixtures, diez repeticiones de hashes/observables por
+  fixture, continuación y dos roundtrips consecutivos conservando `LEGACY_019`.
 - **Evidencia:** los fixtures fueron generados con el commit histórico fijado en
-  `tests/artifacts/0.19.0/README.md`; las pruebas verifican sus hashes y
-  observables, restauración del modo ante éxito o error y aislamiento frente a
-  replays 0.20 y partidas actuales.
+  `tests/artifacts/0.19.0/README.md`; las pruebas verifican además aislamiento
+  frente a replays 0.20, partidas actuales y versiones desconocidas.
 - **Vida limitada:** no habilita comandos legacy en juego nuevo y no promete
   soporte indefinido. Su retirada exige una decisión de compatibilidad
   versionada; no debe confundirse deserialización estructural con reproducción
@@ -168,3 +171,17 @@ No hay incrementos técnicos habilitados por las fuentes vigentes. R-02, R-03B y
 R-05 conservan los bloqueos indicados; R-03A está completada documentalmente. No
 se promoverá una tarea nueva sin respaldo explícito del reglamento, la línea base y la arquitectura. El transporte
 queda excluido, no bloqueado ni pendiente.
+
+## Mantenimiento de release completado en 0.20.1
+
+- `AUD-01` cierra la deriva de versión entre proyecto, lock, changelog,
+  validación y README.
+- `AUD-02` integra análisis versionado del checkout para secretos y patrones de
+  ejecución peligrosos.
+- `AUD-03` aporta un rollback no destructivo probado y parametrizado.
+- El wheel se construye dos veces desde un worktree *detached* del mismo commit;
+  el resultado garantiza procedencia e igualdad para ese SHA, no entre commits.
+
+Estos cierres técnicos no cambian los bloqueos normativos: `N-POINTS-01` y
+`M-LORD-EVENT-01` permanecen explícitamente bloqueados. Tampoco habilitan cartas,
+catálogo, transporte ni esquemas persistentes nuevos.

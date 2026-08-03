@@ -30,13 +30,21 @@ y Señores de los Reinos, Desafío y el comienzo del inventario están en
 
 ## Taxonomía obligatoria
 
-Cada hallazgo de la tabla tiene exactamente una categoría:
+Cada hallazgo de la tabla debe llevar una clasificación **explícita** y tiene
+exactamente una categoría; no se admite inferirla por edición, coste, dominio,
+nombre, filtro general de colección ni posición en el PDF:
 
 - **A:** regla universal o actualización mecánica.
 - **B:** formato o construcción de mazo.
 - **C:** organización o torneo físico.
 - **D:** texto particular de carta.
 - **E:** ambigüedad o contradicción; queda bloqueada.
+
+Esta exigencia también limita la política técnica: si un perfil admite conjuntos
+de varias procedencias, debe recibir `mythic_set_ids` o un
+`mythic_set_predicate` explícito antes de aplicar restricciones propias de
+Mítica. La auditoría no transcribe, instancia ni incorpora **ningún catálogo
+Mítico**; el catálogo de producción continúa vacío.
 
 ## Comienzo y límites del corpus
 

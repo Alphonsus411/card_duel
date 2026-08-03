@@ -53,3 +53,17 @@ Cualquier valor mostrado por esos comandos queda rotulado literalmente como
 **candidato local**. El hash autoritativo pertenece exclusivamente al artefacto
 generado por CI para el SHA probado, y debe cotejarse descargando conjuntamente
 los cuatro archivos del job `full`.
+
+## Resultado real de la revisión
+
+La versión seleccionada continúa siendo **0.20.1**. La suite integrada confirma
+el perfil congelado de procedencia de habilidades en pila, la clasificación
+Mítica explícita y el puente semántico 0.19 con cinco fixtures, diez repeticiones
+por fixture, continuación y segundo roundtrip. El constructor de wheel usa un
+worktree *detached* de `HEAD`; sólo declara reproducibilidad de dos builds del
+mismo commit.
+
+El resultado no cierra `N-POINTS-01` ni `M-LORD-EVENT-01`, no define finales
+multijugador, no añade esquemas, cartas, catálogo o transporte y no modifica los
+PDF normativos. Los hashes generados localmente siguen siendo candidatos y no se
+presentan como artefactos publicados.

@@ -36,10 +36,9 @@ Las entradas requieren priorización y alcance propios antes de implementarse.
 
 ## CI y release
 
-- **AUD-01 — deriva de versión:** automatizar una comprobación cerrada entre
-  `project.version`, `uv.lock`, el changelog y la validación vigente.
-- Documentar y ensayar un procedimiento de rollback de artefactos de release
-  que no altere formatos persistidos ni decisiones normativas (**AUD-03**).
+Las auditorías `AUD-01`, `AUD-02` y `AUD-03` ya no son backlog: su código,
+documentación y pruebas están integrados y se inventarían abajo como trabajo
+completado.
 
 ### Recomendación operativa sobre ramas
 
@@ -54,10 +53,6 @@ Las entradas requieren priorización y alcance propios antes de implementarse.
 
 - Elaborar un modelo de amenazas para las fronteras de autenticación,
   persistencia y carga de manifiestos, sin ampliar sus contratos funcionales.
-- Incorporar análisis estático de seguridad y detección de secretos del
-  checkout a CI, con reglas versionadas y falsos positivos justificados
-  (**AUD-02**). No confundirlo con la detección ya aplicada al contenido del
-  wheel.
 - Añadir fuzzing de entradas serializadas y manifiestos no confiables para
   verificar rechazos acotados y ausencia de filtraciones de estado privado.
 
@@ -78,6 +73,18 @@ Las entradas requieren priorización y alcance propios antes de implementarse.
   localizar aserciones insuficientes.
 - Unificar las comprobaciones locales y de CI en un único punto de entrada que
   mantenga los comandos individuales disponibles para diagnóstico.
+
+## Trabajo completado
+
+- **AUD-01 — deriva de versión:** `verify_release_metadata.py`, integrado en el
+  verificador de release, contrasta proyecto, lock, changelog, validación y
+  README; las pruebas fuerzan divergencias de cada frontera relevante.
+- **AUD-02 — seguridad del repositorio:** el analizador y sus reglas versionadas
+  cubren secretos, ejecución dinámica y usos no autorizados de `shell=True`, con
+  regresiones positivas y negativas en CI.
+- **AUD-03 — rollback de publicación:** el procedimiento parametrizado y su
+  batería de conformidad exigen evidencia, *yank* o versión correctora y
+  preservación de todos los formatos persistidos.
 
 ## Deuda arquitectónica
 

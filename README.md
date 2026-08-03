@@ -22,6 +22,8 @@ incluir ninguna carta, personaje ni colección antigua.
 - Transmutación básica de permanentes.
 - Juego genérico desde la mano y pago atómico de costes.
 - Prioridad alterna y pila de resolución LIFO.
+- Procedencia efectiva de habilidades congelada al entrar en pila, para que la
+  resolución siga siendo estable aunque la fuente abandone el tapiz.
 - Efectos declarativos iniciales: Heridas, curación, Pasos y robo.
 - Recursos Rápidos como respuesta en cualquier fase.
 - Combate con atacantes, bloqueadores, daño y destrucción.
@@ -83,7 +85,9 @@ incluir ninguna carta, personaje ni colección antigua.
 - Reproducción determinista desde semilla, mazos y comandos.
 - Compatibilidad semántica temporal para replays 0.19 generados con el commit
   histórico documentado; no habilita esa semántica en partidas actuales y su
-  retirada requiere una decisión de compatibilidad versionada.
+  retirada requiere una decisión de compatibilidad versionada. La regresión de
+  cierre cubre cinco fixtures, diez repeticiones por fixture, continuación y dos
+  roundtrips consecutivos.
 - Verificación automática de la huella final de una reproducción.
 - Manifiestos externos versionados para incorporar colecciones nuevas.
 - Lista cerrada de tipos persistibles y validación estricta de campos.
@@ -121,6 +125,10 @@ incluir ninguna carta, personaje ni colección antigua.
 Las únicas cartas utilizadas están en `tests/fixtures.py` y sirven para probar
 el motor. El catálogo de producción comienza vacío.
 
+Las restricciones propias de Mítica sólo se aplican mediante una clasificación
+de colección explícita (identificadores o predicado); admitir una colección en
+general no la convierte en Mítica. No se distribuye ningún catálogo Mítico.
+
 Los reglamentos primarios son `Fantasy Tokens.pdf` y `Fantasy Tokens Edicion Mitica.pdf`. Se conservan en el repositorio para trazabilidad, pero **ninguno de los dos PDF se empaqueta en el wheel**. El catálogo distribuido continúa vacío: no se ha incorporado ninguna carta de producción.
 
 ## Desarrollo reproducible
@@ -141,8 +149,9 @@ uv run python scripts/verify_reproducible_wheel.py
 
 El verificador obtiene `SOURCE_DATE_EPOCH` de la fecha del commit auditado (no
 de una constante arbitraria), construye dos veces ese mismo commit en
-directorios temporales limpios y compara nombre, bytes, SHA-256 y metadatos. No
-compara artefactos procedentes de commits diferentes.
+un worktree *detached* y directorios temporales limpios, y compara nombre,
+bytes, SHA-256 y metadatos. Así la procedencia corresponde al SHA y no al árbol
+de trabajo mutable. No compara artefactos procedentes de commits diferentes.
 
 ## Ejecutar las pruebas
 

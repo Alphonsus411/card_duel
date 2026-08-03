@@ -1,6 +1,8 @@
 {
   "executed_stages": [
+    "metadata",
     "lockfile",
+    "security",
     "quality",
     "rules-sources",
     "simulations",
@@ -8,23 +10,43 @@
     "package"
   ],
   "lockfile": {
-    "sha256": "53764d6b5a5cca429b88ad0149012ec90d4c749bac7d0a8e719e9d1b894d3f12",
+    "sha256": "cfe0c9328d7b24a9a123307dcb615440746b2665b9b4f6ba0b78bf8e61878b32",
     "status": "ok",
     "unchanged": true
   },
+  "metadata": {
+    "status": "ok",
+    "values": {
+      "changelog": "0.20.1",
+      "pyproject": "0.20.1",
+      "readme_scope": "0.20.1",
+      "uv_lock": "0.20.1",
+      "validation": "0.20.1"
+    }
+  },
   "package": {
     "audit": {
-      "binary_identical_builds": 2,
-      "filename": "card_duel_engine-0.20.0-py3-none-any.whl",
+      "binary_identical_builds": true,
+      "build_source": "detached-worktree",
+      "builds_compared": 2,
+      "filename": "card_duel_engine-0.20.1-py3-none-any.whl",
       "files": 41,
+      "fixtures_absent": true,
       "license": "Apache-2.0",
+      "pdfs_absent": [
+        "Fantasy Tokens.pdf",
+        "Fantasy Tokens Edicion Mitica.pdf"
+      ],
+      "production_cards_absent": true,
       "record_integrity": true,
       "root_is_purelib": true,
-      "runtime_dependencies": 0,
-      "sha256": "011dea0ca6df85598f0a30e04bf5a37ecbea141ab339ef5b14378e5074a71496",
-      "source_date_epoch": 1785659812,
+      "runtime_dependencies": [],
+      "sha256": "4239907c2b5744c605d57410b05ba0c62e00f5b137727f62ebdd65f4d26a8d62",
+      "source_commit": "006534eb9acc3b0e2fc67e409938ec5724e99077",
+      "source_date_epoch": 1785774407,
+      "source_tree_clean": true,
       "tag": "py3-none-any",
-      "version": "0.20.0",
+      "version": "0.20.1",
       "zip_order": [
         "card_duel_engine/__init__.py",
         "card_duel_engine/_version.py",
@@ -63,10 +85,10 @@
         "card_duel_engine/storage/__init__.py",
         "card_duel_engine/storage/base.py",
         "card_duel_engine/storage/sqlite.py",
-        "card_duel_engine-0.20.0.dist-info/METADATA",
-        "card_duel_engine-0.20.0.dist-info/WHEEL",
-        "card_duel_engine-0.20.0.dist-info/top_level.txt",
-        "card_duel_engine-0.20.0.dist-info/RECORD"
+        "card_duel_engine-0.20.1.dist-info/METADATA",
+        "card_duel_engine-0.20.1.dist-info/WHEEL",
+        "card_duel_engine-0.20.1.dist-info/top_level.txt",
+        "card_duel_engine-0.20.1.dist-info/RECORD"
       ]
     },
     "installed_python_versions": [
@@ -74,7 +96,9 @@
       "3.12",
       "3.13"
     ],
-    "status": "ok"
+    "sha256": "4239907c2b5744c605d57410b05ba0c62e00f5b137727f62ebdd65f4d26a8d62",
+    "status": "ok",
+    "wheel": "card_duel_engine-0.20.1-py3-none-any.whl"
   },
   "persistence": {
     "roundtrips": 30,
@@ -92,6 +116,11 @@
     "verified_sources": 2
   },
   "schema_version": 2,
+  "security": {
+    "python_files_analyzed": 82,
+    "status": "ok",
+    "tracked_files_scanned": 122
+  },
   "simulations": {
     "commands": 54000,
     "events": 84000,
@@ -99,5 +128,5 @@
     "status": "ok"
   },
   "status": "ok",
-  "version": "0.20.0"
+  "version": "0.20.1"
 }

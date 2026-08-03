@@ -5,6 +5,16 @@ reutilizar su número de versión y sin modificar snapshots o replays persistido
 Un rollback de artefactos **no** es una migración de datos ni autoriza cambios
 normativos.
 
+Antes de iniciar el procedimiento, definir de forma explícita la versión
+afectada. Los demás valores se derivan de ella para evitar operar por error
+sobre un wheel de otra publicación:
+
+```bash
+VERSION="<VERSION_AFECTADA>"
+ARTIFACT_DIR="/tmp/card-duel-rollback-evidence/${VERSION}"
+WHEEL="card_duel_engine-${VERSION}-py3-none-any.whl"
+```
+
 ## Condiciones previas
 
 1. Identificar el SHA, tag, workflow, wheel y los tres informes publicados.
@@ -19,12 +29,12 @@ El ensayo se hace sobre una copia descargada, nunca sobre `dist/` ni sobre el
 registro remoto:
 
 ```bash
-mkdir -p /tmp/card-duel-rollback-evidence
-cp card_duel_engine-0.20.1-py3-none-any.whl SHA256SUMS \
-  wheel-audit.json release-verification.json /tmp/card-duel-rollback-evidence/
-(cd /tmp/card-duel-rollback-evidence && sha256sum --check SHA256SUMS)
-python -m json.tool /tmp/card-duel-rollback-evidence/wheel-audit.json >/dev/null
-python -m json.tool /tmp/card-duel-rollback-evidence/release-verification.json >/dev/null
+mkdir -p "${ARTIFACT_DIR}"
+cp "${WHEEL}" SHA256SUMS wheel-audit.json release-verification.json \
+  "${ARTIFACT_DIR}/"
+(cd "${ARTIFACT_DIR}" && sha256sum --check SHA256SUMS)
+python -m json.tool "${ARTIFACT_DIR}/wheel-audit.json" >/dev/null
+python -m json.tool "${ARTIFACT_DIR}/release-verification.json" >/dev/null
 ```
 
 El revisor debe registrar el resultado y comprobar que el checkout continúa

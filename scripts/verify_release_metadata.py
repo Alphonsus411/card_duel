@@ -26,8 +26,19 @@ def _validation_version(text: str, source: str) -> str:
     return match.group(1)
 
 
+def _readme_scope_version(text: str, source: str) -> str:
+    match = re.search(
+        r"^## Alcance de la versión ([0-9]+\.[0-9]+\.[0-9]+)\s*$",
+        text,
+        re.MULTILINE,
+    )
+    if match is None:
+        raise ValueError(f"{source} no contiene el encabezado de alcance de la versión")
+    return match.group(1)
+
+
 def verify(root: Path = ROOT) -> dict[str, str]:
-    """Devuelve los cuatro valores si coinciden; falla con diagnóstico si divergen."""
+    """Devuelve los campos normativos si coinciden; falla si divergen."""
     project = read_project_version(root)
     lock = tomllib.loads((root / "uv.lock").read_text(encoding="utf-8"))
     package = next((item for item in lock["package"] if item["name"] == "card-duel-engine"), None)
@@ -42,6 +53,9 @@ def verify(root: Path = ROOT) -> dict[str, str]:
         "validation": _validation_version(
             (root / f"docs/VALIDATION_{project}.md").read_text(encoding="utf-8"),
             f"docs/VALIDATION_{project}.md",
+        ),
+        "readme_scope": _readme_scope_version(
+            (root / "README.md").read_text(encoding="utf-8"), "README.md"
         ),
     }
     divergent = {source: value for source, value in values.items() if value != project}

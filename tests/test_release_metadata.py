@@ -1,11 +1,13 @@
 import importlib.util
 from pathlib import Path
 import re
+import subprocess
 import sys
 import tempfile
 import tomllib
 import unittest
 from unittest.mock import patch
+from zipfile import ZipFile
 
 import card_duel_engine
 from card_duel_engine.rules.config import RuleSet
@@ -115,7 +117,7 @@ class ReleaseMetadataTests(unittest.TestCase):
 
         self.assertEqual(read_project_version(ROOT), expected)
         self.assertEqual(verify_release.VERSION, expected)
-        self.assertEqual(verify_reproducible_wheel.VERSION, expected)
+        self.assertEqual(verify_reproducible_wheel.policy_for(ROOT).version, expected)
 
     def test_wheel_audit_targets_the_universal_release_wheel(self):
         path = ROOT / "scripts" / "verify_reproducible_wheel.py"
@@ -128,7 +130,41 @@ class ReleaseMetadataTests(unittest.TestCase):
             spec.loader.exec_module(module)
         finally:
             sys.path.pop(0)
-        self.assertEqual(module.WHEEL_NAME, f"card_duel_engine-{project_version()}-py3-none-any.whl")
+        self.assertEqual(
+            module.policy_for(ROOT).wheel_name,
+            f"card_duel_engine-{project_version()}-py3-none-any.whl",
+        )
+
+    def test_built_wheel_metadata_contains_version_and_current_scope_heading(self):
+        version = project_version()
+        scope_heading = f"## Alcance de la versión {version}"
+        with tempfile.TemporaryDirectory() as temporary:
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "build",
+                    "--wheel",
+                    "--outdir",
+                    temporary,
+                    str(ROOT),
+                ],
+                cwd=ROOT,
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            wheel = Path(temporary) / f"card_duel_engine-{version}-py3-none-any.whl"
+            self.assertTrue(wheel.is_file(), wheel)
+            with ZipFile(wheel) as archive:
+                metadata_name = next(
+                    name for name in archive.namelist() if name.endswith(".dist-info/METADATA")
+                )
+                metadata = archive.read(metadata_name).decode("utf-8")
+
+        self.assertIn(f"Version: {version}\n", metadata)
+        self.assertIn(scope_heading, metadata)
 
     def test_current_documents_agree_on_completed_roadmap_deliveries(self):
         roadmap = (ROOT / "docs" / "ROADMAP.md").read_text(encoding="utf-8")

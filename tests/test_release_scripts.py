@@ -43,6 +43,48 @@ def load(name: str, filename: str):
     return module
 
 
+class RepositorySecretPatternTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.security = load("repository_secret_pattern_tests", "verify_repository_security.py")
+        cls.rules = ROOT / "config" / "security-rules.json"
+
+    @staticmethod
+    def synthetic_fine_grained_token() -> bytes:
+        """Credencial deliberadamente inválida que conserva la forma a analizar."""
+        payload = "INVALID_TEST_TOKEN_" + "X" * (82 - len("INVALID_TEST_TOKEN_"))
+        return ("github" + "_pat_" + payload).encode()
+
+    def verify_content(self, content: bytes) -> dict[str, int]:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            candidate = root / "candidate.txt"
+            candidate.write_bytes(content)
+            with patch.object(self.security, "_tracked_files", return_value=[candidate]):
+                return self.security.verify(root, self.rules)
+
+    def test_github_fine_grained_token_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "github_fine_grained_token"):
+            self.verify_content(self.synthetic_fine_grained_token())
+
+    def test_github_pat_prefix_without_credential_shape_is_accepted(self):
+        result = self.verify_content(
+            b"Documentation mentions github_pat_ but contains no credential.\n"
+        )
+        self.assertEqual(result["tracked_files_scanned"], 1)
+
+    def test_synthetic_token_inserted_in_historical_fixture_is_detected(self):
+        historical = ROOT / "tests" / "artifacts" / "0.19.0" / "replay-v2.json"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fixture = root / historical.relative_to(ROOT)
+            fixture.parent.mkdir(parents=True)
+            fixture.write_bytes(historical.read_bytes() + self.synthetic_fine_grained_token())
+            with patch.object(self.security, "_tracked_files", return_value=[fixture]), \
+                 self.assertRaisesRegex(ValueError, "github_fine_grained_token"):
+                self.security.verify(root, self.rules)
+
+
 class ReleaseVerifierTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

@@ -85,6 +85,33 @@ class EffectManagerTests(unittest.TestCase):
         )
         self.assertEqual(state.cards[target].damage, 0)
         self.assertEqual(state.event_log[-1].payload["reason"], "immune")
+
+    def test_uncertain_legacy_source_never_crosses_kind_or_ability_immunities(self):
+        for keyword in ("IMMUNE_EVENT", "IMMUNE_QUICK", "IMMUNE_ABILITIES"):
+            with self.subTest(keyword=keyword):
+                engine, _, target = engine_with_battlefield()
+                state = engine._require_running_state()
+                definition = engine.catalog.get("target")
+                engine.catalog._cards["target"] = CardDefinition(
+                    definition.card_id, definition.name, definition.kind,
+                    definition.cost, base_strength=definition.base_strength,
+                    keywords=frozenset({keyword}),
+                )
+                del state.cards["source-i"]
+                state.players["A"].zones[Zone.BATTLEFIELD].remove("source-i")
+                item = StackItem(
+                    "legacy-unknown", "A", "source-i", (), ability_id="old",
+                    ability_source_profile=AbilitySourceProfile(
+                        "source-i", CardKind.EVENT, True, True, False,
+                        nature_is_certain=False,
+                    ),
+                )
+                EffectManager(engine).apply(
+                    EffectDefinition(EffectKind.DEAL_DAMAGE, 1, TargetMode.CHOSEN_PERMANENT),
+                    item, target,
+                )
+                self.assertEqual(state.cards[target].damage, 0)
+                self.assertEqual(state.event_log[-1].payload["reason"], "immune")
     def test_closed_registry_contains_every_effect_kind(self):
         engine, _, _ = engine_with_battlefield()
         self.assertEqual(engine._effects.supported_kinds, frozenset(EffectKind))

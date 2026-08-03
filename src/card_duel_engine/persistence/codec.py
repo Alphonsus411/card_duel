@@ -144,6 +144,8 @@ def decode_value(value: Any) -> Any:
         compatible_missing = (
             {"ability_source_profile"} if cls is model_module.StackItem else set()
         )
+        if cls is model_module.AbilitySourceProfile:
+            compatible_missing.add("nature_is_certain")
         missing_required = (expected - supplied) - compatible_missing
         if missing_required or supplied - expected:
             raise ValueError(

@@ -1,9 +1,9 @@
 import unittest
 
 from card_duel_engine import GameEngine, RuleSet
-from card_duel_engine.domain.enums import CardKind, EffectKind, Phase, TargetMode, Zone
+from card_duel_engine.domain.enums import CardKind, CardRank, EffectKind, Phase, TargetMode, Zone
 from card_duel_engine.domain.errors import PaymentError
-from card_duel_engine.domain.models import AbilityDefinition, CardDefinition, CompositeCost, EffectDefinition
+from card_duel_engine.domain.models import AbilityDefinition, AbilitySourceProfile, CardDefinition, CompositeCost, EffectDefinition, StackItem
 from card_duel_engine.engine.commands import ActivateAbility, AdvancePhase, PassPriority, PlayCard
 
 from fixtures import quick_damage_fixture, test_deck
@@ -136,3 +136,28 @@ class StackAndPriorityTests(unittest.TestCase):
                 self.assertEqual(engine.state.cards[target_id].damage, 1)
                 self.assertFalse(engine.state.stack)
                 self.assertEqual(engine.state.priority_player_id, engine.state.active_player_id)
+
+    def test_uncertain_missing_source_fizzles_and_priority_keeps_advancing(self):
+        engine, _, _ = self.make_engine()
+        target_id = force_zone(engine, "B-000", "B", Zone.BATTLEFIELD)
+        target = engine.catalog.get("B-000")
+        engine.catalog._cards["B-000"] = CardDefinition(
+            target.card_id, target.name, target.kind, target.cost,
+            rank=CardRank.DIVINE, base_strength=target.base_strength,
+        )
+        engine.state.stack.append(StackItem(
+            "legacy-missing", "A", "missing-source",
+            (EffectDefinition(EffectKind.DEAL_DAMAGE, 1, TargetMode.CHOSEN_PERMANENT),),
+            chosen_card_ids=(target_id,), ability_id="old",
+            ability_source_profile=AbilitySourceProfile(
+                "missing-source", CardKind.EVENT, True, True, False,
+                nature_is_certain=False,
+            ),
+        ))
+        engine.state.priority_player_id = "B"
+        engine.execute(PassPriority("B"))
+        engine.execute(PassPriority("A"))
+        self.assertFalse(engine.state.stack)
+        self.assertEqual(engine.state.cards[target_id].damage, 0)
+        self.assertEqual(engine.state.event_log[-1].event_type, "STACK_ITEM_RESOLVED")
+        self.assertEqual(engine.state.priority_player_id, engine.state.active_player_id)

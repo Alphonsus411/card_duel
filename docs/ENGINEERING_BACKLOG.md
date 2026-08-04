@@ -118,3 +118,13 @@ comandos existentes.
   dominio por su cuenta.
 - Definir puertos técnicos para telemetría y reloj sólo cuando exista un caso de
   uso probado, manteniéndolos fuera de las reglas del motor.
+
+## Cierre de compatibilidad 0.20.1 (no es backlog)
+
+La entrega conserva snapshot/replay v2 con semántica explícita, reconstruye de
+forma conservadora perfiles ausentes, congela el tipo efectivo de la fuente y
+alinea la enumeración de acciones con su ejecución. La tolerancia de digest se
+limita a 0.20.x anteriores al perfil y las nuevas escrituras usan la huella
+completa. La evidencia se conserva separada por versión. Estas garantías están
+cerradas técnicamente, pero `N-POINTS-01` y `M-LORD-EVENT-01` continúan
+bloqueados.

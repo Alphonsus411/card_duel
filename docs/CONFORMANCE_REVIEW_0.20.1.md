@@ -1,6 +1,8 @@
 # Revisión de conformidad del estado 0.20.1
 
-Fecha de revisión: **2026-08-02**.
+Fecha de revisión inicial: **2026-08-02**.
+
+Fecha de cierre e integración: **2026-08-03**.
 
 ## Decisión sobre la base
 

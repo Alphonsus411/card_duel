@@ -125,3 +125,18 @@ para generalizar una mecánica.
 - **Límite deliberado:** esta inmunidad de selección no se consulta para
   descarte, sacrificio, costes, acciones basadas en estado ni movimientos por
   otras reglas. Tampoco se atribuye inmunidad automática a los Legendarios.
+
+## Evidencia técnica de cierre 0.20.1
+
+La semántica persistida es explícita en snapshot/replay v2 mediante
+`engine_semantics`. El perfil de procedencia congela, al entrar en pila, el tipo
+efectivo y si la fuente era una criatura permanente; selección, enumeración de
+acciones y ejecución consumen el mismo dato. Para v2 antiguos sin perfil sólo se
+reconstruye lo demostrable desde una fuente viva coincidente y el resto queda
+incierto, con rechazo conservador.
+
+La excepción de digest 0.20.x acepta únicamente la huella histórica que omitía
+el perfil; al volver a guardar se emite la representación completa. Los informes
+de 0.20.0 y 0.20.1 se archivan en directorios distintos y no son evidencia
+intercambiable. Nada de ello resuelve `N-POINTS-01` o `M-LORD-EVENT-01`, ni añade
+cartas o catálogo.

@@ -169,3 +169,23 @@ en `ZoneManager`; `GameEngine` conserva coordinación, transacción y replay. La
 paridad de `test_zone_parity_r072.py` compara todas las observaciones
 deterministas mediante un `ZoneContext` mínimo independiente. R-07.2 queda
 cerrada sin resolver ambigüedades ni cambiar reglas del juego.
+
+## Cierre técnico 0.20.1 y límites de compatibilidad
+
+- La aceptación de digest heredado se limita a documentos 0.20.x anteriores al
+  perfil de procedencia: al reproducirlos se admite la huella histórica sin ese
+  campo, pero toda serialización nueva emite la huella completa. No es una
+  equivalencia general entre estados ni una relajación para otras versiones.
+- Snapshot/replay mantienen el esquema v2 y declaran `engine_semantics`; el
+  significado de los comandos no se deduce sólo de `schema_version`.
+- Si un v2 antiguo carece del perfil, éste sólo se reconstruye cuando la fuente
+  viva permite probar identidad, permanencia y tipo efectivo; ante duda se
+  conserva un perfil incierto y la selección se rechaza de forma conservadora.
+- Cada elemento nuevo de pila congela el tipo efectivo y la condición de
+  criatura permanente al crearse. La enumeración de acciones y su ejecución
+  consultan esa misma procedencia, evitando ofrecer una acción que luego cambie
+  de significado porque la fuente abandone el tapiz.
+- La evidencia de release queda separada por versión bajo
+  `docs/release-results/<version>/`; ningún resultado 0.20.0 prueba 0.20.1.
+
+Este cierre técnico no resuelve `N-POINTS-01` ni `M-LORD-EVENT-01`.

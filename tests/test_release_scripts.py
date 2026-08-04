@@ -128,17 +128,45 @@ class ReleaseVerifierTests(unittest.TestCase):
         simulations.assert_not_called(); persistence.assert_not_called(); rules_sources.assert_not_called(); package.assert_not_called()
 
     def test_runtime_never_invokes_build_or_wheel_auditor(self):
-        commands = []
+        commands: list[list[str]] = []
+        forbidden = ("build", "verify_reproducible_wheel", "uv pip install", ".whl", "wheel")
+
         def runner(command, **kwargs):
             commands.append(command)
+            rendered = " ".join(str(part) for part in command).lower()
+            for fragment in forbidden:
+                if fragment in rendered:
+                    self.fail(f"El perfil runtime ejecutó una operación de paquete: {rendered}")
             output = "90" if "--format=total" in command else ""
             return subprocess.CompletedProcess(command, 0, output, "")
-        with patch.object(self.release, "verify_simulations"), \
-             patch.object(self.release, "verify_persistence"):
-            self.release.verify("runtime", runner=runner)
-        flattened = [part for command in commands for part in command]
-        self.assertNotIn("build", flattened)
-        self.assertNotIn("scripts/verify_reproducible_wheel.py", flattened)
+
+        with patch.object(self.release, "_metadata", return_value={"status": "ok"}), \
+             patch.object(self.release, "_security", return_value={"status": "ok"}), \
+             patch.object(self.release, "verify_simulations") as simulations, \
+             patch.object(self.release, "verify_persistence") as persistence, \
+             patch.object(self.release, "_package") as package:
+            result = self.release.verify("runtime", runner=runner)
+
+        self.assertTrue(commands)
+        self.assertEqual(result["executed_stages"], ["metadata", "lockfile", "security", "quality"])
+        simulations.assert_not_called()
+        persistence.assert_not_called()
+        package.assert_not_called()
+
+    def test_full_profile_preserves_package_stage(self):
+        stage_result = {"status": "ok"}
+        with patch.object(self.release, "_metadata", return_value=stage_result), \
+             patch.object(self.release, "_lockfile", return_value=stage_result), \
+             patch.object(self.release, "_security", return_value=stage_result), \
+             patch.object(self.release, "_quality", return_value=stage_result), \
+             patch.object(self.release, "_rules_sources", return_value=stage_result), \
+             patch.object(self.release, "verify_simulations", return_value=stage_result), \
+             patch.object(self.release, "verify_persistence", return_value=stage_result), \
+             patch.object(self.release, "_package", return_value=stage_result) as package:
+            result = self.release.verify("full")
+
+        package.assert_called_once()
+        self.assertEqual(result["executed_stages"][-1], "package")
 
     def test_command_errors_propagate(self):
         def failing(*args, **kwargs):
@@ -221,13 +249,16 @@ class WheelAuditTests(unittest.TestCase):
     def setUpClass(cls):
         cls.wheel = load("wheel_audit_tests", "verify_reproducible_wheel.py")
         cls.policy = cls.wheel.policy_for(ROOT)
-        temporary = tempfile.NamedTemporaryFile(suffix=".whl", delete=False)
-        temporary.close()
-        cls.original = Path(temporary.name)
+        cls.temporary = tempfile.TemporaryDirectory()
+        cls.original = Path(cls.temporary.name) / cls.policy.wheel_name
         content = {}
         for name in cls.policy.canonical_order:
             if name == f"{cls.policy.dist_info}/METADATA":
-                data = f"Metadata-Version: 2.4\nName: card-duel-engine\nVersion: {cls.policy.version}\nLicense-Expression: Apache-2.0\n".encode()
+                data = (
+                    f"Metadata-Version: 2.4\nName: card-duel-engine\n"
+                    f"Version: {cls.policy.version}\nLicense-Expression: Apache-2.0\n\n"
+                    f"## Alcance de la versión {cls.policy.version}\n"
+                ).encode()
             elif name == f"{cls.policy.dist_info}/WHEEL":
                 data = b"Wheel-Version: 1.0\nRoot-Is-Purelib: true\nTag: py3-none-any\n"
             elif name == f"{cls.policy.dist_info}/top_level.txt":
@@ -255,7 +286,7 @@ class WheelAuditTests(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        cls.original.unlink(missing_ok=True)
+        cls.temporary.cleanup()
 
     def mutate(self, transform):
         temporary = tempfile.NamedTemporaryFile(suffix=".whl", delete=False)
@@ -334,7 +365,33 @@ class WheelAuditTests(unittest.TestCase):
 
     def test_wrong_version_or_license_is_rejected(self):
         metadata = f"{self.policy.dist_info}/METADATA"
-        self.assert_rejected(lambda es: [(n, d.replace(b"Apache-2.0", b"MIT") if n == metadata else d) for n, d in es], "Versi.n o licencia")
+        self.assert_rejected(lambda es: [(n, d.replace(b"Apache-2.0", b"MIT") if n == metadata else d) for n, d in es], "Licencia incorrecta")
+
+    def test_built_wheel_metadata_contains_version_and_current_scope_heading(self):
+        report = self.wheel.audit(self.original, self.policy)
+        self.assertEqual(report["version"], self.policy.version)
+
+    def test_metadata_without_exact_version_is_rejected(self):
+        metadata = f"{self.policy.dist_info}/METADATA"
+        expected = f"Version: {self.policy.version}".encode()
+        self.assert_rejected(
+            lambda entries: [
+                (name, data.replace(expected, b"Version: 9.99.9") if name == metadata else data)
+                for name, data in entries
+            ],
+            "versión exacta",
+        )
+
+    def test_packed_readme_without_current_scope_heading_is_rejected(self):
+        metadata = f"{self.policy.dist_info}/METADATA"
+        heading = f"## Alcance de la versión {self.policy.version}".encode()
+        self.assert_rejected(
+            lambda entries: [
+                (name, data.replace(heading, b"## Alcance obsoleto") if name == metadata else data)
+                for name, data in entries
+            ],
+            "README empacado",
+        )
 
     def test_divergent_zip_order_is_rejected(self):
         self.assert_rejected(lambda es: list(reversed(es)), "Orden ZIP divergente")

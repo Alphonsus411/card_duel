@@ -474,7 +474,12 @@ class GameEvent:
 
 @dataclass(frozen=True)
 class AbilitySourceProfile:
-    """Características de la fuente relevantes al fijar objetivos de una habilidad."""
+    """Características congeladas de la fuente al apilar una habilidad.
+
+    ``printed_kind`` conserva su nombre por compatibilidad con snapshots y replays,
+    pero en los perfiles nuevos contiene el tipo *efectivo* de la fuente en ese
+    instante (incluidas copias y transformaciones), no necesariamente el impreso.
+    """
 
     source_card_id: str
     printed_kind: CardKind
@@ -482,6 +487,12 @@ class AbilitySourceProfile:
     was_permanent: bool
     was_on_battlefield: bool
     nature_is_certain: bool = True
+
+    @property
+    def effective_kind(self) -> CardKind:
+        """Alias no persistido que expresa la semántica actual de ``printed_kind``."""
+
+        return self.printed_kind
 
 
 @dataclass(frozen=True)

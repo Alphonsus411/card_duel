@@ -6,7 +6,7 @@
   ],
   "secret_patterns": {
     "aws_access_key": "AKIA[0-9A-Z]{16}",
-    "github_fine_grained_token": "github_pat_[A-Za-z0-9]{22}_[A-Za-z0-9]{59}(?![A-Za-z0-9])",
+    "github_fine_grained_token": "github_pat_[A-Za-z0-9]{22}_[A-Za-z0-9]{59}(?![A-Za-z0-9_])",
     "github_token": "gh[pousr]_[A-Za-z0-9]{36,255}",
     "private_key": "-----BEGIN (?:[A-Z]+ )?PRIVATE KEY-----"
   }

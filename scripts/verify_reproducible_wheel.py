@@ -119,8 +119,13 @@ def audit(wheel: Path, policy: WheelPolicy) -> dict[str, object]:
 
         metadata = archive.read(f"{policy.dist_info}/METADATA").decode("utf-8")
         wheel_metadata = archive.read(f"{policy.dist_info}/WHEEL").decode("utf-8")
-        if f"Version: {policy.version}" not in metadata or "License-Expression: Apache-2.0" not in metadata:
-            raise SystemExit("Versión o licencia incorrectas")
+        if f"Version: {policy.version}" not in metadata.splitlines():
+            raise SystemExit("METADATA no contiene la versión exacta del proyecto")
+        if "License-Expression: Apache-2.0" not in metadata:
+            raise SystemExit("Licencia incorrecta")
+        scope_heading = f"## Alcance de la versión {policy.version}"
+        if scope_heading not in metadata:
+            raise SystemExit("El README empacado no contiene el encabezado de alcance vigente")
         runtime_dependencies = [
             line.removeprefix("Requires-Dist:").strip()
             for line in metadata.splitlines()

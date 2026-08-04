@@ -141,8 +141,9 @@ rechaza de forma conservadora las selecciones que dependan de ella. Los nuevos
 elementos de pila congelan el tipo efectivo de la fuente, y la enumeración de
 acciones comparte ese contrato con la ejecución.
 
-La compatibilidad de digest 0.20.x es deliberadamente limitada: permite validar
-la huella histórica que omitía el perfil, pero una nueva serialización incorpora
+La compatibilidad de digest está cerrada a 0.20.0 y 0.20.1: permite validar la
+huella histórica que omitía el perfil, pero rechaza desde 0.20.2 cualquier
+intento de usar esa excepción. Una nueva serialización incorpora
 el perfil y produce la huella completa. La evidencia de cada entrega se conserva
 en `docs/release-results/<version>/`; un informe de 0.20.0 no acredita 0.20.1.
 `N-POINTS-01` y `M-LORD-EVENT-01` permanecen bloqueados.

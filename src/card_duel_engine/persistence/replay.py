@@ -15,6 +15,7 @@ from .migrations import migrate_document
 from .snapshot import legacy_state_digest_without_ability_source_profile, state_digest
 
 REPLAY_SCHEMA_VERSION = "2"
+LEGACY_PROFILE_DIGEST_VERSIONS = frozenset(("0.20.0", "0.20.1"))
 
 
 def _checksum(body: Mapping[str, Any]) -> str:
@@ -145,9 +146,5 @@ def replay_from_log(
 
 
 def _is_affected_020_version(version: object) -> bool:
-    parts = str(version).split(".")
-    return (
-        len(parts) == 3
-        and parts[:2] == ["0", "20"]
-        and parts[2].isdigit()
-    )
+    """Limit the compatibility escape hatch to versions that emitted the digest."""
+    return version in LEGACY_PROFILE_DIGEST_VERSIONS

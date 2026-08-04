@@ -135,8 +135,9 @@ acciones y ejecución consumen el mismo dato. Para v2 antiguos sin perfil sólo 
 reconstruye lo demostrable desde una fuente viva coincidente y el resto queda
 incierto, con rechazo conservador.
 
-La excepción de digest 0.20.x acepta únicamente la huella histórica que omitía
-el perfil; al volver a guardar se emite la representación completa. Los informes
+La excepción de digest de 0.20.0 y 0.20.1 acepta únicamente la huella histórica
+que omitía el perfil; desde 0.20.2 se rechaza y al volver a guardar se emite la
+representación completa. Los informes
 de 0.20.0 y 0.20.1 se archivan en directorios distintos y no son evidencia
 intercambiable. Nada de ello resuelve `N-POINTS-01` o `M-LORD-EVENT-01`, ni añade
 cartas o catálogo.

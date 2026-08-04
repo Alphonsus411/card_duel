@@ -84,12 +84,14 @@ class Legacy020AbilitySourceProfileReplayTests(unittest.TestCase):
                     legacy_state_digest_without_ability_source_profile(engine), baseline
                 )
 
-    def test_unknown_020_like_version_does_not_receive_historical_fallback(self):
-        document = json.loads((ARTIFACTS / REPLAYS[0]).read_text())
-        document["body"]["engine_version"] = "0.20.1+unknown"
-        document["body"]["rules"]["fields"]["version"] = "0.20.1+unknown"
-        with self.assertRaisesRegex(ValueError, "diverge"):
-            replay_from_log(_rechecksum(document))
+    def test_versions_outside_the_historical_window_do_not_receive_fallback(self):
+        for version in ("0.20.1+unknown", "0.20.2", "0.20.10"):
+            with self.subTest(version=version):
+                document = json.loads((ARTIFACTS / REPLAYS[0]).read_text())
+                document["body"]["engine_version"] = version
+                document["body"]["rules"]["fields"]["version"] = version
+                with self.assertRaisesRegex(ValueError, "diverge"):
+                    replay_from_log(_rechecksum(document))
 
     def test_replay_schema_remains_v2(self):
         self.assertEqual(REPLAY_SCHEMA_VERSION, "2")

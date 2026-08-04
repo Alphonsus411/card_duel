@@ -8,6 +8,7 @@ import tempfile
 import tomllib
 import unittest
 from unittest.mock import patch
+import zipfile
 
 import card_duel_engine
 from card_duel_engine.rules.config import RuleSet
@@ -77,6 +78,53 @@ class ReleaseMetadataTests(unittest.TestCase):
     def test_public_and_rules_versions_are_in_sync(self):
         self.assertEqual(card_duel_engine.__version__, project_version())
         self.assertEqual(RuleSet().version, card_duel_engine.__version__)
+
+    def test_release_version_is_consistent_across_declared_surfaces(self):
+        expected = project_version()
+        lock = (ROOT / "uv.lock").read_text(encoding="utf-8")
+        package = re.search(
+            r'\[\[package\]\]\nname = "card-duel-engine"\nversion = "([^"]+)"',
+            lock,
+        )
+        self.assertIsNotNone(package)
+        assert package is not None
+        self.assertEqual(package.group(1), expected)
+
+        documents = {
+            "README.md": f"## Alcance de la versión {expected}",
+            "CHANGELOG.md": f"## {expected}",
+            f"docs/VALIDATION_{expected}.md": (
+                f"# Validación candidata de la entrega {expected}"
+            ),
+        }
+        for relative, marker in documents.items():
+            with self.subTest(document=relative):
+                self.assertIn(marker, (ROOT / relative).read_text(encoding="utf-8"))
+
+    def test_built_wheel_filename_and_metadata_match_project_version(self):
+        expected = project_version()
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            subprocess.run(
+                [sys.executable, "-m", "build", "--wheel", "--outdir", str(output)],
+                cwd=ROOT,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            wheels = list(output.glob("*.whl"))
+            self.assertEqual(
+                [wheel.name for wheel in wheels],
+                [f"card_duel_engine-{expected}-py3-none-any.whl"],
+            )
+            with zipfile.ZipFile(wheels[0]) as archive:
+                metadata_names = [
+                    name for name in archive.namelist() if name.endswith(".dist-info/METADATA")
+                ]
+                self.assertEqual(len(metadata_names), 1)
+                metadata = archive.read(metadata_names[0]).decode("utf-8")
+            self.assertIn("Name: card-duel-engine\n", metadata)
+            self.assertIn(f"Version: {expected}\n", metadata)
 
     def resolve_from_tree(self, root, pyproject=None, *, installed="0.18.0"):
         from card_duel_engine import _version

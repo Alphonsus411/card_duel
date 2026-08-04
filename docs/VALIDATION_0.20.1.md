@@ -4,6 +4,25 @@ Esta guía define cómo producir y validar el conjunto de publicación. Toda
 ejecución fuera de GitHub Actions es un **candidato local**, no el artefacto de
 CI que se publicará.
 
+## Selección de versión y canales formales
+
+La revisión se inició después de actualizar la rama con `origin/main`, en el
+SHA `3d56939f7d479d2bf141d9d260007a4198aa25f1`, el 4 de agosto de 2026. Se
+consultaron por separado los tres canales formales verificables, sin considerar
+ningún artefacto de GitHub Actions como una publicación:
+
+- `git ls-remote --tags origin 'refs/tags/*'` no devolvió etiquetas estables;
+- `GET /repos/Alphonsus411/card_duel/releases` devolvió una lista vacía de
+  GitHub Releases;
+- el registro configurado, PyPI (`https://pypi.org/simple`, según `uv.lock`),
+  respondió HTTP 404 a `GET /pypi/card-duel-engine/json`, por lo que el proyecto
+  y la versión 0.20.1 no constan publicados allí.
+
+Las tres consultas fueron concluyentes y ninguna acredita la publicación formal
+de 0.20.1. Por tanto, conforme a la regla de selección, se conserva **0.20.1**;
+no corresponde avanzar a 0.20.2. Esta evidencia describe el estado observado en
+la fecha indicada y no sustituye una nueva consulta antes de publicar.
+
 ## Comandos, en orden
 
 ```bash

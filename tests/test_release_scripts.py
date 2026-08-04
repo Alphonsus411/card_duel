@@ -52,10 +52,13 @@ class RepositorySecretPatternTests(unittest.TestCase):
         cls.rules = ROOT / "config" / "security-rules.json"
 
     @staticmethod
-    def synthetic_fine_grained_token() -> bytes:
-        """Credencial deliberadamente inválida que conserva la forma a analizar."""
-        identifier = "0" * 22
-        secret = "INVALIDTESTTOKEN" + "X" * (59 - len("INVALIDTESTTOKEN"))
+    def synthetic_fine_grained_token(
+        identifier_length: int = 22, secret_length: int = 59
+    ) -> bytes:
+        """Patrón sintético con forma válida que nunca contiene un secreto real."""
+        identifier = "0" * identifier_length
+        marker = "INVALIDTESTTOKEN"
+        secret = (marker + "X" * secret_length)[:secret_length]
         return ("github" + "_pat_" + identifier + "_" + secret).encode()
 
     def verify_content(self, content: bytes) -> dict[str, int]:
@@ -70,15 +73,34 @@ class RepositorySecretPatternTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "github_fine_grained_token"):
             self.verify_content(self.synthetic_fine_grained_token())
 
+    def test_github_fine_grained_token_with_legitimate_separators_is_rejected(self):
+        token = self.synthetic_fine_grained_token()
+        for content in (b"(" + token + b")", b"token=" + token + b"\n", token + b","):
+            with self.subTest(content=content), \
+                 self.assertRaisesRegex(ValueError, "github_fine_grained_token"):
+                self.verify_content(content)
+
     def test_github_pat_prefix_without_credential_shape_is_accepted(self):
         result = self.verify_content(
             b"Documentation mentions github_pat_ but contains no credential.\n"
         )
         self.assertEqual(result["tracked_files_scanned"], 1)
 
-    def test_github_pat_with_malformed_segments_is_accepted(self):
-        malformed = b"github" + b"_pat_" + b"0" * 21 + b"_" + b"X" * 59
-        result = self.verify_content(malformed)
+    def test_github_pat_with_short_or_long_segments_is_accepted(self):
+        lengths = ((21, 59), (23, 59), (22, 58), (22, 60))
+        for identifier_length, secret_length in lengths:
+            with self.subTest(
+                identifier_length=identifier_length, secret_length=secret_length
+            ):
+                malformed = self.synthetic_fine_grained_token(
+                    identifier_length, secret_length
+                )
+                result = self.verify_content(malformed)
+                self.assertEqual(result["tracked_files_scanned"], 1)
+
+    def test_github_pat_token_with_underscore_suffix_is_accepted_whole(self):
+        extended = self.synthetic_fine_grained_token() + b"_extra"
+        result = self.verify_content(extended)
         self.assertEqual(result["tracked_files_scanned"], 1)
 
     def test_synthetic_token_inserted_in_historical_fixture_is_detected(self):

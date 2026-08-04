@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pickle
 import unittest
 from decimal import Decimal
 from unittest.mock import patch
@@ -18,6 +19,10 @@ from card_duel_engine.service import DeckValidationFailure
 from card_duel_engine.storage import MatchNotFound
 
 
+def set_id_starts_with_season(set_id: str) -> bool:
+    return set_id.startswith("season-")
+
+
 def card(card_id: str, *, cost: int = 5, rank: CardRank = CardRank.STANDARD, set_id: str = "new") -> CardDefinition:
     return CardDefinition(card_id, card_id, CardKind.EVENT, cost, rank=rank, set_id=set_id)
 
@@ -27,6 +32,49 @@ def legal_cards(size: int, *, set_id: str = "new") -> list[CardDefinition]:
 
 
 class DeckConstructionPolicyTests(unittest.TestCase):
+    def test_equivalent_mythic_policies_have_equal_hashes_and_pickle_roundtrip(self):
+        first = mythic_deck_policy()
+        second = mythic_deck_policy()
+
+        self.assertEqual(first, second)
+        self.assertEqual(hash(first), hash(second))
+        self.assertEqual(pickle.loads(pickle.dumps(first)), first)
+
+    def test_isolated_and_explicitly_empty_mythic_classifiers_are_distinct(self):
+        isolated = mythic_deck_policy()
+        empty = mythic_deck_policy(mythic_set_ids=())
+
+        self.assertNotEqual(isolated, empty)
+        self.assertFalse(empty._is_mythic("any-set"))
+        self.assertTrue(isolated._is_mythic("any-set"))
+        self.assertEqual(pickle.loads(pickle.dumps(empty)), empty)
+
+    def test_nonempty_mythic_ids_are_the_authority_without_a_predicate(self):
+        first = mythic_deck_policy(mythic_set_ids={"myth"})
+        second = mythic_deck_policy(mythic_set_ids={"myth"})
+
+        self.assertIsNone(first.mythic_set_predicate)
+        self.assertEqual(first, second)
+        self.assertEqual(hash(first), hash(second))
+
+    def test_custom_predicate_preserves_normal_callable_equality(self):
+        same_callable = mythic_deck_policy(
+            mythic_set_predicate=set_id_starts_with_season
+        )
+        same_callable_again = mythic_deck_policy(
+            mythic_set_predicate=set_id_starts_with_season
+        )
+        different_callable = mythic_deck_policy(
+            mythic_set_predicate=lambda set_id: set_id.startswith("season-")
+        )
+
+        self.assertEqual(same_callable, same_callable_again)
+        self.assertEqual(hash(same_callable), hash(same_callable_again))
+        self.assertNotEqual(same_callable, different_callable)
+        self.assertEqual(
+            pickle.loads(pickle.dumps(same_callable)), same_callable
+        )
+
     def test_all_numeric_limits_require_exact_int(self):
         fields = (
             "min_cards", "max_cards", "max_standard_copies",

@@ -17,6 +17,16 @@ from ..domain.models import CardDefinition
 SetPredicate = Callable[[str], bool]
 
 
+def _all_sets_are_mythic(_set_id: str) -> bool:
+    """Clasifica cualquier colección como Mítica en el perfil aislado."""
+    return True
+
+
+def _no_sets_are_mythic(_set_id: str) -> bool:
+    """Representa un clasificador Mítico explícitamente vacío."""
+    return False
+
+
 @dataclass(frozen=True, order=True)
 class DeckValidationIssue:
     """Un incumplimiento estable, apto para mostrar o registrar."""
@@ -220,10 +230,13 @@ def mythic_deck_policy(
     # llamador abre el formato a colecciones explícitas, debe clasificarlas
     # también de forma explícita para que futuras ediciones no hereden 5–50.
     if not has_general_classifier and not has_mythic_classifier:
-        mythic_set_predicate = lambda _set_id: True
+        mythic_set_predicate = _all_sets_are_mythic
     elif mythic_set_ids is not None and mythic_set_predicate is None:
-        # Incluso el conjunto vacío es un clasificador explícito y válido.
-        mythic_set_predicate = lambda _set_id: False
+        mythic_set_ids = frozenset(mythic_set_ids)
+        if not mythic_set_ids:
+            # El conjunto vacío es un clasificador explícito y se distingue del
+            # perfil aislado, que clasifica todas las colecciones como Míticas.
+            mythic_set_predicate = _no_sets_are_mythic
     return DeckConstructionPolicy(
         min_cards=40, max_cards=60, max_standard_copies=5,
         max_legendary_copies=4, forbid_zero_cost=True,

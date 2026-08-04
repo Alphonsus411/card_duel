@@ -18,7 +18,8 @@ ni resultados de `VALIDATION_0.19.0.md`.
   wheel: 4 pruebas correctas, incluida su inspección efectiva y la compatibilidad
   de artefactos 0.19.0.
 
-- `uv run python scripts/verify_release.py --profile full --json release-verification.json`:
+- `uv run python scripts/verify_release.py --profile full --json
+  docs/release-results/0.20.0/full-python-3.13.json`:
   perfil completo correcto contra el commit candidato; 88 % de cobertura, dos
   fuentes verificadas, 300 simulaciones (54.000 comandos y 84.000 eventos), 30
   pares persistentes, wheel reproducible e instalación en Python 3.11–3.13.
@@ -35,10 +36,10 @@ encima del umbral obligatorio del 86 %.
 
 Los resúmenes de máquina se conservan, sin reinterpretarlos, en:
 
-- `release-results/runtime-python-3.11.json`;
-- `release-results/runtime-python-3.12.json`;
-- `release-results/runtime-python-3.13.json`;
-- `release-results/full-python-3.13.json`.
+- `release-results/0.20.0/runtime-python-3.11.json`;
+- `release-results/0.20.0/runtime-python-3.12.json`;
+- `release-results/0.20.0/runtime-python-3.13.json`;
+- `release-results/0.20.0/full-python-3.13.json`.
 
 Cada runtime ejecutó lockfile, mypy, `compileall`, suite completa y cobertura
 con el intérprete indicado. El perfil full de Python 3.13 añadió las dos

@@ -1,0 +1,103 @@
+{
+  "executed_stages": [
+    "lockfile",
+    "quality",
+    "rules-sources",
+    "simulations",
+    "persistence",
+    "package"
+  ],
+  "lockfile": {
+    "sha256": "53764d6b5a5cca429b88ad0149012ec90d4c749bac7d0a8e719e9d1b894d3f12",
+    "status": "ok",
+    "unchanged": true
+  },
+  "package": {
+    "audit": {
+      "binary_identical_builds": 2,
+      "filename": "card_duel_engine-0.20.0-py3-none-any.whl",
+      "files": 41,
+      "license": "Apache-2.0",
+      "record_integrity": true,
+      "root_is_purelib": true,
+      "runtime_dependencies": 0,
+      "sha256": "011dea0ca6df85598f0a30e04bf5a37ecbea141ab339ef5b14378e5074a71496",
+      "source_date_epoch": 1785659812,
+      "tag": "py3-none-any",
+      "version": "0.20.0",
+      "zip_order": [
+        "card_duel_engine/__init__.py",
+        "card_duel_engine/_version.py",
+        "card_duel_engine/application.py",
+        "card_duel_engine/catalog.py",
+        "card_duel_engine/service.py",
+        "card_duel_engine/content/__init__.py",
+        "card_duel_engine/content/manifest.py",
+        "card_duel_engine/content/registry.py",
+        "card_duel_engine/content/signature.py",
+        "card_duel_engine/controllers/__init__.py",
+        "card_duel_engine/controllers/base.py",
+        "card_duel_engine/domain/__init__.py",
+        "card_duel_engine/domain/enums.py",
+        "card_duel_engine/domain/errors.py",
+        "card_duel_engine/domain/models.py",
+        "card_duel_engine/engine/__init__.py",
+        "card_duel_engine/engine/combat.py",
+        "card_duel_engine/engine/commands.py",
+        "card_duel_engine/engine/effects.py",
+        "card_duel_engine/engine/game.py",
+        "card_duel_engine/engine/stack.py",
+        "card_duel_engine/engine/zones.py",
+        "card_duel_engine/persistence/__init__.py",
+        "card_duel_engine/persistence/codec.py",
+        "card_duel_engine/persistence/migrations.py",
+        "card_duel_engine/persistence/replay.py",
+        "card_duel_engine/persistence/snapshot.py",
+        "card_duel_engine/rules/__init__.py",
+        "card_duel_engine/rules/config.py",
+        "card_duel_engine/rules/deck.py",
+        "card_duel_engine/rules/resolvers.py",
+        "card_duel_engine/simulation/__init__.py",
+        "card_duel_engine/simulation/agents.py",
+        "card_duel_engine/simulation/runner.py",
+        "card_duel_engine/storage/__init__.py",
+        "card_duel_engine/storage/base.py",
+        "card_duel_engine/storage/sqlite.py",
+        "card_duel_engine-0.20.0.dist-info/METADATA",
+        "card_duel_engine-0.20.0.dist-info/WHEEL",
+        "card_duel_engine-0.20.0.dist-info/top_level.txt",
+        "card_duel_engine-0.20.0.dist-info/RECORD"
+      ]
+    },
+    "installed_python_versions": [
+      "3.11",
+      "3.12",
+      "3.13"
+    ],
+    "status": "ok"
+  },
+  "persistence": {
+    "roundtrips": 30,
+    "status": "ok"
+  },
+  "profile": "full",
+  "quality": {
+    "compileall": true,
+    "coverage_percent": 88.0,
+    "mypy": true,
+    "status": "ok"
+  },
+  "rules-sources": {
+    "status": "ok",
+    "verified_sources": 2
+  },
+  "schema_version": 2,
+  "simulations": {
+    "commands": 54000,
+    "events": 84000,
+    "simulations": 300,
+    "status": "ok"
+  },
+  "status": "ok",
+  "version": "0.20.0"
+}

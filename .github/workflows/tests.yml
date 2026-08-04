@@ -31,11 +31,14 @@ jobs:
         with:
           version: ${{ env.UV_VERSION }}
       - run: uv sync --locked --extra dev
-      - run: uv run python scripts/verify_release.py --profile runtime --json runtime-${{ matrix.python-version }}.json
+      - name: Resolve package version
+        id: package
+        run: echo "version=$(uv run python -c 'from pathlib import Path; from scripts.project_metadata import read_project_version; print(read_project_version(Path.cwd()))')" >> "$GITHUB_OUTPUT"
+      - run: uv run python scripts/verify_release.py --profile runtime --json docs/release-results/${{ steps.package.outputs.version }}/runtime-python-${{ matrix.python-version }}.json
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: runtime-${{ matrix.python-version }}
-          path: runtime-${{ matrix.python-version }}.json
+          path: docs/release-results/${{ steps.package.outputs.version }}/runtime-python-${{ matrix.python-version }}.json
           if-no-files-found: error
 
   full:
@@ -64,7 +67,7 @@ jobs:
               output.write(f"version={version}\n")
               output.write(f"wheel=card_duel_engine-{version}-py3-none-any.whl\n")
           PY
-      - run: uv run python scripts/verify_release.py --profile full --json dist/release-verification.json
+      - run: uv run python scripts/verify_release.py --profile full --json docs/release-results/${{ steps.package.outputs.version }}/full-python-3.13.json
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: card-duel-engine-${{ steps.package.outputs.version }}-release
@@ -72,5 +75,5 @@ jobs:
             dist/${{ steps.package.outputs.wheel }}
             dist/SHA256SUMS
             dist/wheel-audit.json
-            dist/release-verification.json
+            docs/release-results/${{ steps.package.outputs.version }}/full-python-3.13.json
           if-no-files-found: error

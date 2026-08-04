@@ -229,13 +229,14 @@ class ReleaseVerifierTests(unittest.TestCase):
             "dist/${{ steps.package.outputs.wheel }}",
             "dist/SHA256SUMS",
             "dist/wheel-audit.json",
-            "dist/release-verification.json",
         }
         upload_lines = {line.strip() for line in upload.splitlines()}
         uploaded = {line for line in upload_lines if line.startswith("dist/")}
         self.assertEqual(uploaded, expected_paths)
+        evidence = "docs/release-results/${{ steps.package.outputs.version }}/full-python-3.13.json"
+        self.assertIn(evidence, upload_lines)
         self.assertIn("if-no-files-found: error", upload)
-        self.assertIn("--json dist/release-verification.json", full_job)
+        self.assertIn(f"--json {evidence}", full_job)
 
         verifier = (ROOT / "scripts" / "verify_release.py").read_text(encoding="utf-8")
         wheel_audit = (ROOT / "scripts" / "verify_reproducible_wheel.py").read_text(encoding="utf-8")

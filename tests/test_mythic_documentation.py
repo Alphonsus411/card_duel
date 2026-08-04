@@ -61,7 +61,13 @@ STALE_DOCUMENTATION = {
     ),
     "Desafío actual restringido exclusivamente a Reinos": re.compile(
         r"\bDesaf[ií]o\b[^.]{0,80}"
-        r"\b(?:exclusivamente|s[oó]lo permite)\b[^.]{0,40}\bReinos\b",
+        r"\b(?:"
+        r"(?:est[aá]\s+)?restringid[oa]\s+exclusivamente\s+a|"
+        r"exige\s+dominio|"
+        r"requiere\s+ser\s+de|"
+        r"s[oó]lo\s+permite|"
+        r"est[aá]\s+disponible\s+exclusivamente\s+para"
+        r")\b[^.]{0,40}\bReinos\b",
         re.IGNORECASE,
     ),
 }
@@ -106,8 +112,10 @@ class MythicDocumentationTests(unittest.TestCase):
     def test_detector_recognizes_exclusive_challenge_claims(self):
         claim = "Desafío actual restringido exclusivamente a Reinos"
         examples = (
-            "Actualmente Desafío está disponible exclusivamente para Reinos.",
+            "La regla de Desafío exige dominio Reinos.",
+            "Para declararse, Desafío requiere ser de Reinos.",
             "El backend indica que Desafío  \n\tsólo permite Señores de  \nReinos.",
+            "Actualmente Desafío está disponible exclusivamente para Reinos.",
         )
         for example in examples:
             with self.subTest(example=example):
@@ -119,6 +127,7 @@ class MythicDocumentationTests(unittest.TestCase):
             "Desafío requiere que el Señor se haya transformado antes de declararlo.",
             "Un Señor de Reinos transformado es elegible para declarar Desafío.",
             "Las reglas de Reinos describen cómo se obtiene el control de un dominio.",
+            "Desafío requiere CAN_CHALLENGE para dominios distintos de Reinos.",
         )
         for example in examples:
             with self.subTest(example=example):

@@ -253,6 +253,13 @@ class ReleaseVerifierTests(unittest.TestCase):
                         wheel_audit.index('(destination / "wheel-audit.json").write_text'))
         self.assertEqual(verifier.count("scripts/verify_reproducible_wheel.py"), 1)
 
+    def test_release_workflow_fetches_history_for_provenance_checks(self):
+        workflow = (ROOT / ".github" / "workflows" / "tests.yml").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertEqual(workflow.count("fetch-depth: 0"), 2)
+
     def test_validation_document_does_not_claim_a_manual_sha_is_final(self):
         validation = (
             ROOT / "docs" / f"VALIDATION_{project_version()}.md"

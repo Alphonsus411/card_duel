@@ -1329,6 +1329,8 @@ class GameEngine:
     def _legal_ability_activations(
         self, player_id: str, source_card_id: str
     ) -> list[ActivateAbility]:
+        if not self._ability_source_can_activate(player_id, source_card_id):
+            return []
         state = self._require_running_state()
         player = state.players[player_id]
         source = state.cards[source_card_id]
@@ -1597,16 +1599,25 @@ class GameEngine:
     ) -> None:
         """Valida presencia, zona, control y condición permanente al activar."""
 
-        state = self._require_running_state()
-        source = state.cards.get(source_card_id)
-        if (
-            source is None
-            or source.zone is not Zone.BATTLEFIELD
-            or source.controller_id != player_id
-            or source_card_id not in state.players[player_id].zones[Zone.BATTLEFIELD]
-            or not self._definition(source_card_id).permanent
-        ):
+        if not self._ability_source_can_activate(player_id, source_card_id):
             raise IllegalAction("La fuente debe ser un permanente bajo control propio")
+
+    def _ability_source_can_activate(
+        self, player_id: str, source_card_id: str
+    ) -> bool:
+        """Comprueba la autoridad de una fuente sin modificar el estado."""
+
+        state = self._require_running_state()
+        player = state.players.get(player_id)
+        source = state.cards.get(source_card_id)
+        if player is None or source is None:
+            return False
+        return (
+            source.zone is Zone.BATTLEFIELD
+            and source.controller_id == player_id
+            and source_card_id in player.zones[Zone.BATTLEFIELD]
+            and self._definition(source_card_id).permanent
+        )
 
     def _equip_card(self, command: EquipCard) -> None:
         state = self._require_running_state()

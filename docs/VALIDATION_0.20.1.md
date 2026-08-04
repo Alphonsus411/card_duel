@@ -76,3 +76,18 @@ El resultado no cierra `N-POINTS-01` ni `M-LORD-EVENT-01`, no define finales
 multijugador, no añade esquemas, cartas, catálogo o transporte y no modifica los
 PDF normativos. Los hashes generados localmente siguen siendo candidatos y no se
 presentan como artefactos publicados.
+
+## Contratos persistentes verificados
+
+Snapshot y replay siguen en esquema v2, pero transportan semántica explícita;
+la versión de esquema por sí sola no selecciona reglas históricas. Los perfiles
+ausentes en v2 antiguos se reconstruyen sólo con información viva inequívoca y
+quedan inciertos en los demás casos, de modo conservador. Para entradas nuevas,
+el tipo efectivo y la condición de criatura permanente se congelan al crear el
+elemento de pila, y las pruebas comparan la enumeración de acciones con su
+ejecución real.
+
+La verificación de digest heredado está limitada a 0.20.x que precede al perfil:
+puede aceptar la huella antigua sin ese campo, pero el siguiente snapshot/replay
+emite la huella completa. Los JSON de evidencia están separados por versión y
+los de 0.20.0 no acreditan 0.20.1.

@@ -4,6 +4,16 @@
 
 ## 0.20.1
 
+- Documentada la compatibilidad limitada de digest 0.20.x: sólo se acepta la
+  huella histórica sin perfil de procedencia y toda escritura nueva incluye el
+  estado completo.
+- Hechas explícitas las semánticas de snapshot/replay v2, con reconstrucción
+  conservadora de perfiles antiguos, tipo efectivo congelado y paridad entre
+  acciones enumeradas y ejecución.
+- Separada la evidencia de validación por versión, sin usar resultados 0.20.0
+  para acreditar 0.20.1; los bloqueos `N-POINTS-01` y `M-LORD-EVENT-01` siguen
+  abiertos.
+
 - Incorporadas comprobaciones cerradas de deriva entre la versión del proyecto,
   lockfile, changelog y documento de validación.
 - Añadido análisis estático versionado del checkout para secretos, ejecución

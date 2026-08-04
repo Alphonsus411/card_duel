@@ -185,3 +185,17 @@ queda excluido, no bloqueado ni pendiente.
 Estos cierres técnicos no cambian los bloqueos normativos: `N-POINTS-01` y
 `M-LORD-EVENT-01` permanecen explícitamente bloqueados. Tampoco habilitan cartas,
 catálogo, transporte ni esquemas persistentes nuevos.
+
+## Integración 0.20.1
+
+El cierre conserva los esquemas snapshot/replay v2 y hace explícita su semántica.
+Para documentos v2 antiguos, la procedencia sólo se reconstruye cuando puede
+probarse desde la fuente viva; cualquier incertidumbre se trata de forma
+conservadora. Los elementos nuevos congelan el tipo efectivo al entrar en pila y
+la misma información gobierna las acciones enumeradas y su ejecución. La
+compatibilidad de digest se restringe a huellas 0.20.x que omitían ese perfil;
+una nueva serialización siempre incluye el estado completo.
+
+La evidencia de cada versión reside en su propio directorio y no se reutiliza
+como prueba de otra entrega. Este cierre no cambia el estado bloqueado de
+`N-POINTS-01` ni `M-LORD-EVENT-01`, ni habilita catálogo o transporte.

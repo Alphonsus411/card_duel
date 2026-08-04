@@ -131,6 +131,22 @@ general no la convierte en Mítica. No se distribuye ningún catálogo Mítico.
 
 Los reglamentos primarios son `Fantasy Tokens.pdf` y `Fantasy Tokens Edicion Mitica.pdf`. Se conservan en el repositorio para trazabilidad, pero **ninguno de los dos PDF se empaqueta en el wheel**. El catálogo distribuido continúa vacío: no se ha incorporado ninguna carta de producción.
 
+## Compatibilidad persistente de 0.20.1
+
+Snapshot y replay conservan el esquema v2 y expresan por separado la semántica
+del motor. En documentos v2 antiguos sin perfil de procedencia, el motor sólo
+reconstruye identidad, permanencia y tipo efectivo cuando una fuente viva
+coincidente permite demostrarlo; en caso contrario mantiene la incertidumbre y
+rechaza de forma conservadora las selecciones que dependan de ella. Los nuevos
+elementos de pila congelan el tipo efectivo de la fuente, y la enumeración de
+acciones comparte ese contrato con la ejecución.
+
+La compatibilidad de digest 0.20.x es deliberadamente limitada: permite validar
+la huella histórica que omitía el perfil, pero una nueva serialización incorpora
+el perfil y produce la huella completa. La evidencia de cada entrega se conserva
+en `docs/release-results/<version>/`; un informe de 0.20.0 no acredita 0.20.1.
+`N-POINTS-01` y `M-LORD-EVENT-01` permanecen bloqueados.
+
 ## Desarrollo reproducible
 
 `uv` 0.7.22 y `uv.lock` constituyen la única estrategia para resolver las

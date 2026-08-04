@@ -1,6 +1,8 @@
 import importlib.util
 from pathlib import Path
 import re
+import json
+import subprocess
 import sys
 import tempfile
 import tomllib
@@ -12,6 +14,13 @@ from card_duel_engine.rules.config import RuleSet
 
 
 ROOT = Path(__file__).resolve().parents[1]
+HISTORICAL_0200_COMMIT = "006534eb9acc3b0e2fc67e409938ec5724e99077"
+RELEASE_RESULT_NAMES = {
+    "full-python-3.13.json",
+    "runtime-python-3.11.json",
+    "runtime-python-3.12.json",
+    "runtime-python-3.13.json",
+}
 
 
 def project_version():
@@ -20,6 +29,51 @@ def project_version():
 
 
 class ReleaseMetadataTests(unittest.TestCase):
+    def test_archived_release_results_are_valid_and_match_their_directory(self):
+        results = ROOT / "docs" / "release-results"
+        self.assertEqual({path.name for path in results.iterdir() if path.is_dir()}, {"0.20.0", "0.20.1"})
+        for directory in sorted(path for path in results.iterdir() if path.is_dir()):
+            self.assertEqual({path.name for path in directory.glob("*.json")}, RELEASE_RESULT_NAMES)
+            for path in directory.glob("*.json"):
+                with self.subTest(path=path.relative_to(ROOT)):
+                    document = json.loads(path.read_bytes())
+                    self.assertEqual(document["version"], directory.name)
+                    if document["profile"] == "full":
+                        expected = f"card_duel_engine-{directory.name}-py3-none-any.whl"
+                        package = document["package"]
+                        self.assertEqual(package["audit"]["filename"], expected)
+                        if "wheel" in package:
+                            self.assertEqual(package["wheel"], expected)
+
+    def test_0200_results_are_the_exact_bytes_from_the_last_matching_commit(self):
+        for name in sorted(RELEASE_RESULT_NAMES):
+            with self.subTest(name=name):
+                historical = subprocess.run(
+                    ["git", "show", f"{HISTORICAL_0200_COMMIT}:docs/release-results/{name}"],
+                    cwd=ROOT,
+                    check=True,
+                    capture_output=True,
+                ).stdout
+                self.assertEqual(
+                    (ROOT / "docs" / "release-results" / "0.20.0" / name).read_bytes(),
+                    historical,
+                )
+
+    def test_release_verifier_rejects_another_version_result_directory(self):
+        sys.path.insert(0, str(ROOT / "scripts"))
+        try:
+            import verify_release
+        finally:
+            sys.path.pop(0)
+        accepted = verify_release.release_result_path(
+            f"docs/release-results/{project_version()}/runtime-python-3.13.json"
+        )
+        self.assertEqual(accepted.parent.name, project_version())
+        with self.assertRaisesRegex(ValueError, project_version()):
+            verify_release.release_result_path(
+                "docs/release-results/0.20.0/runtime-python-3.13.json"
+            )
+
     def test_public_and_rules_versions_are_in_sync(self):
         self.assertEqual(card_duel_engine.__version__, project_version())
         self.assertEqual(RuleSet().version, card_duel_engine.__version__)

@@ -4,6 +4,7 @@ import ast
 from pathlib import Path
 import re
 import unittest
+import json
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -83,6 +84,15 @@ def stale_claims(text: str) -> list[str]:
 
 
 class MythicDocumentationTests(unittest.TestCase):
+    def test_each_validation_references_only_its_release_result_directory(self):
+        for version in ("0.20.0", "0.20.1"):
+            validation = (DOCS / f"VALIDATION_{version}.md").read_text(encoding="utf-8")
+            references = set(re.findall(r"release-results/([0-9]+\.[0-9]+\.[0-9]+)/", validation))
+            self.assertEqual(references, {version})
+            for path in (DOCS / "release-results" / version).glob("*.json"):
+                with self.subTest(version=version, path=path.name):
+                    self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["version"], version)
+
     def test_traceability_decision_column_uses_closed_vocabulary(self):
         decisions = traceability_decisions()
         self.assertTrue(decisions)

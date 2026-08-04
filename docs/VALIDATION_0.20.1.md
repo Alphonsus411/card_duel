@@ -10,17 +10,17 @@ CI que se publicará.
 rm -rf dist
 uv sync --locked --extra dev
 uv run python scripts/verify_release.py \
-  --profile full --json dist/release-verification.json
+  --profile full --json docs/release-results/0.20.1/full-python-3.13.json
 (cd dist && sha256sum --check SHA256SUMS)
 python -m json.tool dist/wheel-audit.json >/dev/null
-python -m json.tool dist/release-verification.json >/dev/null
+python -m json.tool docs/release-results/0.20.1/full-python-3.13.json >/dev/null
 ```
 
 El perfil completo invoca una sola vez el constructor reproducible. Este crea
 dos wheels temporales del mismo `HEAD`, audita ambos, exige igualdad byte a
 byte, copia exactamente uno de ellos a `dist/` y solo entonces escribe, en este
 orden, `SHA256SUMS` y `wheel-audit.json`. El resumen
-`release-verification.json` se escribe al terminar; no hay otra construcción
+`docs/release-results/0.20.1/full-python-3.13.json` se escribe al terminar; no hay otra construcción
 posterior.
 
 ## Criterios de aceptación
@@ -37,6 +37,15 @@ posterior.
   producción ni declaraciones `Requires-Dist` runtime.
 - El artefacto del job `full` contiene exactamente el wheel, `SHA256SUMS`,
   `wheel-audit.json` y `release-verification.json`.
+
+## Evidencia conservada
+
+Los cuatro resúmenes de esta entrega se conservan exclusivamente en:
+
+- `release-results/0.20.1/runtime-python-3.11.json`;
+- `release-results/0.20.1/runtime-python-3.12.json`;
+- `release-results/0.20.1/runtime-python-3.13.json`;
+- `release-results/0.20.1/full-python-3.13.json`.
 
 ## Resultados candidatos locales
 

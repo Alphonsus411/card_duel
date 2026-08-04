@@ -20,6 +20,7 @@ from verify_repository_security import verify as verify_security
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = read_project_version(ROOT)
+RELEASE_RESULTS = ROOT / "docs" / "release-results" / VERSION
 WHEEL_NAME = f"card_duel_engine-{VERSION}-py3-none-any.whl"
 PYTHONS = ("3.11", "3.12", "3.13")
 CommandRunner = Callable[..., subprocess.CompletedProcess[str]]
@@ -135,6 +136,21 @@ def render(summary: dict[str, object]) -> str:
     return json.dumps(summary, indent=2, sort_keys=True, separators=(",", ": ")) + "\n"
 
 
+def release_result_path(value: str) -> Path:
+    """Resolve a JSON destination without allowing cross-release evidence writes."""
+    path = Path(value)
+    if not path.is_absolute():
+        path = ROOT / path
+    path = path.resolve()
+    expected = RELEASE_RESULTS.resolve()
+    if path.parent != expected or path.suffix != ".json":
+        raise ValueError(
+            f"La evidencia de {VERSION} debe escribirse como JSON dentro de "
+            f"{RELEASE_RESULTS.relative_to(ROOT)}"
+        )
+    return path
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(); parser.add_argument("--profile", choices=("runtime", "full"), default="full")
     parser.add_argument("--json", metavar="PATH", help="Escribe el resumen JSON ('-' para stdout)"); args = parser.parse_args()
@@ -143,7 +159,13 @@ def main() -> None:
     except VerificationStageError as error:
         print(error.diagnostic(), file=sys.stderr); raise SystemExit(1) from error
     if args.json == "-": print(output, end="")
-    elif args.json: Path(args.json).write_text(output, encoding="utf-8")
+    elif args.json:
+        try:
+            destination = release_result_path(args.json)
+        except ValueError as error:
+            parser.error(str(error))
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text(output, encoding="utf-8")
     else: print(f"OK: perfil {args.profile} completado")
 
 

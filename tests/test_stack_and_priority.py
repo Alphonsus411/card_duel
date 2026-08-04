@@ -1,7 +1,7 @@
 import unittest
 
 from card_duel_engine import GameEngine, RuleSet
-from card_duel_engine.domain.enums import CardKind, CardRank, EffectKind, Phase, TargetMode, Zone
+from card_duel_engine.domain.enums import CardKind, CardRank, EffectKind, LordDomain, Phase, TargetMode, Zone
 from card_duel_engine.domain.errors import PaymentError
 from card_duel_engine.domain.models import AbilityDefinition, AbilitySourceProfile, CardDefinition, CompositeCost, EffectDefinition, StackItem
 from card_duel_engine.engine.commands import ActivateAbility, AdvancePhase, PassPriority, PlayCard
@@ -29,6 +29,65 @@ def force_zone(engine: GameEngine, definition_id: str, player_id: str, zone: Zon
 
 
 class StackAndPriorityTests(unittest.TestCase):
+    def test_source_profile_freezes_copied_and_transformed_effective_definition(self):
+        ability = AbilityDefinition("pulse", ())
+        artifact = CardDefinition("artifact", "Artefacto", CardKind.ARTIFACT, 0)
+        event = CardDefinition(
+            "event", "Evento", CardKind.EVENT, 0,
+            permanent=False, abilities=(ability,),
+        )
+        quick = CardDefinition(
+            "quick", "Recurso Rápido", CardKind.QUICK_RESOURCE, 0,
+            permanent=False, abilities=(ability,),
+        )
+        lord = CardDefinition(
+            "lord", "Señor", CardKind.LORD, 0,
+            lord_domain=LordDomain.REALMS, abilities=(ability,),
+        )
+        creature = CardDefinition(
+            "creature", "Criatura", CardKind.CREATURE, 0,
+            base_strength=2, abilities=(ability,),
+        )
+        engine = GameEngine(RuleSet())
+        engine.new_match(
+            {
+                "A": [artifact, event, quick, lord, creature, *test_deck("PA", 7)],
+                "B": test_deck("PB", 12),
+            }, seed=88,
+        )
+        source_id = force_zone(engine, "artifact", "A", Zone.BATTLEFIELD)
+        target_id = force_zone(engine, "event", "A", Zone.BATTLEFIELD)
+        item = StackItem("copy", "A", source_id, ())
+
+        engine._effects.apply(
+            EffectDefinition(EffectKind.COPY_DEFINITION, 1, TargetMode.CHOSEN_PERMANENT),
+            item, target_id,
+        )
+        copied = engine._ability_source_profile(source_id)
+        self.assertIs(copied.effective_kind, CardKind.EVENT)
+        self.assertFalse(copied.was_permanent)
+
+        engine._effects.apply(
+            EffectDefinition(
+                EffectKind.TRANSFORM_DEFINITION, 1, TargetMode.CHOSEN_PERMANENT,
+                transform_definition_id="quick",
+            ), item, source_id,
+        )
+        transformed = engine._ability_source_profile(source_id)
+        self.assertIs(transformed.effective_kind, CardKind.QUICK_RESOURCE)
+        self.assertFalse(transformed.was_permanent)
+
+        lord_id = force_zone(engine, "lord", "A", Zone.BATTLEFIELD)
+        engine._effects.apply(
+            EffectDefinition(
+                EffectKind.TRANSFORM_DEFINITION, 1, TargetMode.CHOSEN_PERMANENT,
+                transform_definition_id="creature",
+            ), StackItem("transform", "A", lord_id, ()), lord_id,
+        )
+        converted_lord = engine._ability_source_profile(lord_id)
+        self.assertIs(converted_lord.effective_kind, CardKind.CREATURE)
+        self.assertTrue(converted_lord.was_effective_creature)
+
     def make_engine(self) -> tuple[GameEngine, str, str]:
         a_quick = quick_damage_fixture("A-QUICK")
         b_quick = quick_damage_fixture("B-QUICK")

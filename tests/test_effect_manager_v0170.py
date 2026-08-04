@@ -9,6 +9,7 @@ from card_duel_engine.domain.errors import UnsupportedEffectError
 from card_duel_engine.domain.models import AbilitySourceProfile, CardDefinition, CardInstance, EffectDefinition, GameState, PlayerState, StackItem, TargetAllocation, TextPatchDefinition, ZoneTarget
 from card_duel_engine.engine.effects import EffectManager
 from card_duel_engine import GameEngine
+from card_duel_engine.persistence import dump_snapshot, load_snapshot
 
 
 def engine_with_battlefield() -> tuple[GameEngine, StackItem, str]:
@@ -31,6 +32,51 @@ def engine_with_battlefield() -> tuple[GameEngine, StackItem, str]:
 
 
 class EffectManagerTests(unittest.TestCase):
+    def test_kind_immunities_use_only_the_frozen_profile_after_two_snapshots(self):
+        """La resolución no vuelve a mirar una copia ni una fuente que ya se fue."""
+
+        for kind, keyword in (
+            (CardKind.EVENT, "IMMUNE_EVENT"),
+            (CardKind.QUICK_RESOURCE, "IMMUNE_QUICK"),
+        ):
+            with self.subTest(kind=kind):
+                engine, _, target = engine_with_battlefield()
+                state = engine._require_running_state()
+                target_definition = engine.catalog.get("target")
+                engine.catalog._cards["target"] = CardDefinition(
+                    target_definition.card_id,
+                    target_definition.name,
+                    target_definition.kind,
+                    target_definition.cost,
+                    base_strength=target_definition.base_strength,
+                    keywords=frozenset({keyword}),
+                )
+                state.stack.append(StackItem(
+                    "frozen-kind", "A", "source-i",
+                    (EffectDefinition(
+                        EffectKind.DEAL_DAMAGE, 1, TargetMode.CHOSEN_PERMANENT,
+                    ),),
+                    chosen_card_ids=(target,), ability_id="copied-ability",
+                    ability_source_profile=AbilitySourceProfile(
+                        "source-i", kind, False, False, True,
+                    ),
+                ))
+                # El estado posterior contradice deliberadamente el perfil apilado.
+                state.cards["source-i"].overridden_definition_id = None
+                state.players["A"].zones[Zone.BATTLEFIELD].remove("source-i")
+                state.players["A"].zones[Zone.DISCARD].append("source-i")
+                state.cards["source-i"].zone = Zone.DISCARD
+                state.ruleset_id = engine.rules.ruleset_id
+                state.ruleset_version = engine.rules.version
+
+                restored = load_snapshot(dump_snapshot(engine))
+                restored = load_snapshot(dump_snapshot(restored))
+                item = restored.state.stack.pop()
+                EffectManager(restored).apply(item.effects[0], item, target)
+
+                self.assertEqual(restored.state.cards[target].damage, 0)
+                self.assertEqual(restored.state.event_log[-1].payload["reason"], "immune")
+
     def test_resolution_uses_captured_source_profile_for_divine_targeting(self):
         for effective_creature, expected_damage in ((True, 0), (False, 1)):
             with self.subTest(effective_creature=effective_creature):

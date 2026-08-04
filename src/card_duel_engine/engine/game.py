@@ -1287,7 +1287,7 @@ class GameEngine:
                 )
             )
         source_kind = (
-            source_profile.printed_kind
+            source_profile.effective_kind
             if source_profile is not None
             else source.kind if source is not None else CardKind.EVENT
         )
@@ -1317,12 +1317,12 @@ class GameEngine:
 
         state = self._require_state()
         instance = state.cards[source_card_id]
-        printed = self.catalog.get(instance.definition_id)
+        definition = self._definition(source_card_id)
         return AbilitySourceProfile(
             source_card_id=source_card_id,
-            printed_kind=printed.kind,
+            printed_kind=definition.kind,
             was_effective_creature=self._is_creature(source_card_id),
-            was_permanent=printed.permanent,
+            was_permanent=definition.permanent,
             was_on_battlefield=instance.zone is Zone.BATTLEFIELD,
         )
 

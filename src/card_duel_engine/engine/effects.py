@@ -114,7 +114,7 @@ class EffectManager:
                 return
             target_id, zone_target = candidate, None
             if effect.target is TargetMode.CHOSEN_PERMANENT and not self._context._card_can_be_targeted(
-                None if item.ability_source_profile is not None else self._context._definition(item.source_card_id),
+                None if item.ability_id is not None else self._context._definition(item.source_card_id),
                 target_id,
                 item.ability_id is not None,
                 item.source_card_id,
@@ -143,7 +143,7 @@ class EffectManager:
         elif target_id not in state.cards or state.cards[target_id].zone is not Zone.BATTLEFIELD:
             self._fizzle(item, target_id, "invalid_target")
         elif not self._context._card_can_be_targeted(
-            None if item.ability_source_profile is not None else self._context._definition(item.source_card_id),
+            None if item.ability_id is not None else self._context._definition(item.source_card_id),
             target_id,
             item.ability_id is not None,
             item.source_card_id,

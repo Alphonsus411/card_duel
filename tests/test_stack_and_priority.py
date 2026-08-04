@@ -1,10 +1,11 @@
 import unittest
 
 from card_duel_engine import GameEngine, RuleSet
-from card_duel_engine.domain.enums import CardKind, CardRank, EffectKind, LordDomain, Phase, TargetMode, Zone
-from card_duel_engine.domain.errors import PaymentError
+from card_duel_engine.domain.enums import CardKind, CardRank, EffectKind, LordDomain, Phase, TargetMode, TriggerKind, Zone
+from card_duel_engine.domain.errors import IllegalAction, PaymentError
 from card_duel_engine.domain.models import AbilityDefinition, AbilitySourceProfile, CardDefinition, CompositeCost, EffectDefinition, StackItem
 from card_duel_engine.engine.commands import ActivateAbility, AdvancePhase, PassPriority, PlayCard
+from card_duel_engine.persistence.snapshot import dump_snapshot, load_snapshot
 
 from fixtures import quick_damage_fixture, test_deck
 
@@ -29,6 +30,121 @@ def force_zone(engine: GameEngine, definition_id: str, player_id: str, zone: Zon
 
 
 class StackAndPriorityTests(unittest.TestCase):
+    def make_ability_source_engine(self) -> tuple[GameEngine, dict[str, str]]:
+        activated = AbilityDefinition("pulse", ())
+        triggered = AbilityDefinition(
+            "arrival", (), trigger=TriggerKind.ON_ENTER_BATTLEFIELD
+        )
+        definitions = (
+            CardDefinition(
+                "permanent", "Permanente", CardKind.CREATURE, 0,
+                base_strength=2, abilities=(activated,),
+            ),
+            CardDefinition(
+                "other-permanent", "Permanente ajeno", CardKind.CREATURE, 0,
+                base_strength=2, abilities=(activated,),
+            ),
+            CardDefinition(
+                "non-permanent", "No permanente", CardKind.EVENT, 0,
+                permanent=False, abilities=(activated,),
+            ),
+            CardDefinition(
+                "triggered", "Disparada", CardKind.CREATURE, 0,
+                base_strength=2, abilities=(triggered,),
+            ),
+        )
+        engine = GameEngine(RuleSet())
+        engine.new_match({
+            "A": [definitions[0], definitions[2], definitions[3], *test_deck("ASA", 9)],
+            "B": [definitions[1], *test_deck("ASB", 11)],
+        }, seed=91)
+        ids = {
+            "permanent": force_zone(engine, "permanent", "A", Zone.BATTLEFIELD),
+            "other": force_zone(engine, "other-permanent", "B", Zone.BATTLEFIELD),
+            "non_permanent": force_zone(engine, "non-permanent", "A", Zone.BATTLEFIELD),
+            "triggered": force_zone(engine, "triggered", "A", Zone.BATTLEFIELD),
+        }
+        engine.state.priority_player_id = "A"
+        return engine, ids
+
+    def transform_source(self, engine: GameEngine, source_id: str, definition_id: str) -> None:
+        engine._effects.apply(
+            EffectDefinition(
+                EffectKind.TRANSFORM_DEFINITION, 1,
+                TargetMode.CHOSEN_PERMANENT,
+                transform_definition_id=definition_id,
+            ),
+            StackItem("transform-test", "A", source_id, ()),
+            source_id,
+        )
+
+    def test_normal_permanent_is_an_activatable_source(self):
+        engine, ids = self.make_ability_source_engine()
+
+        actions = engine._legal_ability_activations("A", ids["permanent"])
+
+        self.assertEqual([action.ability_id for action in actions], ["pulse"])
+        engine.execute(actions[0])
+
+    def test_source_transformed_to_non_permanent_cannot_activate(self):
+        engine, ids = self.make_ability_source_engine()
+        self.transform_source(engine, ids["permanent"], "non-permanent")
+
+        self.assertEqual(engine._legal_ability_activations("A", ids["permanent"]), [])
+        with self.assertRaises(IllegalAction):
+            engine.execute(ActivateAbility("A", ids["permanent"], "pulse"))
+
+    def test_source_outside_battlefield_cannot_activate(self):
+        engine, ids = self.make_ability_source_engine()
+        source_id = ids["permanent"]
+        force_zone(engine, "permanent", "A", Zone.HAND)
+
+        self.assertEqual(engine._legal_ability_activations("A", source_id), [])
+        with self.assertRaises(IllegalAction):
+            engine.execute(ActivateAbility("A", source_id, "pulse"))
+
+    def test_opponents_source_cannot_activate(self):
+        engine, ids = self.make_ability_source_engine()
+
+        self.assertEqual(engine._legal_ability_activations("A", ids["other"]), [])
+        with self.assertRaises(IllegalAction):
+            engine.execute(ActivateAbility("A", ids["other"], "pulse"))
+
+    def test_triggered_ability_is_not_announced_as_activated(self):
+        engine, ids = self.make_ability_source_engine()
+
+        self.assertTrue(engine._ability_source_can_activate("A", ids["triggered"]))
+        self.assertEqual(engine._legal_ability_activations("A", ids["triggered"]), [])
+        with self.assertRaises(IllegalAction):
+            engine.execute(ActivateAbility("A", ids["triggered"], "arrival"))
+
+    def test_source_transformed_from_non_permanent_to_permanent_can_activate(self):
+        engine, ids = self.make_ability_source_engine()
+        self.transform_source(engine, ids["non_permanent"], "permanent")
+
+        actions = engine._legal_ability_activations("A", ids["non_permanent"])
+
+        self.assertEqual([action.ability_id for action in actions], ["pulse"])
+        engine.execute(actions[0])
+
+    def test_every_announced_ability_activation_executes_from_independent_snapshot(self):
+        engine, ids = self.make_ability_source_engine()
+        self.transform_source(engine, ids["non_permanent"], "permanent")
+        snapshot = dump_snapshot(engine, indent=None)
+        announced = tuple(
+            action for action in engine.legal_actions("A")
+            if isinstance(action, ActivateAbility)
+        )
+        self.assertTrue(announced)
+
+        for action in announced:
+            with self.subTest(action=action):
+                restored = load_snapshot(snapshot)
+                try:
+                    restored.execute(action)
+                except IllegalAction as exc:
+                    self.fail(f"Una activación anunciada fue ilegal: {exc}")
+
     def test_source_profile_freezes_copied_and_transformed_effective_definition(self):
         ability = AbilityDefinition("pulse", ())
         artifact = CardDefinition("artifact", "Artefacto", CardKind.ARTIFACT, 0)

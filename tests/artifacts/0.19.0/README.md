@@ -6,8 +6,9 @@ Este corpus fue generado con el motor público del commit
 
 ## Reproducción
 
-Desde la raíz del checkout actual (el script crea y elimina en un bloque
-`finally` el worktree detached `/tmp/card-duel-019`):
+Desde la raíz del checkout actual (el script crea un directorio temporal único
+`card-duel-019-<sufijo>/` y ubica dentro su worktree detached en la subruta
+`worktree/`):
 
 ```console
 python tests/artifacts/0.19.0/generate_legacy_019_replays.py --output tests/artifacts/0.19.0
@@ -18,7 +19,9 @@ estados mediante `GameEngine.new_match`, `GameEngine.execute` y comandos públic
 y serializa mediante `dump_replay`. El proceso ejecuta Python con `-I` y antepone
 solo el `src` del worktree histórico, por lo que no puede importar el motor del
 checkout actual. Al terminar ejecuta `git worktree remove --force` y
-`git worktree prune`.
+`git worktree prune`. El bloque `finally` sólo intenta retirar el worktree si
+esta ejecución llegó a registrarlo; después poda el registro y el directorio
+temporal exclusivo se elimina incluso si falla el alta o el worker.
 
 ## Observables finales
 

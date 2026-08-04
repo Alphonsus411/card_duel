@@ -8,47 +8,44 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import tempfile
 
 
 GENERATOR_COMMIT = "3f21a1e2e9ba3c05b7bede3c5a7dc375d71ae39d"
-WORKTREE = Path("/tmp/card-duel-019")
-
-
 def run_historical_worker(output: Path) -> None:
     """Run this file again with imports resolved only from the detached tree."""
     repository = Path(__file__).resolve().parents[3]
-    if WORKTREE.exists():
-        subprocess.run(
-            ["git", "worktree", "remove", "--force", str(WORKTREE)],
-            cwd=repository,
-            check=True,
-        )
-    try:
-        subprocess.run(
-            ["git", "worktree", "add", "--detach", str(WORKTREE), GENERATOR_COMMIT],
-            cwd=repository,
-            check=True,
-        )
-        worker = WORKTREE / "generate_legacy_019_replays.py"
-        shutil.copy2(__file__, worker)
-        environment = os.environ.copy()
-        environment["PYTHONPATH"] = str(WORKTREE / "src")
-        subprocess.run(
-            [sys.executable, "-I", str(worker), "--historical-worker", "--output", str(output)],
-            cwd=WORKTREE,
-            env=environment,
-            check=True,
-        )
-    finally:
-        subprocess.run(
-            ["git", "worktree", "remove", "--force", str(WORKTREE)],
-            cwd=repository,
-            check=False,
-        )
-        subprocess.run(["git", "worktree", "prune"], cwd=repository, check=True)
+    with tempfile.TemporaryDirectory(prefix="card-duel-019-") as temporary:
+        worktree = Path(temporary) / "worktree"
+        registered = False
+        try:
+            subprocess.run(
+                ["git", "worktree", "add", "--detach", str(worktree), GENERATOR_COMMIT],
+                cwd=repository,
+                check=True,
+            )
+            registered = True
+            worker = worktree / "generate_legacy_019_replays.py"
+            shutil.copy2(__file__, worker)
+            environment = os.environ.copy()
+            environment["PYTHONPATH"] = str(worktree / "src")
+            subprocess.run(
+                [sys.executable, "-I", str(worker), "--historical-worker", "--output", str(output)],
+                cwd=worktree,
+                env=environment,
+                check=True,
+            )
+        finally:
+            if registered:
+                subprocess.run(
+                    ["git", "worktree", "remove", "--force", str(worktree)],
+                    cwd=repository,
+                    check=False,
+                )
+            subprocess.run(["git", "worktree", "prune"], cwd=repository, check=True)
 
 
-if "--historical-worker" not in sys.argv:
+if __name__ == "__main__" and "--historical-worker" not in sys.argv:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--output",

@@ -13,6 +13,8 @@ import csv
 import hashlib
 import io
 import re
+import shutil
+import threading
 from unittest.mock import patch
 from zipfile import ZIP_DEFLATED, ZipFile
 
@@ -439,6 +441,111 @@ class DetachedWorktreeBuildTests(unittest.TestCase):
             self.assert_immutable_result(*self.run_build())
         finally:
             target.unlink(missing_ok=True)
+
+
+class Legacy019ReplayGeneratorTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        path = ROOT / "tests" / "artifacts" / "0.19.0" / "generate_legacy_019_replays.py"
+        spec = importlib.util.spec_from_file_location("legacy_019_generator_tests", path)
+        assert spec is not None and spec.loader is not None
+        cls.generator = importlib.util.module_from_spec(spec)
+        sys.path.insert(0, str(ROOT / "src"))
+        try:
+            spec.loader.exec_module(cls.generator)
+        finally:
+            sys.path.pop(0)
+        cls.fixture_names = (
+            "drainage-outside-effects.replay-v2.json",
+            "challenge-combat.replay-v2.json",
+            "attackers-declared.replay-v2.json",
+            "challenge-non-realms.replay-v2.json",
+            "lord-ability-outside-effects.replay-v2.json",
+        )
+
+    def instrumented_runner(self, calls, barrier=None, fail=None):
+        def run(command, **kwargs):
+            command = tuple(map(str, command))
+            calls.append(command)
+            if command[:4] == ("git", "worktree", "add", "--detach"):
+                worktree = Path(command[4])
+                worktree.mkdir(parents=True)
+                if barrier is not None:
+                    barrier.wait(timeout=5)
+                if fail == "add":
+                    raise subprocess.CalledProcessError(1, command)
+            elif command[:4] == ("git", "worktree", "remove", "--force"):
+                shutil.rmtree(command[4], ignore_errors=True)
+            elif command and command[0] == sys.executable:
+                if fail == "worker":
+                    raise subprocess.CalledProcessError(1, command)
+            return subprocess.CompletedProcess(command, 0)
+        return run
+
+    def test_parallel_runs_use_distinct_paths_and_preserve_preexisting_path(self):
+        calls = []
+        barrier = threading.Barrier(2)
+        errors = []
+        preexisting = Path(tempfile.gettempdir()) / "card-duel-019"
+        preexisting.mkdir(exist_ok=True)
+        sentinel = preexisting / "must-survive"
+        sentinel.write_bytes(b"unrelated")
+        self.addCleanup(shutil.rmtree, preexisting, ignore_errors=True)
+
+        def invoke():
+            try:
+                self.generator.run_historical_worker(ROOT)
+            except Exception as error:  # pragma: no cover - asserted below
+                errors.append(error)
+
+        runner = self.instrumented_runner(calls, barrier)
+        with patch.object(self.generator.subprocess, "run", side_effect=runner):
+            threads = [threading.Thread(target=invoke) for _ in range(2)]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join(timeout=10)
+        self.assertEqual(errors, [])
+        additions = [Path(call[4]) for call in calls if call[:4] == ("git", "worktree", "add", "--detach")]
+        self.assertEqual(len(additions), 2)
+        self.assertNotEqual(additions[0].parent, additions[1].parent)
+        self.assertTrue(all(path.name == "worktree" for path in additions))
+        self.assertEqual(sentinel.read_bytes(), b"unrelated")
+        self.assertTrue(all(not path.parent.exists() for path in additions))
+
+    def test_cleanup_after_add_and_worker_errors(self):
+        for failure in ("add", "worker"):
+            with self.subTest(failure=failure):
+                calls = []
+                runner = self.instrumented_runner(calls, fail=failure)
+                with patch.object(self.generator.subprocess, "run", side_effect=runner), \
+                     self.assertRaises(subprocess.CalledProcessError):
+                    self.generator.run_historical_worker(ROOT)
+                additions = [Path(call[4]) for call in calls if call[:4] == ("git", "worktree", "add", "--detach")]
+                removals = [call for call in calls if call[:4] == ("git", "worktree", "remove", "--force")]
+                self.assertEqual(len(removals), 0 if failure == "add" else 1)
+                self.assertIn(("git", "worktree", "prune"), calls)
+                self.assertFalse(additions[0].parent.exists())
+
+    def test_regenerated_fixtures_are_byte_identical_and_leave_no_worktree(self):
+        before = subprocess.check_output(
+            ["git", "worktree", "list", "--porcelain"], cwd=ROOT
+        )
+        artifact_dir = ROOT / "tests" / "artifacts" / "0.19.0"
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            subprocess.run(
+                [sys.executable, str(artifact_dir / "generate_legacy_019_replays.py"),
+                 "--output", str(output)],
+                cwd=ROOT,
+                check=True,
+            )
+            for name in self.fixture_names:
+                self.assertEqual((output / name).read_bytes(), (artifact_dir / name).read_bytes())
+        after = subprocess.check_output(
+            ["git", "worktree", "list", "--porcelain"], cwd=ROOT
+        )
+        self.assertEqual(after, before)
 
 
 if __name__ == "__main__":

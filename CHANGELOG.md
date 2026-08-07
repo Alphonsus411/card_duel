@@ -4,9 +4,9 @@
 
 ## 0.20.1
 
-- Documentada la compatibilidad limitada de digest 0.20.x: sólo se acepta la
-  huella histórica sin perfil de procedencia y toda escritura nueva incluye el
-  estado completo.
+- Cerrada la compatibilidad de digest a 0.20.0 y 0.20.1: sólo se acepta la
+  huella histórica sin perfil de procedencia para esas versiones, se rechaza
+  la excepción desde 0.20.2 y toda escritura nueva incluye el estado completo.
 - Hechas explícitas las semánticas de snapshot/replay v2, con reconstrucción
   conservadora de perfiles antiguos, tipo efectivo congelado y paridad entre
   acciones enumeradas y ejecución.

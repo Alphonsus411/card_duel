@@ -113,6 +113,14 @@ def _rules_sources(runner: CommandRunner) -> dict[str, object]:
     return {"status": "ok", "verified_sources": len(output.splitlines())}
 
 
+def _simulations() -> dict[str, object]:
+    return dict(verify_simulations())
+
+
+def _persistence() -> dict[str, object]:
+    return dict(verify_persistence())
+
+
 def verify(profile: str = "full", *, runner: CommandRunner = subprocess.run) -> dict[str, object]:
     """Ejecuta el perfil solicitado; ``full`` conserva el comportamiento histórico."""
     stages: list[tuple[str, Callable[[], dict[str, object]]]] = [
@@ -120,8 +128,13 @@ def verify(profile: str = "full", *, runner: CommandRunner = subprocess.run) -> 
         ("security", _security), ("quality", lambda: _quality(runner))
     ]
     if profile == "full":
-        stages.extend((("rules-sources", lambda: _rules_sources(runner)), ("simulations", verify_simulations),
-                       ("persistence", verify_persistence), ("package", lambda: _package(runner))))
+        full_stages: list[tuple[str, Callable[[], dict[str, object]]]] = [
+            ("rules-sources", lambda: _rules_sources(runner)),
+            ("simulations", _simulations),
+            ("persistence", _persistence),
+            ("package", lambda: _package(runner)),
+        ]
+        stages.extend(full_stages)
     elif profile != "runtime":
         raise ValueError(f"Perfil desconocido: {profile}")
     summary: dict[str, object] = {"schema_version": 2, "version": VERSION, "profile": profile, "executed_stages": []}

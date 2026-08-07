@@ -172,10 +172,11 @@ cerrada sin resolver ambigüedades ni cambiar reglas del juego.
 
 ## Cierre técnico 0.20.1 y límites de compatibilidad
 
-- La aceptación de digest heredado se limita a documentos 0.20.x anteriores al
-  perfil de procedencia: al reproducirlos se admite la huella histórica sin ese
-  campo, pero toda serialización nueva emite la huella completa. No es una
-  equivalencia general entre estados ni una relajación para otras versiones.
+- La aceptación de digest heredado se limita a documentos 0.20.0 y 0.20.1
+  anteriores al perfil de procedencia: al reproducirlos se admite la huella
+  histórica sin ese campo, pero toda serialización nueva emite la huella
+  completa y 0.20.2 o posterior no recibe la excepción. No es una equivalencia
+  general entre estados ni una relajación para otras versiones.
 - Snapshot/replay mantienen el esquema v2 y declaran `engine_semantics`; el
   significado de los comandos no se deduce sólo de `schema_version`.
 - Si un v2 antiguo carece del perfil, éste sólo se reconstruye cuando la fuente

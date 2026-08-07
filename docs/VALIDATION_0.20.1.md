@@ -106,7 +106,8 @@ el tipo efectivo y la condición de criatura permanente se congelan al crear el
 elemento de pila, y las pruebas comparan la enumeración de acciones con su
 ejecución real.
 
-La verificación de digest heredado está limitada a 0.20.x que precede al perfil:
-puede aceptar la huella antigua sin ese campo, pero el siguiente snapshot/replay
-emite la huella completa. Los JSON de evidencia están separados por versión y
-los de 0.20.0 no acreditan 0.20.1.
+La verificación de digest heredado está limitada explícitamente a 0.20.0 y
+0.20.1, las versiones que preceden al perfil: puede aceptar la huella antigua
+sin ese campo, pero el siguiente snapshot/replay emite la huella completa. Una
+versión 0.20.2 o posterior no obtiene la excepción. Los JSON de evidencia están
+separados por versión y los de 0.20.0 no acreditan 0.20.1.

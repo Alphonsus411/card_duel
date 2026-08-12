@@ -228,8 +228,10 @@ def _special_definitions():
     )
 
 
-def _engine() -> GameEngine:
-    engine = GameEngine(RuleSet(legal_action_enumeration_limit=20))
+def _engine(enumeration_limit=20) -> GameEngine:
+    engine = GameEngine(
+        RuleSet(legal_action_enumeration_limit=enumeration_limit)
+    )
     engine.new_match(
         {
             "A": [*_special_definitions(), *test_deck("A", 14)],
@@ -405,3 +407,176 @@ def test_legal_action_enumerator_preserves_unstarted_engine_behavior_and_state()
 
     assert engine.state is None
     assert encode_value(engine.state) == serialized_before
+
+
+@pytest.mark.parametrize("limit", (1, 2))
+def test_small_limit_search_has_an_exact_tuple(limit):
+    engine = _engine(limit)
+    eligible = tuple(engine.state.players["A"].zones[Zone.DECK][:3])
+    source = _force_zone(engine, "PLAY", "A", Zone.BATTLEFIELD)
+    engine.state.pending_search = PendingSearch(
+        StackItem("search", "A", source, ()),
+        0,
+        "A",
+        ZoneTarget("A", Zone.DECK),
+        eligible,
+        1,
+        2,
+        Zone.HAND,
+        True,
+        False,
+    )
+
+    # La segunda cardinalidad ocupa el hueco previo al corte final; por eso, con
+    # este intervalo concreto, Concede queda fuera de la tupla caracterizada.
+    enumerated = tuple(
+        ResolveSearchChoice("A", tuple(selection))
+        for count in (1, 2)
+        for selection in tuple(combinations(eligible, count))[:limit]
+    )
+    expected = enumerated[: limit + 1]
+    assert engine.legal_actions("A") == expected
+
+
+@pytest.mark.parametrize("limit", (1, 2))
+def test_small_limit_trigger_order_has_an_exact_tuple(limit):
+    engine = _triggers(True)
+    engine.rules = RuleSet(legal_action_enumeration_limit=limit)
+    orders = (
+        ("trigger-1", "trigger-2"),
+        ("trigger-2", "trigger-1"),
+    )
+
+    assert engine.legal_actions("A") == tuple(
+        OrderTriggeredAbilities("A", order) for order in orders[:limit]
+    ) + (Concede("A"),)
+
+
+@pytest.mark.parametrize("limit", (1, 2))
+def test_small_limit_is_per_play_cost_and_not_global(limit):
+    """El límite acota cada producto de objetivos/coste; no la tupla global."""
+    targeted = CardDefinition(
+        "TARGET_COST",
+        "Objetivo con alternativa",
+        CardKind.ARTIFACT,
+        1,
+        effects=(
+            EffectDefinition(EffectKind.GAIN_STEPS, 1, TargetMode.CHOSEN_PLAYER),
+        ),
+        alternative_costs=(CompositeCost(discard_count=1),),
+    )
+    fodder = CardDefinition("FODDER", "Coste", CardKind.ARTIFACT, 100)
+    engine = GameEngine(RuleSet(legal_action_enumeration_limit=limit))
+    engine.new_match(
+        {"A": [targeted, fodder, *test_deck("A", 12)], "B": test_deck("B", 14)},
+        seed=20201,
+    )
+    engine.state.phase = Phase.EFFECTS
+    engine.state.priority_player_id = "A"
+    engine.state.players["A"].steps = 10
+    target_id = _force_zone(engine, "TARGET_COST", "A", Zone.HAND)
+    fodder_id = _force_zone(engine, "FODDER", "A", Zone.HAND)
+    for card_id in tuple(engine.state.players["A"].zones[Zone.HAND]):
+        if card_id not in {target_id, fodder_id}:
+            definition_id = engine.state.cards[card_id].definition_id
+            _force_zone(engine, definition_id, "A", Zone.DECK)
+
+    target_choices = (("A",), ("B",))[:limit]
+    expected_plays = tuple(
+        PlayCard("A", target_id, chosen_player_ids=choice)
+        for choice in target_choices
+    ) + tuple(
+        PlayCard(
+            "A",
+            target_id,
+            chosen_player_ids=choice,
+            cost_option_index=0,
+            discard_card_ids=(fodder_id,),
+        )
+        for choice in target_choices
+    )
+    expected = expected_plays + tuple(
+        DrainSteps("A", amount) for amount in range(1, 6)
+    ) + (PassPriority("A"), Concede("A"))
+
+    assert len(expected_plays) == 2 * limit  # Prueba explícita: no es un tope global.
+    assert engine.legal_actions("A") == expected
+
+
+@pytest.mark.parametrize("limit", (1, 2))
+def test_small_limit_orderable_replacements_have_an_exact_tuple(limit):
+    engine = _engine(limit)
+    card_id = _force_zone(engine, "ORDER", "A", Zone.BATTLEFIELD)
+    engine.state.phase = Phase.MAINTENANCE
+    orders = ((0, 1), (1, 0))
+
+    assert engine.legal_actions("A") == (
+        TransmutePermanent("A", card_id),
+        PassPriority("A"),
+        *(SetReplacementOrder("A", card_id, order) for order in orders[:limit]),
+        Concede("A"),
+    )
+
+
+@pytest.mark.parametrize("limit", (1, 2))
+def test_small_limit_attackers_have_an_exact_tuple(limit):
+    engine = _engine(limit)
+    attackers = tuple(
+        _force_zone(engine, definition_id, "A", Zone.BATTLEFIELD)
+        for definition_id in ("A-000", "A-001")
+    )
+    engine.state.phase = Phase.COMBAT
+    engine.state.phase_priority_complete = True
+
+    declarations = (
+        DeclareAttackers("A", (attackers[0],), "B"),
+        DeclareAttackers("A", (attackers[1],), "B"),
+    )
+    assert engine.legal_actions("A") == declarations[:limit] + (
+        AdvancePhase("A"),
+        TransmutePermanent("A", attackers[0]),
+        TransmutePermanent("A", attackers[1]),
+        PassPriority("A"),
+        Concede("A"),
+    )
+
+
+@pytest.mark.parametrize("limit", (1, 2))
+def test_small_limit_blockers_have_an_exact_tuple(limit):
+    engine = _engine(limit)
+    attacker = _force_zone(engine, "A-000", "A", Zone.BATTLEFIELD)
+    blocker = _force_zone(engine, "B-000", "B", Zone.BATTLEFIELD)
+    engine.state.phase = Phase.COMBAT
+    engine.state.priority_player_id = "B"
+    engine.state.combat = CombatState("A", "B", (attacker,))
+
+    declarations = (
+        DeclareBlockers("B"),
+        DeclareBlockers("B", ((attacker, (blocker,)),)),
+    )
+    assert engine.legal_actions("B") == declarations[:limit] + (
+        TransmutePermanent("B", blocker),
+        PassPriority("B"),
+        Concede("B"),
+    )
+
+
+@pytest.mark.parametrize("limit", (1, 2))
+def test_small_limit_does_not_currently_limit_discard_combinations(limit):
+    """Caracteriza el descarte no limitado, sin optimizarlo ni corregirlo aquí."""
+    engine = _engine(limit)
+    engine.state.phase = Phase.DISCARD
+    engine.state.phase_priority_complete = True
+    engine.state.priority_player_id = "B"
+    while len(engine.state.players["A"].zones[Zone.HAND]) < engine.rules.hand_limit + 2:
+        card_id = engine.state.players["A"].zones[Zone.DECK][0]
+        _force_zone(
+            engine, engine.state.cards[card_id].definition_id, "A", Zone.HAND
+        )
+    hand = tuple(engine.state.players["A"].zones[Zone.HAND])
+    discards = tuple(
+        DiscardCards("A", tuple(card_ids)) for card_ids in combinations(hand, 2)
+    )
+
+    assert len(discards) > limit
+    assert engine.legal_actions("A") == discards + (Concede("A"),)

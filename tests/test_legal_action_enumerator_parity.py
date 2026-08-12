@@ -6,12 +6,17 @@ como oráculo de caracterización: las aserciones comparan tuplas (no conjuntos)
 también protegen que una consulta sea pura y determinista.
 """
 
+import ast
 from copy import deepcopy
+from dataclasses import fields
 from itertools import combinations, islice, permutations
+from pathlib import Path
 
 import pytest
 
 from card_duel_engine import GameEngine, RuleSet
+from card_duel_engine.application import PublicMatchView
+from card_duel_engine.controllers.base import PlayerObservation
 from card_duel_engine.domain import (
     AbilityDefinition,
     CardDefinition,
@@ -55,6 +60,8 @@ from card_duel_engine.engine import (
 )
 from card_duel_engine.engine.actions import LegalActionEnumerator
 from card_duel_engine.persistence.codec import encode_value
+from card_duel_engine.service import MatchService
+from card_duel_engine.storage.base import InMemoryMatchStore
 
 from fixtures import test_deck
 
@@ -580,3 +587,157 @@ def test_small_limit_does_not_currently_limit_discard_combinations(limit):
 
     assert len(discards) > limit
     assert engine.legal_actions("A") == discards + (Concede("A"),)
+
+
+def _engine_with_identifiable_private_zones():
+    """Sitúa cartas inequívocas en las zonas privadas de los dos jugadores."""
+    public_target = CardDefinition(
+        "PUBLIC_TARGET",
+        "Objetivo público de B",
+        CardKind.CREATURE,
+        1,
+        base_strength=1,
+    )
+    targeted_play = CardDefinition(
+        "TARGET_PUBLIC",
+        "Hechizo que elige permanente público",
+        CardKind.ARTIFACT,
+        1,
+        effects=(
+            EffectDefinition(EffectKind.DEAL_DAMAGE, 1, TargetMode.CHOSEN_PERMANENT),
+        ),
+    )
+    engine = GameEngine()
+    engine.new_match(
+        {
+            "A": [targeted_play, *test_deck("A-PRIVATE", 13)],
+            "B": [public_target, *test_deck("B-PRIVATE", 13)],
+        },
+        seed=713,
+    )
+    engine.state.phase = Phase.EFFECTS
+    engine.state.priority_player_id = "A"
+    engine.state.players["A"].steps = 10
+
+    identifiable = {
+        "a_hand": _force_zone(engine, "TARGET_PUBLIC", "A", Zone.HAND),
+        "a_deck": _force_zone(engine, "A-PRIVATE-000", "A", Zone.DECK),
+        "a_deck_2": _force_zone(engine, "A-PRIVATE-001", "A", Zone.DECK),
+        "b_hand": _force_zone(engine, "B-PRIVATE-000", "B", Zone.HAND),
+        "b_deck": _force_zone(engine, "B-PRIVATE-001", "B", Zone.DECK),
+        "b_public": _force_zone(engine, "PUBLIC_TARGET", "B", Zone.BATTLEFIELD),
+    }
+    return engine, identifiable
+
+
+def test_player_actions_do_not_leak_opponent_private_card_ids():
+    engine, card_ids = _engine_with_identifiable_private_zones()
+
+    actions = engine.legal_actions("A")
+    encoded_actions = repr(encode_value(actions))
+
+    assert card_ids["b_hand"] not in encoded_actions
+    assert card_ids["b_deck"] not in encoded_actions
+    # Un objetivo en el campo de batalla sí es información pública y una regla
+    # CHOSEN_PERMANENT permite que aparezca legítimamente en el comando.
+    assert any(
+        isinstance(action, PlayCard)
+        and action.chosen_card_ids == (card_ids["b_public"],)
+        for action in actions
+    )
+
+
+def test_only_pending_search_chooser_receives_eligible_card_ids():
+    engine, card_ids = _engine_with_identifiable_private_zones()
+    eligible = (card_ids["a_deck"], card_ids["a_deck_2"])
+    source = _force_zone(engine, "TARGET_PUBLIC", "A", Zone.BATTLEFIELD)
+    engine.state.pending_search = PendingSearch(
+        StackItem("private-search", "A", source, ()),
+        0,
+        "A",
+        ZoneTarget("A", Zone.DECK),
+        eligible,
+        1,
+        1,
+        Zone.HAND,
+        True,
+        False,
+    )
+
+    assert engine.legal_actions("A") == tuple(
+        ResolveSearchChoice("A", (card_id,)) for card_id in eligible
+    ) + (Concede("A"),)
+    assert engine.observe("A").searchable_card_ids == eligible
+    assert engine.legal_actions("B") == (Concede("B"),)
+    assert engine.observe("B").searchable_card_ids == ()
+
+
+def test_only_pending_move_replacement_chooser_receives_resolution_indices():
+    engine, card_ids = _engine_with_identifiable_private_zones()
+    engine.state.pending_move_replacement = PendingMoveReplacement(
+        Concede("A"),
+        "A",
+        card_ids["a_hand"],
+        MoveReason.DESTROY,
+        (2, 5),
+        (Zone.HAND, Zone.EXILE),
+        "A",
+    )
+
+    assert engine.legal_actions("A") == (
+        ResolveMoveReplacement("A", 2),
+        ResolveMoveReplacement("A", 5),
+        Concede("A"),
+    )
+    assert engine.observe("A").replacement_destinations == (
+        (2, "HAND"),
+        (5, "EXILE"),
+    )
+    assert engine.legal_actions("B") == (Concede("B"),)
+    assert engine.observe("B").replacement_destinations == ()
+
+
+def test_match_service_and_player_observation_public_contract_is_unchanged():
+    engine, card_ids = _engine_with_identifiable_private_zones()
+    store = InMemoryMatchStore()
+    store.create("privacy-parity", engine)
+
+    view = MatchService(store).view("privacy-parity", "A")
+
+    assert view.observation == engine.observe("A")
+    assert view.legal_actions == engine.legal_actions("A")
+    assert tuple(field.name for field in fields(PlayerObservation)) == (
+        "player_id", "active_player_id", "phase", "own_hand", "own_steps",
+        "own_wounds", "opponent_hand_sizes", "public_event_count",
+        "own_battlefield", "opponent_battlefields", "stack_size", "stack_items",
+        "pending_triggers", "suppressed_phases", "pending_search_item_id",
+        "searchable_card_ids", "replacement_orders",
+        "pending_replacement_card_id", "replacement_destinations",
+    )
+    public = PublicMatchView.from_view(view).to_dict()
+    assert public["observation"]["own_hand"] == list(engine.observe("A").own_hand)
+    assert card_ids["b_hand"] not in repr(public)
+    assert card_ids["b_deck"] not in repr(public)
+    assert all(set(action) == {"action"} for action in public["legal_actions"])
+
+
+def test_legal_action_enumerator_stays_in_engine_without_outer_layer_dependencies():
+    module_path = __import__(
+        "card_duel_engine.engine.actions", fromlist=["__file__"]
+    ).__file__
+    assert module_path is not None
+    path = Path(module_path)
+    assert path.parent.name == "engine"
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    imported_modules = {
+        node.module or ""
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.ImportFrom,))
+    } | {
+        alias.name
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Import)
+        for alias in node.names
+    }
+
+    assert imported_modules.isdisjoint({"controllers.base", "service", "application"})

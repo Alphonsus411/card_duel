@@ -62,6 +62,7 @@ from ..domain.models import (
 from ..rules.config import RuleSet
 from ..rules.resolvers import apply_text_patch, resolve_dynamic_cost, resolve_x_cost
 from .combat import CombatContext, CombatManager
+from .actions import LegalActionContext, LegalActionEnumerator
 from .effects import EffectContext, EffectManager
 from .stack import StackContext, StackManager
 from .zones import MoveReplacementChoiceRequired, ZoneContext, ZoneManager
@@ -120,6 +121,12 @@ class GameEngine:
         self._stack = StackManager(self)
         self._zones = ZoneManager(self)
         self._effects = EffectManager(self)
+        self._legal_action_enumerator = LegalActionEnumerator(self)
+
+    @property
+    def _combat_action_enumerator(self) -> CombatManager:
+        """Expone al enumerador general únicamente las acciones de combate."""
+        return self._combat
 
     @property
     def _combat_action_enumeration_limit(self) -> int:
@@ -571,130 +578,7 @@ class GameEngine:
         )
 
     def legal_actions(self, player_id: str) -> tuple[GameCommand, ...]:
-        state = self._require_state()
-        if state.status in (MatchStatus.FINISHED, MatchStatus.BLOCKED):
-            return ()
-        if state.status is not MatchStatus.RUNNING:
-            raise IllegalAction("La partida no está en ejecución")
-        if player_id not in state.players:
-            return ()
-        actions: list[GameCommand] = []
-        player = state.players[player_id]
-
-        if state.pending_move_replacement:
-            pending = state.pending_move_replacement
-            if player_id != pending.chooser_id:
-                return (Concede(player_id),)
-            return tuple(
-                ResolveMoveReplacement(player_id, index)
-                for index in pending.candidate_indices
-            ) + (Concede(player_id),)
-
-        if state.pending_search:
-            search = state.pending_search
-            if player_id != search.chooser_id:
-                return (Concede(player_id),)
-            actions.extend(
-                ResolveSearchChoice(player_id, tuple(selection))
-                for count in range(search.minimum, search.maximum + 1)
-                for selection in islice(
-                    combinations(search.eligible_card_ids, count),
-                    self.rules.legal_action_enumeration_limit,
-                )
-            )
-            actions.append(Concede(player_id))
-            return tuple(actions[: self.rules.legal_action_enumeration_limit + 1])
-
-        if state.pending_triggers:
-            if player_id != state.priority_player_id:
-                return (Concede(player_id),)
-            unlocked = next(
-                (item for item in state.pending_triggers if not item.targets_locked),
-                None,
-            )
-            if unlocked is not None:
-                actions.extend(self._trigger_target_commands(player_id, unlocked))
-                actions.append(Concede(player_id))
-                return tuple(actions)
-            item_ids = tuple(item.item_id for item in state.pending_triggers)
-            actions.extend(
-                OrderTriggeredAbilities(player_id, tuple(order))
-                for order in islice(
-                    permutations(item_ids),
-                    self.rules.legal_action_enumeration_limit,
-                )
-            )
-            actions.append(Concede(player_id))
-            return tuple(actions)
-
-        if state.phase in {Phase.EFFECTS, Phase.COMBAT}:
-            actions.extend(self._combat.legal_actions(player_id))
-
-        if player_id == state.priority_player_id:
-            actions.extend(self._legal_plays(player_id))
-            if (
-                player_id == state.active_player_id
-                and (self._legacy_019 or state.phase is Phase.EFFECTS)
-                and player.drainage_used_turn_serial != state.turn_serial
-            ):
-                actions.extend(DrainSteps(player_id, amount) for amount in range(1, 6))
-            for card_id in player.zones[Zone.BATTLEFIELD]:
-                definition = self._definition(card_id)
-                replacements = self._replacement_definitions(definition)
-                if definition.player_orders_replacements and len(replacements) > 1:
-                    actions.extend(
-                        SetReplacementOrder(player_id, card_id, tuple(order))
-                        for order in islice(
-                            permutations(range(len(replacements))),
-                            self.rules.legal_action_enumeration_limit,
-                        )
-                        if tuple(order) != state.cards[card_id].replacement_order
-                    )
-                if definition.transmutable:
-                    actions.append(TransmutePermanent(player_id, card_id))
-                actions.extend(self._legal_ability_activations(player_id, card_id))
-                if definition.kind is CardKind.EQUIPMENT:
-                    for creature_id in player.zones[Zone.BATTLEFIELD]:
-                        if self._is_creature(creature_id):
-                            if player.steps >= definition.cost:
-                                actions.append(EquipCard(player_id, card_id, creature_id))
-            actions.append(PassPriority(player_id))
-
-        if (
-            player_id == state.active_player_id
-            and state.phase_priority_complete
-            and not state.stack
-        ):
-            if state.phase is Phase.DISCARD:
-                excess = max(0, len(player.zones[Zone.HAND]) - self.rules.hand_limit)
-                if excess:
-                    actions.extend(
-                        DiscardCards(player_id, tuple(card_ids))
-                        for card_ids in combinations(player.zones[Zone.HAND], excess)
-                    )
-                else:
-                    actions.append(AdvancePhase(player_id))
-            elif not (state.phase is Phase.COMBAT and state.combat and not state.combat.resolved):
-                actions.append(AdvancePhase(player_id))
-
-        actions.append(Concede(player_id))
-        command_order = {
-            DiscardCards: 0,
-            DeclareBlockers: 0,
-            ResolveCombat: 0,
-            DeclareAttackers: 1,
-            DeclareChallenge: 1,
-            AdvancePhase: 2,
-            PlayCard: 10,
-            ActivateAbility: 11,
-            DrainSteps: 11,
-            EquipCard: 12,
-            TransmutePermanent: 20,
-            PassPriority: 90,
-            SetReplacementOrder: 95,
-            Concede: 100,
-        }
-        return tuple(sorted(actions, key=lambda action: command_order[type(action)]))
+        return self._legal_action_enumerator.legal_actions(player_id)
 
     def _trigger_target_commands(
         self, player_id: str, item: StackItem
@@ -2543,4 +2427,5 @@ def _verify_manager_contexts(engine: GameEngine) -> None:
     stack: StackContext = engine
     zones: ZoneContext = engine
     effects: EffectContext = engine
-    _ = (combat, stack, zones, effects)
+    actions: LegalActionContext = engine
+    _ = (combat, stack, zones, effects, actions)

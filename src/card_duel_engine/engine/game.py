@@ -129,6 +129,21 @@ class GameEngine:
         return self._combat
 
     @property
+    def _legal_action_state(self) -> GameState:
+        """Comparte con el enumerador el estado autoritativo, sin clonarlo."""
+        return self._require_state()
+
+    @property
+    def _legal_action_enumeration_limit(self) -> int:
+        """Expone solo el límite combinatorio requerido por la enumeración."""
+        return self.rules.legal_action_enumeration_limit
+
+    @property
+    def _legal_action_hand_limit(self) -> int:
+        """Expone solo el tamaño de mano requerido por la enumeración."""
+        return self.rules.hand_limit
+
+    @property
     def _combat_action_enumeration_limit(self) -> int:
         """Expone al gestor de combate únicamente su límite de enumeración."""
         return self.rules.legal_action_enumeration_limit

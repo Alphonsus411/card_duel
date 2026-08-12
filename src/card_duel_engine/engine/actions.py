@@ -6,7 +6,6 @@ from typing import Protocol
 from ..domain.enums import CardKind, MatchStatus, Phase, Zone
 from ..domain.errors import IllegalAction
 from ..domain.models import CardDefinition, GameState, MoveReplacementDefinition, StackItem
-from ..rules.config import RuleSet
 from .commands import (
     ActivateAbility,
     AdvancePhase,
@@ -39,10 +38,14 @@ class CombatActionEnumerator(Protocol):
 class LegalActionContext(Protocol):
     """Consultas de solo lectura necesarias para enumerar acciones legales."""
 
-    rules: RuleSet
-
-    def _require_state(self) -> GameState: ...
-    def _require_running_state(self) -> GameState: ...
+    @property
+    def _legal_action_state(self) -> GameState:
+        """Devuelve el estado autoritativo; nunca una copia para la consulta."""
+        ...
+    @property
+    def _legal_action_enumeration_limit(self) -> int: ...
+    @property
+    def _legal_action_hand_limit(self) -> int: ...
     def _definition(self, card_id: str) -> CardDefinition: ...
     def _replacement_definitions(
         self, definition: CardDefinition
@@ -69,7 +72,7 @@ class LegalActionEnumerator:
 
     def legal_actions(self, player_id: str) -> tuple[GameCommand, ...]:
         context = self._context
-        state = context._require_state()
+        state = context._legal_action_state
         if state.status in (MatchStatus.FINISHED, MatchStatus.BLOCKED):
             return ()
         if state.status is not MatchStatus.RUNNING:
@@ -97,11 +100,11 @@ class LegalActionEnumerator:
                 for count in range(search.minimum, search.maximum + 1)
                 for selection in islice(
                     combinations(search.eligible_card_ids, count),
-                    context.rules.legal_action_enumeration_limit,
+                    context._legal_action_enumeration_limit,
                 )
             )
             actions.append(Concede(player_id))
-            return tuple(actions[: context.rules.legal_action_enumeration_limit + 1])
+            return tuple(actions[: context._legal_action_enumeration_limit + 1])
 
         if state.pending_triggers:
             if player_id != state.priority_player_id:
@@ -119,7 +122,7 @@ class LegalActionEnumerator:
                 OrderTriggeredAbilities(player_id, tuple(order))
                 for order in islice(
                     permutations(item_ids),
-                    context.rules.legal_action_enumeration_limit,
+                    context._legal_action_enumeration_limit,
                 )
             )
             actions.append(Concede(player_id))
@@ -144,7 +147,7 @@ class LegalActionEnumerator:
                         SetReplacementOrder(player_id, card_id, tuple(order))
                         for order in islice(
                             permutations(range(len(replacements))),
-                            context.rules.legal_action_enumeration_limit,
+                            context._legal_action_enumeration_limit,
                         )
                         if tuple(order) != state.cards[card_id].replacement_order
                     )
@@ -164,7 +167,9 @@ class LegalActionEnumerator:
             and not state.stack
         ):
             if state.phase is Phase.DISCARD:
-                excess = max(0, len(player.zones[Zone.HAND]) - context.rules.hand_limit)
+                excess = max(
+                    0, len(player.zones[Zone.HAND]) - context._legal_action_hand_limit
+                )
                 if excess:
                     actions.extend(
                         DiscardCards(player_id, tuple(card_ids))

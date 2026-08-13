@@ -3,11 +3,12 @@
 ## Identificación
 
 - Fecha UTC: **2026-08-13**.
-- Rama: **`work`**.
+- Rama de cierre: **`refactor/action-option-resolver`**.
 - SHA base de esta tarea documental: **`ac9bb1db3b6749dde21ed8ebb536f65c04daec0f`**.
-- SHA de implementación/documentación: **PENDIENTE; se completará tras el commit**.
-  No se anticipa ni se inventa un hash. El SHA real se comunicará fuera del commit,
-  porque el propio contenido no puede conocer de forma autorreferente su SHA.
+- SHA de implementación validado: **`ba46593bf94e4c532271f0bd548f51fcf4a0a936`**.
+- SHA de cierre documental: se registra tras crear el commit final de evidencia, ya
+  que el documento no puede contener de forma autorreferente el SHA del commit que
+  lo incorpora. Ambos identificadores se distinguen también en la pull request.
 - Decisión: **GO**.
 
 ## Archivos cambiados y frontera
@@ -68,11 +69,14 @@ Mypy y compileall también terminaron correctamente.
 
 El wheel reproducible `card_duel_engine-0.20.1-py3-none-any.whl` produjo dos builds
 binariamente idénticos, 44 archivos, RECORD íntegro y ausencia de fixtures, cartas de
-producción y PDF. SHA-256 del wheel:
-`d0dd45f2b06da65b12f09dd495751e910102dc54f6fdb2335a06829e111248fe`.
-El verificador construyó desde el `HEAD` limpio base
-`ac9bb1db3b6749dde21ed8ebb536f65c04daec0f`; por tanto valida la implementación ya
-integrada, no los dos informes aún no confirmados.
+producción y PDF. SHA-256 final del wheel:
+`8db39d7f807cb616b260eca765c6dea4ab14f8c7624efb311ed574ded9bd0813`.
+El verificador construyó desde el `HEAD` limpio de implementación
+`ba46593bf94e4c532271f0bd548f51fcf4a0a936`; informó
+`binary_identical_builds=true`, `builds_compared=2`, `source_tree_clean=true` y
+`source_commit=ba46593bf94e4c532271f0bd548f51fcf4a0a936`. La inspección independiente
+del ZIP confirmó `card_duel_engine/engine/options.py`, 44 entradas y la ausencia de
+`Fantasy Tokens.pdf` y `Fantasy Tokens Edicion Mitica.pdf`.
 
 ## Hashes de PDF
 
@@ -115,3 +119,22 @@ documentos, `git diff --cached --stat HEAD` registró **2 archivos y 283 inserci
 el diff indexado completo; no contiene código, snapshots, fixtures, PDF ni artefactos
 de `dist`. El SHA resultante no se escribe retroactivamente aquí: se informa en el
 chat y en la metainformación de la pull request.
+
+
+## Cierre reproducible posterior al commit de implementación
+
+1. El primer intento de `uv run python scripts/verify_reproducible_wheel.py` terminó
+   con código 1 porque `.venv` no contenía el módulo `build`; no fue un fallo del
+   código ni modificó archivos versionados.
+2. `uv sync --locked --extra dev` terminó con código 0 e instaló las dependencias
+   bloqueadas de desarrollo.
+3. La repetición exacta de `uv run python scripts/verify_reproducible_wheel.py`
+   terminó con código 0: dos wheels binariamente idénticos y SHA-256
+   `8db39d7f807cb616b260eca765c6dea4ab14f8c7624efb311ed574ded9bd0813`.
+4. Una lectura independiente con `zipfile` confirmó
+   `card_duel_engine/engine/options.py`; ninguno de los dos PDF apareció en las 44
+   entradas del wheel.
+5. Esta evidencia corresponde al SHA de implementación
+   `ba46593bf94e4c532271f0bd548f51fcf4a0a936`. El commit posterior que contiene
+   exclusivamente esta actualización es el **SHA de cierre documental**, no un SHA
+   alternativo de implementación.

@@ -64,7 +64,7 @@ from ..rules.resolvers import apply_text_patch, resolve_dynamic_cost, resolve_x_
 from .combat import CombatContext, CombatManager
 from .actions import LegalActionContext, LegalActionEnumerator
 from .effects import EffectContext, EffectManager
-from .options import ActionOptionContext
+from .options import ActionOptionContext, ActionOptionResolver
 from .phases import PhaseManager
 from .stack import StackContext, StackManager
 from .zones import MoveReplacementChoiceRequired, ZoneContext, ZoneManager
@@ -124,6 +124,7 @@ class GameEngine:
         self._zones = ZoneManager(self)
         self._effects = EffectManager(self)
         self._phases = PhaseManager(self)
+        self._action_options = ActionOptionResolver(self)
         self._legal_action_enumerator = LegalActionEnumerator(self)
 
     @property
@@ -649,7 +650,7 @@ class GameEngine:
     ) -> list[ChooseTriggeredTargets]:
         state = self._require_running_state()
         definition = self._definition(item.source_card_id)
-        player_targets = self._target_selections(
+        player_targets = self._action_options.target_selections(
             item.effects, TargetMode.CHOSEN_PLAYER, state.turn_order
         )
         eligible_cards = tuple(
@@ -660,11 +661,11 @@ class GameEngine:
                 definition, card_id, item.ability_id is not None, item.source_card_id
             )
         )
-        card_targets = self._target_selections(
+        card_targets = self._action_options.target_selections(
             item.effects, TargetMode.CHOSEN_PERMANENT, eligible_cards
         )
-        zone_targets = self._zone_target_selections(item.effects)
-        allocations = self._allocation_selections(
+        zone_targets = self._action_options.zone_target_selections(item.effects)
+        allocations = self._action_options.allocation_selections(
             item.effects,
             definition,
             from_ability=item.ability_id is not None,
@@ -718,46 +719,6 @@ class GameEngine:
         except ValueError as exc:
             raise PaymentError(str(exc)) from exc
 
-    def _card_cost_options(
-        self, definition: CardDefinition, player_id: str
-    ) -> tuple[tuple[int | None, int | None, CompositeCost], ...]:
-        result: list[tuple[int | None, int | None, CompositeCost]] = []
-        if definition.x_cost is not None:
-            result.extend(
-                (None, x_value, self._resolve_x_cost(definition.x_cost, x_value))
-                for x_value in islice(
-                    range(definition.x_cost.minimum, definition.x_cost.maximum + 1),
-                    self.rules.legal_action_enumeration_limit,
-                )
-            )
-        else:
-            normal = (
-                self._resolve_dynamic_cost(definition.dynamic_cost, player_id)
-                if definition.dynamic_cost is not None
-                else CompositeCost(steps=definition.cost)
-            )
-            result.append((None, None, normal))
-        alternatives: list[CompositeCost] = [*definition.alternative_costs]
-        alternatives.extend(
-            self._resolve_dynamic_cost(item, player_id)
-            for item in definition.dynamic_alternative_costs
-        )
-        result.extend((index, None, cost) for index, cost in enumerate(alternatives))
-        first_x_index = len(alternatives)
-        for offset, x_cost in enumerate(definition.x_alternative_costs):
-            result.extend(
-                (
-                    first_x_index + offset,
-                    x_value,
-                    self._resolve_x_cost(x_cost, x_value),
-                )
-                for x_value in islice(
-                    range(x_cost.minimum, x_cost.maximum + 1),
-                    self.rules.legal_action_enumeration_limit,
-                )
-            )
-        return tuple(result)
-
     def _card_cost_for_option(
         self,
         definition: CardDefinition,
@@ -806,7 +767,7 @@ class GameEngine:
             definition = self._definition(card_id)
             if not self._timing_allows_play(player_id, definition):
                 continue
-            player_targets = self._target_selections(
+            player_targets = self._action_options.target_selections(
                 definition.effects, TargetMode.CHOSEN_PLAYER, state.turn_order
             )
             eligible_cards = tuple(
@@ -815,13 +776,13 @@ class GameEngine:
                 for permanent_id in owner.zones[Zone.BATTLEFIELD]
                 if self._card_can_be_targeted(definition, permanent_id)
             )
-            card_targets = self._target_selections(
+            card_targets = self._action_options.target_selections(
                 definition.effects, TargetMode.CHOSEN_PERMANENT, eligible_cards
             )
-            zone_targets = self._zone_target_selections(definition.effects)
-            costs = self._card_cost_options(definition, player_id)
+            zone_targets = self._action_options.zone_target_selections(definition.effects)
+            costs = self._action_options.card_cost_options(definition, player_id)
             for cost_index, x_value, cost in costs:
-                allocation_targets = self._allocation_selections(
+                allocation_targets = self._action_options.allocation_selections(
                     definition.effects, definition, x_value=x_value or 0
                 )
                 hand_pool = tuple(
@@ -874,112 +835,12 @@ class GameEngine:
                     )
         return result
 
-    def _zone_target_selections(
-        self, effects: tuple[EffectDefinition, ...]
-    ) -> tuple[tuple[ZoneTarget, ...], ...]:
-        state = self._require_state()
-        candidates = tuple(
-            ZoneTarget(player_id, zone)
-            for player_id, player in state.players.items()
-            for zone in player.zones
-        )
-        targeted = tuple(
-            effect for effect in effects if effect.target is TargetMode.CHOSEN_ZONE
-        )
-        if not targeted:
-            return ((),)
-        minimum = max(effect.minimum_targets for effect in targeted)
-        maximum = min(effect.maximum_targets for effect in targeted)
-        return tuple(
-            islice(
-                (
-                    tuple(selection)
-                    for count in range(minimum, min(maximum, len(candidates)) + 1)
-                    for selection in combinations(candidates, count)
-                ),
-                self.rules.legal_action_enumeration_limit,
-            )
-        )
-
-    def _allocation_selections(
-        self,
-        effects: tuple[EffectDefinition, ...],
-        source_definition: CardDefinition,
-        *,
-        from_ability: bool = False,
-        source_card_id: str | None = None,
-        x_value: int = 0,
-    ) -> tuple[tuple[TargetAllocation, ...], ...]:
-        state = self._require_state()
-        effect = next((item for item in effects if item.distributed), None)
-        if effect is None:
-            return ((),)
-        candidates = [*state.turn_order]
-        candidates.extend(
-            card_id
-            for player in state.players.values()
-            for card_id in player.zones[Zone.BATTLEFIELD]
-            if self._card_can_be_targeted(
-                source_definition, card_id, from_ability, source_card_id
-            )
-        )
-        results: list[tuple[TargetAllocation, ...]] = []
-        for count in range(effect.minimum_targets, min(effect.maximum_targets, len(candidates)) + 1):
-            for selected in combinations(candidates, count):
-                for amounts in self._positive_compositions(
-                    self._effect_amount(effect, x_value), count
-                ):
-                    results.append(
-                        tuple(
-                            TargetAllocation(target_id, amount)
-                            for target_id, amount in zip(selected, amounts, strict=True)
-                        )
-                    )
-                    if len(results) >= self.rules.legal_action_enumeration_limit:
-                        return tuple(results)
-        return tuple(results)
-
-    def _positive_compositions(
-        self, total: int, parts: int
-    ) -> Iterator[tuple[int, ...]]:
-        if parts == 1:
-            if total >= 1:
-                yield (total,)
-            return
-        for first in range(1, total - parts + 2):
-            for rest in self._positive_compositions(total - first, parts - 1):
-                yield (first, *rest)
-
     @staticmethod
     def _effect_amount(effect: EffectDefinition, x_value: int) -> int:
         amount = effect.amount + effect.x_multiplier * x_value
         if effect.kind is not EffectKind.MODIFY_STRENGTH and amount < 0:
             raise IllegalAction("La magnitud calculada del efecto no puede ser negativa")
         return amount
-
-    def _target_selections(
-        self,
-        effects: tuple[EffectDefinition, ...],
-        mode: TargetMode,
-        candidates: Iterable[str],
-    ) -> tuple[tuple[str, ...], ...]:
-        targeted = tuple(effect for effect in effects if effect.target is mode)
-        if not targeted:
-            return ((),)
-        minimum = max(effect.minimum_targets for effect in targeted)
-        maximum = min(effect.maximum_targets for effect in targeted)
-        pool = tuple(candidates)
-        maximum = min(maximum, len(pool))
-        return tuple(
-            islice(
-                (
-                    tuple(selection)
-                    for count in range(minimum, maximum + 1)
-                    for selection in combinations(pool, count)
-                ),
-                self.rules.legal_action_enumeration_limit,
-            )
-        )
 
     def _play_card(self, command: PlayCard) -> None:
         state = self._require_running_state()
@@ -1334,7 +1195,7 @@ class GameEngine:
                 sacrifice_choices = tuple(
                     combinations(sacrifice_pool, cost.sacrifice_count)
                 )
-                player_targets = self._target_selections(
+                player_targets = self._action_options.target_selections(
                     ability.effects, TargetMode.CHOSEN_PLAYER, state.turn_order
                 )
                 eligible_cards = tuple(
@@ -1345,11 +1206,11 @@ class GameEngine:
                         definition, card_id, True, source_card_id
                     )
                 )
-                card_targets = self._target_selections(
+                card_targets = self._action_options.target_selections(
                     ability.effects, TargetMode.CHOSEN_PERMANENT, eligible_cards
                 )
-                zone_targets = self._zone_target_selections(ability.effects)
-                allocation_targets = self._allocation_selections(
+                zone_targets = self._action_options.zone_target_selections(ability.effects)
+                allocation_targets = self._action_options.allocation_selections(
                     ability.effects,
                     definition,
                     from_ability=True,

@@ -4,6 +4,13 @@ Fecha de ejecución: **2026-08-12 (UTC)**. Todos los resultados de este informe
 proceden de ejecuciones nuevas en el checkout actual. No se dedujo ningún dato
 de `docs/release-results/`.
 
+Las secciones desde **Base y árbol inicial** hasta **Comprobaciones ausentes**
+son la fotografía histórica tomada en `0d28bb8cbb664f9a7353b512667e539e9d80ff1f`,
+antes de redactar e integrar los informes. Sus comandos, salidas, códigos y
+conteos se conservan literalmente; no describen por sí solos el diff definitivo
+de toda la refactorización. La sección **Estado final post-merge** documenta por
+separado la situación después de integrar el commit documental.
+
 ## Base y árbol inicial
 
 | Comando literal | Código de salida | Resultado/conteo literal |
@@ -86,4 +93,24 @@ y `PYTHONPATH=src`; no se reinterpretaron los intentos fallidos como aprobados.
 - Construcción reproducible del wheel como comando independiente: **NO EJECUTADO**.
 - Simulaciones headless como comando independiente: **NO EJECUTADO**.
 - Persistencia/roundtrips como comando independiente: **NO EJECUTADO**.
-- Captura visual: **NO EJECUTADO**; el cambio es exclusivamente documental.
+- Captura visual: **NO APLICA**; la refactorización no modifica interfaces visuales.
+
+## Estado final post-merge
+
+Después de integrar `ff08956` mediante el merge `c6d614e`, el historial real
+desde la base validada
+`952b1759371eb9c591c7601d906547de4f508449` deja finalmente integrados estos
+seis archivos:
+
+```text
+docs/refactor/LEGAL_ACTIONS_DIAGNOSTIC_0.20.1.md
+docs/refactor/LEGAL_ACTIONS_REFACTOR_0.20.1.md
+docs/refactor/results/LEGAL_ACTIONS_REFACTOR_RESULTS_0.20.1.md
+src/card_duel_engine/engine/actions.py
+src/card_duel_engine/engine/game.py
+tests/test_legal_action_enumerator_parity.py
+```
+
+Esta lista post-merge es la que representa el diff final de la refactorización;
+la lista de cuatro archivos anterior pertenece exclusivamente a la fotografía
+intermedia registrada antes de crear los informes.

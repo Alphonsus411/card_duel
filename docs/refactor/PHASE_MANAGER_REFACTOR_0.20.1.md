@@ -122,3 +122,33 @@ SHA-256 registrados; no se editaron ni se incluyeron en el wheel.
 La frontera mínima queda extraída con decisión **GO**. Una extracción futura de
 supresiones, entrada, cleanup, prioridad o automatismos requeriría una tarea y
 caracterización propias; este cambio no la presupone ni amplía su alcance.
+
+## Matriz diferencial de cierre
+
+La batería ampliada se ejecutó con
+`uv run pytest -q tests/test_phase_manager_parity.py` y terminó con **26 pruebas
+aprobadas**. `igual` significa que el cuerpo anterior y `PhaseManager`
+produjeron el mismo observable; `✓` señala una comprobación ejecutada y
+aprobada. La igualdad del estado completo se obtuvo con su representación
+persistible, que incluye el log ordenado de eventos. Las celdas de perfil no
+extrapolan resultados: cuando el caso no se ejecutó expresamente bajo una
+semántica, se indica literalmente `NO EJECUTADO`.
+
+| Escenario | Igualdad `Previous vs PhaseManager` | Estado completo | Eventos | `CURRENT` | `LEGACY_019` |
+|---|---|---|---|---|---|
+| Transición normal (`DRAW`, `EFFECTS` y `DISCARD`) | igual | ✓ | ✓ | ✓ | ✓ |
+| `NEXT_OCCURRENCE` apilada | igual | ✓ | ✓ | ✓ | NO EJECUTADO |
+| Continua más almacenada | igual | ✓ | ✓ | ✓ | NO EJECUTADO |
+| `END_OF_TURN` | igual | ✓ | ✓ | ✓ | NO EJECUTADO |
+| Tres jugadores (`A → B → C → A`) | igual | ✓ | ✓ | ✓ | NO EJECUTADO |
+| Draw fallido por mazo y descarte vacíos | igual | ✓ | ✓ | ✓ | NO EJECUTADO |
+| Reciclaje de descarte | igual | ✓ | ✓ | ✓ | NO EJECUTADO |
+| Cleanup de modificador expirable | igual | ✓ | ✓ | ✓ | NO EJECUTADO |
+| `BLOCKED` por todas las fases suprimidas | igual | ✓ | ✓ | ✓ | NO EJECUTADO |
+| `FINISHED` en las tres fronteras | igual | ✓ | ✓ | ✓ | NO EJECUTADO |
+| Combate pendiente | igual | ✓ | ✓ | ✓ | NO EJECUTADO |
+| Stack no vacío | igual | ✓ | ✓ | ✓ | NO EJECUTADO |
+| Prioridad abierta y frontera cerrada | igual | ✓ | ✓ | ✓ | NO EJECUTADO |
+| Acciones legales ordenadas antes y después | igual | ✓ | ✓ | ✓ | NO EJECUTADO |
+| Supresión simple `NEXT_OCCURRENCE` | igual | ✓ | ✓ | ✓ | NO EJECUTADO |
+| Escenario legacy adicional: supresión de `DRAW` al cambiar turno | igual | ✓ | ✓ | NO EJECUTADO | ✓ |

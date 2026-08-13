@@ -321,3 +321,53 @@ tupla de fases fuera de `RuleSet`, si selecciona legacy por `rules.version`, o s
 necesita acceso amplio a `GameEngine` en vez de un protocolo mínimo auditable.
 Hasta que exista esa caracterización diferencial, el estado actual de la
 propuesta es **NO-GO para modificar código; GO únicamente para preparar tests**.
+
+## Decisión
+
+NO-GO
+
+La suite completa de referencia está verde (`431 passed, 1 skipped` con Python
+3.12), incluidos setup/fases, stack/prioridad, combate, persistencia y los
+replays `LEGACY_019`. El único *skip* se produjo porque la inspección del wheel
+precedió en esa ejecución a la generación del artefacto de empaquetado; tras
+generarse, la suite específica de release pasó completa (`4 passed`). No
+representa un fallo funcional.
+Este resultado fija una línea base, pero no satisface por sí solo la prueba
+diferencial exigida en la sección 25: todavía no existe un componente de fases
+sin estado propio ni un seam de contrato que lo ejecute sobre el mismo
+`GameState` y compare todos los observables antes/después. Por tanto no se puede
+demostrar aún la condición necesaria para emitir `GO` sin presuponer la
+extracción.
+
+### Frontera mínima evaluada
+
+La frontera candidata queda registrada, pero **no aprobada para extracción**,
+con estos identificadores concretos y sin ampliarla:
+
+1. `GameEngine._advance_phase`: sólo la elección de la transición después de
+   que el propio método autoritativo conserve las precondiciones de jugador
+   activo, pila/prioridad, combate y límite de mano.
+2. `GameEngine._finish_turn`: sólo la secuencia que delega
+   `GameEngine._cleanup_end_of_turn` y después actualiza `turn_serial`,
+   `active_player_index` y `turn_number` sobre el mismo `GameState`.
+3. `GameEngine._enter_phase_or_skip`: sólo el bucle de coordinación, delegando
+   en `GameEngine._phase_is_suppressed`, `GameEngine._finish_turn` y
+   `GameEngine._enter_phase`, y preservando exactamente el límite y el orden de
+   eventos actuales.
+
+Permanecen íntegramente en el contexto autoritativo
+`GameEngine._phase_is_suppressed`, `GameEngine._enter_phase`,
+`GameEngine._cleanup_end_of_turn`, `GameEngine._draw`,
+`StackManager._queue_legendary_effects` y `GameEngine._emit`. En particular, no
+se trasladan ni duplican consumo de supresiones, reglas de dominio, efectos,
+stack, combate, zonas, cleanup, terminalidad o semántica legacy. Tampoco se
+modifican `GameState`, comandos, eventos/payloads, persistencia, snapshot,
+replay ni orden observable.
+
+### Condición para reabrir la decisión
+
+Una iteración posterior podrá reevaluar `GO` únicamente después de caracterizar
+primero el seam con un contexto mínimo y pruebas diferenciales `CURRENT` y
+`LEGACY_019` que cubran la lista de la sección 25. Hasta entonces se detiene la
+iteración en este diagnóstico: no se crea `phases.py`, no se cambia código del
+motor y no se añaden pruebas que presupongan la extracción.

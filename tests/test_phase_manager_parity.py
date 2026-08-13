@@ -1,4 +1,10 @@
-"""Paridad diferencial de la coordinación extraída a ``PhaseManager``."""
+"""Paridad diferencial de la coordinación extraída a ``PhaseManager``.
+
+Esta suite es la evidencia ejecutable citada por el diagnóstico, el documento
+de refactor y el informe de cierre 0.20.1. Sus comparaciones cubren el estado
+persistible completo, el orden de eventos y las acciones legales sin modificar
+la implementación situada bajo ``src/card_duel_engine``.
+"""
 
 from copy import deepcopy
 

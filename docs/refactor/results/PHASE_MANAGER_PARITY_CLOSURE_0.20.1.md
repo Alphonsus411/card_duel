@@ -1,5 +1,21 @@
 # Cierre de paridad de `PhaseManager` — 0.20.1
 
+## Nota de auditoría posterior
+
+La rama `audit/phase-manager-parity-closure`, creada desde `83af4a0`, revisó
+la trazabilidad de este cierre y enlazó explícitamente diagnóstico, decisión,
+suite diferencial e informe. Esta nota no sustituye la evidencia registrada
+debajo ni atribuye sus ejecuciones al commit de auditoría. No se modificó
+ningún archivo bajo `src/card_duel_engine`.
+
+Al repetir la comprobación normativa el 2026-08-13, los SHA-256 observados
+coincidieron exactamente con `docs/RULES_SOURCES.json`:
+
+- `Fantasy Tokens.pdf`:
+  `1c51dabe2023626ad532368e2567d2084c47ec137c7a738bd8c0e0b707f86b21`.
+- `Fantasy Tokens Edicion Mitica.pdf`:
+  `61243b30d219dd12d8897a206ed664d95a5e3c38b6670a818933f6d90904af36`.
+
 ## Identificación y veredicto
 
 - Fecha UTC: **2026-08-13**.

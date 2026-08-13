@@ -1,5 +1,10 @@
 # Refactor conservador de `PhaseManager` — 0.20.1
 
+> **Trazabilidad de auditoría.** Los escenarios que sustentan este `GO` se
+> mantienen en `tests/test_phase_manager_parity.py`; los comandos, cantidades,
+> hashes normativos y límites de la verificación se registran en
+> `results/PHASE_MANAGER_PARITY_CLOSURE_0.20.1.md`.
+
 ## 1. Decisión
 
 **GO.** La extracción se limita a coordinación de transiciones y conserva el

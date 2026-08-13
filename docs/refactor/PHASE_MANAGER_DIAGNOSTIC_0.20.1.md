@@ -371,3 +371,15 @@ primero el seam con un contexto mínimo y pruebas diferenciales `CURRENT` y
 `LEGACY_019` que cubran la lista de la sección 25. Hasta entonces se detiene la
 iteración en este diagnóstico: no se crea `phases.py`, no se cambia código del
 motor y no se añaden pruebas que presupongan la extracción.
+
+## Estado posterior de la decisión
+
+El `NO-GO` anterior corresponde al momento en que todavía no se disponía de
+caracterización diferencial suficiente y conserva su validez como decisión
+histórica de ese diagnóstico. No presupone ni incorpora evidencias obtenidas
+con posterioridad.
+
+En una iteración posterior, ese `NO-GO` fue superado por la evidencia de la
+implementación y por la matriz diferencial de cierre, que permitieron adoptar
+`GO` para la frontera mínima evaluada sin alterar retrospectivamente la
+decisión ni la evidencia disponibles en el diagnóstico original.

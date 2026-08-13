@@ -1,43 +1,106 @@
-# Frontera de enumeración de acciones legales — 0.20.1
+# Informe posterior: refactor de acciones legales — 0.20.1
 
-## Alcance de esta iteración
+## 1. Resultado ejecutivo
 
-`LegalActionEnumerator` enumera comandos, pero no valida ni ejecuta ninguno. Su
-dependencia sobre el coordinador queda declarada estructuralmente mediante
-`LegalActionContext`: cada acceso que realiza la enumeración tiene una firma
-concreta y usa los tipos de dominio correspondientes.
+La enumeración quedó extraída sin cambiar la API pública: `GameEngine` conserva
+`legal_actions(player_id) -> tuple[GameCommand, ...]` y delega su trabajo.
 
-La consulta `_legal_action_state` devuelve **la misma instancia autoritativa** de
-`GameState` que conserva `GameEngine`. No se construye una copia, proyección ni
-instantánea: así, la enumeración completa y los helpers a los que delega leen una
-única fuente de verdad durante la llamada.
+## 2. Base realmente utilizada
 
-## Justificación del protocolo
+La comparación usa `952b1759371eb9c591c7601d906547de4f508449` porque la
+comprobación de ancestro terminó con código 0. El HEAD examinado antes de crear
+estos informes fue `0d28bb8cbb664f9a7353b512667e539e9d80ff1f`.
 
-| Miembro | Tipo / firma | Motivo de pertenencia |
-|---|---|---|
-| `_legal_action_state` | `GameState` (propiedad) | Lee fase, estado, prioridad, jugadores, zonas, pila y decisiones pendientes desde el objeto autoritativo. |
-| `_legal_action_enumeration_limit` | `int` (propiedad) | Acota búsquedas, permutaciones y selecciones sin exponer el `RuleSet` completo. |
-| `_legal_action_hand_limit` | `int` (propiedad) | Calcula el descarte obligatorio sin exponer configuración ajena a la enumeración. |
-| `_definition` | `(card_id: str) -> CardDefinition` | Consulta naturaleza, coste y capacidades impresas del permanente recorrido. |
-| `_replacement_definitions` | `(definition: CardDefinition) -> tuple[MoveReplacementDefinition, ...]` | Obtiene las sustituciones cuyo orden puede elegir el jugador. |
-| `_trigger_target_commands` | `(player_id: str, item: StackItem) -> list[ChooseTriggeredTargets]` | Conserva en el motor la construcción y validación compartida de objetivos disparados. |
-| `_legal_plays` | `(player_id: str) -> list[PlayCard]` | Delega la enumeración de jugadas que depende de costes, timing y objetivos. |
-| `_legal_ability_activations` | `(player_id: str, source_card_id: str) -> list[ActivateAbility]` | Delega costes, disponibilidad y objetivos de habilidades activadas. |
-| `_is_creature` | `(card_id: str) -> bool` | Filtra objetivos de equipamiento según las reglas efectivas del motor. |
-| `_legacy_019` | `bool` (propiedad) | Mantiene la ventana histórica de drenaje y habilidades al reproducir semántica 0.19. |
-| `_combat_action_enumerator` | `CombatActionEnumerator` (propiedad) | Integra los comandos de combate a través de su propia frontera mínima y tipada. |
+## 3. Delegación resultante
 
-## Frontera pendiente
+La dirección de dependencias implantada es, literalmente:
 
-Los helpers de **costes**, **objetivos**, **jugadas** y **habilidades** permanecen
-temporalmente en `GameEngine`. Moverlos ahora duplicaría validaciones o podría
-alterar reglas observables al separar cálculos que comparten estado y semántica.
-Su extracción queda marcada como frontera pendiente para una iteración posterior,
-que deberá incorporar pruebas de paridad antes de cambiar su propiedad.
+```text
+GameEngine -> LegalActionEnumerator -> consultas del contexto
+```
 
-En particular, esta decisión cubre `_card_cost_options`,
-`_card_cost_for_option`, `_target_selections`, `_zone_target_selections`,
-`_allocation_selections`, `_trigger_target_commands`, `_legal_plays` y
-`_legal_ability_activations`, junto con las consultas auxiliares que usan para
-timing y selección de objetivos.
+`GameEngine.legal_actions` invoca a su enumerador; éste sólo conoce el protocolo
+`LegalActionContext`, y las consultas vuelven al estado y helpers autoritativos
+del motor.
+
+## 4. Nuevo enumerador
+
+`LegalActionEnumerator` contiene el flujo de construcción de la tupla: atiende
+decisiones, prioridad, combate, jugadas, habilidades, equipamiento, descarte y
+concesión, preservando los cortes por límite en sus posiciones originales.
+
+## 5. Contrato del contexto
+
+`LegalActionContext` es un `Protocol` interno y estructural. Expone solamente las
+consultas requeridas por la enumeración y evita tipar el colaborador contra todo
+`GameEngine`.
+
+## 6. Estado autoritativo
+
+`_legal_action_state` devuelve la misma instancia de `GameState` mantenida por
+el motor. No crea copia, proyección ni snapshot; todos los helpers leen la misma
+fuente de verdad durante la llamada.
+
+## 7. Consultas escalares
+
+`_legal_action_enumeration_limit` y `_legal_action_hand_limit` proyectan sólo los
+dos valores de `RuleSet` necesarios. `_legacy_019` conserva la bifurcación
+semántica histórica sin entregar al enumerador el coordinador completo.
+
+## 8. Consultas de dominio
+
+`_definition`, `_replacement_definitions` e `_is_creature` mantienen en el motor
+el acceso al catálogo, sustituciones y clasificación efectiva de cartas.
+
+## 9. Consultas de comandos complejos
+
+`_trigger_target_commands`, `_legal_plays` y `_legal_ability_activations`
+continúan construyendo alternativas que comparten lógica de costes, timing,
+objetivos y validación con el motor.
+
+## 10. Combate
+
+La propiedad `_combat_action_enumerator` entrega la frontera existente de
+combate. El enumerador general integra su resultado, pero no duplica su
+algoritmo ni conoce la implementación de `CombatManager`.
+
+## 11. API y encapsulación
+
+La fachada pública no cambió. El enumerador y su contexto residen en la capa
+`engine`; no importan servicio, aplicación, controladores ni simulación. Las
+consultas añadidas son privadas por convención.
+
+## 12. Paridad y no mutación
+
+La prueba de caracterización conserva el cuerpo anterior y compara, desde
+estados independientes, resultado/estado del algoritmo previo, enumerador
+directo, fachada y llamada repetida. También verifica la excepción previa al
+inicio.
+
+## 13. Cobertura de escenarios
+
+Las regresiones cubren decisiones y objetivos, prioridad, fases de combate,
+equipamiento, descarte, concesión, estados terminales, límites 1/2/3, perfiles
+de mano, legacy 0.19, consumo por servicio y serialización pública.
+
+## 14. Privacidad y arquitectura
+
+Las pruebas comprueban que no se filtran cartas privadas del rival en acciones
+públicas, que sólo se exponen nombres públicos y que el módulo extraído permanece
+dentro del motor sin dependencias hacia capas exteriores.
+
+## 15. Frontera pendiente
+
+Los helpers `_card_cost_options`, `_card_cost_for_option`,
+`_target_selections`, `_zone_target_selections`, `_allocation_selections`,
+`_trigger_target_commands`, `_legal_plays` y `_legal_ability_activations`
+permanecen temporalmente en `GameEngine`. Extraerlos ahora duplicaría reglas o
+separaría cálculos que comparten estado; requerirá otra iteración con paridad
+propia.
+
+## 16. Conclusión posterior
+
+La responsabilidad quedó separada con una frontera mínima, tipada y comprobada.
+Los resultados recién ejecutados, incluidos intentos fallidos y comprobaciones
+no realizadas, se registran exclusivamente en
+`results/LEGAL_ACTIONS_REFACTOR_RESULTS_0.20.1.md`.

@@ -70,6 +70,10 @@ class ReleaseMetadataTests(unittest.TestCase):
             f"docs/release-results/{project_version()}/runtime-python-3.13.json"
         )
         self.assertEqual(accepted.parent.name, project_version())
+        transient = verify_release.release_result_path(
+            "dist/release-verification.json"
+        )
+        self.assertEqual(transient, ROOT / "dist" / "release-verification.json")
         with self.assertRaisesRegex(ValueError, project_version()):
             verify_release.release_result_path(
                 "docs/release-results/0.20.0/runtime-python-3.13.json"

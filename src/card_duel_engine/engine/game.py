@@ -64,6 +64,7 @@ from ..rules.resolvers import apply_text_patch, resolve_dynamic_cost, resolve_x_
 from .combat import CombatContext, CombatManager
 from .actions import LegalActionContext, LegalActionEnumerator
 from .effects import EffectContext, EffectManager
+from .phases import PhaseManager
 from .stack import StackContext, StackManager
 from .zones import MoveReplacementChoiceRequired, ZoneContext, ZoneManager
 from .commands import (
@@ -121,7 +122,18 @@ class GameEngine:
         self._stack = StackManager(self)
         self._zones = ZoneManager(self)
         self._effects = EffectManager(self)
+        self._phases = PhaseManager(self)
         self._legal_action_enumerator = LegalActionEnumerator(self)
+
+    @property
+    def _phase_sequence(self) -> tuple[Phase, ...]:
+        """Proyecta la secuencia configurada al coordinador de fases."""
+        return self.rules.phase_sequence
+
+    @property
+    def _phase_hand_limit(self) -> int:
+        """Proyecta el límite de mano sin entregar el RuleSet completo."""
+        return self.rules.hand_limit
 
     @property
     def _combat_action_enumerator(self) -> CombatManager:
@@ -1740,53 +1752,13 @@ class GameEngine:
         return False
 
     def _advance_phase(self, player_id: str) -> None:
-        state = self._require_running_state()
-        if player_id != state.active_player_id:
-            raise IllegalAction("Solo el jugador activo puede avanzar la fase")
-        if state.stack or not state.phase_priority_complete:
-            raise IllegalAction("La ventana de prioridad debe estar cerrada")
-        if state.phase is Phase.COMBAT and state.combat and not state.combat.resolved:
-            raise IllegalAction("El combate declarado debe resolverse")
-        if state.phase is Phase.DISCARD:
-            if len(state.players[player_id].zones[Zone.HAND]) > self.rules.hand_limit:
-                raise IllegalAction("Debe descartarse hasta el límite de mano")
-            self._finish_turn()
-            self._enter_phase_or_skip(Phase.DRAW)
-            return
-        index = self.rules.phase_sequence.index(state.phase)
-        self._enter_phase_or_skip(self.rules.phase_sequence[index + 1])
+        self._phases.advance_phase(player_id)
 
     def _finish_turn(self) -> None:
-        state = self._require_running_state()
-        self._cleanup_end_of_turn()
-        state.turn_serial += 1
-        state.active_player_index = (state.active_player_index + 1) % len(
-            state.turn_order
-        )
-        if state.active_player_index == 0:
-            state.turn_number += 1
+        self._phases.finish_turn()
 
     def _enter_phase_or_skip(self, phase: Phase) -> None:
-        state = self._require_running_state()
-        skipped = 0
-        while self._phase_is_suppressed(state.active_player_id, phase):
-            self._emit(
-                "PHASE_SKIPPED",
-                state.active_player_id,
-                payload={"phase": phase.name},
-            )
-            skipped += 1
-            if skipped > len(self.rules.phase_sequence) * len(state.turn_order):
-                state.status = MatchStatus.BLOCKED
-                self._emit("ALL_PHASES_SUPPRESSED")
-                return
-            if phase is Phase.DISCARD:
-                self._finish_turn()
-                phase = Phase.DRAW
-            else:
-                index = self.rules.phase_sequence.index(phase)
-                phase = self.rules.phase_sequence[index + 1]
-        self._enter_phase(phase)
+        self._phases.enter_phase_or_skip(phase)
 
     def _phase_is_suppressed(self, player_id: str, phase: Phase) -> bool:
         state = self._require_running_state()

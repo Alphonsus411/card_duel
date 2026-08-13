@@ -21,6 +21,7 @@ from verify_repository_security import verify as verify_security
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = read_project_version(ROOT)
 RELEASE_RESULTS = ROOT / "docs" / "release-results" / VERSION
+TRANSIENT_RELEASE_RESULT = ROOT / "dist" / "release-verification.json"
 WHEEL_NAME = f"card_duel_engine-{VERSION}-py3-none-any.whl"
 PYTHONS = ("3.11", "3.12", "3.13")
 CommandRunner = Callable[..., subprocess.CompletedProcess[str]]
@@ -156,10 +157,13 @@ def release_result_path(value: str) -> Path:
         path = ROOT / path
     path = path.resolve()
     expected = RELEASE_RESULTS.resolve()
-    if path.parent != expected or path.suffix != ".json":
+    if path != TRANSIENT_RELEASE_RESULT.resolve() and (
+        path.parent != expected or path.suffix != ".json"
+    ):
         raise ValueError(
             f"La evidencia de {VERSION} debe escribirse como JSON dentro de "
-            f"{RELEASE_RESULTS.relative_to(ROOT)}"
+            f"{RELEASE_RESULTS.relative_to(ROOT)} o como "
+            f"{TRANSIENT_RELEASE_RESULT.relative_to(ROOT)}"
         )
     return path
 

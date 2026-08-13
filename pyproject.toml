@@ -13,7 +13,12 @@ authors = [{name = "Adolfo González Hernández"}]
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["build>=1.2", "coverage>=7.8", "mypy>=1.15"]
+dev = [
+    "build>=1.2",
+    "coverage>=7.8",
+    "mypy>=1.15",
+    "pytest>=8.3",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

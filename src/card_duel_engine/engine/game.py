@@ -124,7 +124,7 @@ class GameEngine:
         self._zones = ZoneManager(self)
         self._effects = EffectManager(self)
         self._phases = PhaseManager(self)
-        self._action_options = ActionOptionResolver(self)
+        self._options = ActionOptionResolver(self)
         self._legal_action_enumerator = LegalActionEnumerator(self)
 
     @property
@@ -650,7 +650,7 @@ class GameEngine:
     ) -> list[ChooseTriggeredTargets]:
         state = self._require_running_state()
         definition = self._definition(item.source_card_id)
-        player_targets = self._action_options.target_selections(
+        player_targets = self._target_selections(
             item.effects, TargetMode.CHOSEN_PLAYER, state.turn_order
         )
         eligible_cards = tuple(
@@ -661,11 +661,11 @@ class GameEngine:
                 definition, card_id, item.ability_id is not None, item.source_card_id
             )
         )
-        card_targets = self._action_options.target_selections(
+        card_targets = self._target_selections(
             item.effects, TargetMode.CHOSEN_PERMANENT, eligible_cards
         )
-        zone_targets = self._action_options.zone_target_selections(item.effects)
-        allocations = self._action_options.allocation_selections(
+        zone_targets = self._zone_target_selections(item.effects)
+        allocations = self._allocation_selections(
             item.effects,
             definition,
             from_ability=item.ability_id is not None,
@@ -719,6 +719,12 @@ class GameEngine:
         except ValueError as exc:
             raise PaymentError(str(exc)) from exc
 
+    def _card_cost_options(
+        self, definition: CardDefinition, player_id: str
+    ) -> tuple[tuple[int | None, int | None, CompositeCost], ...]:
+        """Conserva la consulta histórica delegándola al resolver de opciones."""
+        return self._options.card_cost_options(definition, player_id)
+
     def _card_cost_for_option(
         self,
         definition: CardDefinition,
@@ -767,7 +773,7 @@ class GameEngine:
             definition = self._definition(card_id)
             if not self._timing_allows_play(player_id, definition):
                 continue
-            player_targets = self._action_options.target_selections(
+            player_targets = self._target_selections(
                 definition.effects, TargetMode.CHOSEN_PLAYER, state.turn_order
             )
             eligible_cards = tuple(
@@ -776,13 +782,13 @@ class GameEngine:
                 for permanent_id in owner.zones[Zone.BATTLEFIELD]
                 if self._card_can_be_targeted(definition, permanent_id)
             )
-            card_targets = self._action_options.target_selections(
+            card_targets = self._target_selections(
                 definition.effects, TargetMode.CHOSEN_PERMANENT, eligible_cards
             )
-            zone_targets = self._action_options.zone_target_selections(definition.effects)
-            costs = self._action_options.card_cost_options(definition, player_id)
+            zone_targets = self._zone_target_selections(definition.effects)
+            costs = self._card_cost_options(definition, player_id)
             for cost_index, x_value, cost in costs:
-                allocation_targets = self._action_options.allocation_selections(
+                allocation_targets = self._allocation_selections(
                     definition.effects, definition, x_value=x_value or 0
                 )
                 hand_pool = tuple(
@@ -835,12 +841,51 @@ class GameEngine:
                     )
         return result
 
+    def _zone_target_selections(
+        self, effects: tuple[EffectDefinition, ...]
+    ) -> tuple[tuple[ZoneTarget, ...], ...]:
+        """Conserva la consulta histórica delegándola al resolver de opciones."""
+        return self._options.zone_target_selections(effects)
+
+    def _allocation_selections(
+        self,
+        effects: tuple[EffectDefinition, ...],
+        source_definition: CardDefinition,
+        *,
+        from_ability: bool = False,
+        source_card_id: str | None = None,
+        x_value: int = 0,
+    ) -> tuple[tuple[TargetAllocation, ...], ...]:
+        """Conserva la consulta histórica delegándola al resolver de opciones."""
+        return self._options.allocation_selections(
+            effects,
+            source_definition,
+            from_ability=from_ability,
+            source_card_id=source_card_id,
+            x_value=x_value,
+        )
+
+    def _positive_compositions(
+        self, total: int, parts: int
+    ) -> Iterator[tuple[int, ...]]:
+        """Conserva la consulta histórica delegándola al resolver de opciones."""
+        return self._options.positive_compositions(total, parts)
+
     @staticmethod
     def _effect_amount(effect: EffectDefinition, x_value: int) -> int:
         amount = effect.amount + effect.x_multiplier * x_value
         if effect.kind is not EffectKind.MODIFY_STRENGTH and amount < 0:
             raise IllegalAction("La magnitud calculada del efecto no puede ser negativa")
         return amount
+
+    def _target_selections(
+        self,
+        effects: tuple[EffectDefinition, ...],
+        mode: TargetMode,
+        candidates: Iterable[str],
+    ) -> tuple[tuple[str, ...], ...]:
+        """Conserva la consulta histórica delegándola al resolver de opciones."""
+        return self._options.target_selections(effects, mode, candidates)
 
     def _play_card(self, command: PlayCard) -> None:
         state = self._require_running_state()
@@ -1195,7 +1240,7 @@ class GameEngine:
                 sacrifice_choices = tuple(
                     combinations(sacrifice_pool, cost.sacrifice_count)
                 )
-                player_targets = self._action_options.target_selections(
+                player_targets = self._target_selections(
                     ability.effects, TargetMode.CHOSEN_PLAYER, state.turn_order
                 )
                 eligible_cards = tuple(
@@ -1206,11 +1251,11 @@ class GameEngine:
                         definition, card_id, True, source_card_id
                     )
                 )
-                card_targets = self._action_options.target_selections(
+                card_targets = self._target_selections(
                     ability.effects, TargetMode.CHOSEN_PERMANENT, eligible_cards
                 )
-                zone_targets = self._action_options.zone_target_selections(ability.effects)
-                allocation_targets = self._action_options.allocation_selections(
+                zone_targets = self._zone_target_selections(ability.effects)
+                allocation_targets = self._allocation_selections(
                     ability.effects,
                     definition,
                     from_ability=True,

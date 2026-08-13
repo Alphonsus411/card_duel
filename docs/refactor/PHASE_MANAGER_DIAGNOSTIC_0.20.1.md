@@ -1,5 +1,10 @@
 # Diagnóstico de `PhaseManager` 0.20.1
 
+> **Trazabilidad del cierre.** La reevaluación posterior del `NO-GO` histórico
+> se conserva en `PHASE_MANAGER_REFACTOR_0.20.1.md`; la evidencia ejecutable
+> está en `tests/test_phase_manager_parity.py` y su auditoría final en
+> `results/PHASE_MANAGER_PARITY_CLOSURE_0.20.1.md`.
+
 ## 1. Propósito y veredicto provisional
 
 Este documento reconstruye el flujo real de fases antes de extraer un posible

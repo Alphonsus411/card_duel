@@ -64,6 +64,7 @@ from ..rules.resolvers import apply_text_patch, resolve_dynamic_cost, resolve_x_
 from .combat import CombatContext, CombatManager
 from .actions import LegalActionContext, LegalActionEnumerator
 from .effects import EffectContext, EffectManager
+from .options import ActionOptionContext
 from .phases import PhaseManager
 from .stack import StackContext, StackManager
 from .zones import MoveReplacementChoiceRequired, ZoneContext, ZoneManager
@@ -154,6 +155,42 @@ class GameEngine:
     def _legal_action_hand_limit(self) -> int:
         """Expone solo el tamaño de mano requerido por la enumeración."""
         return self.rules.hand_limit
+
+    @property
+    def _option_state(self) -> GameState:
+        """Expone a las opciones el estado autoritativo, sin clonarlo."""
+        return self._require_state()
+
+    @property
+    def _option_enumeration_limit(self) -> int:
+        """Expone solo el límite combinatorio requerido por las opciones."""
+        return self.rules.legal_action_enumeration_limit
+
+    def _option_resolve_dynamic_cost(
+        self, definition: DynamicCostDefinition, player_id: str
+    ) -> CompositeCost:
+        return self._resolve_dynamic_cost(definition, player_id)
+
+    def _option_resolve_x_cost(
+        self, definition: XCostDefinition, x_value: int
+    ) -> CompositeCost:
+        return self._resolve_x_cost(definition, x_value)
+
+    def _option_card_can_be_targeted(
+        self,
+        source_definition: CardDefinition | None,
+        target_card_id: str,
+        from_ability: bool = False,
+        source_card_id: str | None = None,
+    ) -> bool:
+        return self._card_can_be_targeted(
+            source_definition, target_card_id, from_ability, source_card_id
+        )
+
+    def _option_effect_amount(
+        self, effect: EffectDefinition, x_value: int
+    ) -> int:
+        return self._effect_amount(effect, x_value)
 
     @property
     def _combat_action_enumeration_limit(self) -> int:
@@ -2415,4 +2452,5 @@ def _verify_manager_contexts(engine: GameEngine) -> None:
     zones: ZoneContext = engine
     effects: EffectContext = engine
     actions: LegalActionContext = engine
-    _ = (combat, stack, zones, effects, actions)
+    options: ActionOptionContext = engine
+    _ = (combat, stack, zones, effects, actions, options)

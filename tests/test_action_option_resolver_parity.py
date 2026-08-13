@@ -6,12 +6,14 @@ duplicar validadores de jugadas, activaciones, disparos, objetivos o efectos.
 """
 
 import json
+from dataclasses import fields
 from itertools import combinations, islice
 
 import pytest
 
 from card_duel_engine import EngineSemantics, GameEngine, RuleSet
 from card_duel_engine.domain import (
+    AbilityDefinition,
     CardDefinition,
     CardKind,
     CompositeCost,
@@ -27,9 +29,11 @@ from card_duel_engine.domain import (
     Zone,
     ZoneTarget,
 )
+from card_duel_engine.domain.models import StackItem
 from card_duel_engine.persistence.codec import encode_value
 
 from fixtures import test_deck
+from test_legal_action_enumerator_parity import _previous_legal_actions
 
 
 SEMANTICS = (EngineSemantics.CURRENT, EngineSemantics.LEGACY_019)
@@ -256,3 +260,192 @@ def test_card_cost_options_parity_indices_x_composite_cost_and_limits(semantics,
     assert actual == expected
     assert all(isinstance(item, tuple) and len(item) == 3 and isinstance(item[2], CompositeCost)
                for item in actual)
+
+
+# Estos escenarios ejercitan los helpers anteriores a través de la API pública.
+# El oráculo se importa del test del enumerador: deliberadamente no mantenemos
+# aquí una segunda copia de _legal_plays, _legal_ability_activations ni de la
+# enumeración de objetivos de triggers.
+def _resolver_scenario_definitions():
+    player_effect = EffectDefinition(
+        EffectKind.DEAL_WOUNDS, 1, TargetMode.CHOSEN_PLAYER
+    )
+    return (
+        CardDefinition("PAR_NORMAL", "Normal", CardKind.ARTIFACT, 1),
+        CardDefinition(
+            "PAR_X", "X", CardKind.QUICK_RESOURCE, 0, permanent=False,
+            x_cost=XCostDefinition(CostComponent.STEPS, minimum=0, maximum=4),
+        ),
+        CardDefinition(
+            "PAR_ALT", "Alternativo", CardKind.ARTIFACT, 99,
+            alternative_costs=(CompositeCost(discard_count=1),),
+        ),
+        CardDefinition(
+            "PAR_DYNAMIC", "Dinámico", CardKind.ARTIFACT, 0,
+            dynamic_cost=DynamicCostDefinition(
+                CostComponent.STEPS, (CostTerm(CostMetric.OWN_WOUNDS),), maximum=9
+            ),
+        ),
+        CardDefinition(
+            "PAR_PLAYER", "Objetivo jugador", CardKind.QUICK_RESOURCE, 0,
+            permanent=False, effects=(player_effect,),
+        ),
+        CardDefinition(
+            "PAR_PERMANENT", "Objetivo permanente", CardKind.QUICK_RESOURCE, 0,
+            permanent=False,
+            effects=(EffectDefinition(
+                EffectKind.DEAL_DAMAGE, 1, TargetMode.CHOSEN_PERMANENT
+            ),),
+        ),
+        CardDefinition(
+            "PAR_ZONE", "Objetivo zona", CardKind.QUICK_RESOURCE, 0,
+            permanent=False,
+            effects=(EffectDefinition(
+                EffectKind.SHUFFLE_ZONE, 1, TargetMode.CHOSEN_ZONE
+            ),),
+        ),
+        CardDefinition(
+            "PAR_DISTRIBUTED", "Distribuido", CardKind.QUICK_RESOURCE, 0,
+            permanent=False,
+            effects=(EffectDefinition(
+                EffectKind.DEAL_HARM, 3, TargetMode.CHOSEN_ENTITY,
+                minimum_targets=1, maximum_targets=2, distributed=True,
+            ),),
+        ),
+        CardDefinition(
+            "PAR_ABILITY", "Habilidad", CardKind.CREATURE, 1, base_strength=2,
+            abilities=(AbilityDefinition("pulse", (player_effect,)),),
+        ),
+        CardDefinition(
+            "PAR_ABILITY_X", "Habilidad X", CardKind.CREATURE, 1,
+            base_strength=2,
+            abilities=(AbilityDefinition(
+                "channel",
+                (EffectDefinition(
+                    EffectKind.DEAL_WOUNDS, 0, TargetMode.CHOSEN_PLAYER,
+                    x_multiplier=1,
+                ),),
+                x_cost=XCostDefinition(CostComponent.STEPS, maximum=4),
+            ),),
+        ),
+        CardDefinition(
+            "PAR_TRIGGER", "Trigger con objetivos", CardKind.CREATURE, 1,
+            base_strength=2,
+            abilities=(AbilityDefinition("hit", (player_effect,)),),
+        ),
+        CardDefinition("PAR_FODDER", "Descartable", CardKind.ARTIFACT, 99),
+        CardDefinition("PAR_TARGET", "Permanente público", CardKind.CREATURE, 1,
+                       base_strength=2),
+    )
+
+
+def _force_resolver_zone(engine, definition_id, player_id, zone):
+    card_id = next(
+        card_id for card_id, card in engine.state.cards.items()
+        if card.definition_id == definition_id
+    )
+    for player in engine.state.players.values():
+        for cards in player.zones.values():
+            if card_id in cards:
+                cards.remove(card_id)
+    engine.state.players[player_id].zones[zone].append(card_id)
+    engine.state.cards[card_id].zone = zone
+    engine.state.cards[card_id].controller_id = player_id
+    return card_id
+
+
+@pytest.fixture
+def resolver_legal_actions_engine(request):
+    """Partida mínima que deja visible únicamente la familia solicitada."""
+    scenario, limit, semantics = request.param
+    engine = GameEngine(RuleSet(legal_action_enumeration_limit=limit))
+    engine.new_match(
+        {
+            "A": [*_resolver_scenario_definitions(), *test_deck("PA", 14)],
+            "B": test_deck("PB", 14),
+        },
+        seed=813,
+    )
+    engine._semantics = semantics
+    engine.state.players["A"].steps = 10
+    engine.state.players["A"].wounds = 2
+
+    # La mano inicial es aleatoria: retiramos primero todas las definiciones de
+    # caracterización para que cada caso exponga una sola ruta del resolver.
+    for definition in _resolver_scenario_definitions():
+        _force_resolver_zone(engine, definition.card_id, "A", Zone.DECK)
+
+    hand_scenarios = {
+        "carta normal": "PAR_NORMAL",
+        "X": "PAR_X",
+        "coste alternativo": "PAR_ALT",
+        "coste dinámico": "PAR_DYNAMIC",
+        "objetivo jugador": "PAR_PLAYER",
+        "objetivo permanente": "PAR_PERMANENT",
+        "objetivo zona": "PAR_ZONE",
+        "efecto distribuido": "PAR_DISTRIBUTED",
+    }
+    if scenario in hand_scenarios:
+        _force_resolver_zone(engine, hand_scenarios[scenario], "A", Zone.HAND)
+    if scenario == "coste alternativo":
+        _force_resolver_zone(engine, "PAR_FODDER", "A", Zone.HAND)
+    if scenario in {"objetivo permanente", "efecto distribuido"}:
+        _force_resolver_zone(engine, "PAR_TARGET", "A", Zone.BATTLEFIELD)
+    if scenario in {"habilidad activada", "habilidad X"}:
+        definition_id = (
+            "PAR_ABILITY" if scenario == "habilidad activada" else "PAR_ABILITY_X"
+        )
+        _force_resolver_zone(engine, definition_id, "A", Zone.BATTLEFIELD)
+    if scenario == "trigger con objetivos":
+        source = _force_resolver_zone(engine, "PAR_TRIGGER", "A", Zone.BATTLEFIELD)
+        engine.state.pending_triggers = [StackItem(
+            "parity-trigger", "A", source,
+            (EffectDefinition(
+                EffectKind.DEAL_WOUNDS, 1, TargetMode.CHOSEN_PLAYER
+            ),),
+            ability_id="hit", targets_locked=False,
+        )]
+    return engine
+
+
+RESOLVER_LEGAL_ACTION_SCENARIOS = (
+    "carta normal", "X", "coste alternativo", "coste dinámico",
+    "objetivo jugador", "objetivo permanente", "objetivo zona",
+    "efecto distribuido", "habilidad activada", "habilidad X",
+    "trigger con objetivos",
+)
+
+
+def _command_shape(command):
+    """Firma ordenada que hace explícitos clase y todos los campos del comando."""
+    return type(command), tuple(
+        (field.name, getattr(command, field.name))
+        for field in fields(command)
+    )
+
+
+@pytest.mark.parametrize(
+    "resolver_legal_actions_engine",
+    tuple(
+        (scenario, limit, semantics)
+        for semantics in SEMANTICS
+        for scenario in RESOLVER_LEGAL_ACTION_SCENARIOS
+        for limit in (1, 2)
+    ),
+    indirect=True,
+    ids=lambda value: "-".join(map(str, value)) if isinstance(value, tuple) else None,
+)
+def test_public_legal_actions_preserve_complete_order_and_small_limit_cutoff(
+        resolver_legal_actions_engine):
+    engine = resolver_legal_actions_engine
+    historical = _pure_query(
+        engine, lambda: _previous_legal_actions(engine, "A")
+    )
+    resolved = _pure_query(engine, lambda: engine.legal_actions("A"))
+
+    # Igualdad de tupla protege cantidad y posición; la firma adicional nombra
+    # explícitamente la clase y la totalidad de los campos de cada comando.
+    assert resolved == historical
+    assert tuple(map(_command_shape, resolved)) == tuple(
+        map(_command_shape, historical)
+    )

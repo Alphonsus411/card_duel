@@ -100,6 +100,8 @@ def _observe(case: Case) -> tuple[Any, str]:
     canonical = _canonical_result(result)
     if case.copied_state and canonical != before:
         raise NoGo(f"{case.name}: deepcopy no conservó el contenido del GameState")
+    if case.copied_state and result is case.fixture:
+        raise NoGo(f"{case.name}: deepcopy devolvió el objeto original")
     return result, canonical
 
 
@@ -138,11 +140,14 @@ def _measure_case(case: Case, warmups: int, repetitions: int) -> dict[str, Any]:
         if state_before != state_after:
             raise NoGo(f"{case.name}: GameState mutó durante una repetición medida")
         canonical = _canonical_result(result)
+        if case.copied_state and result is case.fixture:
+            raise NoGo(f"{case.name}: deepcopy devolvió el objeto original")
         _validate(case, result, canonical, baseline)
         durations.append(elapsed)
 
     # Cada caso obtiene un trazado nuevo; ni allocations ni picos pasan al siguiente.
     gc.collect()
+    memory_state_before = canonical_state(case.fixture)
     tracemalloc.start()
     tracemalloc.reset_peak()
     try:
@@ -150,9 +155,11 @@ def _measure_case(case: Case, warmups: int, repetitions: int) -> dict[str, Any]:
         current_bytes, peak_bytes = tracemalloc.get_traced_memory()
     finally:
         tracemalloc.stop()
-    if canonical_state(case.fixture) != state_before:
+    if canonical_state(case.fixture) != memory_state_before:
         raise NoGo(f"{case.name}: GameState mutó durante la medición de memoria")
     memory_canonical = _canonical_result(memory_result)
+    if case.copied_state and memory_result is case.fixture:
+        raise NoGo(f"{case.name}: deepcopy devolvió el objeto original")
     _validate(case, memory_result, memory_canonical, baseline)
 
     measured = {
@@ -320,32 +327,74 @@ def _microbenchmark_cases(profile: str) -> list[Case]:
 
 def _cases(profile: str) -> list[Case]:
     shapes = [SMALL] if profile == "quick" else [SMALL, MEDIUM, STRESS_CONTROLLED]
-    limits = [32] if profile == "quick" else [32, 128, 512]
     cases = _microbenchmark_cases(profile)
-    for shape in shapes:
-        for limit in limits:
-            engine = build_scenario(shape, semantics=EngineSemantics.CURRENT, limit=limit)
-            cases.append(Case(
-                f"legal_actions/{shape.value.lower()}/limit-{limit}", engine,
-                lambda engine=engine: engine.legal_actions("A"), "legal_commands",
-                parameters={"scenario_size": shape.value, "player_id": "A",
-                            "enumeration_limit": limit},
-            ))
-    if profile == "full":
+
+    # Consultas directas: se miden desde fuera sin duplicar el product productivo.
+    for semantics in (EngineSemantics.CURRENT, EngineSemantics.LEGACY_019):
         for shape in shapes:
-            engine = build_trigger_scenario(shape, limit=512)
+            engine = build_scenario(shape, semantics=semantics, limit=128)
+            ability_source = next(
+                card_id for card_id, card in engine.state.cards.items()
+                if card.definition_id == "BENCH_ABILITY"
+            )
+            common = {"scenario_size": shape.value, "player_id": "A",
+                      "semantics": semantics.name, "enumeration_limit": 128,
+                      "dimensions": ["player_targets", "card_targets", "zone_targets",
+                                     "allocations", "discard_choices", "sacrifice_choices"]}
             cases.append(Case(
-                f"trigger_order_options/{shape.value.lower()}/limit-512", engine,
-                lambda engine=engine: engine.legal_actions("A"), "legal_commands",
-                parameters={"scenario_size": shape.value, "player_id": "A",
-                            "enumeration_limit": 512},
+                f"legal_plays/{semantics.name.lower()}/{shape.value.lower()}", engine,
+                lambda engine=engine: engine._legal_plays("A"), "legal_commands",
+                parameters=common,
             ))
-        clone_engine = build_scenario(MEDIUM, limit=128)
+            cases.append(Case(
+                f"legal_ability_activations/{semantics.name.lower()}/{shape.value.lower()}",
+                engine, lambda engine=engine, source=ability_source:
+                    engine._legal_ability_activations("A", source), "legal_commands",
+                parameters=common,
+            ))
+            trigger_engine = build_trigger_scenario(
+                shape, semantics=semantics, limit=128, targets_locked=False
+            )
+            trigger = trigger_engine.state.pending_triggers[0]
+            cases.append(Case(
+                f"trigger_target_commands/{semantics.name.lower()}/{shape.value.lower()}",
+                trigger_engine, lambda engine=trigger_engine, item=trigger:
+                    engine._trigger_target_commands("A", item), "legal_commands",
+                parameters=common,
+            ))
+
+    # El mismo escenario determinista se reconstruye cambiando únicamente el RuleSet.
+    legal_shapes = [SMALL] if profile == "quick" else [SMALL, MEDIUM, STRESS_CONTROLLED]
+    for semantics in (EngineSemantics.CURRENT, EngineSemantics.LEGACY_019):
+        for shape in legal_shapes:
+            for limit in ENUMERATION_LIMITS:
+                engine = build_scenario(shape, semantics=semantics, limit=limit)
+                cases.append(Case(
+                    f"legal_actions/{semantics.name.lower()}/{shape.value.lower()}/limit-{limit}",
+                    engine, lambda engine=engine: engine.legal_actions("A"),
+                    "legal_commands",
+                    parameters={"scenario_size": shape.value, "player_id": "A",
+                                "semantics": semantics.name, "enumeration_limit": limit},
+                ))
+    if profile == "full":
+        for semantics in (EngineSemantics.CURRENT, EngineSemantics.LEGACY_019):
+            for shape in shapes:
+                engine = build_trigger_scenario(shape, semantics=semantics, limit=512)
+                cases.append(Case(
+                    f"trigger_order_options/{semantics.name.lower()}/{shape.value.lower()}/limit-512", engine,
+                    lambda engine=engine: engine.legal_actions("A"), "legal_commands",
+                    parameters={"scenario_size": shape.value, "player_id": "A",
+                                "semantics": semantics.name, "enumeration_limit": 512},
+                ))
+    clone_shapes = [SMALL] if profile == "quick" else shapes
+    for shape in clone_shapes:
+        clone_engine = build_scenario(shape, limit=128)
         state = clone_engine.state
         cases.append(Case(
-            "deepcopy/game_state/medium", state, lambda state=state: copy.deepcopy(state),
-            copied_state=True, parameters={"scenario_size": MEDIUM.value,
-                                           "enumeration_limit": 128},
+            f"deepcopy/game_state/{shape.value.lower()}", state,
+            lambda state=state: copy.deepcopy(state), copied_state=True,
+            parameters={"scenario_size": shape.value,
+                        "enumeration_limit": 128},
         ))
     return cases
 

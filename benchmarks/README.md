@@ -10,6 +10,11 @@ python benchmarks/benchmark_action_options.py --profile quick
 python benchmarks/benchmark_action_options.py --profile full
 ```
 
+La salida predeterminada es `benchmarks/results/action_options_benchmark.json`;
+el script crea sus directorios padre y escribe JSON legible con claves
+ordenadas. No incluye fechas comparables. La metadata identifica el commit,
+la versión 0.20.1, Python, plataforma, hardware observable y perfil elegido.
+
 `quick` conserva los microcasos y usa sólo `SMALL` para poder ejecutarse de
 forma interactiva. `full` añade `MEDIUM` y `STRESS_CONTROLLED`, más repeticiones
 y los triggers ordenables. Ambos perfiles incluyen los cuatro límites (8, 32,
@@ -26,6 +31,11 @@ Cada caso registra duración, memoria actual y pico con `tracemalloc`, conteo y
 fingerprint SHA-256. Antes y después de cada repetición se comprueba que el
 estado original es idéntico. Para `deepcopy` también se exige equivalencia de la
 copia y una identidad de objeto distinta.
+
+Además, cada ejecución captura con `cProfile.Profile` las consultas
+`MEDIUM legal_actions` y `STRESS_CONTROLLED legal_actions`. Su texto se genera
+con `pstats.Stats(...).sort_stats("cumulative")`, limitado a las 20 funciones
+principales, y se incorpora al JSON; no se crean ni versionan ficheros `.prof`.
 
 ## Perfiles semánticos
 

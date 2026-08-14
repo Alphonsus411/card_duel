@@ -13,12 +13,15 @@ from __future__ import annotations
 
 import argparse
 import copy
+import cProfile
 import gc
 import hashlib
+import io
 import json
 import math
 import os
 import platform
+import pstats
 import statistics
 import subprocess
 import sys
@@ -58,6 +61,7 @@ from card_duel_engine.domain import (  # noqa: E402
 from card_duel_engine.persistence.codec import canonical_json, encode_value  # noqa: E402
 
 DEFAULT_OUTPUT = Path("benchmarks/results/action_options_benchmark.json")
+ENGINE_VERSION = "0.20.1"
 
 
 class NoGo(RuntimeError):
@@ -185,6 +189,9 @@ def _measure_case(case: Case, warmups: int, repetitions: int) -> dict[str, Any]:
             )
     return {
         "name": case.name,
+        "scenario": (case.parameters or {}).get("scenario_size", "synthetic_microbenchmark"),
+        "category": case.name.split("/", 1)[0],
+        "semantics": (case.parameters or {}).get("semantics", "not_applicable"),
         "parameters": case.parameters or {},
         "measured": measured,
         "derived": derived,
@@ -406,14 +413,43 @@ def _git_sha() -> str:
     ).stdout.strip()
 
 
-def _metadata(profile: str) -> dict[str, str]:
+def _metadata(profile: str) -> dict[str, Any]:
     return {
+        "engine_version": ENGINE_VERSION,
         "git_sha": _git_sha(),
         "python_version": platform.python_version(),
         "python_implementation": platform.python_implementation(),
         "platform": platform.platform(),
         "processor": platform.processor() or os.environ.get("PROCESSOR_IDENTIFIER", "unavailable"),
+        "hardware": {
+            "machine": platform.machine() or "unavailable",
+            "cpu_count": os.cpu_count(),
+        },
         "profile": profile,
+    }
+
+
+def _profile_legal_actions(shape: Any) -> dict[str, Any]:
+    """Perfila una consulta estable y devuelve sólo texto, nunca un archivo .prof."""
+
+    engine = build_scenario(shape, semantics=EngineSemantics.CURRENT, limit=128)
+    state_before = canonical_state(engine.state)
+    profiler = cProfile.Profile()
+    result = profiler.runcall(engine.legal_actions, "A")
+    if canonical_state(engine.state) != state_before:
+        raise NoGo(f"{shape.value} legal_actions mutó el GameState durante cProfile")
+    stream = io.StringIO()
+    pstats.Stats(profiler, stream=stream).sort_stats("cumulative").print_stats(20)
+    canonical = _canonical_result(result)
+    return {
+        "scenario": shape.value,
+        "category": "legal_actions",
+        "semantics": EngineSemantics.CURRENT.name,
+        "parameters": {"player_id": "A", "enumeration_limit": 128},
+        "result": {"count": _result_count(result), "sha256": _fingerprint(canonical)},
+        "sort": "cumulative",
+        "function_limit": 20,
+        "text": stream.getvalue(),
     }
 
 
@@ -444,6 +480,10 @@ def main(argv: list[str] | None = None) -> int:
                 "standard_deviation": "sample standard deviation (n - 1 denominator)",
             },
             "cases": cases,
+            "profiles": [
+                _profile_legal_actions(MEDIUM),
+                _profile_legal_actions(STRESS_CONTROLLED),
+            ],
         }
         output = args.output if args.output.is_absolute() else REPOSITORY_ROOT / args.output
         output.parent.mkdir(parents=True, exist_ok=True)

@@ -8,7 +8,12 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
-from benchmarks.benchmark_action_options import _cases
+from benchmarks.benchmark_action_options import (
+    ENGINE_VERSION,
+    _cases,
+    _metadata,
+    _profile_legal_actions,
+)
 from benchmarks.fixtures import SMALL, build_scenario, build_trigger_scenario, canonical_state
 from card_duel_engine import EngineSemantics
 
@@ -75,3 +80,18 @@ def test_deepcopy_fixture_is_equivalent_distinct_and_non_mutating() -> None:
     assert canonical_state(original) == stable
     assert canonical_state(cloned) == stable
     assert cloned is not original
+
+
+def test_benchmark_metadata_and_cprofile_are_comparable() -> None:
+    metadata = _metadata("quick")
+    assert metadata["engine_version"] == ENGINE_VERSION == "0.20.1"
+    assert metadata["profile"] == "quick"
+    assert "timestamp" not in metadata
+    assert metadata["hardware"]["machine"]
+
+    profile = _profile_legal_actions(SMALL)
+    assert profile["sort"] == "cumulative"
+    assert profile["function_limit"] == 20
+    assert profile["result"]["count"] > 0
+    assert len(profile["result"]["sha256"]) == 64
+    assert "function calls" in profile["text"]

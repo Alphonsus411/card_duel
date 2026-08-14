@@ -12,9 +12,9 @@ de latencia o memoria cuyo incumplimiento bloquee una entrega.
 
 | Dato | Valor |
 |---|---|
-| SHA base | `dd8a1fb99035a18f6cedbd048489ce8e158e0a13` |
+| SHA base de la entrega | `ace328dc796043eaa4bb7597dcf679632e91dcc2` |
 | SHA benchmarkeado | `dd8a1fb99035a18f6cedbd048489ce8e158e0a13` |
-| Rama | `work` |
+| Rama de entrega | `benchmark/action-option-hotspots` |
 | Perfil conservado | `full`: 5 repeticiones de calentamiento y 15 medidas por caso |
 | JSON | `benchmarks/results/action_options_benchmark.json` |
 | Archivo modificado | `benchmarks/results/action_options_benchmark.json` (regenerado por `full`) |
@@ -47,6 +47,32 @@ registra motor 0.20.1, CPython 3.12.13, Linux x86_64, glibc 2.39 y 3 CPU lógica
 | Diff bien formado | `git diff --check` | 0 | Sin espacios o conflictos de parche. |
 | Diff de producción | `git diff --exit-code -- src/` | 0 | Sin salida: confirmación programática de **0 cambios en `src/`**. |
 | Inventario del diff | `git diff --name-status` | 0 | Antes de crear este informe, solo `M benchmarks/results/action_options_benchmark.json`. |
+
+## Auditoría final de alcance (2026-08-14)
+
+La revisión final se realizó sobre la rama de entrega antes de crear el único
+commit. No se consigna el SHA de ese commit para evitar una referencia circular
+o inventada. Todos los comandos terminaron con código **0**. Los dos diffs de
+áreas protegidas no produjeron salida, por lo que no fue necesario restaurar
+código productivo ni repetir mediciones: la evidencia sigue correspondiendo al
+benchmark `full` documentado arriba.
+
+| Comando exacto | Código | Resultado final |
+|---|---:|---|
+| `git diff --check` | 0 | Parche bien formado. |
+| `git diff --stat` | 0 | Sólo mostró la actualización de este informe de evidencia. |
+| `git status --short` | 0 | Sólo mostró este informe como modificado. |
+| `git diff -- src/card_duel_engine` | 0 | Sin salida; cero cambios productivos. |
+| `git diff -- pyproject.toml uv.lock scripts tests .github/workflows` | 0 | Sin salida; cero cambios en configuración, lockfile, scripts, pruebas o workflows. |
+
+El inventario final queda limitado a los cinco artefactos de benchmark ya
+presentes en la entrega y a la actualización auditora de este mismo informe:
+`benchmarks/benchmark_action_options.py`, `benchmarks/fixtures.py`,
+`benchmarks/results/action_options_benchmark.json`,
+`docs/performance/ACTION_OPTION_BENCHMARK_0.20.1.md` y
+`docs/performance/results/ACTION_OPTION_BENCHMARK_RESULTS_0.20.1.md`. La
+decisión final permanece **GO**, con la candidata futura descrita al final y
+sin implementar optimización alguna.
 
 ## Resultados principales
 

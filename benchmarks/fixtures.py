@@ -158,19 +158,31 @@ def _scenario_definitions(allocation_amount: int) -> tuple[CardDefinition, ...]:
         EffectKind.DEAL_HARM, allocation_amount, TargetMode.CHOSEN_ENTITY,
         minimum_targets=1, maximum_targets=3, distributed=True,
     )
+    chosen_permanents = EffectDefinition(
+        EffectKind.DEAL_DAMAGE, 1, TargetMode.CHOSEN_PERMANENT,
+        minimum_targets=1, maximum_targets=2,
+    )
+    chosen_zones = EffectDefinition(
+        EffectKind.SHUFFLE_ZONE, 0, TargetMode.CHOSEN_ZONE,
+        minimum_targets=1, maximum_targets=1,
+    )
+    combined_effects = (chosen_players, chosen_permanents, chosen_zones, distributed)
     return (
         *cost_definitions(),
         CardDefinition("BENCH_PLAY", "Jugada combinatoria", CardKind.QUICK_RESOURCE, 0,
-                       permanent=False, effects=(chosen_players, distributed),
-                       alternative_costs=(CompositeCost(wounds=1),),
-                       x_alternative_costs=(XCostDefinition(CostComponent.STEPS, maximum=20),)),
+                       permanent=False, effects=combined_effects,
+                       alternative_costs=(CompositeCost(
+                           discard_count=1, sacrifice_count=1,
+                       ),)),
         CardDefinition("BENCH_ABILITY", "Activación combinatoria", CardKind.CREATURE, 1,
                        base_strength=2, abilities=(AbilityDefinition(
-                           "benchmark-pulse", (chosen_players,),
-                           x_cost=XCostDefinition(CostComponent.STEPS, maximum=20),
+                           "benchmark-pulse", combined_effects,
+                           cost=CompositeCost(discard_count=1, sacrifice_count=1),
                        ),)),
         CardDefinition("BENCH_TRIGGER", "Trigger combinatorio", CardKind.CREATURE, 1,
-                       base_strength=2, abilities=(AbilityDefinition("benchmark-hit", (chosen_players,)),)),
+                       base_strength=2, abilities=(AbilityDefinition(
+                           "benchmark-hit", combined_effects,
+                       ),)),
     )
 
 
@@ -256,12 +268,9 @@ def build_trigger_scenario(
         card_id for card_id, card in engine.state.cards.items()
         if card.definition_id == "BENCH_TRIGGER"
     )
-    effect = EffectDefinition(
-        EffectKind.DEAL_WOUNDS, 1, TargetMode.CHOSEN_PLAYER,
-        minimum_targets=1, maximum_targets=2,
-    )
+    effects = engine.catalog.get("BENCH_TRIGGER").abilities[0].effects
     engine.state.pending_triggers = [
-        StackItem(f"benchmark-trigger-{index:02d}", "A", source, (effect,),
+        StackItem(f"benchmark-trigger-{index:02d}", "A", source, effects,
                   ability_id="benchmark-hit", targets_locked=targets_locked)
         for index in range(trigger_count)
     ]

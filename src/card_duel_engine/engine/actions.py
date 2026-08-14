@@ -3,9 +3,15 @@ from __future__ import annotations
 from itertools import combinations, islice, permutations
 from typing import Protocol
 
-from ..domain.enums import CardKind, MatchStatus, Phase, Zone
+from ..domain.enums import CardKind, Keyword, MatchStatus, Phase, Zone
 from ..domain.errors import IllegalAction
-from ..domain.models import CardDefinition, GameState, MoveReplacementDefinition, StackItem
+from ..domain.models import (
+    CardDefinition,
+    ContinuousEffectDefinition,
+    GameState,
+    MoveReplacementDefinition,
+    StackItem,
+)
 from .commands import (
     ActivateAbility,
     AdvancePhase,
@@ -29,6 +35,17 @@ from .commands import (
 )
 
 
+class _LegalActionQueryContext:
+    """Caché efímera, privada y exclusivamente indexada por instancia."""
+
+    def __init__(self) -> None:
+        self.definitions: dict[str, CardDefinition] = {}
+        self.keywords: dict[str, frozenset[str | Keyword]] = {}
+        self.continuous_effects: dict[
+            str, tuple[tuple[str, ContinuousEffectDefinition], ...]
+        ] = {}
+
+
 class CombatActionEnumerator(Protocol):
     """Acceso mínimo y tipado a la enumeración propia del combate."""
 
@@ -46,16 +63,23 @@ class LegalActionContext(Protocol):
     def _legal_action_enumeration_limit(self) -> int: ...
     @property
     def _legal_action_hand_limit(self) -> int: ...
-    def _definition(self, card_id: str) -> CardDefinition: ...
+    def _definition(
+        self, card_id: str, query_context: _LegalActionQueryContext | None = None
+    ) -> CardDefinition: ...
     def _replacement_definitions(
         self, definition: CardDefinition
     ) -> tuple[MoveReplacementDefinition, ...]: ...
     def _trigger_target_commands(
         self, player_id: str, item: StackItem
     ) -> list[ChooseTriggeredTargets]: ...
-    def _legal_plays(self, player_id: str) -> list[PlayCard]: ...
+    def _legal_plays(
+        self, player_id: str, query_context: _LegalActionQueryContext | None = None
+    ) -> list[PlayCard]: ...
     def _legal_ability_activations(
-        self, player_id: str, source_card_id: str
+        self,
+        player_id: str,
+        source_card_id: str,
+        query_context: _LegalActionQueryContext | None = None,
     ) -> list[ActivateAbility]: ...
     def _is_creature(self, card_id: str) -> bool: ...
     @property
@@ -72,6 +96,8 @@ class LegalActionEnumerator:
 
     def legal_actions(self, player_id: str) -> tuple[GameCommand, ...]:
         context = self._context
+        # Su vida queda limitada a esta invocación, incluso si la enumeración falla.
+        query_context = _LegalActionQueryContext()
         state = context._legal_action_state
         if state.status in (MatchStatus.FINISHED, MatchStatus.BLOCKED):
             return ()
@@ -132,7 +158,7 @@ class LegalActionEnumerator:
             actions.extend(context._combat_action_enumerator.legal_actions(player_id))
 
         if player_id == state.priority_player_id:
-            actions.extend(context._legal_plays(player_id))
+            actions.extend(context._legal_plays(player_id, query_context))
             if (
                 player_id == state.active_player_id
                 and (context._legacy_019 or state.phase is Phase.EFFECTS)
@@ -140,7 +166,7 @@ class LegalActionEnumerator:
             ):
                 actions.extend(DrainSteps(player_id, amount) for amount in range(1, 6))
             for card_id in player.zones[Zone.BATTLEFIELD]:
-                definition = context._definition(card_id)
+                definition = context._definition(card_id, query_context)
                 replacements = context._replacement_definitions(definition)
                 if definition.player_orders_replacements and len(replacements) > 1:
                     actions.extend(
@@ -153,7 +179,11 @@ class LegalActionEnumerator:
                     )
                 if definition.transmutable:
                     actions.append(TransmutePermanent(player_id, card_id))
-                actions.extend(context._legal_ability_activations(player_id, card_id))
+                actions.extend(
+                    context._legal_ability_activations(
+                        player_id, card_id, query_context
+                    )
+                )
                 if definition.kind is CardKind.EQUIPMENT:
                     for creature_id in player.zones[Zone.BATTLEFIELD]:
                         if context._is_creature(creature_id):

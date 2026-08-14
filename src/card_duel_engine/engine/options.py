@@ -4,6 +4,8 @@ from collections.abc import Iterable, Iterator
 from itertools import combinations, islice
 from typing import Protocol
 
+from .actions import _LegalActionQueryContext
+
 from ..domain.enums import TargetMode, Zone
 from ..domain.models import (
     CardDefinition,
@@ -40,6 +42,7 @@ class ActionOptionContext(Protocol):
         target_card_id: str,
         from_ability: bool = False,
         source_card_id: str | None = None,
+        query_context: _LegalActionQueryContext | None = None,
     ) -> bool: ...
 
     def _option_effect_amount(self, effect: EffectDefinition, x_value: int) -> int: ...
@@ -132,6 +135,7 @@ class ActionOptionResolver:
         from_ability: bool = False,
         source_card_id: str | None = None,
         x_value: int = 0,
+        query_context: _LegalActionQueryContext | None = None,
     ) -> tuple[tuple[TargetAllocation, ...], ...]:
         state = self._context._option_state
         effect = next((item for item in effects if item.distributed), None)
@@ -143,7 +147,11 @@ class ActionOptionResolver:
             for player in state.players.values()
             for card_id in player.zones[Zone.BATTLEFIELD]
             if self._context._option_card_can_be_targeted(
-                source_definition, card_id, from_ability, source_card_id
+                source_definition,
+                card_id,
+                from_ability,
+                source_card_id,
+                query_context,
             )
         )
         results: list[tuple[TargetAllocation, ...]] = []

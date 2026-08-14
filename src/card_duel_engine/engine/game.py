@@ -62,7 +62,11 @@ from ..domain.models import (
 from ..rules.config import RuleSet
 from ..rules.resolvers import apply_text_patch, resolve_dynamic_cost, resolve_x_cost
 from .combat import CombatContext, CombatManager
-from .actions import LegalActionContext, LegalActionEnumerator
+from .actions import (
+    LegalActionContext,
+    LegalActionEnumerator,
+    _LegalActionQueryContext,
+)
 from .effects import EffectContext, EffectManager
 from .options import ActionOptionContext, ActionOptionResolver
 from .phases import PhaseManager
@@ -183,9 +187,14 @@ class GameEngine:
         target_card_id: str,
         from_ability: bool = False,
         source_card_id: str | None = None,
+        query_context: _LegalActionQueryContext | None = None,
     ) -> bool:
         return self._card_can_be_targeted(
-            source_definition, target_card_id, from_ability, source_card_id
+            source_definition,
+            target_card_id,
+            from_ability,
+            source_card_id,
+            query_context=query_context,
         )
 
     def _option_effect_amount(
@@ -765,12 +774,16 @@ class GameEngine:
             )
         raise PaymentError("La opción de coste alternativo no existe")
 
-    def _legal_plays(self, player_id: str) -> list[PlayCard]:
+    def _legal_plays(
+        self,
+        player_id: str,
+        query_context: _LegalActionQueryContext | None = None,
+    ) -> list[PlayCard]:
         state = self._require_running_state()
         player = state.players[player_id]
         result: list[PlayCard] = []
         for card_id in player.zones[Zone.HAND]:
-            definition = self._definition(card_id)
+            definition = self._definition(card_id, query_context)
             if not self._timing_allows_play(player_id, definition):
                 continue
             player_targets = self._target_selections(
@@ -780,7 +793,9 @@ class GameEngine:
                 permanent_id
                 for owner in state.players.values()
                 for permanent_id in owner.zones[Zone.BATTLEFIELD]
-                if self._card_can_be_targeted(definition, permanent_id)
+                if self._card_can_be_targeted(
+                    definition, permanent_id, query_context=query_context
+                )
             )
             card_targets = self._target_selections(
                 definition.effects, TargetMode.CHOSEN_PERMANENT, eligible_cards
@@ -789,7 +804,10 @@ class GameEngine:
             costs = self._card_cost_options(definition, player_id)
             for cost_index, x_value, cost in costs:
                 allocation_targets = self._allocation_selections(
-                    definition.effects, definition, x_value=x_value or 0
+                    definition.effects,
+                    definition,
+                    x_value=x_value or 0,
+                    query_context=query_context,
                 )
                 hand_pool = tuple(
                     candidate
@@ -855,6 +873,7 @@ class GameEngine:
         from_ability: bool = False,
         source_card_id: str | None = None,
         x_value: int = 0,
+        query_context: _LegalActionQueryContext | None = None,
     ) -> tuple[tuple[TargetAllocation, ...], ...]:
         """Conserva la consulta histórica delegándola al resolver de opciones."""
         return self._options.allocation_selections(
@@ -863,6 +882,7 @@ class GameEngine:
             from_ability=from_ability,
             source_card_id=source_card_id,
             x_value=x_value,
+            query_context=query_context,
         )
 
     def _positive_compositions(
@@ -1118,6 +1138,7 @@ class GameEngine:
         from_ability: bool = False,
         source_card_id: str | None = None,
         source_profile: AbilitySourceProfile | None = None,
+        query_context: _LegalActionQueryContext | None = None,
     ) -> bool:
         state = self._require_state()
         if from_ability and source_profile is None:
@@ -1130,8 +1151,8 @@ class GameEngine:
                 raise IllegalAction(
                     "La fuente de la habilidad debe existir en el campo de batalla"
                 ) from None
-        target = self._definition(target_card_id)
-        keywords = self._effective_keywords(target_card_id)
+        target = self._definition(target_card_id, query_context)
+        keywords = self._effective_keywords(target_card_id, query_context)
         if from_ability and source_profile is not None and not source_profile.nature_is_certain:
             return not (
                 target.rank is CardRank.DIVINE
@@ -1181,14 +1202,17 @@ class GameEngine:
         )
 
     def _legal_ability_activations(
-        self, player_id: str, source_card_id: str
+        self,
+        player_id: str,
+        source_card_id: str,
+        query_context: _LegalActionQueryContext | None = None,
     ) -> list[ActivateAbility]:
         if not self._ability_source_can_activate(player_id, source_card_id):
             return []
         state = self._require_running_state()
         player = state.players[player_id]
         source = state.cards[source_card_id]
-        definition = self._definition(source_card_id)
+        definition = self._definition(source_card_id, query_context)
         result: list[ActivateAbility] = []
         for ability in definition.abilities:
             if ability.trigger is not None:
@@ -1248,7 +1272,11 @@ class GameEngine:
                     for owner in state.players.values()
                     for card_id in owner.zones[Zone.BATTLEFIELD]
                     if self._card_can_be_targeted(
-                        definition, card_id, True, source_card_id
+                        definition,
+                        card_id,
+                        True,
+                        source_card_id,
+                        query_context=query_context,
                     )
                 )
                 card_targets = self._target_selections(
@@ -1261,6 +1289,7 @@ class GameEngine:
                     from_ability=True,
                     source_card_id=source_card_id,
                     x_value=x_value or 0,
+                    query_context=query_context,
                 )
                 for (
                     discarded,
@@ -1963,15 +1992,20 @@ class GameEngine:
         )
 
     def _continuous_effects_for(
-        self, target_card_id: str
+        self,
+        target_card_id: str,
+        query_context: _LegalActionQueryContext | None = None,
     ) -> Iterator[tuple[str, ContinuousEffectDefinition]]:
+        if query_context is not None and target_card_id in query_context.continuous_effects:
+            return iter(query_context.continuous_effects[target_card_id])
         state = self._require_state()
         target = state.cards[target_card_id]
-        target_definition = self._definition(target_card_id)
+        target_definition = self._definition(target_card_id, query_context)
+        materialized: list[tuple[str, ContinuousEffectDefinition]] = []
         for source_id, source in state.cards.items():
             if source.zone is not Zone.BATTLEFIELD:
                 continue
-            source_definition = self._definition(source_id)
+            source_definition = self._definition(source_id, query_context)
             for effect in source_definition.continuous_effects:
                 if effect.excludes_source and source_id == target_card_id:
                     continue
@@ -1987,8 +2021,9 @@ class GameEngine:
                     continue
                 if effect.affected_kinds:
                     kind_matches = target_definition.kind in effect.affected_kinds
-                    if CardKind.CREATURE in effect.affected_kinds and self._is_creature(
-                        target_card_id
+                    if CardKind.CREATURE in effect.affected_kinds and (
+                        target_definition.kind is CardKind.CREATURE
+                        or target.transformed_as_creature
                     ):
                         kind_matches = True
                     if not kind_matches:
@@ -1997,22 +2032,37 @@ class GameEngine:
                     effect.affected_subtypes & target_definition.subtypes
                 ):
                     continue
-                yield source_id, effect
+                materialized.append((source_id, effect))
+        result = tuple(materialized)
+        if query_context is not None:
+            query_context.continuous_effects[target_card_id] = result
+        return iter(result)
 
-    def _effective_keywords(self, card_id: str) -> frozenset[str | Keyword]:
+    def _effective_keywords(
+        self,
+        card_id: str,
+        query_context: _LegalActionQueryContext | None = None,
+    ) -> frozenset[str | Keyword]:
+        if query_context is not None and card_id in query_context.keywords:
+            return query_context.keywords[card_id]
         state = self._require_state()
         instance = state.cards[card_id]
-        definition = self._definition(card_id)
+        definition = self._definition(card_id, query_context)
         keywords = set(definition.keywords)
-        for _, effect in self._continuous_effects_for(card_id):
+        for _, effect in self._continuous_effects_for(card_id, query_context):
             keywords.update(effect.grant_keywords)
             keywords.difference_update(effect.remove_keywords)
         for equipment in state.cards.values():
             if equipment.zone is Zone.BATTLEFIELD and equipment.attached_to == card_id:
                 keywords.update(
-                    self._definition(equipment.instance_id).equipment_granted_keywords
+                    self._definition(
+                        equipment.instance_id, query_context
+                    ).equipment_granted_keywords
                 )
-        return frozenset(keywords)
+        result = frozenset(keywords)
+        if query_context is not None:
+            query_context.keywords[card_id] = result
+        return result
 
     def _run_state_based_actions(self) -> None:
         state = self._require_running_state()
@@ -2114,9 +2164,18 @@ class GameEngine:
     ) -> CardDefinition:
         return apply_text_patch(definition, patch)
 
-    def _definition(self, card_id: str) -> CardDefinition:
+    def _definition(
+        self,
+        card_id: str,
+        query_context: _LegalActionQueryContext | None = None,
+    ) -> CardDefinition:
+        if query_context is not None and card_id in query_context.definitions:
+            return query_context.definitions[card_id]
         state = self._require_state()
-        return self._definition_for(state, self.catalog, card_id)
+        result = self._definition_for(state, self.catalog, card_id)
+        if query_context is not None:
+            query_context.definitions[card_id] = result
+        return result
 
     @classmethod
     def _definition_for(

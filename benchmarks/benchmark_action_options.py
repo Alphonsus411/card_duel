@@ -62,6 +62,14 @@ from card_duel_engine.persistence.codec import canonical_json, encode_value  # n
 
 DEFAULT_OUTPUT = Path("benchmarks/results/action_options_benchmark.json")
 ENGINE_VERSION = "0.20.1"
+PROFILE_BASELINE_DEFINITION_CALLS = {
+    MEDIUM.value: 5_749,
+    STRESS_CONTROLLED.value: 19_005,
+}
+PROFILE_PRIOR_TIMINGS_NS = {
+    MEDIUM.value: {"baseline_median": 13_547_443.0, "cached_median": 7_755_320.0},
+    STRESS_CONTROLLED.value: {"baseline_median": 26_847_740.5, "cached_median": 8_205_058.0},
+}
 
 
 class NoGo(RuntimeError):
@@ -438,7 +446,7 @@ def _metadata(profile: str) -> dict[str, Any]:
 
 
 def _profile_legal_actions(shape: Any) -> dict[str, Any]:
-    """Perfila una consulta estable y devuelve sólo texto, nunca un archivo .prof."""
+    """Perfila una consulta estable y devuelve datos portables, nunca un ``.prof``."""
 
     engine = build_scenario(shape, semantics=EngineSemantics.CURRENT, limit=128)
     state_before = canonical_state(engine.state)
@@ -446,6 +454,68 @@ def _profile_legal_actions(shape: Any) -> dict[str, Any]:
     result = profiler.runcall(engine.legal_actions, "A")
     if canonical_state(engine.state) != state_before:
         raise NoGo(f"{shape.value} legal_actions mutó el GameState durante cProfile")
+    stats = pstats.Stats(profiler)
+
+    def portable_function(function: tuple[str, int, str]) -> str:
+        filename, line, name = function
+        try:
+            filename = str(Path(filename).resolve().relative_to(REPOSITORY_ROOT))
+        except ValueError:
+            pass
+        return f"{filename}:{line}({name})"
+
+    def category(function: tuple[str, int, str]) -> str:
+        filename, _line, name = function
+        if (
+            name in {
+                "allocation_selections", "positive_compositions", "<genexpr>",
+                "__init__", "replace", "extend",
+            }
+            or "dataclasses.py" in filename
+        ):
+            return "combinatorics_materialization"
+        if name == "_definition":
+            return "definition_resolution"
+        if name in {
+            "_card_can_be_targeted", "_continuous_effects_for", "_effective_keywords",
+            "target_selections", "_target_candidates",
+        }:
+            return "targeting"
+        return "legal_action_orchestration_and_cost_resolution"
+
+    rows = []
+    category_self_seconds: dict[str, float] = {}
+    definition_calls = 0
+    definition_self_seconds = 0.0
+    definition_cumulative_seconds = 0.0
+    for function, (primitive_calls, calls, self_seconds, cumulative_seconds, _callers) in stats.stats.items():
+        assigned = category(function)
+        category_self_seconds[assigned] = category_self_seconds.get(assigned, 0.0) + self_seconds
+        if function[2] == "_definition":
+            definition_calls += calls
+            definition_self_seconds += self_seconds
+            definition_cumulative_seconds += cumulative_seconds
+        rows.append({
+            "function": portable_function(function),
+            "calls": calls,
+            "primitive_calls": primitive_calls,
+            "self_seconds": self_seconds,
+            "cumulative_seconds": cumulative_seconds,
+        })
+    rows.sort(key=lambda row: (-row["cumulative_seconds"], -row["self_seconds"], row["function"]))
+    top_20 = rows[:20]
+    total_seconds = stats.total_tt
+    attribution = [
+        {
+            "category": name,
+            "self_seconds": seconds,
+            "percent_of_total": seconds / total_seconds * 100 if total_seconds else 0.0,
+        }
+        for name, seconds in category_self_seconds.items()
+    ]
+    attribution.sort(key=lambda row: (-row["self_seconds"], row["category"]))
+    baseline_definition_calls = PROFILE_BASELINE_DEFINITION_CALLS[shape.value]
+    prior_timings = PROFILE_PRIOR_TIMINGS_NS[shape.value]
     stream = io.StringIO()
     pstats.Stats(profiler, stream=stream).sort_stats("cumulative").print_stats(20)
     canonical = _canonical_result(result)
@@ -457,6 +527,64 @@ def _profile_legal_actions(shape: Any) -> dict[str, Any]:
         "result": {"count": _result_count(result), "sha256": _fingerprint(canonical)},
         "sort": "cumulative",
         "function_limit": 20,
+        "total_seconds": total_seconds,
+        "total_calls": stats.total_calls,
+        "primitive_calls": stats.prim_calls,
+        "top_20": top_20,
+        "top_5": top_20[:5],
+        "exclusive_attribution": {
+            "rule": (
+                "Each function's self time is assigned to exactly one category; cumulative "
+                "caller/callee times are diagnostic only and are never added together."
+            ),
+            "category_rules": {
+                "combinatorics_materialization": (
+                    "allocation_selections, positive_compositions, generator expressions, "
+                    "constructors, dataclasses.replace and list.extend"
+                ),
+                "definition_resolution": "_definition",
+                "targeting": (
+                    "_card_can_be_targeted, _continuous_effects_for, _effective_keywords, "
+                    "target_selections and _target_candidates"
+                ),
+                "legal_action_orchestration_and_cost_resolution": "all remaining functions",
+            },
+            "categories": attribution,
+            "dominant": attribution[0],
+            "diagnosis": (
+                "Combinatorics/materialization is dominant by exclusive self time. The profile "
+                "contains eager constructors, generator consumption and list extension, so the "
+                "diagnosis does not assume lazy evaluation."
+            ),
+        },
+        "definition": {
+            "calls": definition_calls,
+            "self_seconds": definition_self_seconds,
+            "cumulative_seconds": definition_cumulative_seconds,
+            "self_percent_of_total": (
+                definition_self_seconds / total_seconds * 100 if total_seconds else 0.0
+            ),
+            "baseline_calls": baseline_definition_calls,
+            "calls_retained_percent": definition_calls / baseline_definition_calls * 100,
+            "baseline_sources": [
+                "benchmarks/results/targeting_local_cache.json",
+                "docs/performance/results/TARGETING_LOCAL_CACHE_RESULTS_0.20.1.md",
+            ],
+        },
+        "prior_cache_baseline_comparison": {
+            **prior_timings,
+            "cached_median_change_percent": (
+                prior_timings["cached_median"] / prior_timings["baseline_median"] - 1
+            ) * 100,
+            "note": (
+                "These unprofiled medians provide historical context only; they are not "
+                "directly compared with cProfile wall time because profiler overhead differs."
+            ),
+            "sources": [
+                "benchmarks/results/targeting_local_cache.json",
+                "docs/performance/results/TARGETING_LOCAL_CACHE_RESULTS_0.20.1.md",
+            ],
+        },
         "text": stream.getvalue(),
     }
 

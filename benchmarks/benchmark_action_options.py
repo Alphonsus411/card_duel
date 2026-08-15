@@ -127,6 +127,8 @@ def _percentile_95(samples: list[int]) -> int:
 
 
 def _measure_case(case: Case, warmups: int, repetitions: int) -> dict[str, Any]:
+    fixture_canonical = canonical_state(case.fixture)
+    fixture_digest = _fingerprint(fixture_canonical)
     initial, initial_canonical = _observe(case)
     baseline = (_result_count(initial), _fingerprint(initial_canonical), initial_canonical)
 
@@ -170,6 +172,7 @@ def _measure_case(case: Case, warmups: int, repetitions: int) -> dict[str, Any]:
         "repetitions": repetitions,
         "warmup_repetitions": warmups,
         "duration_ns": {
+            "samples": durations,
             "mean": statistics.fmean(durations),
             "median": statistics.median(durations),
             "minimum": min(durations),
@@ -178,6 +181,11 @@ def _measure_case(case: Case, warmups: int, repetitions: int) -> dict[str, Any]:
         },
         "memory_bytes": {"current": current_bytes, "peak": peak_bytes},
         "result": {"count": baseline[0], "sha256": baseline[1]},
+        "state": {
+            "before_sha256": fixture_digest,
+            "after_sha256": _fingerprint(canonical_state(case.fixture)),
+            "canonical_before_equals_after": canonical_state(case.fixture) == fixture_canonical,
+        },
     }
     derived: dict[str, float] = {}
     if baseline[0] > 0:

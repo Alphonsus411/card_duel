@@ -104,3 +104,39 @@ Este cierre es **GO** exclusivamente para aceptar la evidencia como baseline:
 no hay cambios productivos, todas las consultas medidas preservan el estado,
 los fingerprints son estables y los perfiles semánticos están separados. El GO
 no autoriza por sí solo la candidata futura descrita en resultados.
+
+## Cierre de validación reproducido (2026-08-15 UTC)
+
+La evidencia se revalidó desde `4b95c73e9258cdfc67a34cfd77920cfd744eb9c6`
+en la rama `benchmark/post-targeting-optimization`. Esta corrida no regeneró las
+mediciones ni implementó la candidata: únicamente cerró gates, artefactos y
+trazabilidad. Todos los comandos terminaron con código 0.
+
+| Comando exacto | Salida resumida | Código |
+|---|---|---:|
+| `uv sync --locked --extra dev` | entorno sincronizado desde el lock con extra `dev` | 0 |
+| `uv run pytest -q` | 576 passed, 1 skipped y 711 subtests passed en 94,32 s | 0 |
+| `uv run python -m unittest discover -s tests -v` | 396 tests, `OK`, en 90,845 s | 0 |
+| `uv run python -m mypy` | sin incidencias en 40 archivos fuente | 0 |
+| `uv run python -m compileall -q src tests scripts benchmarks` | sin salida, compilación correcta | 0 |
+| `uv run python scripts/verify_release.py --profile runtime` | `OK: perfil runtime completado` | 0 |
+| `uv run python scripts/verify_release.py --profile full --json dist/release-verification.json` | perfil completo y JSON de verificación generados | 0 |
+| `uv run python scripts/verify_reproducible_wheel.py` | dos builds idénticos; wheel puro de 44 entradas, SHA-256 `350addc4694d9bb1e03cc4c5d037290eb2bf90971889580cbb560e9748f7f024` | 0 |
+| `uv run python scripts/verify_rules_sources.py` | ambos documentos normativos `OK` | 0 |
+
+La inspección independiente de `dist/card_duel_engine-0.20.1-py3-none-any.whl`
+con `unzip -Z1` confirmó 44 entradas: sólo paquete y metadatos `dist-info`; no
+hay una ruta `benchmarks/` ni ningún archivo `.pdf`.
+
+Los SHA-256 calculados con `sha256sum` coinciden byte por byte con
+`docs/RULES_SOURCES.json`:
+
+- `Fantasy Tokens.pdf`: `1c51dabe2023626ad532368e2567d2084c47ec137c7a738bd8c0e0b707f86b21`.
+- `Fantasy Tokens Edicion Mitica.pdf`: `61243b30d219dd12d8897a206ed664d95a5e3c38b6670a818933f6d90904af36`.
+
+Finalmente, `git diff -- src/card_duel_engine` no produjo salida. La revisión de
+nombres y rutas del diff confirmó que tampoco cambiaron reglas, comandos,
+`GameState`, snapshots/replay, persistencia, `PhaseManager`,
+`ActionOptionResolver`, caché local, `deepcopy`, los PDF, `pyproject.toml`,
+`uv.lock` ni workflows. El cierre queda limitado al JSON de evidencia y estos
+dos documentos de rendimiento.

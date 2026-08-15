@@ -212,3 +212,37 @@ idéntico; (2) tuple de acciones idéntica y en el mismo orden para ambos perfil
 y semánticas; (3) ausencia de fuga del contexto tras retorno/excepción; y (4)
 mejora neta reproducible frente al coste de claves/materialización. Este
 documento por sí solo no afirma todavía un porcentaje de aceleración.
+
+## Trazabilidad de cierre del cambio autorizado
+
+La comparación cerrada usada para aceptar la única optimización es:
+
+- SHA baseline: `baee1911d4963ce79cc72573bdbd075be9a79cdf`.
+- SHA optimizado: `8d71d44ba61f3858e5fb4545707d370822f9d4be`.
+- Versión antes y después: `0.20.1`; `pyproject.toml` y `uv.lock` no aparecen
+  en la comparación y no se modificó la versión.
+
+Salida exacta de `git diff --stat baee1911d4963ce79cc72573bdbd075be9a79cdf..8d71d44ba61f3858e5fb4545707d370822f9d4be`:
+
+```text
+ src/card_duel_engine/engine/actions.py     |  46 ++++-
+ src/card_duel_engine/engine/game.py        | 107 ++++++++---
+ src/card_duel_engine/engine/options.py     |  10 +-
+ tests/test_targeting_local_cache_parity.py | 286 +++++++++++++++++++++++++++++
+ 4 files changed, 416 insertions(+), 33 deletions(-)
+```
+
+Lista exacta de archivos modificados entre esos SHAs:
+
+```text
+src/card_duel_engine/engine/actions.py
+src/card_duel_engine/engine/game.py
+src/card_duel_engine/engine/options.py
+tests/test_targeting_local_cache_parity.py
+```
+
+Por inspección de esa lista y del diff, se confirma explícitamente que snapshots,
+replay, persistencia, `GameState`, `PhaseManager`, algoritmos combinatorios,
+`deepcopy`, los dos PDF y la versión **no aparecen en el diff**. El diseño y la
+razón del GO final se detallan en
+`TARGETING_LOCAL_CACHE_OPTIMIZATION_0.20.1.md`; no se abrió otra candidata.

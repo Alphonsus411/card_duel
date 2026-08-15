@@ -573,8 +573,8 @@ def _profile_legal_actions(shape: Any) -> dict[str, Any]:
         for name, seconds in category_self_seconds.items()
     ]
     attribution.sort(key=lambda row: (-row["self_seconds"], row["category"]))
-    baseline_definition_calls = PROFILE_BASELINE_DEFINITION_CALLS[shape.value]
-    prior_timings = PROFILE_PRIOR_TIMINGS_NS[shape.value]
+    baseline_definition_calls = PROFILE_BASELINE_DEFINITION_CALLS.get(shape.value)
+    prior_timings = PROFILE_PRIOR_TIMINGS_NS.get(shape.value)
     stream = io.StringIO()
     pstats.Stats(profiler, stream=stream).sort_stats("cumulative").print_stats(20)
     canonical = _canonical_result(result)
@@ -624,17 +624,22 @@ def _profile_legal_actions(shape: Any) -> dict[str, Any]:
                 definition_self_seconds / total_seconds * 100 if total_seconds else 0.0
             ),
             "baseline_calls": baseline_definition_calls,
-            "calls_retained_percent": definition_calls / baseline_definition_calls * 100,
+            "calls_retained_percent": (
+                definition_calls / baseline_definition_calls * 100
+                if baseline_definition_calls is not None else None
+            ),
             "baseline_sources": [
                 "benchmarks/results/targeting_local_cache.json",
                 "docs/performance/results/TARGETING_LOCAL_CACHE_RESULTS_0.20.1.md",
             ],
         },
         "prior_cache_baseline_comparison": {
-            **prior_timings,
+            **(prior_timings or {}),
             "cached_median_change_percent": (
-                prior_timings["cached_median"] / prior_timings["baseline_median"] - 1
-            ) * 100,
+                (prior_timings["cached_median"] / prior_timings["baseline_median"] - 1) * 100
+                if prior_timings is not None else None
+            ),
+            "available": prior_timings is not None,
             "note": (
                 "These unprofiled medians provide historical context only; they are not "
                 "directly compared with cProfile wall time because profiler overhead differs."

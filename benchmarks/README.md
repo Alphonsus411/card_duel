@@ -27,8 +27,10 @@ repartos. Los dos primeros ejercitan además descartes y sacrificios mediante
 costes sintéticos controlados. El perfil `full` mide también `deepcopy` para los
 tres tamaños; el cronómetro rodea exclusivamente la llamada de copia.
 
-Cada caso registra duración, memoria actual y pico con `tracemalloc`, conteo y
-fingerprint SHA-256. Antes y después de cada repetición se comprueba que el
+Cada caso registra las muestras crudas de duración, media, mediana, p95
+*nearest-rank*, desviación estándar muestral, memoria actual y pico con
+`tracemalloc`, conteo, fingerprint SHA-256 y fingerprints del estado anterior y
+posterior. Antes y después de cada repetición se comprueba que el
 estado original es idéntico. Para `deepcopy` también se exige equivalencia de la
 copia y una identidad de objeto distinta.
 

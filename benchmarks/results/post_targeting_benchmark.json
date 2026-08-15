@@ -9174,10 +9174,70 @@
   "profiles": [
     {
       "category": "legal_actions",
+      "definition": {
+        "baseline_calls": 5749,
+        "baseline_sources": [
+          "benchmarks/results/targeting_local_cache.json",
+          "docs/performance/results/TARGETING_LOCAL_CACHE_RESULTS_0.20.1.md"
+        ],
+        "calls": 709,
+        "calls_retained_percent": 12.332579579057228,
+        "cumulative_seconds": 0.000281493,
+        "self_percent_of_total": 1.6913154459188249,
+        "self_seconds": 0.00020224400000000002
+      },
+      "exclusive_attribution": {
+        "categories": [
+          {
+            "category": "combinatorics_materialization",
+            "percent_of_total": 46.8896977895503,
+            "self_seconds": 0.0056069729999999995
+          },
+          {
+            "category": "legal_action_orchestration_and_cost_resolution",
+            "percent_of_total": 43.58340205420852,
+            "self_seconds": 0.005211613000000002
+          },
+          {
+            "category": "targeting",
+            "percent_of_total": 7.835584710322382,
+            "self_seconds": 0.0009369630000000001
+          },
+          {
+            "category": "definition_resolution",
+            "percent_of_total": 1.6913154459188249,
+            "self_seconds": 0.00020224400000000002
+          }
+        ],
+        "category_rules": {
+          "combinatorics_materialization": "allocation_selections, positive_compositions, generator expressions, constructors, dataclasses.replace and list.extend",
+          "definition_resolution": "_definition",
+          "legal_action_orchestration_and_cost_resolution": "all remaining functions",
+          "targeting": "_card_can_be_targeted, _continuous_effects_for, _effective_keywords, target_selections and _target_candidates"
+        },
+        "diagnosis": "Combinatorics/materialization is dominant by exclusive self time. The profile contains eager constructors, generator consumption and list extension, so the diagnosis does not assume lazy evaluation.",
+        "dominant": {
+          "category": "combinatorics_materialization",
+          "percent_of_total": 46.8896977895503,
+          "self_seconds": 0.0056069729999999995
+        },
+        "rule": "Each function's self time is assigned to exactly one category; cumulative caller/callee times are diagnostic only and are never added together."
+      },
       "function_limit": 20,
       "parameters": {
         "enumeration_limit": 128,
         "player_id": "A"
+      },
+      "primitive_calls": 13618,
+      "prior_cache_baseline_comparison": {
+        "baseline_median": 13547443.0,
+        "cached_median": 7755320.0,
+        "cached_median_change_percent": -42.75436331416932,
+        "note": "These unprofiled medians provide historical context only; they are not directly compared with cProfile wall time because profiler overhead differs.",
+        "sources": [
+          "benchmarks/results/targeting_local_cache.json",
+          "docs/performance/results/TARGETING_LOCAL_CACHE_RESULTS_0.20.1.md"
+        ]
       },
       "result": {
         "count": 823,
@@ -9186,14 +9246,255 @@
       "scenario": "MEDIUM",
       "semantics": "CURRENT",
       "sort": "cumulative",
-      "text": "         14482 function calls (13618 primitive calls) in 0.011 seconds\n\n   Ordered by: cumulative time\n   List reduced from 98 to 20 due to restriction <20>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    0.018    0.018 /workspace/card_duel/src/card_duel_engine/engine/game.py:654(legal_actions)\n        1    0.000    0.000    0.018    0.018 /workspace/card_duel/src/card_duel_engine/engine/actions.py:97(legal_actions)\n        1    0.001    0.001    0.013    0.013 /workspace/card_duel/src/card_duel_engine/engine/game.py:777(_legal_plays)\n       56    0.000    0.000    0.005    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:868(_allocation_selections)\n       56    0.002    0.000    0.005    0.000 /workspace/card_duel/src/card_duel_engine/engine/options.py:130(allocation_selections)\n       10    0.000    0.000    0.005    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:1204(_legal_ability_activations)\n       37    0.000    0.000    0.004    0.000 {method 'extend' of 'list' objects}\n        9    0.000    0.000    0.004    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:731(_card_cost_options)\n        9    0.000    0.000    0.004    0.000 /workspace/card_duel/src/card_duel_engine/engine/options.py:57(card_cost_options)\n       42    0.000    0.000    0.004    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:179(_option_resolve_x_cost)\n       42    0.000    0.000    0.004    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:724(_resolve_x_cost)\n       42    0.000    0.000    0.004    0.000 /workspace/card_duel/src/card_duel_engine/rules/resolvers.py:49(resolve_x_cost)\n       44    0.000    0.000    0.004    0.000 /root/.pyenv/versions/3.12.13/lib/python3.12/dataclasses.py:1540(replace)\n       22    0.000    0.000    0.003    0.000 /workspace/card_duel/src/card_duel_engine/engine/options.py:90(<genexpr>)\n     1456    0.001    0.000    0.002    0.000 /workspace/card_duel/src/card_duel_engine/engine/options.py:166(<genexpr>)\n      944    0.001    0.000    0.001    0.000 <string>:2(__init__)\n      270    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:1134(_card_can_be_targeted)\n      171    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:792(<genexpr>)\n      270    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:2041(_effective_keywords)\n 1504/640    0.001    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/options.py:175(positive_compositions)\n\n\n"
+      "text": "         14482 function calls (13618 primitive calls) in 0.012 seconds\n\n   Ordered by: cumulative time\n   List reduced from 98 to 20 due to restriction <20>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    0.015    0.015 /workspace/card_duel/src/card_duel_engine/engine/game.py:654(legal_actions)\n        1    0.000    0.000    0.015    0.015 /workspace/card_duel/src/card_duel_engine/engine/actions.py:97(legal_actions)\n        1    0.002    0.002    0.010    0.010 /workspace/card_duel/src/card_duel_engine/engine/game.py:777(_legal_plays)\n       56    0.000    0.000    0.006    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:868(_allocation_selections)\n       56    0.002    0.000    0.006    0.000 /workspace/card_duel/src/card_duel_engine/engine/options.py:130(allocation_selections)\n       10    0.001    0.000    0.005    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:1204(_legal_ability_activations)\n     1456    0.001    0.000    0.002    0.000 /workspace/card_duel/src/card_duel_engine/engine/options.py:166(<genexpr>)\n      944    0.001    0.000    0.001    0.000 <string>:2(__init__)\n       37    0.000    0.000    0.001    0.000 {method 'extend' of 'list' objects}\n        9    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:731(_card_cost_options)\n        9    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/options.py:57(card_cost_options)\n      270    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:1134(_card_can_be_targeted)\n      171    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:792(<genexpr>)\n       42    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:179(_option_resolve_x_cost)\n       42    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:724(_resolve_x_cost)\n       42    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/rules/resolvers.py:49(resolve_x_cost)\n 1504/640    0.001    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/options.py:175(positive_compositions)\n       44    0.000    0.000    0.001    0.000 /root/.pyenv/versions/3.12.13/lib/python3.12/dataclasses.py:1540(replace)\n      270    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:2041(_effective_keywords)\n       11    0.000    0.000    0.000    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:862(_zone_target_selections)\n\n\n",
+      "top_20": [
+        {
+          "calls": 1,
+          "cumulative_seconds": 0.015098278000000001,
+          "function": "src/card_duel_engine/engine/game.py:654(legal_actions)",
+          "primitive_calls": 1,
+          "self_seconds": 1.4365e-05
+        },
+        {
+          "calls": 1,
+          "cumulative_seconds": 0.015083913000000001,
+          "function": "src/card_duel_engine/engine/actions.py:97(legal_actions)",
+          "primitive_calls": 1,
+          "self_seconds": 0.00014869000000000001
+        },
+        {
+          "calls": 1,
+          "cumulative_seconds": 0.009575738,
+          "function": "src/card_duel_engine/engine/game.py:777(_legal_plays)",
+          "primitive_calls": 1,
+          "self_seconds": 0.0017593060000000002
+        },
+        {
+          "calls": 56,
+          "cumulative_seconds": 0.005767975000000001,
+          "function": "src/card_duel_engine/engine/game.py:868(_allocation_selections)",
+          "primitive_calls": 56,
+          "self_seconds": 0.00010938000000000001
+        },
+        {
+          "calls": 56,
+          "cumulative_seconds": 0.005658595000000001,
+          "function": "src/card_duel_engine/engine/options.py:130(allocation_selections)",
+          "primitive_calls": 56,
+          "self_seconds": 0.0018833300000000001
+        },
+        {
+          "calls": 10,
+          "cumulative_seconds": 0.004951986,
+          "function": "src/card_duel_engine/engine/game.py:1204(_legal_ability_activations)",
+          "primitive_calls": 10,
+          "self_seconds": 0.000567605
+        },
+        {
+          "calls": 1456,
+          "cumulative_seconds": 0.002286254,
+          "function": "src/card_duel_engine/engine/options.py:166(<genexpr>)",
+          "primitive_calls": 1456,
+          "self_seconds": 0.001080928
+        },
+        {
+          "calls": 944,
+          "cumulative_seconds": 0.001205326,
+          "function": "<string>:2(__init__)",
+          "primitive_calls": 944,
+          "self_seconds": 0.001082892
+        },
+        {
+          "calls": 37,
+          "cumulative_seconds": 0.001090119,
+          "function": "~:0(<method 'extend' of 'list' objects>)",
+          "primitive_calls": 37,
+          "self_seconds": 6.5147e-05
+        },
+        {
+          "calls": 9,
+          "cumulative_seconds": 0.0010676140000000001,
+          "function": "src/card_duel_engine/engine/game.py:731(_card_cost_options)",
+          "primitive_calls": 9,
+          "self_seconds": 1.5662e-05
+        },
+        {
+          "calls": 9,
+          "cumulative_seconds": 0.001051952,
+          "function": "src/card_duel_engine/engine/options.py:57(card_cost_options)",
+          "primitive_calls": 9,
+          "self_seconds": 7.520400000000001e-05
+        },
+        {
+          "calls": 270,
+          "cumulative_seconds": 0.00098113,
+          "function": "src/card_duel_engine/engine/game.py:1134(_card_can_be_targeted)",
+          "primitive_calls": 270,
+          "self_seconds": 0.000345846
+        },
+        {
+          "calls": 171,
+          "cumulative_seconds": 0.000863672,
+          "function": "src/card_duel_engine/engine/game.py:792(<genexpr>)",
+          "primitive_calls": 171,
+          "self_seconds": 0.00010949000000000001
+        },
+        {
+          "calls": 42,
+          "cumulative_seconds": 0.000693455,
+          "function": "src/card_duel_engine/engine/game.py:179(_option_resolve_x_cost)",
+          "primitive_calls": 42,
+          "self_seconds": 2.2720000000000003e-05
+        },
+        {
+          "calls": 42,
+          "cumulative_seconds": 0.000670735,
+          "function": "src/card_duel_engine/engine/game.py:724(_resolve_x_cost)",
+          "primitive_calls": 42,
+          "self_seconds": 1.9949e-05
+        },
+        {
+          "calls": 42,
+          "cumulative_seconds": 0.0006507860000000001,
+          "function": "src/card_duel_engine/rules/resolvers.py:49(resolve_x_cost)",
+          "primitive_calls": 42,
+          "self_seconds": 8.7223e-05
+        },
+        {
+          "calls": 1504,
+          "cumulative_seconds": 0.000643964,
+          "function": "src/card_duel_engine/engine/options.py:175(positive_compositions)",
+          "primitive_calls": 640,
+          "self_seconds": 0.000643964
+        },
+        {
+          "calls": 44,
+          "cumulative_seconds": 0.0005717000000000001,
+          "function": "/root/.pyenv/versions/3.12.13/lib/python3.12/dataclasses.py:1540(replace)",
+          "primitive_calls": 44,
+          "self_seconds": 0.00020611700000000002
+        },
+        {
+          "calls": 270,
+          "cumulative_seconds": 0.000524798,
+          "function": "src/card_duel_engine/engine/game.py:2041(_effective_keywords)",
+          "primitive_calls": 270,
+          "self_seconds": 0.000191561
+        },
+        {
+          "calls": 11,
+          "cumulative_seconds": 0.000421088,
+          "function": "src/card_duel_engine/engine/game.py:862(_zone_target_selections)",
+          "primitive_calls": 11,
+          "self_seconds": 1.967e-05
+        }
+      ],
+      "top_5": [
+        {
+          "calls": 1,
+          "cumulative_seconds": 0.015098278000000001,
+          "function": "src/card_duel_engine/engine/game.py:654(legal_actions)",
+          "primitive_calls": 1,
+          "self_seconds": 1.4365e-05
+        },
+        {
+          "calls": 1,
+          "cumulative_seconds": 0.015083913000000001,
+          "function": "src/card_duel_engine/engine/actions.py:97(legal_actions)",
+          "primitive_calls": 1,
+          "self_seconds": 0.00014869000000000001
+        },
+        {
+          "calls": 1,
+          "cumulative_seconds": 0.009575738,
+          "function": "src/card_duel_engine/engine/game.py:777(_legal_plays)",
+          "primitive_calls": 1,
+          "self_seconds": 0.0017593060000000002
+        },
+        {
+          "calls": 56,
+          "cumulative_seconds": 0.005767975000000001,
+          "function": "src/card_duel_engine/engine/game.py:868(_allocation_selections)",
+          "primitive_calls": 56,
+          "self_seconds": 0.00010938000000000001
+        },
+        {
+          "calls": 56,
+          "cumulative_seconds": 0.005658595000000001,
+          "function": "src/card_duel_engine/engine/options.py:130(allocation_selections)",
+          "primitive_calls": 56,
+          "self_seconds": 0.0018833300000000001
+        }
+      ],
+      "total_calls": 14482,
+      "total_seconds": 0.011957793
     },
     {
       "category": "legal_actions",
+      "definition": {
+        "baseline_calls": 19005,
+        "baseline_sources": [
+          "benchmarks/results/targeting_local_cache.json",
+          "docs/performance/results/TARGETING_LOCAL_CACHE_RESULTS_0.20.1.md"
+        ],
+        "calls": 1869,
+        "calls_retained_percent": 9.83425414364641,
+        "cumulative_seconds": 0.000529381,
+        "self_percent_of_total": 3.3453620919194864,
+        "self_seconds": 0.00040471100000000004
+      },
+      "exclusive_attribution": {
+        "categories": [
+          {
+            "category": "combinatorics_materialization",
+            "percent_of_total": 42.00281806238123,
+            "self_seconds": 0.0050813640000000005
+          },
+          {
+            "category": "legal_action_orchestration_and_cost_resolution",
+            "percent_of_total": 38.6966783862749,
+            "self_seconds": 0.004681398
+          },
+          {
+            "category": "targeting",
+            "percent_of_total": 15.955141459424341,
+            "self_seconds": 0.001930201
+          },
+          {
+            "category": "definition_resolution",
+            "percent_of_total": 3.3453620919194864,
+            "self_seconds": 0.00040471100000000004
+          }
+        ],
+        "category_rules": {
+          "combinatorics_materialization": "allocation_selections, positive_compositions, generator expressions, constructors, dataclasses.replace and list.extend",
+          "definition_resolution": "_definition",
+          "legal_action_orchestration_and_cost_resolution": "all remaining functions",
+          "targeting": "_card_can_be_targeted, _continuous_effects_for, _effective_keywords, target_selections and _target_candidates"
+        },
+        "diagnosis": "Combinatorics/materialization is dominant by exclusive self time. The profile contains eager constructors, generator consumption and list extension, so the diagnosis does not assume lazy evaluation.",
+        "dominant": {
+          "category": "combinatorics_materialization",
+          "percent_of_total": 42.00281806238123,
+          "self_seconds": 0.0050813640000000005
+        },
+        "rule": "Each function's self time is assigned to exactly one category; cumulative caller/callee times are diagnostic only and are never added together."
+      },
       "function_limit": 20,
       "parameters": {
         "enumeration_limit": 128,
         "player_id": "A"
+      },
+      "primitive_calls": 16182,
+      "prior_cache_baseline_comparison": {
+        "baseline_median": 26847740.5,
+        "cached_median": 8205058.0,
+        "cached_median_change_percent": -69.43855293893354,
+        "note": "These unprofiled medians provide historical context only; they are not directly compared with cProfile wall time because profiler overhead differs.",
+        "sources": [
+          "benchmarks/results/targeting_local_cache.json",
+          "docs/performance/results/TARGETING_LOCAL_CACHE_RESULTS_0.20.1.md"
+        ]
       },
       "result": {
         "count": 831,
@@ -9202,7 +9503,188 @@
       "scenario": "STRESS_CONTROLLED",
       "semantics": "CURRENT",
       "sort": "cumulative",
-      "text": "         16918 function calls (16182 primitive calls) in 0.012 seconds\n\n   Ordered by: cumulative time\n   List reduced from 98 to 20 due to restriction <20>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    0.015    0.015 /workspace/card_duel/src/card_duel_engine/engine/game.py:654(legal_actions)\n        1    0.000    0.000    0.015    0.015 /workspace/card_duel/src/card_duel_engine/engine/actions.py:97(legal_actions)\n        1    0.001    0.001    0.010    0.010 /workspace/card_duel/src/card_duel_engine/engine/game.py:777(_legal_plays)\n       56    0.000    0.000    0.005    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:868(_allocation_selections)\n       56    0.002    0.000    0.005    0.000 /workspace/card_duel/src/card_duel_engine/engine/options.py:130(allocation_selections)\n       18    0.000    0.000    0.005    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:1204(_legal_ability_activations)\n      510    0.001    0.000    0.002    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:1134(_card_can_be_targeted)\n      315    0.000    0.000    0.002    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:792(<genexpr>)\n     1392    0.001    0.000    0.002    0.000 /workspace/card_duel/src/card_duel_engine/engine/options.py:166(<genexpr>)\n      510    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:2041(_effective_keywords)\n       45    0.000    0.000    0.001    0.000 {method 'extend' of 'list' objects}\n       36    0.001    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:1994(_continuous_effects_for)\n      880    0.001    0.000    0.001    0.000 <string>:2(__init__)\n        9    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:731(_card_cost_options)\n        9    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/options.py:57(card_cost_options)\n       42    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:179(_option_resolve_x_cost)\n       42    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:724(_resolve_x_cost)\n       42    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/rules/resolvers.py:49(resolve_x_cost)\n        1    0.000    0.000    0.001    0.001 {built-in method builtins.sorted}\n       44    0.000    0.000    0.001    0.000 /root/.pyenv/versions/3.12.13/lib/python3.12/dataclasses.py:1540(replace)\n\n\n"
+      "text": "         16918 function calls (16182 primitive calls) in 0.012 seconds\n\n   Ordered by: cumulative time\n   List reduced from 98 to 20 due to restriction <20>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    0.015    0.015 /workspace/card_duel/src/card_duel_engine/engine/game.py:654(legal_actions)\n        1    0.000    0.000    0.015    0.015 /workspace/card_duel/src/card_duel_engine/engine/actions.py:97(legal_actions)\n        1    0.001    0.001    0.010    0.010 /workspace/card_duel/src/card_duel_engine/engine/game.py:777(_legal_plays)\n       56    0.000    0.000    0.005    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:868(_allocation_selections)\n       56    0.002    0.000    0.005    0.000 /workspace/card_duel/src/card_duel_engine/engine/options.py:130(allocation_selections)\n       18    0.000    0.000    0.005    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:1204(_legal_ability_activations)\n      510    0.001    0.000    0.002    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:1134(_card_can_be_targeted)\n      315    0.000    0.000    0.002    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:792(<genexpr>)\n     1392    0.001    0.000    0.002    0.000 /workspace/card_duel/src/card_duel_engine/engine/options.py:166(<genexpr>)\n      510    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:2041(_effective_keywords)\n      880    0.001    0.000    0.001    0.000 <string>:2(__init__)\n       45    0.000    0.000    0.001    0.000 {method 'extend' of 'list' objects}\n       36    0.001    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:1994(_continuous_effects_for)\n        9    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:731(_card_cost_options)\n        9    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/options.py:57(card_cost_options)\n       42    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:179(_option_resolve_x_cost)\n       42    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:724(_resolve_x_cost)\n       42    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/rules/resolvers.py:49(resolve_x_cost)\n       44    0.000    0.000    0.001    0.000 /root/.pyenv/versions/3.12.13/lib/python3.12/dataclasses.py:1540(replace)\n     1869    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:2167(_definition)\n\n\n",
+      "top_20": [
+        {
+          "calls": 1,
+          "cumulative_seconds": 0.015454470000000001,
+          "function": "src/card_duel_engine/engine/game.py:654(legal_actions)",
+          "primitive_calls": 1,
+          "self_seconds": 7.535000000000001e-06
+        },
+        {
+          "calls": 1,
+          "cumulative_seconds": 0.015446935,
+          "function": "src/card_duel_engine/engine/actions.py:97(legal_actions)",
+          "primitive_calls": 1,
+          "self_seconds": 0.000151053
+        },
+        {
+          "calls": 1,
+          "cumulative_seconds": 0.010022573,
+          "function": "src/card_duel_engine/engine/game.py:777(_legal_plays)",
+          "primitive_calls": 1,
+          "self_seconds": 0.0013992590000000001
+        },
+        {
+          "calls": 56,
+          "cumulative_seconds": 0.005305254000000001,
+          "function": "src/card_duel_engine/engine/game.py:868(_allocation_selections)",
+          "primitive_calls": 56,
+          "self_seconds": 5.5706000000000005e-05
+        },
+        {
+          "calls": 56,
+          "cumulative_seconds": 0.005249548000000001,
+          "function": "src/card_duel_engine/engine/options.py:130(allocation_selections)",
+          "primitive_calls": 56,
+          "self_seconds": 0.0018957260000000001
+        },
+        {
+          "calls": 18,
+          "cumulative_seconds": 0.004861161,
+          "function": "src/card_duel_engine/engine/game.py:1204(_legal_ability_activations)",
+          "primitive_calls": 18,
+          "self_seconds": 0.00045472300000000003
+        },
+        {
+          "calls": 510,
+          "cumulative_seconds": 0.002217193,
+          "function": "src/card_duel_engine/engine/game.py:1134(_card_can_be_targeted)",
+          "primitive_calls": 510,
+          "self_seconds": 0.0006111420000000001
+        },
+        {
+          "calls": 315,
+          "cumulative_seconds": 0.001965728,
+          "function": "src/card_duel_engine/engine/game.py:792(<genexpr>)",
+          "primitive_calls": 315,
+          "self_seconds": 0.00014696900000000002
+        },
+        {
+          "calls": 1392,
+          "cumulative_seconds": 0.0019029140000000001,
+          "function": "src/card_duel_engine/engine/options.py:166(<genexpr>)",
+          "primitive_calls": 1392,
+          "self_seconds": 0.00066827
+        },
+        {
+          "calls": 510,
+          "cumulative_seconds": 0.001414716,
+          "function": "src/card_duel_engine/engine/game.py:2041(_effective_keywords)",
+          "primitive_calls": 510,
+          "self_seconds": 0.000426599
+        },
+        {
+          "calls": 880,
+          "cumulative_seconds": 0.001234644,
+          "function": "<string>:2(__init__)",
+          "primitive_calls": 880,
+          "self_seconds": 0.0011140660000000001
+        },
+        {
+          "calls": 45,
+          "cumulative_seconds": 0.0012238910000000002,
+          "function": "~:0(<method 'extend' of 'list' objects>)",
+          "primitive_calls": 45,
+          "self_seconds": 7.4348e-05
+        },
+        {
+          "calls": 36,
+          "cumulative_seconds": 0.001130731,
+          "function": "src/card_duel_engine/engine/game.py:1994(_continuous_effects_for)",
+          "primitive_calls": 36,
+          "self_seconds": 0.000762724
+        },
+        {
+          "calls": 9,
+          "cumulative_seconds": 0.0010022800000000001,
+          "function": "src/card_duel_engine/engine/game.py:731(_card_cost_options)",
+          "primitive_calls": 9,
+          "self_seconds": 1.3048000000000001e-05
+        },
+        {
+          "calls": 9,
+          "cumulative_seconds": 0.000989232,
+          "function": "src/card_duel_engine/engine/options.py:57(card_cost_options)",
+          "primitive_calls": 9,
+          "self_seconds": 7.0021e-05
+        },
+        {
+          "calls": 42,
+          "cumulative_seconds": 0.000674489,
+          "function": "src/card_duel_engine/engine/game.py:179(_option_resolve_x_cost)",
+          "primitive_calls": 42,
+          "self_seconds": 2.1591e-05
+        },
+        {
+          "calls": 42,
+          "cumulative_seconds": 0.0006528980000000001,
+          "function": "src/card_duel_engine/engine/game.py:724(_resolve_x_cost)",
+          "primitive_calls": 42,
+          "self_seconds": 1.7934e-05
+        },
+        {
+          "calls": 42,
+          "cumulative_seconds": 0.000634964,
+          "function": "src/card_duel_engine/rules/resolvers.py:49(resolve_x_cost)",
+          "primitive_calls": 42,
+          "self_seconds": 8.382200000000001e-05
+        },
+        {
+          "calls": 44,
+          "cumulative_seconds": 0.0005556910000000001,
+          "function": "/root/.pyenv/versions/3.12.13/lib/python3.12/dataclasses.py:1540(replace)",
+          "primitive_calls": 44,
+          "self_seconds": 0.00019725500000000002
+        },
+        {
+          "calls": 1869,
+          "cumulative_seconds": 0.000529381,
+          "function": "src/card_duel_engine/engine/game.py:2167(_definition)",
+          "primitive_calls": 1869,
+          "self_seconds": 0.00040471100000000004
+        }
+      ],
+      "top_5": [
+        {
+          "calls": 1,
+          "cumulative_seconds": 0.015454470000000001,
+          "function": "src/card_duel_engine/engine/game.py:654(legal_actions)",
+          "primitive_calls": 1,
+          "self_seconds": 7.535000000000001e-06
+        },
+        {
+          "calls": 1,
+          "cumulative_seconds": 0.015446935,
+          "function": "src/card_duel_engine/engine/actions.py:97(legal_actions)",
+          "primitive_calls": 1,
+          "self_seconds": 0.000151053
+        },
+        {
+          "calls": 1,
+          "cumulative_seconds": 0.010022573,
+          "function": "src/card_duel_engine/engine/game.py:777(_legal_plays)",
+          "primitive_calls": 1,
+          "self_seconds": 0.0013992590000000001
+        },
+        {
+          "calls": 56,
+          "cumulative_seconds": 0.005305254000000001,
+          "function": "src/card_duel_engine/engine/game.py:868(_allocation_selections)",
+          "primitive_calls": 56,
+          "self_seconds": 5.5706000000000005e-05
+        },
+        {
+          "calls": 56,
+          "cumulative_seconds": 0.005249548000000001,
+          "function": "src/card_duel_engine/engine/options.py:130(allocation_selections)",
+          "primitive_calls": 56,
+          "self_seconds": 0.0018957260000000001
+        }
+      ],
+      "total_calls": 16918,
+      "total_seconds": 0.012097674000000006
     }
   ],
   "repository_evidence": {

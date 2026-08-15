@@ -70,6 +70,10 @@ PROFILE_PRIOR_TIMINGS_NS = {
     MEDIUM.value: {"baseline_median": 13_547_443.0, "cached_median": 7_755_320.0},
     STRESS_CONTROLLED.value: {"baseline_median": 26_847_740.5, "cached_median": 8_205_058.0},
 }
+DEEPCOPY_CLASSIFICATION_THRESHOLDS_PERCENT = {
+    "irrelevant_below": 10.0,
+    "secondary_below": 25.0,
+}
 
 
 class NoGo(RuntimeError):
@@ -195,6 +199,12 @@ def _measure_case(case: Case, warmups: int, repetitions: int) -> dict[str, Any]:
             "canonical_before_equals_after": canonical_state(case.fixture) == fixture_canonical,
         },
     }
+    if case.copied_state:
+        measured["copy_validation"] = {
+            "canonical_equivalence": initial_canonical == fixture_canonical,
+            "distinct_object_identity": initial is not case.fixture,
+            "original_state_unchanged": canonical_state(case.fixture) == fixture_canonical,
+        }
     derived: dict[str, float] = {}
     if baseline[0] > 0:
         derived["nanoseconds_per_option"] = measured["duration_ns"]["mean"] / baseline[0]
@@ -211,6 +221,55 @@ def _measure_case(case: Case, warmups: int, repetitions: int) -> dict[str, Any]:
         "parameters": case.parameters or {},
         "measured": measured,
         "derived": derived,
+    }
+
+
+def _deepcopy_conclusion(cases: list[dict[str, Any]]) -> dict[str, Any]:
+    """Compara clones con ``legal_actions`` CURRENT, ambos sobre límite 128."""
+
+    comparisons = []
+    for shape in (MEDIUM, STRESS_CONTROLLED):
+        deepcopy_case = next(
+            case for case in cases
+            if case["name"] == f"deepcopy/game_state/{shape.value.lower()}"
+        )
+        legal_case = next(
+            case for case in cases
+            if case["name"] == f"legal_actions/current/{shape.value.lower()}/limit-128"
+        )
+        deepcopy_median = deepcopy_case["measured"]["duration_ns"]["median"]
+        legal_median = legal_case["measured"]["duration_ns"]["median"]
+        percent = deepcopy_median / legal_median * 100
+        classification = (
+            "irrelevant" if percent < DEEPCOPY_CLASSIFICATION_THRESHOLDS_PERCENT["irrelevant_below"]
+            else "secondary" if percent < DEEPCOPY_CLASSIFICATION_THRESHOLDS_PERCENT["secondary_below"]
+            else "material"
+        )
+        comparison = {
+            "scenario": shape.value,
+            "deepcopy_median_ns": deepcopy_median,
+            "legal_actions_median_ns": legal_median,
+            "deepcopy_percent_of_legal_actions_median": percent,
+            "classification": classification,
+        }
+        comparisons.append(comparison)
+        deepcopy_case["derived"]["median_percent_of_legal_actions_limit_128"] = percent
+
+    overall = max(
+        comparisons,
+        key=lambda row: ("irrelevant", "secondary", "material").index(row["classification"]),
+    )["classification"]
+    return {
+        "scope": "deepcopy(GameState) after the legal_actions targeting acceleration",
+        "comparison_semantics": EngineSemantics.CURRENT.name,
+        "enumeration_limit": 128,
+        "thresholds_percent": DEEPCOPY_CLASSIFICATION_THRESHOLDS_PERCENT,
+        "comparisons": comparisons,
+        "classification": overall,
+        "statement": (
+            f"deepcopy is {overall}; this benchmark records the cost and does not propose "
+            "changes to its implementation."
+        ),
     }
 
 
@@ -616,6 +675,7 @@ def main(argv: list[str] | None = None) -> int:
                 "standard_deviation": "sample standard deviation (n - 1 denominator)",
             },
             "cases": cases,
+            "deepcopy_assessment": _deepcopy_conclusion(cases) if args.profile == "full" else None,
             "profiles": [
                 _profile_legal_actions(MEDIUM),
                 _profile_legal_actions(STRESS_CONTROLLED),

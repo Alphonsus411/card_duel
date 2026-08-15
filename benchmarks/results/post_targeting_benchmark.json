@@ -9735,5 +9735,37 @@
   "statistical_conventions": {
     "p95": "nearest-rank: sorted_samples[ceil(0.95 * n) - 1], without interpolation",
     "standard_deviation": "sample standard deviation (n - 1 denominator)"
+  },
+  "validation": {
+    "all_exit_codes_zero": true,
+    "candidate_implemented": false,
+    "date_utc": "2026-08-15",
+    "mypy": {
+      "issues": 0,
+      "source_files": 40
+    },
+    "production_diff_empty": true,
+    "pytest": {
+      "passed": 576,
+      "skipped": 1,
+      "subtests_passed": 711
+    },
+    "rules_sources": {
+      "Fantasy Tokens Edicion Mitica.pdf": "61243b30d219dd12d8897a206ed664d95a5e3c38b6670a818933f6d90904af36",
+      "Fantasy Tokens.pdf": "1c51dabe2023626ad532368e2567d2084c47ec137c7a738bd8c0e0b707f86b21"
+    },
+    "source_commit": "4b95c73e9258cdfc67a34cfd77920cfd744eb9c6",
+    "unittest": {
+      "status": "OK",
+      "tests": 396
+    },
+    "wheel": {
+      "benchmarks_absent": true,
+      "binary_identical_builds": true,
+      "entries": 44,
+      "filename": "card_duel_engine-0.20.1-py3-none-any.whl",
+      "pdfs_absent": true,
+      "sha256": "350addc4694d9bb1e03cc4c5d037290eb2bf90971889580cbb560e9748f7f024"
+    }
   }
 }

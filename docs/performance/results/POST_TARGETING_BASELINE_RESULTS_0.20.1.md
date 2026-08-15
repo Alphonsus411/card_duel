@@ -171,3 +171,40 @@ escenario. El coste de `deepcopy` es aislado y no debe agregarse al de
 `legal_actions`; `tracemalloc` no equivale a RSS. Por estas diferencias, sólo la
 estabilidad funcional y la persistencia de la mejora histórica son conclusiones
 directas; los descensos adicionales de tiempo y memoria son orientativos.
+
+## Registro final de comandos y artefactos (2026-08-15 UTC)
+
+Se repitió el cierre sobre `4b95c73e9258cdfc67a34cfd77920cfd744eb9c6` sin
+modificar producto ni ejecutar la candidata. Resultados resumidos y códigos de
+terminación:
+
+| Comando exacto | Resultado | Código |
+|---|---|---:|
+| `uv sync --locked --extra dev` | sincronización bloqueada correcta | 0 |
+| `uv run pytest -q` | 576 passed, 1 skipped, 711 subtests passed (94,32 s) | 0 |
+| `uv run python -m unittest discover -s tests -v` | 396 tests, `OK` (90,845 s) | 0 |
+| `uv run python -m mypy` | 40 archivos sin incidencias | 0 |
+| `uv run python -m compileall -q src tests scripts benchmarks` | correcto, sin salida | 0 |
+| `uv run python scripts/verify_release.py --profile runtime` | perfil runtime `OK` | 0 |
+| `uv run python scripts/verify_release.py --profile full --json dist/release-verification.json` | perfil full correcto; JSON generado | 0 |
+| `uv run python scripts/verify_reproducible_wheel.py` | 2 builds idénticos, 44 entradas, integridad RECORD correcta | 0 |
+| `uv run python scripts/verify_rules_sources.py` | 2 fuentes PDF `OK` | 0 |
+
+El wheel reproducible fue
+`card_duel_engine-0.20.1-py3-none-any.whl`, SHA-256
+`350addc4694d9bb1e03cc4c5d037290eb2bf90971889580cbb560e9748f7f024`.
+La lista obtenida mediante `unzip -Z1` no contiene `benchmarks/` ni archivos PDF.
+
+La comparación de `sha256sum` frente a `docs/RULES_SOURCES.json` fue exacta:
+
+| Fuente | SHA-256 calculado y registrado |
+|---|---|
+| `Fantasy Tokens.pdf` | `1c51dabe2023626ad532368e2567d2084c47ec137c7a738bd8c0e0b707f86b21` |
+| `Fantasy Tokens Edicion Mitica.pdf` | `61243b30d219dd12d8897a206ed664d95a5e3c38b6670a818933f6d90904af36` |
+
+`git diff -- src/card_duel_engine` quedó vacío. La auditoría final del diff no
+encontró cambios en reglas, comandos, `GameState`, snapshots/replay,
+persistencia, `PhaseManager`, `ActionOptionResolver`, caché local, `deepcopy`,
+PDF, `pyproject.toml`, `uv.lock` o workflows. Por tanto se conserva el veredicto
+**GO para el baseline**, el hotspot sigue siendo combinatoria/materialización y
+la única candidata sigue documentada, no implementada.

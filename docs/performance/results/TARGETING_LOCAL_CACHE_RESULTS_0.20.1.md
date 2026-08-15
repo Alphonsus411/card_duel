@@ -126,3 +126,73 @@ uname -a
 El controlador documentado es infraestructura conservable: reproduce las tres
 consultas exactas, impide mezclar imports entre SHAs y falla inmediatamente ante
 cualquier diferencia de paridad.
+
+## Evidencia integral de cierre
+
+### Revisiones y superficie exacta
+
+- SHA baseline: `baee1911d4963ce79cc72573bdbd075be9a79cdf`.
+- SHA optimizado: `8d71d44ba61f3858e5fb4545707d370822f9d4be`.
+- Versión baseline/optimizada: `0.20.1` / `0.20.1`; no hubo cambio de versión.
+
+`git diff --stat` exacto entre baseline y optimizado:
+
+```text
+ src/card_duel_engine/engine/actions.py     |  46 ++++-
+ src/card_duel_engine/engine/game.py        | 107 ++++++++---
+ src/card_duel_engine/engine/options.py     |  10 +-
+ tests/test_targeting_local_cache_parity.py | 286 +++++++++++++++++++++++++++++
+ 4 files changed, 416 insertions(+), 33 deletions(-)
+```
+
+Archivos modificados, lista exacta:
+
+```text
+src/card_duel_engine/engine/actions.py
+src/card_duel_engine/engine/game.py
+src/card_duel_engine/engine/options.py
+tests/test_targeting_local_cache_parity.py
+```
+
+No aparecen en el diff snapshots, replay, persistencia, `GameState`,
+`PhaseManager`, algoritmos combinatorios, `deepcopy`, `Fantasy Tokens.pdf`,
+`Fantasy Tokens Edicion Mitica.pdf`, `pyproject.toml` ni `uv.lock`. Por tanto,
+los PDF y la versión permanecen byte a byte fuera del cambio.
+
+### Validación ejecutada el 2026-08-15 (UTC)
+
+Se preparó el entorno con `uv sync --extra dev` y después se ejecutaron, sin
+alterar código productivo, todos los gates solicitados:
+
+| Comando | Salida resumida | Código |
+|---|---|---:|
+| `uv run pytest -q` | `576 passed, 1 skipped, 711 subtests passed in 95.09s` | 0 |
+| `uv run python -m unittest discover -s tests -v` | `Ran 396 tests in 90.427s` — `OK` | 0 |
+| `uv run python -m mypy` | `Success: no issues found in 40 source files` | 0 |
+| `uv run python -m compileall -q src tests scripts benchmarks` | sin salida | 0 |
+| `uv run python scripts/verify_release.py --profile runtime` | `OK: perfil runtime completado` | 0 |
+| `uv run python scripts/verify_release.py --profile full --json dist/release-verification.json` | JSON escrito en la ruta requerida | 0 |
+| `uv run python scripts/verify_reproducible_wheel.py` | builds binariamente idénticos; 44 archivos; wheel SHA-256 `dc7115b832a68b68a1e3ac9614b303d613839414761aa4427e1efdfeb7a87780` | 0 |
+| `uv run python scripts/verify_rules_sources.py` | ambas fuentes `OK` | 0 |
+
+El perfil full confirmó asimismo pruebas, tipado, compilación, auditoría del
+wheel y metadatos. `dist/release-verification.json` es salida local ignorada y no
+se incorpora a la lista de archivos del cambio.
+
+### Fuentes normativas
+
+El verificador contrastó nombre, tamaño, cabecera PDF y SHA-256 con
+`docs/RULES_SOURCES.json`:
+
+| Fuente | SHA-256 verificado |
+|---|---|
+| `Fantasy Tokens.pdf` | `1c51dabe2023626ad532368e2567d2084c47ec137c7a738bd8c0e0b707f86b21` |
+| `Fantasy Tokens Edicion Mitica.pdf` | `61243b30d219dd12d8897a206ed664d95a5e3c38b6670a818933f6d90904af36` |
+
+### Veredicto y detención
+
+No difirieron comando, orden, fingerprint, perfil semántico, estado ni
+comportamiento posterior a mutación. Se conserva el cambio productivo con
+veredicto **GO**. Si cualquiera hubiese divergido, el cambio se habría retirado
+y el cierre sería **NO-GO**. Con este GO termina la iteración: no se inicia una
+segunda candidata de optimización.

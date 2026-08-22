@@ -96,6 +96,19 @@ class CollectionRegistryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "no coincide"):
             engine.new_match({"a": [item.cards[0]] * 6, "b": [altered] * 6})
 
+    def test_engine_rejects_unregistered_definitions_with_registry(self):
+        policy = Policy()
+        registry = CollectionRegistry(trust_policy=policy)
+        unsigned = manifest("unsigned", card_id="unsigned-card").cards[0]
+
+        with self.assertRaisesRegex(ValueError, "no está registrada"):
+            GameEngine(catalog=registry).new_match(
+                {"a": [unsigned] * 6, "b": [unsigned] * 6}
+            )
+
+        self.assertNotIn(unsigned.card_id, registry.catalog)
+        self.assertEqual(policy.calls, [])
+
     def test_seeded_small_dags(self):
         for seed in range(12):
             rng = random.Random(seed); nodes = [f"n{i}" for i in range(6)]

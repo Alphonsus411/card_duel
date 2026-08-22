@@ -134,6 +134,10 @@ class GameEngine:
             for definition in definitions:
                 definition_ids.append(definition.card_id)
                 if definition.card_id not in self.catalog:
+                    if self.registry is not None:
+                        raise ValueError(
+                            f"La definición {definition.card_id} no está registrada en el catálogo"
+                        )
                     self.catalog.register(definition)
                 elif self.catalog.get(definition.card_id) != definition:
                     raise ValueError(

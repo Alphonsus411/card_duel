@@ -8,8 +8,7 @@ de cada definición, keyword y efecto continuo, sin duplicar las reglas.
 import hashlib
 import json
 from types import MethodType
-
-import pytest
+import unittest
 
 from card_duel_engine import EngineSemantics, GameEngine, RuleSet
 from card_duel_engine.domain import (
@@ -177,21 +176,6 @@ def _assert_parity(engine: GameEngine):
     return cached
 
 
-@pytest.mark.parametrize("semantics", SEMANTICS)
-def test_hand_field_permanent_distributed_immunities_and_divine_match_baseline(semantics):
-    engine, ids = _engine(semantics)
-    actions = _assert_parity(engine)
-
-    assert any(isinstance(action, PlayCard) and action.card_id == ids["EVENT"] for action in actions)
-    assert any(isinstance(action, PlayCard) and action.card_id == ids["DISTRIBUTE"]
-               and action.allocations for action in actions)
-    assert any(isinstance(action, ActivateAbility) and action.source_card_id == ids["ABILITY"]
-               for action in actions)
-    encoded = _canonical(actions)
-    assert ids["IA"] in encoded and ids["IE"] in encoded and ids["IQ"] in encoded
-    assert ids["DIVINE"] in encoded
-
-
 def _mutate(engine, ids, category):
     target = engine.state.cards[ids["OPEN"]]
     if category == "keyword":
@@ -240,47 +224,64 @@ def _prepare_sensitive_category(engine, ids, category):
         assert not engine.state.cards[ids["OPEN"]].transformed_as_creature
 
 
-@pytest.mark.parametrize("semantics", SEMANTICS)
-@pytest.mark.parametrize(
-    "category",
-    ("keyword", "continuous", "transformation", "override", "text_patch",
-     "equipment", "control", "zone", "ability_source"),
-)
-def test_authoritative_mutation_is_visible_to_next_call_and_third_is_deterministic(
-    semantics, category
-):
-    engine, ids = _engine(semantics)
-    _prepare_sensitive_category(engine, ids, category)
-    first = _assert_parity(engine)
-    _mutate(engine, ids, category)
-    second = _assert_parity(engine)
-    third = _assert_parity(engine)
+class TargetingLocalCacheParityTests(unittest.TestCase):
+    def test_hand_field_permanent_distributed_immunities_and_divine_match_baseline(self):
+        for semantics in SEMANTICS:
+            with self.subTest(semantics=semantics):
+                engine, ids = _engine(semantics)
+                actions = _assert_parity(engine)
 
-    assert second != first
-    assert third == second
-    assert _digest(third) == _digest(second)
+                self.assertTrue(any(isinstance(action, PlayCard)
+                                    and action.card_id == ids["EVENT"] for action in actions))
+                self.assertTrue(any(isinstance(action, PlayCard)
+                                    and action.card_id == ids["DISTRIBUTE"]
+                                    and action.allocations for action in actions))
+                self.assertTrue(any(isinstance(action, ActivateAbility)
+                                    and action.source_card_id == ids["ABILITY"]
+                                    for action in actions))
+                encoded = _canonical(actions)
+                self.assertTrue(all(ids[key] in encoded for key in ("IA", "IE", "IQ")))
+                self.assertIn(ids["DIVINE"], encoded)
 
+    def test_authoritative_mutation_is_visible_to_next_call_and_third_is_deterministic(self):
+        categories = ("keyword", "continuous", "transformation", "override", "text_patch",
+                      "equipment", "control", "zone", "ability_source")
+        for semantics in SEMANTICS:
+            for category in categories:
+                with self.subTest(semantics=semantics, category=category):
+                    engine, ids = _engine(semantics)
+                    _prepare_sensitive_category(engine, ids, category)
+                    first = _assert_parity(engine)
+                    _mutate(engine, ids, category)
+                    second = _assert_parity(engine)
+                    third = _assert_parity(engine)
 
-@pytest.mark.parametrize("semantics", SEMANTICS)
-def test_execution_validation_paths_do_not_reuse_enumeration_cache(semantics):
-    engine, ids = _engine(semantics)
-    actions = _assert_parity(engine)
-    play = next(action for action in actions if isinstance(action, PlayCard)
-                and action.card_id == ids["EVENT"] and action.chosen_card_ids == (ids["OPEN"],))
-    ability = next(action for action in actions if isinstance(action, ActivateAbility)
-                   and action.source_card_id == ids["ABILITY"]
-                   and action.chosen_card_ids == (ids["OPEN"],))
+                    self.assertNotEqual(second, first)
+                    self.assertEqual(third, second)
+                    self.assertEqual(_digest(third), _digest(second))
 
-    # Las tres rutas vuelven a consultar estado autoritativo tras enumerar.
-    engine.state.cards[ids["OPEN"]].overridden_definition_id = "ALT"
-    with pytest.raises(IllegalAction, match="inmune"):
-        engine._play_card(play)
-    engine.state.cards[ids["OPEN"]].overridden_definition_id = "IA"
-    with pytest.raises(IllegalAction, match="inmune"):
-        engine._activate_ability(ability)
-    engine.state.cards[ids["OPEN"]].overridden_definition_id = "ALT"
-    with pytest.raises(IllegalAction, match="inmune"):
-        engine._validate_effect_targets(
-            engine._definition(ids["EVENT"]).effects, (), (ids["OPEN"],), (), (),
-            engine._definition(ids["EVENT"]),
-        )
+    def test_execution_validation_paths_do_not_reuse_enumeration_cache(self):
+        for semantics in SEMANTICS:
+            with self.subTest(semantics=semantics):
+                engine, ids = _engine(semantics)
+                actions = _assert_parity(engine)
+                play = next(action for action in actions if isinstance(action, PlayCard)
+                            and action.card_id == ids["EVENT"]
+                            and action.chosen_card_ids == (ids["OPEN"],))
+                ability = next(action for action in actions if isinstance(action, ActivateAbility)
+                               and action.source_card_id == ids["ABILITY"]
+                               and action.chosen_card_ids == (ids["OPEN"],))
+
+                # Las tres rutas vuelven a consultar estado autoritativo tras enumerar.
+                engine.state.cards[ids["OPEN"]].overridden_definition_id = "ALT"
+                with self.assertRaisesRegex(IllegalAction, "inmune"):
+                    engine._play_card(play)
+                engine.state.cards[ids["OPEN"]].overridden_definition_id = "IA"
+                with self.assertRaisesRegex(IllegalAction, "inmune"):
+                    engine._activate_ability(ability)
+                engine.state.cards[ids["OPEN"]].overridden_definition_id = "ALT"
+                with self.assertRaisesRegex(IllegalAction, "inmune"):
+                    engine._validate_effect_targets(
+                        engine._definition(ids["EVENT"]).effects, (), (ids["OPEN"],), (), (),
+                        engine._definition(ids["EVENT"]),
+                    )

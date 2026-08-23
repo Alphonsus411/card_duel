@@ -95,3 +95,8 @@ def test_benchmark_metadata_and_cprofile_are_comparable() -> None:
     assert profile["result"]["count"] > 0
     assert len(profile["result"]["sha256"]) == 64
     assert "function calls" in profile["text"]
+    assert profile["definition"]["baseline_calls"] is None
+    assert profile["definition"]["calls_retained_percent"] is None
+    assert profile["prior_cache_baseline_comparison"] is None
+    attribution = profile["exclusive_attribution"]
+    assert attribution["dominant"]["category"] in attribution["diagnosis"]

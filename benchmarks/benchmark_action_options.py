@@ -575,6 +575,7 @@ def _profile_legal_actions(shape: Any) -> dict[str, Any]:
     attribution.sort(key=lambda row: (-row["self_seconds"], row["category"]))
     baseline_definition_calls = PROFILE_BASELINE_DEFINITION_CALLS.get(shape.value)
     prior_timings = PROFILE_PRIOR_TIMINGS_NS.get(shape.value)
+    dominant = attribution[0]
     stream = io.StringIO()
     pstats.Stats(profiler, stream=stream).sort_stats("cumulative").print_stats(20)
     canonical = _canonical_result(result)
@@ -609,11 +610,12 @@ def _profile_legal_actions(shape: Any) -> dict[str, Any]:
                 "legal_action_orchestration_and_cost_resolution": "all remaining functions",
             },
             "categories": attribution,
-            "dominant": attribution[0],
+            "dominant": dominant,
             "diagnosis": (
-                "Combinatorics/materialization is dominant by exclusive self time. The profile "
-                "contains eager constructors, generator consumption and list extension, so the "
-                "diagnosis does not assume lazy evaluation."
+                f"{dominant['category']} is dominant by exclusive self time "
+                f"({dominant['percent_of_total']:.2f}% of the measured total). This diagnosis "
+                "is derived from the measured category ordering and does not assume lazy "
+                "evaluation."
             ),
         },
         "definition": {
@@ -631,24 +633,25 @@ def _profile_legal_actions(shape: Any) -> dict[str, Any]:
             "baseline_sources": [
                 "benchmarks/results/targeting_local_cache.json",
                 "docs/performance/results/TARGETING_LOCAL_CACHE_RESULTS_0.20.1.md",
-            ],
+            ] if baseline_definition_calls is not None else [],
         },
-        "prior_cache_baseline_comparison": {
-            **(prior_timings or {}),
-            "cached_median_change_percent": (
-                (prior_timings["cached_median"] / prior_timings["baseline_median"] - 1) * 100
-                if prior_timings is not None else None
-            ),
-            "available": prior_timings is not None,
-            "note": (
-                "These unprofiled medians provide historical context only; they are not "
-                "directly compared with cProfile wall time because profiler overhead differs."
-            ),
-            "sources": [
-                "benchmarks/results/targeting_local_cache.json",
-                "docs/performance/results/TARGETING_LOCAL_CACHE_RESULTS_0.20.1.md",
-            ],
-        },
+        "prior_cache_baseline_comparison": (
+            {
+                **prior_timings,
+                "cached_median_change_percent": (
+                    prior_timings["cached_median"] / prior_timings["baseline_median"] - 1
+                ) * 100,
+                "note": (
+                    "These unprofiled medians provide historical context only; they are not "
+                    "directly compared with cProfile wall time because profiler overhead differs."
+                ),
+                "sources": [
+                    "benchmarks/results/targeting_local_cache.json",
+                    "docs/performance/results/TARGETING_LOCAL_CACHE_RESULTS_0.20.1.md",
+                ],
+            }
+            if prior_timings is not None else None
+        ),
         "text": stream.getvalue(),
     }
 

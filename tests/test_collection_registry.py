@@ -8,6 +8,7 @@ from dataclasses import replace
 import tempfile
 from pathlib import Path
 import unittest
+from unittest.mock import Mock
 
 from card_duel_engine import CardCatalog, CollectionRegistry, GameEngine
 from card_duel_engine.content import (
@@ -630,10 +631,25 @@ class CollectionRegistryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "no coincide"):
             engine.new_match({"a": [item.cards[0]] * 6, "b": [altered] * 6})
 
+    def test_engine_rejects_unknown_definition_without_mutating_authoritative_registry(self):
+        trust_policy = Mock()
+        registry = CollectionRegistry(trust_policy=trust_policy)
+        registered = manifest("set", card_id="card")
+        registry.register(registered)
+        trust_policy.reset_mock()
+        before = registry.snapshot()
         unknown = CardDefinition("unknown", "Unknown", CardKind.CREATURE, 0, base_strength=1)
+
         with self.assertRaisesRegex(ValueError, "no está registrada"):
-            engine.new_match({"a": [item.cards[0]] * 6, "b": [unknown] * 6})
-        self.assertNotIn("unknown", registry.catalog)
+            GameEngine(catalog=registry).new_match(
+                {"a": [registered.cards[0]] * 6, "b": [unknown] * 6}
+            )
+
+        after = registry.snapshot()
+        self.assertEqual(after.catalog.definitions(), before.catalog.definitions())
+        self.assertEqual(dict(after.collections), dict(before.collections))
+        self.assertNotIn(unknown.card_id, after.catalog)
+        trust_policy.validate.assert_not_called()
 
     def test_failed_match_preflight_does_not_partially_mutate_catalog_or_state(self):
         first = CardDefinition("first", "First", CardKind.CREATURE, 0, base_strength=1)

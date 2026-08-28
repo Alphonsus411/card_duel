@@ -288,3 +288,11 @@ El encargo sólo puede recibir `GO` si las eliminaciones previstas se completan,
 ## Dictamen
 
 NO-GO
+
+## Alcance de la entrega de mantenimiento
+
+La rama `maintenance/cleanup-codex-branches-0.20.1` se prepara sobre
+`FINAL_MAIN_SHA=051342879fda32ba6e882a4a0dd2a2d8243a9667`, sin modificar el código,
+la configuración de CI, la versión, las reglas, los lockfiles, el changelog ni
+las notas de release. Esta entrega conserva el dictamen **NO-GO** y se limita a
+registrar la evidencia documental de la limpieza conservadora.

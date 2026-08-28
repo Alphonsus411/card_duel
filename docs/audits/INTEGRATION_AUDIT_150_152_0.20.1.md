@@ -5,27 +5,20 @@
 | Campo | Valor |
 | --- | --- |
 | Repositorio | `Alphonsus411/card_duel` |
-| SHA base de `origin/main` | `10cb87ff8cb49b27b3e2a5cf3754b96243d747eb` |
+| SHA base de `origin/main` | `c195a9ef2de94e6231e0897f13fe660e906b1c72` |
 | Rama de auditoría | `work` |
-| SHA de contenido auditado | `05cfc78821b97dd630fb73a4010d34ee11b01dcc` |
+| SHA de contenido auditado | `c195a9ef2de94e6231e0897f13fe660e906b1c72` |
 | SHA final previsto | El `HEAD` del commit documental que incorpora esta línea; verificable con `git rev-parse HEAD` sin autorreferencia. |
 | Versión | `0.20.1` |
 | Fecha UTC | `2026-08-28` |
 
-El clon entregado no conserva un remoto configurado ni
-`refs/remotes/origin/main`. El SHA base se fijó al `HEAD` inicial
-`10cb87ff8cb49b27b3e2a5cf3754b96243d747eb`, cuyo asunto es el merge del PR
-#160 y que constituye la instantánea de `main` suministrada para esta tarea. La
-ausencia de la referencia remota impide un `fetch` nuevo y queda declarada como
-limitación de consulta; no se inventó una referencia. No se alteró código de
-producción, reglas, versión, tag ni release.
-
-**Estrategia de identidad del commit.** El campo se dejó inicialmente como
-«se completa tras el commit». La auditoría quedó fijada en el primer commit de
-contenido `05cfc78821b97dd630fb73a4010d34ee11b01dcc`; este segundo commit,
-exclusivamente documental, sustituye la leyenda por ese SHA inmutable. Su SHA
-final queda verificable con `git rev-parse HEAD`. Así se evita la autorreferencia
-imposible y una cadena infinita de reescrituras.
+Se configuró `origin` con la URL pública del repositorio y se ejecutó
+`git fetch --no-prune origin`. La referencia obtenida `origin/main` coincide
+exactamente con el `HEAD` inicial: `git rev-list --left-right --count
+origin/main...HEAD` devolvió `0 0`. El SHA base es el merge del PR #161, que ya
+contiene la auditoría documental precedente. La actualización presente sólo
+refresca la evidencia frente al remoto; no altera código de producción, reglas,
+versión, tags, releases ni ramas remotas.
 
 ## B. PR #150 — rechazo de cartas no registradas
 
@@ -150,9 +143,9 @@ script y se repitió con la ruta canónica.
 
 | Tipo | Comando exacto | Resultado | Recuento / duración | Evidencia |
 | --- | --- | --- | --- | --- |
-| Pruebas dirigidas | `uv run python -m pytest -q tests/test_collection_registry.py tests/test_targeting_local_cache_parity.py tests/test_benchmark_scenarios.py` | PASS (0) | 36 passed, 114 subtests; 3,77 s (6 s pared) | resumen pytest al 100 % |
-| Pytest completo | `uv run python -m pytest -q` | PASS (0) | 559 passed, 733 subtests; 79,96 s (81 s pared) | resumen final pytest |
-| Unittest completo | `uv run python -m unittest discover -s tests -q` | PASS (0) | 400 tests; 79,215 s (81 s pared) | `Ran 400 tests` / `OK` |
+| Pruebas dirigidas | `uv run python -m pytest -q tests/test_collection_registry.py tests/test_targeting_local_cache_parity.py tests/test_benchmark_scenarios.py` | PASS (0) | 36 passed, 114 subtests; 1,85 s | resumen pytest al 100 % |
+| Pytest completo | `uv run python -m pytest -q` | PASS (0) | 558 passed, 1 skipped, 733 subtests; 127,76 s | resumen final pytest |
+| Unittest completo | `uv run python -m unittest discover -s tests -q` | PASS (0) | 400 tests; 93,581 s | `Ran 400 tests` / `OK` |
 | mypy | `uv run python -m mypy src/card_duel_engine` | PASS (0) | 40 archivos; 5 s pared | `Success: no issues found in 40 source files` |
 | compileall | `uv run python -m compileall -q src/card_duel_engine` | PASS (0) | sin errores; <1 s | ausencia de salida y código 0 |
 | verify_release runtime | `uv run python scripts/verify_release.py --profile runtime --json dist/release-verification.json` | PASS (0), `status: ok` | 121 s pared; cobertura 89 %; 96 Python y 172 archivos rastreados | JSON esquema 2; metadata, lockfile, security y quality |
@@ -166,37 +159,39 @@ script y se repitió con la ruta canónica.
 | Campo | Resultado |
 | --- | --- |
 | Filename | `card_duel_engine-0.20.1-py3-none-any.whl` |
-| SHA-256 | `c3f69c8d83772e3fa452355f363419f04b1791fd9f32a0253863b0924329574c` |
+| SHA-256 | `86570ec3a0b20ce82d148846987f436a4152591b71590b764dc5a6fa9426fa37` |
 | Número de entradas | 44 |
 | Reproducibilidad | **Sí**: dos builds binariamente idénticos |
 | Inspección de contenido | **APROBADA** |
 
 La auditoría verificó `RECORD`, `Root-Is-Purelib`, tag `py3-none-any`, licencia
 Apache-2.0, cero dependencias runtime y ausencia de fixtures, cartas de
-producción y ambos PDF. El artefacto procede del worktree detached limpio de
-`10cb87ff8cb49b27b3e2a5cf3754b96243d747eb` y se instaló con éxito en Python 3.11, 3.12 y 3.13.
+producción y ambos PDF. El artefacto reproducido en esta actualización procede
+del worktree detached limpio de `c195a9ef2de94e6231e0897f13fe660e906b1c72`;
+la verificación `full` lo instaló con éxito en Python 3.11, 3.12 y 3.13.
 
 ## H. Resumen de ramas
 
-Se actualizó el inventario tras `fetch`, sin eliminar referencias. Los dos
-`codex/*` posteriores al corte del informe de ramas son ancestros probados de la
-base actual, por lo que incrementan A y `SAFE_TO_DELETE` en dos sin cambiar las
-demás categorías.
+Se actualizó el inventario tras `fetch`, sin eliminar referencias. Las cinco
+ramas `codex/*` posteriores al corte del informe de ramas son ancestros probados
+de la base actual, por lo que incrementan A y `SAFE_TO_DELETE` en cinco sin
+cambiar las demás categorías.
 
 | Métrica | Total |
 | --- | ---: |
-| Ramas remotas | 161 |
-| Ramas `codex/*` | 159 |
-| `SAFE_TO_DELETE` | 153 |
+| Ramas remotas | 164 |
+| Ramas `codex/*` | 162 |
+| `SAFE_TO_DELETE` | 156 |
 | `REVIEW_REQUIRED` | 2 |
 | `KEEP` | 5 |
-| Categoría A | 153 |
+| Categoría A | 156 |
 | Categoría B | 2 |
 | Categoría C | 0 |
 | Categoría D | 4 |
 | Categoría E | 1 |
 
-No se eliminó ninguna rama. **`Bella-2.0 untouched`**: sólo se contó como
+No se eliminó ninguna rama. **`Bella-2.0 untouched`**: permanece en
+`851bc963692c7c2e0e70d34c8e09b67781da1ac4` y sólo se contó como
 categoría E/`KEEP`; no se usó como base, inspeccionó, modificó, fusionó, rebasó
 ni eliminó. El inventario, método y disposición por rama están en
 [`CODEX_BRANCH_AUDIT_0.20.1.md`](CODEX_BRANCH_AUDIT_0.20.1.md). Ese documento

@@ -1,6 +1,6 @@
 # Auditoría de gobierno de `main` y publicación 0.20.1
 
-Fecha de consulta: **2026-08-27 UTC**. Repositorio consultado:
+Fecha de consulta: **2026-08-28 UTC**. Repositorio consultado:
 `Alphonsus411/card_duel`. Esta auditoría separa deliberadamente lo observado,
 lo que la sesión anónima no pudo consultar y las recomendaciones. No se cambió
 ninguna configuración remota, no se creó `v0.20.1` y no se publicó en PyPI.
@@ -54,7 +54,7 @@ enumerados devolvieron **200**.
 ### CI existente
 
 El workflow activo del repositorio se llama `tests`. En el commit de `main`
-`a868df157493697b174106a4054a85a118c35a0f`, GitHub registró cuatro check runs,
+`f0cae3e3085152a97edc6e432a27c0589bcb4904`, GitHub registró cuatro check runs,
 todos completados con `success`:
 
 * `runtime (3.11)`;
@@ -97,15 +97,17 @@ uv sync --locked --extra dev
 uv run python scripts/verify_release.py --profile full --json dist/release-verification.json
 ```
 
-La primera ejecución directa de `verify_release.py` falló correctamente antes
-de validar porque el entorno aún no contenía `mypy`; después de sincronizar el
-extra `dev`, la ejecución completa terminó con código 0. El JSON transitorio
+Se sincronizó primero el extra `dev` bloqueado para disponer de todas las
+herramientas de calidad; después, la ejecución completa terminó con código 0.
+El JSON transitorio
 acredita todas las etapas (`metadata`, `lockfile`, `security`, `quality`, fuentes
 de reglas, simulaciones, persistencia y paquete), con cobertura 89 %, 2 fuentes
 verificadas y wheel instalable en las tres versiones de Python.
 
-El SHA-256 del wheel reconstruido desde el `main` actual es
-`02896b0e3a7f1a02ee0673c8d4dbe1dc177add5b61077dd4fd97d20515b8611f`; el JSON
+El SHA-256 del wheel reconstruido durante esta auditoría es
+`0405e92bf7faf77d674c3942ef6beee76d967d590890b8cf9dd0fc7f1496d978`; incluye
+la actualización de fecha y SHA de este propio informe, por lo que no se presenta
+como hash del `main` remoto sin modificar. El JSON
 versionado de la verificación full conserva
 `4239907c2b5744c605d57410b05ba0c62e00f5b137727f62ebdd65f4d26a8d62`.
 Esta diferencia no es una contradicción de versión: el repositorio ha recibido

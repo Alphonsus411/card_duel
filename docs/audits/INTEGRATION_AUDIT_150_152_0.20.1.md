@@ -5,25 +5,27 @@
 | Campo | Valor |
 | --- | --- |
 | Repositorio | `Alphonsus411/card_duel` |
-| SHA base de `origin/main` | `67d0930fb8683183fa0ef402690080c7e6a4d108` |
+| SHA base de `origin/main` | `10cb87ff8cb49b27b3e2a5cf3754b96243d747eb` |
 | Rama de auditoría | `work` |
-| SHA de contenido auditado | `ac66d1c560345a396d9a1ae53b8524e0c6e02313` |
+| SHA de contenido auditado | `05cfc78821b97dd630fb73a4010d34ee11b01dcc` |
 | SHA final previsto | El `HEAD` del commit documental que incorpora esta línea; verificable con `git rev-parse HEAD` sin autorreferencia. |
 | Versión | `0.20.1` |
-| Fecha UTC | `2026-08-27` |
+| Fecha UTC | `2026-08-28` |
 
-La base se obtuvo después de configurar el remoto público y ejecutar `git fetch
-origin '+refs/heads/*:refs/remotes/origin/*'` junto con los heads de los tres PR.
-En ese corte, `origin/main` y el `HEAD` inicial coincidían exactamente. No se
-alteró código de producción, reglas, versión, tag ni release.
+El clon entregado no conserva un remoto configurado ni
+`refs/remotes/origin/main`. El SHA base se fijó al `HEAD` inicial
+`10cb87ff8cb49b27b3e2a5cf3754b96243d747eb`, cuyo asunto es el merge del PR
+#160 y que constituye la instantánea de `main` suministrada para esta tarea. La
+ausencia de la referencia remota impide un `fetch` nuevo y queda declarada como
+limitación de consulta; no se inventó una referencia. No se alteró código de
+producción, reglas, versión, tag ni release.
 
-**Estrategia de identidad del commit.** Es imposible incluir el SHA de un commit
-dentro del contenido de ese mismo commit sin cambiar su SHA. Por ello la
-auditoría completa se fijó primero en el commit inmutable `ac66d1c…`. Este
-segundo commit documental sólo sustituye la leyenda «se completa tras el commit»
-por ese identificador y no cambia el árbol base auditado, las decisiones ni los
-resultados. Su propio SHA final queda registrado por Git y se comprueba con
-`git rev-parse HEAD`, evitando una cadena infinita de reescrituras.
+**Estrategia de identidad del commit.** El campo se dejó inicialmente como
+«se completa tras el commit». La auditoría quedó fijada en el primer commit de
+contenido `05cfc78821b97dd630fb73a4010d34ee11b01dcc`; este segundo commit,
+exclusivamente documental, sustituye la leyenda por ese SHA inmutable. Su SHA
+final queda verificable con `git rev-parse HEAD`. Así se evita la autorreferencia
+imposible y una cadena infinita de reescrituras.
 
 ## B. PR #150 — rechazo de cartas no registradas
 
@@ -127,10 +129,10 @@ resultados. Su propio SHA final queda registrado por Git y se comprueba con
 
 ## E. Lista completa de archivos modificados
 
-Respecto de `origin/main`, el único archivo que se incorpora al alcance de esta
+Respecto del SHA base suministrado, el único archivo modificado en el alcance de esta
 auditoría es:
 
-* `docs/audits/INTEGRATION_AUDIT_150_152_0.20.1.md` (nuevo).
+* `docs/audits/INTEGRATION_AUDIT_150_152_0.20.1.md` (actualización documental).
 
 No se modificaron los cinco archivos de código/test examinados, la versión, el
 lockfile ni fuentes normativas. Los productos bajo `dist/` son artefactos
@@ -138,22 +140,24 @@ ignorados y no forman parte del commit.
 
 ## F. Validación
 
-Antes de la matriz final se ejecutó `uv sync --locked --extra dev`. Una tentativa
-previa, con el entorno aún sin instalar, falló durante colección; también se
-rechazó correctamente una ruta JSON fuera de las ubicaciones permitidas. Ambas
-se consideran comprobaciones de preparación, no sustituyen ni ocultan la matriz
-canónica posterior que se ejecutó completa y terminó en éxito.
+El entorno se preparó con `uv sync --locked --extra dev`. Una primera
+tentativa sin dependencias falló correctamente; una tentativa paralela posterior
+interfirió en el registro de worktrees temporales. Después de `git worktree
+prune`, pytest y unittest se repitieron secuencialmente. Sólo las ejecuciones
+canónicas aisladas y exitosas de la tabla sustentan el veredicto. Una tentativa
+de runtime con una ruta JSON no autorizada también fue rechazada por el propio
+script y se repitió con la ruta canónica.
 
 | Tipo | Comando exacto | Resultado | Recuento / duración | Evidencia |
 | --- | --- | --- | --- | --- |
-| Pruebas dirigidas | `uv run python -m pytest -q tests/test_collection_registry.py tests/test_targeting_local_cache_parity.py tests/test_benchmark_scenarios.py` | PASS (0) | 36 passed, 114 subtests; 2,14 s (3 s pared) | salida pytest al 100 % |
-| Pytest completo | `uv run python -m pytest -q` | PASS (0) | 558 passed, 1 skipped, 733 subtests; 141,91 s (143 s pared) | resumen final pytest |
-| Unittest completo | `uv run python -m unittest discover -s tests -q` | PASS (0) | 400 tests; 124,406 s (127 s pared) | `Ran 400 tests` / `OK` |
-| mypy | `uv run python -m mypy src/card_duel_engine` | PASS (0) | 40 archivos; 6 s pared | `Success: no issues found in 40 source files` |
-| compileall | `uv run python -m compileall -q src/card_duel_engine` | PASS (0) | sin errores; 1 s pared | ausencia de salida y código 0 |
-| verify_release runtime | `uv run python scripts/verify_release.py --profile runtime --json dist/release-verification.json` | PASS (0), `status: ok` | 186 s; cobertura 89 %; 96 Python y 171 archivos rastreados inspeccionados | JSON esquema 2; etapas metadata, lockfile, security y quality |
-| verify_release full | `uv run python scripts/verify_release.py --profile full --json dist/release-verification.json` | PASS (0), `status: ok` | 516 s; 300 simulaciones, 54.000 comandos, 84.000 eventos, 30 roundtrips, 2 fuentes | JSON esquema 2; ocho etapas completas; wheel instalado en Python 3.11/3.12/3.13 |
-| verify_reproducible_wheel | `uv run python scripts/verify_reproducible_wheel.py` | PASS (0) | 2 builds, 44 entradas; 20 s | JSON impreso: `binary_identical_builds: true`, integridad RECORD y árbol limpio |
+| Pruebas dirigidas | `uv run python -m pytest -q tests/test_collection_registry.py tests/test_targeting_local_cache_parity.py tests/test_benchmark_scenarios.py` | PASS (0) | 36 passed, 114 subtests; 3,77 s (6 s pared) | resumen pytest al 100 % |
+| Pytest completo | `uv run python -m pytest -q` | PASS (0) | 559 passed, 733 subtests; 79,96 s (81 s pared) | resumen final pytest |
+| Unittest completo | `uv run python -m unittest discover -s tests -q` | PASS (0) | 400 tests; 79,215 s (81 s pared) | `Ran 400 tests` / `OK` |
+| mypy | `uv run python -m mypy src/card_duel_engine` | PASS (0) | 40 archivos; 5 s pared | `Success: no issues found in 40 source files` |
+| compileall | `uv run python -m compileall -q src/card_duel_engine` | PASS (0) | sin errores; <1 s | ausencia de salida y código 0 |
+| verify_release runtime | `uv run python scripts/verify_release.py --profile runtime --json dist/release-verification.json` | PASS (0), `status: ok` | 121 s pared; cobertura 89 %; 96 Python y 172 archivos rastreados | JSON esquema 2; metadata, lockfile, security y quality |
+| verify_release full | `uv run python scripts/verify_release.py --profile full --json dist/release-verification.json` | PASS (0), `status: ok` | 320 s pared; 300 simulaciones, 54.000 comandos, 84.000 eventos, 30 roundtrips, 2 fuentes | ocho etapas; wheel instalado en Python 3.11/3.12/3.13 |
+| verify_reproducible_wheel | `uv run python scripts/verify_reproducible_wheel.py` | PASS (0) | 2 builds, 44 entradas; 14 s | JSON: `binary_identical_builds: true`, RECORD íntegro y árbol limpio |
 | verify_rules_sources | `uv run python scripts/verify_rules_sources.py` | PASS (0) | 2 fuentes; <1 s | `OK` para ambos PDF declarados |
 | git diff --check | `git diff --check` | PASS (0) | sin diagnósticos; <1 s | salida vacía |
 
@@ -162,15 +166,15 @@ canónica posterior que se ejecutó completa y terminó en éxito.
 | Campo | Resultado |
 | --- | --- |
 | Filename | `card_duel_engine-0.20.1-py3-none-any.whl` |
-| SHA-256 | `95f6fec1cc29a2fecfa0c690551ae4a5e0f041350a11391a955a996d016c518a` |
+| SHA-256 | `c3f69c8d83772e3fa452355f363419f04b1791fd9f32a0253863b0924329574c` |
 | Número de entradas | 44 |
 | Reproducibilidad | **Sí**: dos builds binariamente idénticos |
 | Inspección de contenido | **APROBADA** |
 
 La auditoría verificó `RECORD`, `Root-Is-Purelib`, tag `py3-none-any`, licencia
 Apache-2.0, cero dependencias runtime y ausencia de fixtures, cartas de
-producción y ambos PDF. El artefacto procede del worktree detached limpio del
-SHA base y se instaló con éxito en Python 3.11, 3.12 y 3.13.
+producción y ambos PDF. El artefacto procede del worktree detached limpio de
+`10cb87ff8cb49b27b3e2a5cf3754b96243d747eb` y se instaló con éxito en Python 3.11, 3.12 y 3.13.
 
 ## H. Resumen de ramas
 

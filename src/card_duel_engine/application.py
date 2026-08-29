@@ -133,6 +133,7 @@ class PublicMatchView:
         *,
         option_ids: Iterable[str] | None = None,
     ) -> "PublicMatchView":
+        identifiers: tuple[str, ...]
         if option_ids is None:
             if view.legal_actions:
                 raise ValueError(

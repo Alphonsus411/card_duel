@@ -33,6 +33,11 @@ Las entradas requieren priorización y alcance propios antes de implementarse.
   incompatibilidad antes de adoptarla.
 - Inventariar y retirar utilidades internas obsoletas sólo después de confirmar
   mediante búsqueda y pruebas que no tienen consumidores.
+- Algunas ejecuciones de tests pueden emitir `ResourceWarning` por conexiones
+  SQLite. Corregir esta deuda queda fuera del cierre de Fase 1-A: no se debe
+  modificar `SQLiteMatchStore`, persistencia, replay ni las pruebas para ocultar
+  o silenciar los avisos, que no bloquean funcionalmente las garantías de CAS y
+  privacidad.
 
 ## CI y release
 

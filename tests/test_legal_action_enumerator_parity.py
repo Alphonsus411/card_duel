@@ -15,7 +15,6 @@ from pathlib import Path
 import pytest
 
 from card_duel_engine import GameEngine, RuleSet
-from card_duel_engine.application import PublicMatchView
 from card_duel_engine.controllers.base import PlayerObservation
 from card_duel_engine.domain import (
     AbilityDefinition,
@@ -714,11 +713,10 @@ def test_match_service_and_player_observation_public_contract_is_unchanged():
         "searchable_card_ids", "replacement_orders",
         "pending_replacement_card_id", "replacement_destinations",
     )
-    public = PublicMatchView.from_view(view).to_dict()
-    assert public["observation"]["own_hand"] == list(engine.observe("A").own_hand)
-    assert card_ids["b_hand"] not in repr(public)
-    assert card_ids["b_deck"] not in repr(public)
-    assert all(set(action) == {"id", "action"} for action in public["legal_actions"])
+    observation = view.observation
+    assert observation.own_hand == engine.observe("A").own_hand
+    assert card_ids["b_hand"] not in repr(observation)
+    assert card_ids["b_deck"] not in repr(observation)
 
 
 def test_legal_action_enumerator_stays_in_engine_without_outer_layer_dependencies():

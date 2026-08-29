@@ -34,7 +34,7 @@ from card_duel_engine import (
     SQLiteMatchStore,
     WriteConflict,
 )
-from card_duel_engine.application import Capability
+from card_duel_engine.application import Capability, PublicMatchView
 from card_duel_engine.domain.enums import Zone
 from card_duel_engine.domain.models import GameState
 from card_duel_engine.engine.commands import Concede, PassPriority
@@ -513,6 +513,42 @@ class AuthenticatedApplicationR06Contract:
 
         self.assertEqual(result.version, 2)
         self.assertEqual(self.service.get_match("one").engine.state.status.name, "RUNNING")
+
+    def test_every_emitted_option_can_be_submitted_with_its_authoritative_context(self):
+        alice = self.identities["alice"]
+        option_count = len(self.app.view(alice, "one").legal_actions)
+
+        for index in range(option_count):
+            with self.subTest(index=index):
+                match_id = f"option-roundtrip-{index}"
+                self.service.create_match(
+                    match_id,
+                    {
+                        "A": test_deck(f"{match_id}-A"),
+                        "B": test_deck(f"{match_id}-B"),
+                    },
+                    seed=1,
+                )
+                self.authorization.bind_player(alice, match_id, "A")
+                view = self.app.view(alice, match_id)
+
+                result = self.app.submit_option(
+                    alice,
+                    match_id,
+                    view.legal_actions[index].option_id,
+                    expected_version=view.version,
+                )
+
+                self.assertEqual(result.version, view.version + 1)
+
+    def test_public_view_rejects_actions_without_authoritative_identifiers(self):
+        view = self.service.view("one", "A")
+        self.assertTrue(view.legal_actions)
+
+        with self.assertRaisesRegex(
+            ValueError, "acciones legales requieren identificadores autoritativos"
+        ):
+            PublicMatchView.from_view(view)
 
     def test_foreign_fabricated_and_stale_options_are_safe_and_do_not_mutate(self):
         alice = self.identities["alice"]

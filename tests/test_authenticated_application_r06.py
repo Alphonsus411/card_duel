@@ -535,7 +535,11 @@ class AuthenticatedApplicationR06Contract:
             ),
             "one",
         )
-        for invalid in ("invented", alice_view.legal_actions[0].option_id[:-1] + "0"):
+        original = alice_view.legal_actions[0].option_id
+        replacement = "1" if original[-1] == "0" else "0"
+        tampered = original[:-1] + replacement
+        self.assertNotEqual(tampered, original)
+        for invalid in ("invented", tampered):
             self.assert_rejected_without_mutation(
                 OptionRejected,
                 lambda invalid=invalid: self.app.submit_option(
@@ -553,6 +557,14 @@ class AuthenticatedApplicationR06Contract:
             ),
             "one",
         )
+
+    def test_tampered_option_id_transformation_always_changes_original(self):
+        for original in ("option0", "optiona"):
+            with self.subTest(original=original):
+                replacement = "1" if original[-1] == "0" else "0"
+                tampered = original[:-1] + replacement
+
+                self.assertNotEqual(tampered, original)
 
     def test_two_public_option_writes_with_same_cas_have_one_winner(self):
         alice = self.identities["alice"]

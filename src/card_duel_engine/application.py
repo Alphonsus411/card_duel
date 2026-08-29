@@ -133,11 +133,14 @@ class PublicMatchView:
         *,
         option_ids: Iterable[str] | None = None,
     ) -> "PublicMatchView":
-        identifiers = (
-            tuple(option_ids)
-            if option_ids is not None
-            else tuple(secrets.token_urlsafe(32) for _ in view.legal_actions)
-        )
+        if option_ids is None:
+            if view.legal_actions:
+                raise ValueError(
+                    "Las acciones legales requieren identificadores autoritativos"
+                )
+            identifiers = ()
+        else:
+            identifiers = tuple(option_ids)
         if len(identifiers) != len(view.legal_actions):
             raise ValueError("Cada acción legal necesita un identificador público")
         return cls(

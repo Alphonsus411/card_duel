@@ -44,10 +44,9 @@ tapices rivales públicos. No incluye la identidad de cartas en manos rivales.
 
 #### `PublicLegalAction`
 
-Contiene un único campo textual, `action`. Es una descripción no ejecutable:
-al construir una vista pública, su valor es el nombre del tipo del
-`GameCommand` legal interno. No publica los campos del comando ni las
-elecciones que esos campos pudieran codificar.
+Contiene `id` y `action`. `id` es la referencia opaca seleccionable y `action`
+es el nombre presentable del tipo del `GameCommand` legal interno. No publica
+los campos del comando ni las elecciones que esos campos pudieran codificar.
 
 #### `PublicMatchView`
 
@@ -57,7 +56,8 @@ Agrupa `match_id`, `version`, una `PublicPlayerObservation` y la tupla
 confundirse con una versión de esquema o del producto.
 
 `to_dict()` conserva una forma explícita y estable: identificador y versión de
-partida, observación pública y una lista de objetos con el campo `action`.
+partida, observación pública y una lista de objetos con los campos `id` y
+`action`.
 
 ### Casos de uso de `AuthenticatedMatchApplication`
 
@@ -70,6 +70,7 @@ traduce fallos internos conocidos y sólo entonces construye DTO públicos.
 | `create_match(identity, match_id, decks, seed=0, auto_start=True)` | Exige identidad válida y capacidad global `CREATE_MATCH`; delega la creación con mazos de `CardDefinition` y devuelve la versión inicial. Es una API en proceso, no un contrato para cargar objetos mecánicos desde un cliente remoto. |
 | `view(identity, match_id)` | Resuelve mediante `OBSERVE` el `player_id` asociado a la identidad; devuelve `PublicMatchView` para ese jugador. El llamador no elige `player_id`. |
 | `submit(identity, match_id, command, expected_version=...)` | Exige `SUBMIT_COMMAND`, CAS válido, un tipo cerrado de `GameCommand` y que el autor del comando coincida con el jugador asociado; devuelve la vista pública posterior. Aceptar hoy un objeto interno en proceso **no** autoriza aceptarlo desde una UI remota. |
+| `submit_option(identity, match_id, option_id, expected_version=...)` | Exige `SUBMIT_COMMAND` y CAS, vuelve a enumerar la legalidad del jugador resuelto y sólo ejecuta el miembro cuyo ID opaco coincide. La UI no aporta jugador, comando ni campos internos. |
 | `submit_from(identity, match_id, source, expected_version=...)` | Resuelve jugador y vista, verifica la misma versión antes de pedir a `CommandSource` una elección, valida tipo y autor y somete con CAS. Es un adaptador en proceso para fuentes de decisión, no una resolución de identificadores públicos. |
 | `administrative_version(identity, match_id)` | Exige `ADMINISTER` para esa partida y devuelve sólo su versión; no concede observación ni expone el `StoredMatch`. |
 
@@ -135,25 +136,26 @@ La frontera se rige por estas responsabilidades no intercambiables:
    públicas emitidas, y solicita la selección de una de ellas. No reconstruye
    legalidad, no fabrica comandos, no decide reglas y no accede al almacén.
 
-## Carencia deliberada del DTO de legalidad actual
+## Alternativas legales públicas (Fase 1-A implementada)
 
-`PublicLegalAction.action` identifica un **tipo general**. Dos alternativas
-simultáneas del mismo tipo —por ejemplo, con distinto objetivo, carta, orden o
-modalidad— pueden producir el mismo texto. Por tanto, el campo no identifica
-necesariamente una alternativa concreta y `PublicLegalAction` **no es un
-protocolo suficiente de selección remota**.
+`PublicLegalAction` publica `id` y `action`. `action` conserva el tipo general
+para presentación; `id` distingue inequívocamente cada miembro del conjunto
+legal, incluso cuando varias alternativas comparten ese tipo. El ID es un MAC
+opaco ligado a partida, jugador autorizado, versión CAS e índice autoritativo.
+No contiene una carga decodificable ni serializa el `GameCommand`.
 
 No debe resolverse esa ambigüedad aceptando parámetros de `GameCommand`,
 serializando comandos internos, haciendo que la UI replique la enumeración ni
-exponiendo elecciones ocultas. El contrato actual permanece intacto hasta que
-una decisión futura implemente y pruebe una representación pública segura.
+exponiendo elecciones ocultas. `submit_option(identity, match_id, option_id,
+expected_version=...)` vuelve a cargar la vista, exige el mismo CAS, recalcula
+los IDs exclusivamente sobre `MatchView.legal_actions` y ejecuta exactamente el
+comando coincidente. Las APIs en proceso `submit()` y `submit_from()` permanecen.
 
-## Diseño conceptual de identidad de alternativa
+## Identidad de alternativa
 
-Fase 1 deberá incorporar conceptualmente una identidad **opaca, única por cada
-alternativa legal emitida**. Este documento no fija nombre de campo, sintaxis,
-codificación, firma, almacenamiento, duración temporal ni formato serializado.
-Sí fija las propiedades mínimas siguientes:
+La Fase 1-A incorpora una identidad **opaca, única por cada alternativa legal
+emitida**. Su representación es una cadena autenticada no decodificable y el
+secreto pertenece a la instancia de aplicación. Mantiene estas propiedades:
 
 - el identificador distingue cada alternativa del conjunto, incluso si varias
   comparten el mismo tipo general;
@@ -233,6 +235,7 @@ contexto del jugador.
 | `malformed_command` | `MalformedCommand` | El objeto no pertenece al vocabulario cerrado admitido. |
 | `internal_load_failure` | `InternalLoadFailure` | La partida existe pero no pudo cargarse con seguridad. |
 | `invalid_match_id` | `InvalidMatchId` | El identificador de partida no es válido. |
+| `option_rejected` | `OptionRejected` | La referencia no corresponde a una alternativa pública vigente. |
 
 La traducción actual elimina la causa interna (`from None`) y cada error sólo
 conserva un mensaje público predeterminado. Todo error futuro, incluidos los de

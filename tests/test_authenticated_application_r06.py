@@ -29,6 +29,7 @@ from card_duel_engine import (
     InvalidMatchId,
     MalformedCommand,
     MatchService,
+    OptionRejected,
     ResourceNotFound,
     SQLiteMatchStore,
     WriteConflict,
@@ -468,6 +469,101 @@ class AuthenticatedApplicationR06Contract:
         def submit():
             try:
                 self.app.submit(alice, "one", command, expected_version=1)
+                return "winner"
+            except WriteConflict:
+                return "conflict"
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            outcomes = list(pool.map(lambda _: submit(), range(2)))
+        self.assertCountEqual(outcomes, ("winner", "conflict"))
+        self.assertEqual(self.service.get_match("one").version, 2)
+
+    def test_public_options_distinguish_same_action_type_without_command_fields(self):
+        internal = self.service.view("one", "A")
+        duplicated = replace(
+            internal,
+            legal_actions=(Concede("A"), Concede("A")),
+        )
+        with patch.object(self.service, "view", return_value=duplicated):
+            payload = self.app.view(self.identities["alice"], "one").to_dict()
+
+        first, second = payload["legal_actions"]
+        self.assertEqual(first["action"], second["action"])
+        self.assertNotEqual(first["id"], second["id"])
+        self.assertEqual(set(first), {"id", "action"})
+        self.assertEqual(set(second), {"id", "action"})
+        forbidden = {
+            "player_id", "card_id", "chosen_player_ids", "chosen_card_ids",
+            "target", "cost_option_index", "discard_card_ids",
+            "sacrifice_card_ids", "x_value",
+        }
+        self.assertTrue(forbidden.isdisjoint(first))
+        self.assertTrue(forbidden.isdisjoint(second))
+
+    def test_valid_public_option_executes_the_exact_authoritative_alternative(self):
+        alice = self.identities["alice"]
+        view = self.app.view(alice, "one")
+        selected = next(
+            option for option in view.legal_actions if option.action == "PassPriority"
+        )
+
+        result = self.app.submit_option(
+            alice, "one", selected.option_id, expected_version=view.version
+        )
+
+        self.assertEqual(result.version, 2)
+        self.assertEqual(self.service.get_match("one").engine.state.status.name, "RUNNING")
+
+    def test_foreign_fabricated_and_stale_options_are_safe_and_do_not_mutate(self):
+        alice = self.identities["alice"]
+        alice_view = self.app.view(alice, "one")
+        bob_option = self.app.view(self.identities["bob"], "one").legal_actions[0]
+        self.assert_rejected_without_mutation(
+            OptionRejected,
+            lambda: self.app.submit_option(
+                alice, "one", bob_option.option_id, expected_version=1
+            ),
+            "one",
+        )
+
+        self.authorization.bind_player(alice, "two", "A")
+        other_match_option = self.app.view(alice, "two").legal_actions[0]
+        self.assert_rejected_without_mutation(
+            OptionRejected,
+            lambda: self.app.submit_option(
+                alice, "one", other_match_option.option_id, expected_version=1
+            ),
+            "one",
+        )
+        for invalid in ("invented", alice_view.legal_actions[0].option_id[:-1] + "0"):
+            self.assert_rejected_without_mutation(
+                OptionRejected,
+                lambda invalid=invalid: self.app.submit_option(
+                    alice, "one", invalid, expected_version=1
+                ),
+                "one",
+            )
+
+        valid = alice_view.legal_actions[0].option_id
+        self.app.submit_option(alice, "one", valid, expected_version=1)
+        self.assert_rejected_without_mutation(
+            WriteConflict,
+            lambda: self.app.submit_option(
+                alice, "one", valid, expected_version=1
+            ),
+            "one",
+        )
+
+    def test_two_public_option_writes_with_same_cas_have_one_winner(self):
+        alice = self.identities["alice"]
+        view = self.app.view(alice, "one")
+        option_id = view.legal_actions[0].option_id
+
+        def submit():
+            try:
+                self.app.submit_option(
+                    alice, "one", option_id, expected_version=view.version
+                )
                 return "winner"
             except WriteConflict:
                 return "conflict"

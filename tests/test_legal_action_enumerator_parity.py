@@ -15,6 +15,7 @@ from pathlib import Path
 import pytest
 
 from card_duel_engine import GameEngine, RuleSet
+from card_duel_engine.application import PublicMatchView
 from card_duel_engine.controllers.base import PlayerObservation
 from card_duel_engine.domain import (
     AbilityDefinition,
@@ -717,6 +718,14 @@ def test_match_service_and_player_observation_public_contract_is_unchanged():
     assert observation.own_hand == engine.observe("A").own_hand
     assert card_ids["b_hand"] not in repr(observation)
     assert card_ids["b_deck"] not in repr(observation)
+    option_ids = tuple(
+        f"option-{index}" for index, _ in enumerate(view.legal_actions)
+    )
+    public = PublicMatchView.from_view(view, option_ids=option_ids).to_dict()
+    assert all(
+        set(action) == {"option_id", "action"}
+        for action in public["legal_actions"]
+    )
 
 
 def test_legal_action_enumerator_stays_in_engine_without_outer_layer_dependencies():

@@ -161,7 +161,7 @@ class PublicMatchView:
             "version": self.version,
             "observation": self.observation.to_dict(),
             "legal_actions": [
-                {"id": action.option_id, "action": action.action}
+                {"option_id": action.option_id, "action": action.action}
                 for action in self.legal_actions
             ],
         }

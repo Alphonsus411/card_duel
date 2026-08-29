@@ -718,7 +718,7 @@ def test_match_service_and_player_observation_public_contract_is_unchanged():
     assert public["observation"]["own_hand"] == list(engine.observe("A").own_hand)
     assert card_ids["b_hand"] not in repr(public)
     assert card_ids["b_deck"] not in repr(public)
-    assert all(set(action) == {"action"} for action in public["legal_actions"])
+    assert all(set(action) == {"id", "action"} for action in public["legal_actions"])
 
 
 def test_legal_action_enumerator_stays_in_engine_without_outer_layer_dependencies():

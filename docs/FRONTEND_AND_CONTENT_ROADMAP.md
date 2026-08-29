@@ -102,30 +102,29 @@ La UI sólo elige entre opciones públicas emitidas por el servidor y devuelve l
 referencia pública acordada. Una animación, predicción o validación de formulario
 nunca sustituye la resolución del backend.
 
-## 4. Contrato UI y deuda conocida de acciones legales
+## 4. Contrato UI y alternativas legales
 
-### 4.1 Deuda actual
+### 4.1 Fase 1-A implementada
 
-`PublicLegalAction.action` sólo discrimina el tipo general de acción y no
-identifica necesariamente una alternativa concreta. Por ello no es suficiente,
-por sí solo, para que una interfaz seleccione sin ambigüedad entre combinaciones
-de carta, objetivo, modo, valor u otras opciones legales del mismo tipo.
+`PublicLegalAction.id` identifica de forma opaca cada alternativa concreta y
+`PublicLegalAction.action` conserva el tipo general presentable. La frontera
+autenticada acepta `submit_option()`, resuelve el ID sólo contra
+`MatchView.legal_actions` para la misma partida, actor y versión CAS, y ejecuta
+el comando correspondiente sin recibir sus campos del cliente.
 
 No se debe compensar esta deuda reconstruyendo comandos en el cliente, leyendo
 estado privado ni duplicando enumeración de reglas.
 
-### 4.2 Decisión reservada para la Fase 1
+### 4.2 Alcance pendiente de la Fase 1
 
-La Fase 1 definirá **IDs opacos de alternativas**, ligados a la versión CAS del
-estado que originó la lista y resueltos exclusivamente por el servidor. El
-cliente enviará el ID seleccionado y la versión CAS correspondiente; el servidor
-comprobará vigencia, resolverá la alternativa a su comando interno y volverá a
-validarla antes de ejecutarla.
+La Fase 1-A cubre únicamente IDs opacos, resolución server-side, CAS, rechazo
+seguro y pruebas de privacidad/persistencia. **No declara completa la Fase 1**:
+snapshots/eventos adicionales y el catálogo público pertenecen a entregas
+posteriores expresamente autorizadas.
 
-El formato, longitud, codificación, duración y estructura interna de esos IDs no
-se fijan todavía. No son comandos serializados, no conceden autoridad y no deben
-permitir inferir información privada. Un ID obsoleto o perteneciente a otra
-partida, actor o versión CAS debe ser rechazado de forma explícita.
+Los IDs no son comandos serializados, no conceden autoridad ni permiten inferir
+información privada. Un ID inexistente, alterado o de otra partida o actor recibe
+el mismo rechazo seguro; un CAS obsoleto se rechaza como conflicto de escritura.
 
 ## 5. Modelo de contenido y presentación
 

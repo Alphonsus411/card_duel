@@ -489,9 +489,9 @@ class AuthenticatedApplicationR06Contract:
 
         first, second = payload["legal_actions"]
         self.assertEqual(first["action"], second["action"])
-        self.assertNotEqual(first["id"], second["id"])
-        self.assertEqual(set(first), {"id", "action"})
-        self.assertEqual(set(second), {"id", "action"})
+        self.assertNotEqual(first["option_id"], second["option_id"])
+        self.assertEqual(set(first), {"option_id", "action"})
+        self.assertEqual(set(second), {"option_id", "action"})
         forbidden = {
             "player_id", "card_id", "chosen_player_ids", "chosen_card_ids",
             "target", "cost_option_index", "discard_card_ids",

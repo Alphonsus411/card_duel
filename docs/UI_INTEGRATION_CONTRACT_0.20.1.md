@@ -44,9 +44,10 @@ tapices rivales públicos. No incluye la identidad de cartas en manos rivales.
 
 #### `PublicLegalAction`
 
-Contiene `id` y `action`. `id` es la referencia opaca seleccionable y `action`
-es el nombre presentable del tipo del `GameCommand` legal interno. No publica
-los campos del comando ni las elecciones que esos campos pudieran codificar.
+Contiene `option_id` y `action`. `option_id` es la referencia opaca seleccionable
+y `action` es el nombre presentable del tipo del `GameCommand` legal interno. No
+publica los campos del comando ni las elecciones que esos campos pudieran
+codificar.
 
 #### `PublicMatchView`
 
@@ -56,7 +57,7 @@ Agrupa `match_id`, `version`, una `PublicPlayerObservation` y la tupla
 confundirse con una versión de esquema o del producto.
 
 `to_dict()` conserva una forma explícita y estable: identificador y versión de
-partida, observación pública y una lista de objetos con los campos `id` y
+partida, observación pública y una lista de objetos con los campos `option_id` y
 `action`.
 
 ### Casos de uso de `AuthenticatedMatchApplication`
@@ -138,17 +139,18 @@ La frontera se rige por estas responsabilidades no intercambiables:
 
 ## Alternativas legales públicas (Fase 1-A implementada)
 
-`PublicLegalAction` publica `id` y `action`. `action` conserva el tipo general
-para presentación; `id` distingue inequívocamente cada miembro del conjunto
-legal, incluso cuando varias alternativas comparten ese tipo. El ID es un MAC
-opaco ligado a partida, jugador autorizado, versión CAS e índice autoritativo.
-No contiene una carga decodificable ni serializa el `GameCommand`.
+`PublicLegalAction` publica `option_id` y `action`. `action` conserva el tipo
+general para presentación; `option_id` distingue inequívocamente cada miembro
+del conjunto legal, incluso cuando varias alternativas comparten ese tipo. El
+`option_id` es un MAC opaco ligado a partida, jugador autorizado, versión CAS e
+índice autoritativo. No contiene una carga decodificable ni serializa el
+`GameCommand`.
 
 No debe resolverse esa ambigüedad aceptando parámetros de `GameCommand`,
 serializando comandos internos, haciendo que la UI replique la enumeración ni
 exponiendo elecciones ocultas. `submit_option(identity, match_id, option_id,
 expected_version=...)` vuelve a cargar la vista, exige el mismo CAS, recalcula
-los IDs exclusivamente sobre `MatchView.legal_actions` y ejecuta exactamente el
+los `option_id` exclusivamente sobre `MatchView.legal_actions` y ejecuta exactamente el
 comando coincidente. Las APIs en proceso `submit()` y `submit_from()` permanecen.
 
 ## Identidad de alternativa

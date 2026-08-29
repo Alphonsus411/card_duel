@@ -106,9 +106,9 @@ nunca sustituye la resolución del backend.
 
 ### 4.1 Fase 1-A implementada
 
-`PublicLegalAction.id` identifica de forma opaca cada alternativa concreta y
-`PublicLegalAction.action` conserva el tipo general presentable. La frontera
-autenticada acepta `submit_option()`, resuelve el ID sólo contra
+`PublicLegalAction.option_id` identifica de forma opaca cada alternativa
+concreta y `PublicLegalAction.action` conserva el tipo general presentable. La
+frontera autenticada acepta `submit_option()`, resuelve el `option_id` sólo contra
 `MatchView.legal_actions` para la misma partida, actor y versión CAS, y ejecuta
 el comando correspondiente sin recibir sus campos del cliente.
 
@@ -117,14 +117,15 @@ estado privado ni duplicando enumeración de reglas.
 
 ### 4.2 Alcance pendiente de la Fase 1
 
-La Fase 1-A cubre únicamente IDs opacos, resolución server-side, CAS, rechazo
-seguro y pruebas de privacidad/persistencia. **No declara completa la Fase 1**:
-snapshots/eventos adicionales y el catálogo público pertenecen a entregas
-posteriores expresamente autorizadas.
+La Fase 1-A cubre únicamente valores `option_id` opacos, resolución server-side,
+CAS, rechazo seguro y pruebas de privacidad/persistencia. **No declara completa
+la Fase 1**: snapshots/eventos adicionales y el catálogo público pertenecen a
+entregas posteriores expresamente autorizadas.
 
-Los IDs no son comandos serializados, no conceden autoridad ni permiten inferir
-información privada. Un ID inexistente, alterado o de otra partida o actor recibe
-el mismo rechazo seguro; un CAS obsoleto se rechaza como conflicto de escritura.
+Los valores `option_id` no son comandos serializados, no conceden autoridad ni
+permiten inferir información privada. Un `option_id` inexistente, alterado o de
+otra partida o actor recibe el mismo rechazo seguro; un CAS obsoleto se rechaza
+como conflicto de escritura.
 
 ## 5. Modelo de contenido y presentación
 

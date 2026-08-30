@@ -5,6 +5,12 @@ from ._version import resolve_version
 __version__: str = resolve_version()
 
 from .catalog import CardCatalog, CardCatalogSnapshot
+from .presentation import (
+    CardPresentation,
+    CardPresentationCatalog,
+    CardPresentationCatalogReader,
+    CardPresentationSnapshot,
+)
 from .application import (
     AccessDenied,
     AuthenticatedMatchApplication,
@@ -53,6 +59,10 @@ from .storage import InMemoryMatchStore, SQLiteMatchStore, VersionConflict
 __all__ = [
     "CardCatalog",
     "CardCatalogSnapshot",
+    "CardPresentation",
+    "CardPresentationCatalog",
+    "CardPresentationCatalogReader",
+    "CardPresentationSnapshot",
     "AccessDenied",
     "AuthenticatedMatchApplication",
     "AuthenticationRequired",

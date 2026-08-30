@@ -10,6 +10,7 @@ from .presentation import (
     CardPresentationCatalog,
     CardPresentationCatalogReader,
     CardPresentationSnapshot,
+    validate_card_presentations,
 )
 from .application import (
     AccessDenied,
@@ -63,6 +64,7 @@ __all__ = [
     "CardPresentationCatalog",
     "CardPresentationCatalogReader",
     "CardPresentationSnapshot",
+    "validate_card_presentations",
     "AccessDenied",
     "AuthenticatedMatchApplication",
     "AuthenticationRequired",

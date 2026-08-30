@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Mapping, Protocol
 
+from .domain.errors import InvalidDeckDefinition
 from .domain.models import CardDefinition
 
 
@@ -47,7 +48,7 @@ class CardCatalog:
 
     def register(self, card: CardDefinition) -> None:
         if card.card_id in self._cards:
-            raise ValueError(f"Definición duplicada: {card.card_id}")
+            raise InvalidDeckDefinition(f"Definición duplicada: {card.card_id}")
         self._cards[card.card_id] = card
 
     def get(self, card_id: str) -> CardDefinition:
@@ -69,3 +70,7 @@ class CardCatalog:
 
     def __len__(self) -> int:
         return len(self._cards)
+
+    def snapshot(self) -> CardCatalogSnapshot:
+        """Copia el contenido actual en una fotografía de solo lectura."""
+        return CardCatalogSnapshot(self._cards)

@@ -3,12 +3,14 @@ from __future__ import annotations
 import random
 import hashlib
 import hmac
+import threading
 from dataclasses import replace
 import tempfile
 from pathlib import Path
 import unittest
+from unittest.mock import Mock
 
-from card_duel_engine import CollectionRegistry, GameEngine
+from card_duel_engine import CardCatalog, CollectionRegistry, GameEngine
 from card_duel_engine.content import (
     CollectionManifest, CollectionSignatureEnvelope, CollectionTrustPolicy,
     PermissiveCollectionTrustPolicy, TrustedKey, dump_manifest, load_manifest,
@@ -30,7 +32,58 @@ class Policy:
         if not self.accept: raise ValueError("confianza rechazada")
 
 
+class CoordinatedTrustPolicy:
+    """Detiene la validación en un punto anterior al commit del registro."""
+
+    def __init__(self, *, accept=True):
+        self.accept = accept
+        self.preparing = threading.Event()
+        self.release = threading.Event()
+
+    def validate(self, item, canonical, digest, envelope):
+        del item, canonical, digest, envelope
+        self.preparing.set()
+        if not self.release.wait(timeout=5):
+            raise AssertionError("la prueba no liberó la política de confianza")
+        if not self.accept:
+            raise ValueError("confianza rechazada")
+
+
+class ThreadCall:
+    """Thread pequeño que conserva resultado o excepción para el thread principal."""
+
+    def __init__(self, target, *args):
+        self.result = None
+        self.error: BaseException | None = None
+
+        def run():
+            try:
+                self.result = target(*args)
+            except BaseException as error:
+                self.error = error
+
+        self.thread = threading.Thread(target=run)
+
+    def start(self):
+        self.thread.start()
+        return self
+
+    def join(self):
+        self.thread.join(timeout=5)
+        if self.thread.is_alive():
+            raise AssertionError("el thread concurrente no terminó")
+        return self
+
+    def unwrap(self):
+        self.join()
+        if self.error is not None:
+            raise self.error
+        return self.result
+
+
 class CollectionRegistryTests(unittest.TestCase):
+    CONCURRENT_ITERATIONS = 6
+
     @staticmethod
     def signed(item, key_id="release", key=b"trusted", algorithm="hmac-sha256"):
         canonical = dump_manifest(item, indent=None)
@@ -43,6 +96,306 @@ class CollectionRegistryTests(unittest.TestCase):
             def resolve(self, key_id):
                 return (keys or {}).get(key_id)
         return CollectionTrustPolicy(Resolver())
+
+    def assert_catalog_matches_provenance(self, registry):
+        """Cada carta de estas carreras pertenece a una colección publicada."""
+        provenance_ids = set(registry.collections)
+        catalog_collection_ids = {
+            card.set_id for card in registry.catalog.definitions()
+        }
+        self.assertEqual(catalog_collection_ids, provenance_ids)
+
+    def assert_registry_snapshot_consistent(
+        self, snapshot, known_manifests, allowed_collection_sets
+    ):
+        """Comprueba conjuntamente catálogo, procedencia y lotes indivisibles."""
+        manifests = {item.collection_id: item for item in known_manifests}
+        published = frozenset(snapshot.collections)
+        allowed = {frozenset(collections) for collections in allowed_collection_sets}
+        self.assertIn(published, allowed, "apareció una colección o lote parcial")
+
+        cards_by_id = {
+            card.card_id: card for card in snapshot.catalog.definitions()
+        }
+        expected_cards = {
+            card.card_id: (collection_id, card)
+            for collection_id in published
+            for card in manifests[collection_id].cards
+        }
+        self.assertEqual(set(cards_by_id), set(expected_cards))
+        for collection_id in published:
+            provenance = snapshot.collections.get(collection_id)
+            self.assertIsNotNone(provenance, "colección publicada sin procedencia")
+            self.assertEqual(provenance.collection_id, collection_id)
+            for card in manifests[collection_id].cards:
+                self.assertIn(card.card_id, cards_by_id)
+        for card_id, card in cards_by_id.items():
+            expected_collection, expected_card = expected_cards[card_id]
+            self.assertEqual(card, expected_card)
+            self.assertEqual(card.set_id, expected_collection)
+
+    def assert_event(self, event, description):
+        self.assertTrue(event.wait(timeout=5), description)
+
+    def test_reader_sees_old_snapshot_until_valid_batch_is_published(self):
+        old = manifest("old", card_id="old-card")
+        new = manifest("new", card_id="new-card")
+        for iteration in range(self.CONCURRENT_ITERATIONS):
+            with self.subTest(iteration=iteration):
+                policy = CoordinatedTrustPolicy()
+                registry = CollectionRegistry(trust_policy=policy)
+                policy.release.set()
+                registry.register(old)
+                policy.release.clear()
+                policy.preparing.clear()
+                old_snapshot = registry.snapshot()
+
+                writer = ThreadCall(registry.register, new).start()
+                self.assert_event(policy.preparing, "el escritor no alcanzó la preparación")
+                readers = [
+                    ThreadCall(
+                        self.assert_registry_snapshot_consistent,
+                        old_snapshot,
+                        (old, new),
+                        ({"old"}, {"old", "new"}),
+                    ).start()
+                    for _ in range(2)
+                ]
+                for reader in readers:
+                    reader.unwrap()
+                self.assert_registry_snapshot_consistent(
+                    old_snapshot, (old, new), ({"old"},)
+                )
+
+                policy.release.set()
+                writer.unwrap()
+                self.assert_registry_snapshot_consistent(
+                    registry.snapshot(), (old, new), ({"old", "new"},)
+                )
+
+    def test_rejected_batch_preserves_exact_catalog_and_provenance(self):
+        base = manifest("base", card_id="base-card")
+        rejected = manifest("rejected", card_id="rejected-card")
+        for iteration in range(self.CONCURRENT_ITERATIONS):
+            with self.subTest(iteration=iteration):
+                policy = CoordinatedTrustPolicy()
+                policy.release.set()
+                registry = CollectionRegistry(trust_policy=policy)
+                registry.register(base)
+                before = registry.snapshot()
+                policy.accept = False
+                policy.release.clear()
+                policy.preparing.clear()
+                reader_done = threading.Event()
+
+                writer = ThreadCall(registry.register, rejected).start()
+                self.assert_event(policy.preparing, "el escritor no alcanzó la preparación")
+                reader = ThreadCall(
+                    lambda: (
+                        self.assert_registry_snapshot_consistent(
+                            before, (base, rejected), ({"base"},)
+                        ),
+                        reader_done.set(),
+                    )
+                ).start()
+                self.assert_event(reader_done, "el lector no comprobó el estado anterior")
+                reader.unwrap()
+                policy.release.set()
+                writer.join()
+                self.assertIsInstance(writer.error, ValueError)
+                self.assertEqual(str(writer.error), "confianza rechazada")
+                after = registry.snapshot()
+                self.assertEqual(after.catalog.definitions(), before.catalog.definitions())
+                self.assertEqual(dict(after.collections), dict(before.collections))
+
+    def test_two_compatible_writers_only_expose_complete_snapshots(self):
+        first = (manifest("a", card_id="a-card"), manifest("b", ("a",), "b-card"))
+        second = (manifest("c", card_id="c-card"), manifest("d", ("c",), "d-card"))
+        all_manifests = first + second
+        allowed = (set(), {"a", "b"}, {"c", "d"}, {"a", "b", "c", "d"})
+        for iteration in range(self.CONCURRENT_ITERATIONS):
+            with self.subTest(iteration=iteration):
+                registry = CollectionRegistry()
+                writer_gates = [threading.Event(), threading.Event()]
+                read_gates = [threading.Event() for _ in range(3)]
+                read_done = [threading.Event() for _ in range(3)]
+                observed = []
+
+                def write(gate, batch):
+                    if not gate.wait(timeout=5):
+                        raise AssertionError("no se liberó el escritor")
+                    return dict(registry.register_batch(batch))
+
+                def read():
+                    for gate, done in zip(read_gates, read_done):
+                        if not gate.wait(timeout=5):
+                            raise AssertionError("no se coordinó el lector")
+                        observed.append(registry.snapshot())
+                        done.set()
+
+                writers = [
+                    ThreadCall(write, gate, batch).start()
+                    for gate, batch in zip(writer_gates, (first, second))
+                ]
+                reader = ThreadCall(read).start()
+
+                read_gates[0].set()
+                self.assert_event(read_done[0], "no se observó el estado inicial")
+                order = (iteration % 2, 1 - (iteration % 2))
+                writer_gates[order[0]].set()
+                writers[order[0]].unwrap()
+                read_gates[1].set()
+                self.assert_event(read_done[1], "no se observó el primer commit")
+                writer_gates[order[1]].set()
+                writers[order[1]].unwrap()
+                read_gates[2].set()
+                self.assert_event(read_done[2], "no se observó el segundo commit")
+                reader.unwrap()
+                for snapshot in observed:
+                    self.assert_registry_snapshot_consistent(
+                        snapshot, all_manifests, allowed
+                    )
+                self.assertEqual(
+                    set(observed[-1].collections), {"a", "b", "c", "d"}
+                )
+
+    def test_colliding_writers_publish_exactly_one_batch_without_residue(self):
+        first = (manifest("first", card_id="shared"), manifest("first-child", ("first",), "first-only"))
+        second = (manifest("second", card_id="shared"), manifest("second-child", ("second",), "second-only"))
+        all_manifests = first + second
+        for iteration in range(self.CONCURRENT_ITERATIONS):
+            with self.subTest(iteration=iteration):
+                registry = CollectionRegistry()
+                start = threading.Barrier(3)
+
+                def write(batch):
+                    start.wait()
+                    return dict(registry.register_batch(batch))
+
+                calls = [ThreadCall(write, batch).start() for batch in (first, second)]
+                start.wait()
+                for call in calls:
+                    call.join()
+                successes = [call for call in calls if call.error is None]
+                failures = [call for call in calls if call.error is not None]
+                self.assertEqual(len(successes), 1)
+                self.assertEqual(len(failures), 1)
+                self.assertIsInstance(failures[0].error, ValueError)
+                self.assertIn("colisiona", str(failures[0].error))
+                winner = frozenset(successes[0].result)
+                self.assertIn(winner, ({"first", "first-child"}, {"second", "second-child"}))
+                self.assert_registry_snapshot_consistent(
+                    registry.snapshot(), all_manifests, (winner,)
+                )
+
+    def test_catalog_snapshot_rejects_mutation_and_registry_stays_authoritative(self):
+        item = manifest("immutable", card_id="immutable-card")
+        registry = CollectionRegistry()
+        registry.register(item)
+        before = registry.snapshot()
+        exposed = registry.catalog
+
+        self.assertFalse(hasattr(exposed, "register"))
+        self.assertFalse(hasattr(exposed, "remove"))
+        with self.assertRaises(TypeError):
+            exposed._cards["injected"] = item.cards[0]  # type: ignore[index]
+        self.assertEqual(registry.snapshot(), before)
+
+    def run_concurrent_batches(self, first, second):
+        """Libera dos registros a la vez y devuelve sus resultados y errores."""
+        registry = CollectionRegistry()
+        barrier = threading.Barrier(3)
+        results = []
+        errors = []
+
+        def register_batch(batch):
+            barrier.wait()
+            try:
+                results.append(dict(registry.register_batch(batch)))
+            except ValueError as error:
+                errors.append(error)
+
+        threads = [
+            threading.Thread(target=register_batch, args=(batch,))
+            for batch in (first, second)
+        ]
+        for thread in threads:
+            thread.start()
+        barrier.wait()
+        for thread in threads:
+            thread.join()
+        return registry, results, errors
+
+    def test_concurrent_compatible_batches_are_both_published_without_loss(self):
+        first = [manifest("a", card_id="a-card"), manifest("b", ("a",), "b-card")]
+        second = [manifest("c", card_id="c-card"), manifest("d", ("c",), "d-card")]
+
+        for iteration in range(12):
+            with self.subTest(iteration=iteration):
+                registry, results, errors = self.run_concurrent_batches(first, second)
+                self.assertEqual(errors, [])
+                self.assertEqual(len(results), 2)
+                self.assertEqual(set(registry.collections), {"a", "b", "c", "d"})
+                self.assertEqual(
+                    {card.card_id for card in registry.catalog.definitions()},
+                    {"a-card", "b-card", "c-card", "d-card"},
+                )
+                self.assert_catalog_matches_provenance(registry)
+
+    def test_initial_catalog_and_returned_snapshots_cannot_mutate_published_state(self):
+        initial_card = manifest("initial", card_id="initial-card").cards[0]
+        external = CardCatalog({initial_card.card_id: initial_card})
+        registry = CollectionRegistry(external)
+        before = registry.snapshot()
+
+        external.register(manifest("external", card_id="external-card").cards[0])
+        registry.register(manifest("published", card_id="published-card"))
+
+        self.assertNotIn("external-card", registry.catalog)
+        self.assertNotIn("published-card", before.catalog)
+        self.assertEqual(dict(before.collections), {})
+        self.assertFalse(hasattr(registry.catalog, "register"))
+        with self.assertRaises(TypeError):
+            before.collections["x"] = registry.provenance("published")  # type: ignore[index]
+
+    def test_old_collections_snapshot_is_independent_of_later_commits(self):
+        registry = CollectionRegistry()
+        registry.register(manifest("first", card_id="first-card"))
+        old_collections = registry.collections
+
+        registry.register(manifest("second", card_id="second-card"))
+
+        self.assertEqual(tuple(old_collections), ("first",))
+        self.assertEqual(tuple(registry.collections), ("first", "second"))
+
+    def test_concurrent_colliding_batches_publish_exactly_one_whole_batch(self):
+        first = [
+            manifest("first-base", card_id="shared-card"),
+            manifest("first-child", ("first-base",), "first-only"),
+        ]
+        second = [
+            manifest("second-base", card_id="shared-card"),
+            manifest("second-child", ("second-base",), "second-only"),
+        ]
+
+        for iteration in range(12):
+            with self.subTest(iteration=iteration):
+                registry, results, errors = self.run_concurrent_batches(first, second)
+                self.assertEqual(len(results), 1)
+                self.assertEqual(len(errors), 1)
+                self.assertIn("colisiona", str(errors[0]))
+                winner = set(results[0])
+                alternatives = (
+                    ({"first-base", "first-child"}, "first-only", "second-only"),
+                    ({"second-base", "second-child"}, "second-only", "first-only"),
+                )
+                winner_ids, winner_card, rejected_card = next(
+                    option for option in alternatives if option[0] == winner
+                )
+                self.assertEqual(set(registry.collections), winner_ids)
+                self.assertIn(winner_card, registry.catalog)
+                self.assertNotIn(rejected_card, registry.catalog)
+                self.assert_catalog_matches_provenance(registry)
 
     def test_valid_signature_and_envelope_does_not_change_manifest_digest(self):
         item = manifest("signed", card_id="signed-card")
@@ -278,10 +631,25 @@ class CollectionRegistryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "no coincide"):
             engine.new_match({"a": [item.cards[0]] * 6, "b": [altered] * 6})
 
+    def test_engine_rejects_unknown_definition_without_mutating_authoritative_registry(self):
+        trust_policy = Mock()
+        registry = CollectionRegistry(trust_policy=trust_policy)
+        registered = manifest("set", card_id="card")
+        registry.register(registered)
+        trust_policy.reset_mock()
+        before = registry.snapshot()
         unknown = CardDefinition("unknown", "Unknown", CardKind.CREATURE, 0, base_strength=1)
+
         with self.assertRaisesRegex(ValueError, "no está registrada"):
-            engine.new_match({"a": [item.cards[0]] * 6, "b": [unknown] * 6})
-        self.assertNotIn("unknown", registry.catalog)
+            GameEngine(catalog=registry).new_match(
+                {"a": [registered.cards[0]] * 6, "b": [unknown] * 6}
+            )
+
+        after = registry.snapshot()
+        self.assertEqual(after.catalog.definitions(), before.catalog.definitions())
+        self.assertEqual(dict(after.collections), dict(before.collections))
+        self.assertNotIn(unknown.card_id, after.catalog)
+        trust_policy.validate.assert_not_called()
 
     def test_failed_match_preflight_does_not_partially_mutate_catalog_or_state(self):
         first = CardDefinition("first", "First", CardKind.CREATURE, 0, base_strength=1)

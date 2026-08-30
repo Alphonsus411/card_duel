@@ -13,6 +13,7 @@ from .enums import (
     EffectKind,
     MatchStatus,
     LordDomain,
+    Keyword,
     MoveReason,
     Phase,
     TargetMode,
@@ -102,8 +103,8 @@ class EffectPatchDefinition:
 
 @dataclass(frozen=True)
 class TextPatchDefinition:
-    grant_keywords: frozenset[str] = frozenset()
-    remove_keywords: frozenset[str] = frozenset()
+    grant_keywords: frozenset[str | Keyword] = frozenset()
+    remove_keywords: frozenset[str | Keyword] = frozenset()
     grant_subtypes: frozenset[str] = frozenset()
     remove_subtypes: frozenset[str] = frozenset()
     add_abilities: tuple[AbilityDefinition, ...] = ()
@@ -276,8 +277,8 @@ class MoveReplacementDefinition:
 @dataclass(frozen=True)
 class ContinuousEffectDefinition:
     strength_delta: int = 0
-    grant_keywords: frozenset[str] = frozenset()
-    remove_keywords: frozenset[str] = frozenset()
+    grant_keywords: frozenset[str | Keyword] = frozenset()
+    remove_keywords: frozenset[str | Keyword] = frozenset()
     controller_scope: ControllerScope = ControllerScope.SELF
     affected_kinds: frozenset[CardKind] = frozenset()
     affected_subtypes: frozenset[str] = frozenset()
@@ -288,7 +289,8 @@ class ContinuousEffectDefinition:
         overlap = self.grant_keywords & self.remove_keywords
         if overlap:
             raise ValueError(
-                f"Un efecto continuo no puede conceder y retirar a la vez: {sorted(overlap)}"
+                "Un efecto continuo no puede conceder y retirar a la vez: "
+                f"{sorted(overlap, key=str)}"
             )
 
 
@@ -332,12 +334,12 @@ class CardDefinition:
     transmutable: bool = True
     set_id: str = "test"
     revision: int = 1
-    keywords: frozenset[str] = frozenset()
+    keywords: frozenset[str | Keyword] = frozenset()
     effects: tuple[EffectDefinition, ...] = ()
     legendary_effects: tuple[EffectDefinition, ...] = ()
     abilities: tuple[AbilityDefinition, ...] = ()
     equipment_strength_bonus: int = 0
-    equipment_granted_keywords: frozenset[str] = frozenset()
+    equipment_granted_keywords: frozenset[str | Keyword] = frozenset()
     subtypes: frozenset[str] = frozenset()
     lord_domain: LordDomain | None = None
     continuous_effects: tuple[ContinuousEffectDefinition, ...] = ()
@@ -471,6 +473,29 @@ class GameEvent:
 
 
 @dataclass(frozen=True)
+class AbilitySourceProfile:
+    """Características congeladas de la fuente al apilar una habilidad.
+
+    ``printed_kind`` conserva su nombre por compatibilidad con snapshots y replays,
+    pero en los perfiles nuevos contiene el tipo *efectivo* de la fuente en ese
+    instante (incluidas copias y transformaciones), no necesariamente el impreso.
+    """
+
+    source_card_id: str
+    printed_kind: CardKind
+    was_effective_creature: bool
+    was_permanent: bool
+    was_on_battlefield: bool
+    nature_is_certain: bool = True
+
+    @property
+    def effective_kind(self) -> CardKind:
+        """Alias no persistido que expresa la semántica actual de ``printed_kind``."""
+
+        return self.printed_kind
+
+
+@dataclass(frozen=True)
 class StackItem:
     item_id: str
     controller_id: str
@@ -484,6 +509,7 @@ class StackItem:
     allocations: tuple[TargetAllocation, ...] = ()
     targets_locked: bool = True
     x_value: int = 0
+    ability_source_profile: AbilitySourceProfile | None = None
 
 
 @dataclass(frozen=True)

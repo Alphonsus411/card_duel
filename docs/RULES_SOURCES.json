@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "id": "fantasy-tokens-base",
+      "path": "Fantasy Tokens.pdf",
+      "name": "Fantasy Tokens",
+      "sha256": "1c51dabe2023626ad532368e2567d2084c47ec137c7a738bd8c0e0b707f86b21",
+      "size": 1283314,
+      "pages": 31,
+      "title": "Fantasy Tokens: Sistema de Cartas Temáticas",
+      "declared_date": "2018-04-15",
+      "normative_role": "base",
+      "repository_required": true
+    },
+    {
+      "id": "fantasy-tokens-edicion-mitica",
+      "path": "Fantasy Tokens Edicion Mitica.pdf",
+      "name": "Fantasy Tokens Edición Mítica",
+      "sha256": "61243b30d219dd12d8897a206ed664d95a5e3c38b6670a818933f6d90904af36",
+      "size": 4129473,
+      "pages": 18,
+      "title": "Fantasy Tokens Edición Mítica: Nuevas Reglas Básicas y actualizaciones",
+      "declared_date": "2018-06-13",
+      "normative_role": "later-update",
+      "repository_required": false
+    }
+  ]
+}

@@ -2,12 +2,91 @@
 
 ## Sin publicar
 
+## 0.20.1
+
+- Cerrada la compatibilidad de digest a 0.20.0 y 0.20.1: sólo se acepta la
+  huella histórica sin perfil de procedencia para esas versiones, se rechaza
+  la excepción desde 0.20.2 y toda escritura nueva incluye el estado completo.
+- Hechas explícitas las semánticas de snapshot/replay v2, con reconstrucción
+  conservadora de perfiles antiguos, tipo efectivo congelado y paridad entre
+  acciones enumeradas y ejecución.
+- Separada la evidencia de validación por versión, sin usar resultados 0.20.0
+  para acreditar 0.20.1; los bloqueos `N-POINTS-01` y `M-LORD-EVENT-01` siguen
+  abiertos.
+
+- Incorporadas comprobaciones cerradas de deriva entre la versión del proyecto,
+  lockfile, changelog y documento de validación.
+- Añadido análisis estático versionado del checkout para secretos, ejecución
+  dinámica y usos no autorizados de `shell=True`.
+- Documentado y cubierto por pruebas un procedimiento no destructivo de rollback
+  de publicaciones que preserva artefactos y formatos persistidos.
+- Conservada la compatibilidad semántica real con 0.19.0 para cinco replays
+  históricos, diez repeticiones por fixture, continuación y dos roundtrips,
+  además de los esquemas persistentes v1/v2, sin crear un
+  esquema v3 ni alterar la estructura de snapshots o replays.
+- Alineadas las políticas Clásica y Mítica de construcción, los tipos estrictos
+  y la trazabilidad normativa y de CI; `N-POINTS-01` y `M-LORD-EVENT-01`
+  permanecen expresamente abiertos.
+- Corregidas la inmunidad Divina para que atienda al tipo efectivo de criatura
+  permanente y la capacidad declarativa `CAN_CHALLENGE`, manteniendo Desafío
+  una vez por turno, excluyente del combate y sin transformación automática.
+- Verificadas las rutas actuales de Drenaje y Desafío, las reglas terminales
+  multijugador sin cambios, los perfiles runtime/full, las simulaciones, los
+  roundtrips y la construcción reproducible del wheel en CI.
+- No se incorporan cartas, nombres de cartas ni catálogo Mítico de producción;
+  tampoco se añaden transportes ni dependencias de ejecución.
+- Corregida la revalidación de objetivos de habilidades cuya fuente abandona el
+  tapiz mediante un perfil de procedencia congelado en la pila y persistido sin
+  introducir un esquema nuevo.
+- Exigida clasificación explícita para aplicar límites de colección Mítica; un
+  filtro general de conjuntos permitidos ya no reclasifica contenido futuro.
+- Construidos los dos wheels reproducibles desde un worktree *detached* del SHA
+  auditado, evitando atribuir a `HEAD` contenido mutable del checkout.
+
+- Alineada la matriz base–Mítica con las pruebas finales de construcción,
+  copias, coste cero, formatos, Drenaje, Legendarios, Divinos y los cuatro
+  dominios de Señor; la columna `Decisión` usa ahora un vocabulario cerrado.
+- Documentados Drenaje actual sólo en Fase Activa, inmunidad Divina por tipo
+  efectivo de criatura permanente y Desafío una vez por turno, excluyente del
+  combate y sujeto a transformación/autorización declarativa.
+- Añadido `R-COMPAT-019-REPLAY` para separar deserialización de reproducción
+  semántica mediante fixtures creados con el commit 0.19 histórico. El modo
+  legacy es temporal, aislado de partidas nuevas y con retirada versionada.
+- Conservados como deudas bloqueadas `N-POINTS-01` y `M-LORD-EVENT-01`, sin
+  incorporar nombres ni catálogo de cartas.
+
+## 0.20.0
+
+- Integradas como fuentes primarias verificables tanto las reglas base como la
+  actualización Mítica, con hashes, tamaño y doble paginación física/interna.
+- Reorganizada la trazabilidad paginada en reglas universales, formatos de mazo,
+  normalizaciones del motor, bloqueos y contenido de cartas.
+- Formalizada la política de mazos mediante perfiles optativos Clásico/Mística,
+  sin resolver las cifras contradictorias de `N-POINTS-01`.
+- Documentadas las correcciones mecánicas ya realizadas: secuencia Legendaria,
+  Divinos transmutables con inmunidad Mítica, Desafío, Señores, sustituciones,
+  regeneración y consolidación de combate y zonas, sin atribuir cambios nuevos.
+- Añadidas regresiones con artefactos 0.19.0 de esquemas v1/v2 que conservan
+  huella final, historial, contadores, orden e identificadores.
+- Conservada la compatibilidad persistente: esquemas v1/v2 y migración v1 → v2;
+  no se introduce v3 ni se alteran condiciones terminales multijugador.
+- Excluidos explícitamente del wheel ambos PDF, las dependencias runtime y todo
+  catálogo de producción; el catálogo distribuido sigue vacío.
+- Centralizada la versión vigente en `project.version`; paquete, `RuleSet`,
+  scripts y workflow la resuelven dinámicamente.
+
+- Añadida `docs/MYTHIC_RULES_AUDIT.md` con jerarquía de fuentes, doble paginación
+  Mítica, categorías A–E y separación exacta entre reglas y cartas concretas.
+- Registrados como bloqueos `N-POINTS-01` (200, 300, 300–400 y recomendación de
+  unos 300 puntos) y la ambigüedad de «a modo de Eventos», que solo respalda la
+  temporización de Fase Activa para habilidades de Señor.
+- Corregidas las afirmaciones obsoletas sobre la ausencia del PDF Mítico o de su
+  paginación; el inventario usa física 3 / interna 2 para Divinos y física 4 /
+  interna 3 para Señores de los Reinos, Desafío y comienzo del corpus de cartas.
 - Dividida R-03 en el inventario documental R-03A, ya completado, y la
   eventual decisión normativa R-03B, bloqueada hasta recibir aclaración oficial.
-- Registrada la única contradicción base–Mítica identificable en la documentación
-  vigente —inmunidad y Transmutación de Divinos— con la página base, la falta
-  explícita de una página Mítica verificable, ambas formulaciones, el
-  comportamiento conservado y la precedencia ya documentada.
+- Registrada la modificación base–Mítica de inmunidad y Transmutación de Divinos
+  con referencias verificables y la precedencia documentada.
 - Conservados sin cambios el motor y las expectativas reglamentarias de pruebas;
   el inventario no incorpora cartas ni resuelve nuevas ambigüedades.
 - Decidido de forma uniforme que HTTP y cualquier otro transporte permanecen
@@ -237,7 +316,8 @@
 - Inmunidad automática de Tokens Divinos.
 - Dominios de Señor y costes pagados con Fuerza.
 - Forma de criatura permanente o hasta el final del turno.
-- Regla universal de Desafío integrada en la Fase de Combate.
+- Regla universal de Desafío integrada entonces en la Fase de Combate; 0.20 la
+  trasladó a Fase Activa y aisló esta semántica histórica al replay 0.19.
 - Orden elegido para disparos simultáneos.
 - Observaciones públicas de pila y disparos para controladores humanos o AGIX.
 

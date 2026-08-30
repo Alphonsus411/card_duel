@@ -122,6 +122,12 @@ class LordDomain(Enum):
     REALMS = auto()
 
 
+class Keyword(Enum):
+    """Capacidades declarativas que pueden figurar en una definición de carta."""
+
+    CAN_CHALLENGE = auto()
+
+
 class ControllerScope(Enum):
     SELF = auto()
     OPPONENTS = auto()

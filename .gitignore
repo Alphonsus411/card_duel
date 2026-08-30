@@ -58,3 +58,6 @@ tmp/
 *.sqlite3-wal
 snapshots/
 replays/
+
+# Fuentes normativas binarias no distribuidas por Git
+Fantasy Tokens Edicion Mitica.pdf

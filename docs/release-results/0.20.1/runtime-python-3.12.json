@@ -1,0 +1,38 @@
+{
+  "executed_stages": [
+    "metadata",
+    "lockfile",
+    "security",
+    "quality"
+  ],
+  "lockfile": {
+    "sha256": "cfe0c9328d7b24a9a123307dcb615440746b2665b9b4f6ba0b78bf8e61878b32",
+    "status": "ok",
+    "unchanged": true
+  },
+  "metadata": {
+    "status": "ok",
+    "values": {
+      "changelog": "0.20.1",
+      "pyproject": "0.20.1",
+      "readme_scope": "0.20.1",
+      "uv_lock": "0.20.1",
+      "validation": "0.20.1"
+    }
+  },
+  "profile": "runtime",
+  "quality": {
+    "compileall": true,
+    "coverage_percent": 88.0,
+    "mypy": true,
+    "status": "ok"
+  },
+  "schema_version": 2,
+  "security": {
+    "python_files_analyzed": 82,
+    "status": "ok",
+    "tracked_files_scanned": 122
+  },
+  "status": "ok",
+  "version": "0.20.1"
+}

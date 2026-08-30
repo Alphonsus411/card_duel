@@ -1,0 +1,400 @@
+{
+  "body": {
+    "catalog": {
+      "$tuple": [
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": [
+                {
+                  "$type": "AbilityDefinition",
+                  "fields": {
+                    "ability_id": "pending_shot",
+                    "allowed_phases": {
+                      "$frozenset": []
+                    },
+                    "cost": {
+                      "$type": "CompositeCost",
+                      "fields": {
+                        "discard_count": 0,
+                        "exhaust_source": false,
+                        "mill_count": 0,
+                        "sacrifice_count": 0,
+                        "steps": 0,
+                        "strength": 0,
+                        "wounds": 0
+                      }
+                    },
+                    "dynamic_cost": null,
+                    "effects": {
+                      "$tuple": [
+                        {
+                          "$type": "EffectDefinition",
+                          "fields": {
+                            "allows_regeneration": true,
+                            "amount": 1,
+                            "destination_zone": null,
+                            "distributed": false,
+                            "duration": {
+                              "$enum": "EffectDuration",
+                              "name": "PERMANENT"
+                            },
+                            "kind": {
+                              "$enum": "EffectKind",
+                              "name": "DEAL_WOUNDS"
+                            },
+                            "maximum_targets": 1,
+                            "minimum_targets": 1,
+                            "phase": null,
+                            "reveal_search_selection": true,
+                            "search_filter": null,
+                            "selection_maximum": 1,
+                            "selection_minimum": 1,
+                            "shuffle_after_search": true,
+                            "target": {
+                              "$enum": "TargetMode",
+                              "name": "CHOSEN_PLAYER"
+                            },
+                            "text_patch": null,
+                            "transform_definition_id": null,
+                            "x_multiplier": 0
+                          }
+                        }
+                      ]
+                    },
+                    "once_per_turn": false,
+                    "trigger": null,
+                    "x_cost": null
+                  }
+                }
+              ]
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 2,
+            "card_id": "SOURCE_PRESENT",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 0,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Fuente histórica",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "legacy-profile",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 1,
+            "card_id": "FILLER_PRESENT",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 0,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Relleno",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "legacy-profile",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        }
+      ]
+    },
+    "command_count": 10,
+    "commands": {
+      "$tuple": [
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "AdvancePhase",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "AdvancePhase",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PlayCard",
+          "fields": {
+            "allocations": {
+              "$tuple": []
+            },
+            "card_id": "card-000001",
+            "chosen_card_ids": {
+              "$tuple": []
+            },
+            "chosen_player_ids": {
+              "$tuple": []
+            },
+            "chosen_zone_targets": {
+              "$tuple": []
+            },
+            "cost_option_index": null,
+            "discard_card_ids": {
+              "$tuple": []
+            },
+            "player_id": "A",
+            "sacrifice_card_ids": {
+              "$tuple": []
+            },
+            "x_value": null
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "ActivateAbility",
+          "fields": {
+            "ability_id": "pending_shot",
+            "allocations": {
+              "$tuple": []
+            },
+            "chosen_card_ids": {
+              "$tuple": []
+            },
+            "chosen_player_ids": {
+              "$tuple": [
+                "B"
+              ]
+            },
+            "chosen_zone_targets": {
+              "$tuple": []
+            },
+            "discard_card_ids": {
+              "$tuple": []
+            },
+            "player_id": "A",
+            "sacrifice_card_ids": {
+              "$tuple": []
+            },
+            "source_card_id": "card-000001",
+            "x_value": null
+          }
+        }
+      ]
+    },
+    "engine_version": "0.20.1",
+    "final_digest": "68f6b9173d3b055962ce1327e87b227b7806e5a1ccd2741cd8cfb41297cde7fd",
+    "initial_decks": {
+      "$mapping": [
+        [
+          "A",
+          {
+            "$tuple": [
+              "SOURCE_PRESENT",
+              "SOURCE_PRESENT",
+              "SOURCE_PRESENT",
+              "SOURCE_PRESENT",
+              "SOURCE_PRESENT",
+              "SOURCE_PRESENT",
+              "SOURCE_PRESENT",
+              "SOURCE_PRESENT",
+              "SOURCE_PRESENT",
+              "SOURCE_PRESENT",
+              "SOURCE_PRESENT",
+              "SOURCE_PRESENT"
+            ]
+          }
+        ],
+        [
+          "B",
+          {
+            "$tuple": [
+              "FILLER_PRESENT",
+              "FILLER_PRESENT",
+              "FILLER_PRESENT",
+              "FILLER_PRESENT",
+              "FILLER_PRESENT",
+              "FILLER_PRESENT",
+              "FILLER_PRESENT",
+              "FILLER_PRESENT",
+              "FILLER_PRESENT",
+              "FILLER_PRESENT",
+              "FILLER_PRESENT",
+              "FILLER_PRESENT"
+            ]
+          }
+        ]
+      ]
+    },
+    "mulligans": {
+      "$tuple": []
+    },
+    "rules": {
+      "$type": "RuleSet",
+      "fields": {
+        "hand_limit": 6,
+        "initial_hand_size": 6,
+        "legal_action_enumeration_limit": 1000,
+        "minimum_players": 2,
+        "phase_sequence": {
+          "$tuple": [
+            {
+              "$enum": "Phase",
+              "name": "DRAW"
+            },
+            {
+              "$enum": "Phase",
+              "name": "MAINTENANCE"
+            },
+            {
+              "$enum": "Phase",
+              "name": "EFFECTS"
+            },
+            {
+              "$enum": "Phase",
+              "name": "COMBAT"
+            },
+            {
+              "$enum": "Phase",
+              "name": "LEGENDARY"
+            },
+            {
+              "$enum": "Phase",
+              "name": "DISCARD"
+            }
+          ]
+        },
+        "recycle_discard": true,
+        "ruleset_id": "universal",
+        "steps_per_maintenance": 5,
+        "version": "0.20.1",
+        "wound_limit": 50
+      }
+    },
+    "schema_version": "2",
+    "seed": 420,
+    "started": true,
+    "turn_order": {
+      "$tuple": [
+        "A",
+        "B"
+      ]
+    }
+  },
+  "sha256": "528ba3874edca5bbedd096c5b46233e751e040f6a13ec1ca07ca31a3c8fc6807"
+}

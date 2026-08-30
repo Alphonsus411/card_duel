@@ -7,6 +7,7 @@ from .enums import (
     EffectDuration,
     EffectKind,
     MatchStatus,
+    Keyword,
     LordDomain,
     MoveReason,
     Phase,
@@ -17,6 +18,7 @@ from .enums import (
 )
 from .models import (
     AbilityDefinition,
+    AbilitySourceProfile,
     AppliedTextPatch,
     CardFilter,
     CardDefinition,
@@ -43,6 +45,7 @@ from .models import (
 
 __all__ = [
     "AbilityDefinition",
+    "AbilitySourceProfile",
     "AppliedTextPatch",
     "CardFilter",
     "CardDefinition",
@@ -63,6 +66,7 @@ __all__ = [
     "EffectPatchDefinition",
     "GameState",
     "MatchStatus",
+    "Keyword",
     "LordDomain",
     "MoveReason",
     "MoveReplacementDefinition",

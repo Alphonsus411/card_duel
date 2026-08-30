@@ -3,11 +3,12 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Protocol
 
-from ..catalog import CardCatalog
+from ..catalog import CardCatalogReader
 from ..domain.enums import EffectDuration, EffectKind, MoveReason, TargetMode, Zone
 from ..domain.errors import UnsupportedEffectError
 from ..domain.models import (
     AppliedTextPatch,
+    AbilitySourceProfile,
     CardDefinition,
     ControlChange,
     EffectDefinition,
@@ -25,12 +26,19 @@ from ..domain.models import (
 class EffectContext(Protocol):
     """Operaciones autoritativas que necesita la resolución de efectos."""
 
-    catalog: CardCatalog
+    catalog: CardCatalogReader
 
     def _require_running_state(self) -> GameState: ...
     def _effect_amount(self, effect: EffectDefinition, x_value: int) -> int: ...
     def _definition(self, card_id: str) -> CardDefinition: ...
-    def _card_can_be_targeted(self, source: CardDefinition, target_id: str, from_ability: bool) -> bool: ...
+    def _card_can_be_targeted(
+        self,
+        source: CardDefinition | None,
+        target_id: str,
+        from_ability: bool,
+        source_card_id: str | None = None,
+        source_profile: AbilitySourceProfile | None = None,
+    ) -> bool: ...
     def _draw(self, player_id: str, amount: int) -> None: ...
     def _deal_wounds(self, player_id: str, amount: int, source_card_id: str | None = None) -> None: ...
     def _deal_damage(self, card_id: str, amount: int, source_card_id: str | None = None, *, allows_regeneration: bool = True) -> None: ...
@@ -106,7 +114,11 @@ class EffectManager:
                 return
             target_id, zone_target = candidate, None
             if effect.target is TargetMode.CHOSEN_PERMANENT and not self._context._card_can_be_targeted(
-                self._context._definition(item.source_card_id), target_id, item.ability_id is not None
+                None if item.ability_id is not None else self._context._definition(item.source_card_id),
+                target_id,
+                item.ability_id is not None,
+                item.source_card_id,
+                item.ability_source_profile,
             ):
                 self._fizzle(item, target_id, "immune")
                 return
@@ -130,7 +142,13 @@ class EffectManager:
             self._context._deal_wounds(target_id, allocation.amount, item.source_card_id)
         elif target_id not in state.cards or state.cards[target_id].zone is not Zone.BATTLEFIELD:
             self._fizzle(item, target_id, "invalid_target")
-        elif not self._context._card_can_be_targeted(self._context._definition(item.source_card_id), target_id, item.ability_id is not None):
+        elif not self._context._card_can_be_targeted(
+            None if item.ability_id is not None else self._context._definition(item.source_card_id),
+            target_id,
+            item.ability_id is not None,
+            item.source_card_id,
+            item.ability_source_profile,
+        ):
             self._fizzle(item, target_id, "immune")
         else:
             self._context._deal_damage(target_id, allocation.amount, item.source_card_id, allows_regeneration=effect.allows_regeneration)

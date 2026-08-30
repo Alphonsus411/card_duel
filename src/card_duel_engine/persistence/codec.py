@@ -11,7 +11,7 @@ from typing import Any, Union, get_args, get_origin, get_type_hints
 
 from ..domain import enums as enum_module
 from ..domain import models as model_module
-from ..engine import commands as command_module
+from ..engine.commands import EXECUTABLE_COMMAND_TYPES
 from ..rules.config import RuleSet
 
 
@@ -28,7 +28,7 @@ _ENUM_TYPES = _registry(
 )
 _DATACLASS_TYPES = {
     **_registry(model_module, is_dataclass),
-    **_registry(command_module, is_dataclass),
+    **{command_type.__name__: command_type for command_type in EXECUTABLE_COMMAND_TYPES},
     "RuleSet": RuleSet,
 }
 
@@ -138,12 +138,19 @@ def decode_value(value: Any) -> Any:
         cls = _DATACLASS_TYPES.get(value["$type"])
         if cls is None:
             raise ValueError(f"Tipo no autorizado: {value['$type']}")
-        expected = {field.name for field in fields(cls)}
+        class_fields = {field.name: field for field in fields(cls)}
+        expected = set(class_fields)
         supplied = set(value["fields"])
-        if supplied != expected:
+        compatible_missing = (
+            {"ability_source_profile"} if cls is model_module.StackItem else set()
+        )
+        if cls is model_module.AbilitySourceProfile:
+            compatible_missing.add("nature_is_certain")
+        missing_required = (expected - supplied) - compatible_missing
+        if missing_required or supplied - expected:
             raise ValueError(
                 f"Campos incompatibles para {value['$type']}: "
-                f"faltan={sorted(expected - supplied)}, sobran={sorted(supplied - expected)}"
+                f"faltan={sorted(missing_required)}, sobran={sorted(supplied - expected)}"
             )
         decoded = {
             name: decode_value(item) for name, item in value["fields"].items()

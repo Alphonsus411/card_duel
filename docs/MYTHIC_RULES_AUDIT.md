@@ -1,0 +1,143 @@
+# Auditoría normativa de Edición Mítica
+
+## Alcance, fuentes y jerarquía
+
+Esta auditoría separa reglas, formatos, organización y cartas; no intenta
+convertir el contenido de una carta en una regla del juego.
+
+1. `Fantasy Tokens.pdf` es la **fuente base**.
+2. `Fantasy Tokens Edicion Mitica.pdf`, fechado **2018-06-13**, prevalece
+   únicamente cuando modifica expresamente una regla base.
+3. Una adición Mítica no constituye, por sí sola, una contradicción con la base.
+4. Toda contradicción o ambigüedad permanece bloqueada: no se elige una
+   interpretación normativa sin aclaración oficial.
+5. El Markdown, el código y las pruebas de este repositorio son materiales
+   derivados. Sirven para trazabilidad y protección técnica, pero no son prueba
+   normativa.
+
+No se reproduce aquí el texto completo de ninguno de los PDF. Las paráfrasis
+son deliberadamente breves y el texto particular de cartas solo se inventaría
+como categoría D, nunca como fundamento de una regla universal.
+
+## Convención de paginación Mítica
+
+Toda referencia al PDF Mítico usa primero la página física del archivo y luego
+la página interna impresa. La portada es **física 1, sin numeración interna**;
+introducción y mazos ocupan **físicas 2–3 / internas 1–2**; Drenaje,
+Legendarios, Divinos y los primeros Señores están en **física 3 / interna 2**;
+y Señores de los Reinos, Desafío y el comienzo del inventario están en
+**física 4 / interna 3**. No se usa «p. 3» aisladamente para esa última página.
+
+## Taxonomía obligatoria
+
+Cada hallazgo de la tabla debe llevar una clasificación **explícita** y tiene
+exactamente una categoría; no se admite inferirla por edición, coste, dominio,
+nombre, filtro general de colección ni posición en el PDF:
+
+- **A:** regla universal o actualización mecánica.
+- **B:** formato o construcción de mazo.
+- **C:** organización o torneo físico.
+- **D:** texto particular de carta.
+- **E:** ambigüedad o contradicción; queda bloqueada.
+
+Esta exigencia también limita la política técnica: si un perfil admite conjuntos
+de varias procedencias, debe recibir `mythic_set_ids` o un
+`mythic_set_predicate` explícito antes de aplicar restricciones propias de
+Mítica. La auditoría no transcribe, instancia ni incorpora **ningún catálogo
+Mítico**; el catálogo de producción continúa vacío.
+
+## Comienzo y límites del corpus
+
+La sección de reglas generales comienza bajo `INTROITOS` en **física 2 /
+interna 1** y continúa hasta el párrafo de Desafío en **física 4 / interna 3**.
+El encabezado `EDICION MITICA` aparece en **física 4 / interna 3**,
+inmediatamente después de Desafío. El párrafo siguiente anuncia el inventario y
+la primera entrada concreta es la carta de colección nº 001. **Desde ese
+encabezado comienza el corpus de cartas concretas (categoría D)** y termina el
+bloque de reglas generales de esta auditoría. Nada situado desde allí se usa
+para generalizar una mecánica.
+
+## Inventario clasificado
+
+| ID | Categoría | Ubicación | Hallazgo y decisión de auditoría |
+|---|---|---|---|
+| M-SCOPE-01 | B | Mítica, física 2 / interna 1 | La introducción declara obligatorias las actualizaciones para juego competitivo y recomienda su uso en partidas amistosas. Es alcance de formato, no sustitución indiscriminada de toda regla base. |
+| N-POINTS-01 | E | Mítica, física 2 / interna 1 | **Contradicción abierta:** el mismo bloque menciona 200 puntos por baraja y jugador, un máximo situado en el intervalo 300–400, y aproximadamente 300 como recomendación; después vuelve a indicar 300 al resumir los ajustes. La base, por su parte, exige equivalencia y un mínimo de 50 (`Fantasy Tokens.pdf`, reglas básicas 1–2, p. 5). No se eligen 200, 300, 400 ni otro valor normativo. |
+| M-DECK-02 | B | Mítica, física 2 / interna 1 | Construcción: mínimo de 40 y máximo de 60 cartas; hasta cinco copias de una no Legendaria y cuatro de una Legendaria, sujeto a las restricciones de formato. Estos límites se registran aparte de `N-POINTS-01`. |
+| M-FORMAT-03 | B | Mítica, física 2 / interna 1 | Clásico admite todas las ediciones con restricciones propias para coste cero; Mística admite desde Edición Mítica, prohíbe Alfa/Beta y fija para sus cartas costes entre 5 y 50 Pasos. Son reglas de formato, no texto universal de cartas. |
+| M-DECK-04 | B | Mítica, física 2 / interna 1 | Los ajustes base por coste en Pasos se declaran vigentes y se añaden límites de cartas, puntos y edición. La cifra de puntos permanece bloqueada por `N-POINTS-01`. |
+| M-TOURNAMENT-01 | C | Mítica, física 2 / interna 1; física 3 / interna 2 | Mística/Edición Mítica entra en el circuito competitivo y Clásico queda fuera del circuito oficial o clasificatorio descrito. |
+| M-TOURNAMENT-02 | C | Mítica, física 3 / interna 2 | Administración física: texto y coste deben ser claros, legibles e identificables; una carta manuscrita o infiel se sustituye según el documento, y dos o más irregularidades provocan pérdida. Se registra la política, sin extenderla a reglas mecánicas. |
+| M-DRAIN-01 | A | Mítica, física 3 / interna 2 | Drenaje se introduce como habilidad universal: una vez por turno activo, recupera hasta cinco Pasos; el primer Paso no añade Heridas y cada Paso adicional añade tres. No está disponible en Fase Pasiva. |
+| M-LEGENDARY-01 | A | Mítica, física 3 / interna 2 | Los Legendarios reciben un subtipo procedente de los tipos existentes y son afectados normalmente por Recursos Rápidos, Eventos o habilidades salvo inmunidad indicada. Es una actualización general expresa. |
+| M-DIVINE-01 | A | Mítica, física 3 / interna 2 | Los Divinos reciben subtipo, son inmunes a Eventos, Recursos Rápidos y habilidades de criaturas permanentes, pueden transmutarse y usar habilidades bajo sus condiciones. Esta modificación expresa prevalece sobre la inmunidad completa, incluso al descarte, de la regla básica 19 (`Fantasy Tokens.pdf`, p. 8). |
+| M-LORD-ABYSS-01 | A | Mítica, física 3 / interna 2 | Señor del Abismo: nuevo tipo de criatura permanente; su Fuerza parte del coste, puede variar al usar habilidades y a cero va a la Pila de Descartes. No ataca ni bloquea, pero puede ser atacado y recibir daño salvo protección aplicable. |
+| M-LORD-ELYSIUM-01 | A | Mítica, física 3 / interna 2 | Señor del Elíseo comparte las propiedades mecánicas indicadas para Abismo y se diferencia por su dominio temático. |
+| M-LORD-MAGIC-01 | A | Mítica, física 3 / interna 2 | Señor de la Magia se presenta como análogo mecánico de los anteriores y neutral respecto de facción. |
+| M-LORD-KINGDOMS-01 | A | Mítica, física 4 / interna 3 | Señor de los Reinos puede transformarse en criatura para atacar, bloquear y usar sus capacidades. En el motor, el dominio sólo da elegibilidad cuando ya está transformado: la transformación necesita una habilidad o efecto declarado por contenido y no se concede gratuitamente a todos los Señores de Reinos. |
+| M-LORD-EVENT-01 | E | Mítica, física 3 / interna 2 | **Ambigüedad abierta:** que las propiedades de Señor se usen «a modo de Eventos» respalda su temporización en Fase Activa, pero no basta para reclasificar universalmente las habilidades como cartas o efectos de tipo Evento. Solo queda respaldada la ventana de Fase Activa; inmunidades, objetivos, pila y demás consecuencias de una reclasificación permanecen bloqueados. |
+| M-CHALLENGE-01 | A | Mítica, física 4 / interna 3 | Desafío es una regla universal utilizable una vez por turno en Fase Activa y sustituye el combate normal por el duelo descrito. Los Señores de los Reinos son elegibles sólo transformados; Abismo, Elíseo y Magia necesitan transformación y autorización declarativa `CAN_CHALLENGE`. Esta palabra clave expresa permiso, no convierte una carta o habilidad en Evento. Los detalles no expresados no se completan con textos de cartas. |
+| M-CARDS-START-01 | D | Mítica, física 4 / interna 3 | `EDICION MITICA` y el anuncio del descriptivo de colección marcan el comienzo del inventario de cartas concretas; la nº 001 es su primera entrada. Todo hallazgo posterior sobre una carta pertenece a D y no prueba reglas A. |
+
+## Bloqueos y efectos derivados
+
+- `N-POINTS-01` impide afirmar un total normativo de puntos para barajas Míticas.
+- `M-LORD-EVENT-01` impide tratar todas las habilidades de Señor como Eventos;
+  solo permite documentar la Fase Activa indicada.
+- Las demás dudas que requieran completar silencios del texto siguen bloqueadas.
+- Una implementación o una prueba que elija una conducta puede proteger el
+  estado técnico existente, pero no resolver ninguno de esos bloqueos.
+
+## Auditoría de implementación de Drenaje, Legendarios y Divinos
+
+- **Drenaje:** la entrada del motor valida, antes de escribir, jugador activo,
+  prioridad, Fase de Efectos (la Fase Activa del modelo), uso único por número
+  de turno y un `int` estricto entre 1 y 5. La fórmula implementada es
+  `max(0, pasos - 1) * 3`. El número de turno hace que el permiso se renueve al
+  cambiar de turno sin añadir un campo persistente. La transacción general de
+  comandos restaura estado, historial observable y contadores si falla
+  cualquier publicación o validación posterior.
+- **Persistencia:** `drainage_used_turn_serial` ya pertenecía a `PlayerState` y
+  los comandos ya se guardaban en el historial reproducible. Por ello snapshot
+  y replay conservan el uso durante el turno con sus esquemas 2 existentes; no
+  se introduce migración ni representación paralela.
+- **Legendarios:** `CardKind` (criatura, evento, artefacto, etc.) y `CardRank`
+  (normal, legendario, divino) permanecen dimensiones independientes. La
+  permanencia y las inmunidades siguen siendo propiedades explícitas; el rango
+  Legendario no las infiere. La política Mística consulta exclusivamente
+  `CardDefinition.rank is CardRank.LEGENDARY` para el máximo de cuatro copias.
+- **Divinos, tipo efectivo y procedencia:** «criatura permanente» significa una
+  fuente que está en el campo y cuyo tipo **efectivo** es Criatura en el momento
+  de seleccionar objetivo. Por ello también abarca un Señor transformado aunque
+  su definición impresa no fuese Criatura. La referencia de fuente que ya
+  transporta cada comando/elemento de pila basta para comparar la fuente con el
+  objetivo. La selección bloquea Eventos, Recursos Rápidos y habilidades de esas
+  criaturas permanentes, salvo la habilidad del propio permanente Divino; no
+  bloquea por defecto habilidades de artefactos u otras fuentes efectivamente no
+  criatura. Transmutación no pasa por esta selección y continúa permitida. No se
+  creó un segundo sistema de procedencia.
+- **Desafío y autorización:** `CAN_CHALLENGE` es una autorización declarativa de
+  contenido, no un tipo ni una reclasificación como Evento. Reinos sólo es
+  elegible una vez transformado, criatura y enderezado. En Abismo, Elíseo y
+  Magia se exige además `CAN_CHALLENGE`; ningún dominio concede por sí solo una
+  transformación. La declaración ocurre en Fase de Efectos/Fase Activa, una vez
+  por turno, y excluye el combate normal del mismo turno en ambos sentidos.
+- **Límite deliberado:** esta inmunidad de selección no se consulta para
+  descarte, sacrificio, costes, acciones basadas en estado ni movimientos por
+  otras reglas. Tampoco se atribuye inmunidad automática a los Legendarios.
+
+## Evidencia técnica de cierre 0.20.1
+
+La semántica persistida es explícita en snapshot/replay v2 mediante
+`engine_semantics`. El perfil de procedencia congela, al entrar en pila, el tipo
+efectivo y si la fuente era una criatura permanente; selección, enumeración de
+acciones y ejecución consumen el mismo dato. Para v2 antiguos sin perfil sólo se
+reconstruye lo demostrable desde una fuente viva coincidente y el resto queda
+incierto, con rechazo conservador.
+
+La excepción de digest de 0.20.0 y 0.20.1 acepta únicamente la huella histórica
+que omitía el perfil; desde 0.20.2 se rechaza y al volver a guardar se emite la
+representación completa. Los informes
+de 0.20.0 y 0.20.1 se archivan en directorios distintos y no son evidencia
+intercambiable. Nada de ello resuelve `N-POINTS-01` o `M-LORD-EVENT-01`, ni añade
+cartas o catálogo.

@@ -2,6 +2,10 @@ class GameRuleError(Exception):
     """Base para los rechazos normativos del motor."""
 
 
+class InvalidDeckDefinition(ValueError):
+    """Las definiciones de mazo no permiten preparar una partida."""
+
+
 class IllegalAction(GameRuleError):
     """El comando no es legal en el estado actual."""
 

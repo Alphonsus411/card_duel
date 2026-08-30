@@ -7,14 +7,15 @@ from typing import Any, Mapping
 from ..catalog import CardCatalog
 from ..domain.enums import MatchStatus
 from ..domain.models import CardDefinition
-from ..engine.commands import GameCommand
-from ..engine.game import GameEngine
+from ..engine.commands import EXECUTABLE_COMMAND_TYPE_SET
+from ..engine.game import EngineSemantics, GameEngine
 from ..rules.config import RuleSet
 from .codec import canonical_json, decode_value, encode_value
 from .migrations import migrate_document
-from .snapshot import state_digest
+from .snapshot import legacy_state_digest_without_ability_source_profile, state_digest
 
 REPLAY_SCHEMA_VERSION = "2"
+LEGACY_PROFILE_DIGEST_VERSIONS = frozenset(("0.20.0", "0.20.1"))
 
 
 def _checksum(body: Mapping[str, Any]) -> str:
@@ -27,7 +28,12 @@ def dump_replay(engine: GameEngine, *, indent: int | None = 2) -> str:
         raise RuntimeError("No hay una partida que reproducir")
     body = {
         "schema_version": REPLAY_SCHEMA_VERSION,
-        "engine_version": engine.rules.version,
+        "engine_version": (
+            "0.19.0"
+            if engine.semantics is EngineSemantics.LEGACY_019
+            else engine.rules.version
+        ),
+        "engine_semantics": engine.semantics.name,
         "rules": encode_value(engine.rules),
         "catalog": encode_value(engine.catalog.definitions()),
         "initial_decks": encode_value(state.initial_decks),
@@ -68,14 +74,17 @@ def replay_from_log(
     commands = decode_value(body["commands"])
     if not isinstance(rules, RuleSet):
         raise ValueError("Reglas de reproducción no válidas")
-    if body.get("engine_version") != rules.version:
+    engine_version = body.get("engine_version")
+    if engine_version != rules.version:
         raise ValueError("La versión declarada no coincide con las reglas de reproducción")
+    if engine_version != "0.19.0" and not str(engine_version).startswith("0.20."):
+        raise ValueError(f"Versión de reproducción no compatible: {engine_version!r}")
     if not isinstance(definitions, tuple) or not all(
         isinstance(item, CardDefinition) for item in definitions
     ):
         raise ValueError("Catálogo de reproducción no válido")
     if not isinstance(commands, tuple) or not all(
-        isinstance(item, GameCommand) for item in commands
+        type(item) in EXECUTABLE_COMMAND_TYPE_SET for item in commands
     ):
         raise ValueError("Secuencia de comandos no válida")
     if body.get("command_count") != len(commands):
@@ -93,7 +102,29 @@ def replay_from_log(
         }
     except (AttributeError, KeyError, TypeError) as exc:
         raise ValueError("Mazos iniciales no válidos") from exc
-    engine = GameEngine(rules, catalog)
+    if "engine_semantics" not in body:
+        semantics = (
+            EngineSemantics.LEGACY_019
+            if engine_version == "0.19.0"
+            else EngineSemantics.CURRENT
+        )
+    else:
+        semantics_name = body["engine_semantics"]
+        if not isinstance(semantics_name, str):
+            raise ValueError("Semántica de motor de reproducción no válida")
+        try:
+            semantics = EngineSemantics[semantics_name]
+        except KeyError as exc:
+            raise ValueError(
+                "Semántica de motor de reproducción no válida"
+            ) from exc
+        if semantics not in (EngineSemantics.CURRENT, EngineSemantics.LEGACY_019):
+            raise ValueError("Semántica de motor de reproducción no válida")
+        if semantics is EngineSemantics.LEGACY_019 and engine_version != "0.19.0":
+            raise ValueError(
+                "La semántica LEGACY_019 requiere la versión 0.19.0"
+            )
+    engine = GameEngine._for_restoration(rules, catalog, semantics)
     engine.new_match(decks, seed=int(body["seed"]), auto_start=False)
     for player_id in mulligans:
         engine.mulligan(player_id)
@@ -101,6 +132,19 @@ def replay_from_log(
         engine.start_match()
     for command in commands:
         engine.execute(command)
-    if verify_digest and state_digest(engine) != body["final_digest"]:
-        raise ValueError("La reproducción diverge de la huella final registrada")
+    if verify_digest:
+        expected_digest = body["final_digest"]
+        digest_matches = state_digest(engine) == expected_digest
+        if not digest_matches and _is_affected_020_version(engine_version):
+            digest_matches = (
+                legacy_state_digest_without_ability_source_profile(engine)
+                == expected_digest
+            )
+        if not digest_matches:
+            raise ValueError("La reproducción diverge de la huella final registrada")
     return engine
+
+
+def _is_affected_020_version(version: object) -> bool:
+    """Limit the compatibility escape hatch to versions that emitted the digest."""
+    return version in LEGACY_PROFILE_DIGEST_VERSIONS

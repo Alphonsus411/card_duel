@@ -4,7 +4,7 @@ Primera estructura del backend headless para el futuro juego de cartas. El
 paquete implementa el armazón de las reglas universales de Fantasy Tokens sin
 incluir ninguna carta, personaje ni colección antigua.
 
-## Alcance de la versión 0.19.0
+## Alcance de la versión 0.20.1
 
 - Catálogo de cartas vacío y extensible.
 - Contratos pequeños de gestores verificados por `mypy` y dobles mínimos independientes.
@@ -22,6 +22,8 @@ incluir ninguna carta, personaje ni colección antigua.
 - Transmutación básica de permanentes.
 - Juego genérico desde la mano y pago atómico de costes.
 - Prioridad alterna y pila de resolución LIFO.
+- Procedencia efectiva de habilidades congelada al entrar en pila, para que la
+  resolución siga siendo estable aunque la fuente abandone el tapiz.
 - Efectos declarativos iniciales: Heridas, curación, Pasos y robo.
 - Recursos Rápidos como respuesta en cualquier fase.
 - Combate con atacantes, bloqueadores, daño y destrucción.
@@ -36,14 +38,18 @@ incluir ninguna carta, personaje ni colección antigua.
 - Modificadores permanentes y hasta el final del turno.
 - Equipos, anexos, bonificaciones y separación automática.
 - Limpieza de fin de turno para daño, prevención y límites de activación.
-- Drenaje universal una vez por turno activo: un Paso gratuito y hasta cuatro
-  adicionales por tres Heridas cada uno.
+- Drenaje universal una vez por turno en Fase de Efectos (Fase Activa): un Paso
+  gratuito y hasta cuatro adicionales por tres Heridas cada uno.
 - Objetivos múltiples con límites mínimos y máximos declarativos.
 - Capas continuas de Fuerza y palabras clave filtradas por controlador, tipo y subtipo.
-- Divinos inmunes a Eventos, Recursos Rápidos y habilidades, pero transmutables.
+- Divinos inmunes a Eventos, Recursos Rápidos y habilidades de criaturas
+  permanentes según el tipo efectivo de la fuente, pero transmutables.
 - Señores de Abismo, Elíseo, Magia y Reinos con Fuerza pagable y descarte al llegar a cero.
-- Transformación temporal de Señores no criatura.
-- Desafío como duelo cerrado que sustituye el combate normal del turno.
+- Transformación temporal de Señores no criatura únicamente mediante efectos o
+  habilidades declarados; Reinos no recibe transformación gratuita por dominio.
+- Desafío una vez por turno en Fase Activa como duelo cerrado que sustituye el
+  combate normal: Reinos requiere estar transformado y los demás dominios
+  necesitan además la autorización declarativa `CAN_CHALLENGE`.
 - Elección explícita del orden de resolución de disparos simultáneos.
 - Zonas de jugador como objetivos sin revelar las cartas que contienen.
 - Movimiento declarativo de cartas entre zonas.
@@ -77,6 +83,11 @@ incluir ninguna carta, personaje ni colección antigua.
 - Huellas SHA-256 para detectar corrupción o alteraciones accidentales.
 - Historial autoritativo de comandos y mulligans dentro de la partida.
 - Reproducción determinista desde semilla, mazos y comandos.
+- Compatibilidad semántica temporal para replays 0.19 generados con el commit
+  histórico documentado; no habilita esa semántica en partidas actuales y su
+  retirada requiere una decisión de compatibilidad versionada. La regresión de
+  cierre cubre cinco fixtures, diez repeticiones por fixture, continuación y dos
+  roundtrips consecutivos.
 - Verificación automática de la huella final de una reproducción.
 - Manifiestos externos versionados para incorporar colecciones nuevas.
 - Lista cerrada de tipos persistibles y validación estricta de campos.
@@ -100,8 +111,10 @@ incluir ninguna carta, personaje ni colección antigua.
   R-07.1 (combate, incluida su enumeración) y R-07.2 (movimientos y
   sustituciones) completadas. También se completó R-03A como inventario
   exclusivamente documental de la contradicción verificable sobre Divinos, sin
-  cartas ni cambios de reglas; R-02, la decisión normativa R-03B y R-05
-  permanecen bloqueadas. La
+  cartas ni cambios de reglas. R-03B se divide ahora en fuente verificable,
+  reglas universales, formatos de mazo y futuro corpus, y permanece abierta
+  hasta alinear código, documentación y pruebas; R-02, los extremos normativos
+  de R-03B y R-05 permanecen bloqueados. La
   frontera de R-06 es agnóstica del transporte; un adaptador HTTP
   u otro servicio de red concreto continúa fuera de alcance, no tiene entrega de
   hoja de ruta asignada y no es un pendiente implementable. Cualquier decisión
@@ -111,6 +124,29 @@ incluir ninguna carta, personaje ni colección antigua.
 
 Las únicas cartas utilizadas están en `tests/fixtures.py` y sirven para probar
 el motor. El catálogo de producción comienza vacío.
+
+Las restricciones propias de Mítica sólo se aplican mediante una clasificación
+de colección explícita (identificadores o predicado); admitir una colección en
+general no la convierte en Mítica. No se distribuye ningún catálogo Mítico.
+
+Los reglamentos primarios son `Fantasy Tokens.pdf` y `Fantasy Tokens Edicion Mitica.pdf`. El PDF base se conserva en el repositorio; la edición Mítica no se versiona por ser un artefacto binario y su tamaño y SHA-256 se registran en `docs/RULES_SOURCES.json` para poder verificar una copia local. **Ninguno de los dos PDF se empaqueta en el wheel**. El catálogo distribuido continúa vacío: no se ha incorporado ninguna carta de producción.
+
+## Compatibilidad persistente de 0.20.1
+
+Snapshot y replay conservan el esquema v2 y expresan por separado la semántica
+del motor. En documentos v2 antiguos sin perfil de procedencia, el motor sólo
+reconstruye identidad, permanencia y tipo efectivo cuando una fuente viva
+coincidente permite demostrarlo; en caso contrario mantiene la incertidumbre y
+rechaza de forma conservadora las selecciones que dependan de ella. Los nuevos
+elementos de pila congelan el tipo efectivo de la fuente, y la enumeración de
+acciones comparte ese contrato con la ejecución.
+
+La compatibilidad de digest está cerrada a 0.20.0 y 0.20.1: permite validar la
+huella histórica que omitía el perfil, pero rechaza desde 0.20.2 cualquier
+intento de usar esa excepción. Una nueva serialización incorpora
+el perfil y produce la huella completa. La evidencia de cada entrega se conserva
+en `docs/release-results/<version>/`; un informe de 0.20.0 no acredita 0.20.1.
+`N-POINTS-01` y `M-LORD-EVENT-01` permanecen bloqueados.
 
 ## Desarrollo reproducible
 
@@ -124,13 +160,15 @@ uv run python -m mypy
 uv run python -m compileall -q src tests
 uv run python -m unittest discover -s tests -v
 uv run python scripts/verify_release.py --profile runtime
-uv run python scripts/verify_release.py --profile full --json release-verification.json
+uv run python scripts/verify_release.py --profile full --json dist/release-verification.json
 uv run python scripts/verify_reproducible_wheel.py
 ```
 
-El verificador obtiene `SOURCE_DATE_EPOCH` de la fecha del commit `HEAD`, construye
-dos veces en directorios temporales limpios y compara nombre, bytes, SHA-256 y
-metadatos.
+El verificador obtiene `SOURCE_DATE_EPOCH` de la fecha del commit auditado (no
+de una constante arbitraria), construye dos veces ese mismo commit en
+un worktree *detached* y directorios temporales limpios, y compara nombre,
+bytes, SHA-256 y metadatos. Así la procedencia corresponde al SHA y no al árbol
+de trabajo mutable. No compara artefactos procedentes de commits diferentes.
 
 ## Ejecutar las pruebas
 
@@ -146,7 +184,8 @@ interfaz gráfica, un cliente remoto y AGIX utilizarán exactamente el mismo
 contrato.
 
 Consulta `docs/ARCHITECTURE.md` y `docs/RULES_BASELINE.md` para conocer las
-decisiones de esta primera versión.
+decisiones de esta primera versión. El trabajo técnico pendiente se registra
+por separado en `docs/ENGINEERING_BACKLOG.md`.
 
 ### Registro autoritativo de colecciones
 

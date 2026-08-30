@@ -1,0 +1,21 @@
+{
+  "executed_stages": [
+    "lockfile",
+    "quality"
+  ],
+  "lockfile": {
+    "sha256": "53764d6b5a5cca429b88ad0149012ec90d4c749bac7d0a8e719e9d1b894d3f12",
+    "status": "ok",
+    "unchanged": true
+  },
+  "profile": "runtime",
+  "quality": {
+    "compileall": true,
+    "coverage_percent": 88.0,
+    "mypy": true,
+    "status": "ok"
+  },
+  "schema_version": 2,
+  "status": "ok",
+  "version": "0.20.0"
+}

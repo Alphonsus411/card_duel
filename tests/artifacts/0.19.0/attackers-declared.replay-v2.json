@@ -1,0 +1,708 @@
+{
+  "body": {
+    "catalog": {
+      "$tuple": [
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 3,
+            "card_id": "ATTACKER",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 0,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "ATTACKER",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 1,
+            "card_id": "A-F",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 0,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "A-F",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 3,
+            "card_id": "DEFENDER",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 0,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "DEFENDER",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 1,
+            "card_id": "B-F",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 0,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "B-F",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        }
+      ]
+    },
+    "command_count": 54,
+    "commands": {
+      "$tuple": [
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "AdvancePhase",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "AdvancePhase",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PlayCard",
+          "fields": {
+            "allocations": {
+              "$tuple": []
+            },
+            "card_id": "card-000001",
+            "chosen_card_ids": {
+              "$tuple": []
+            },
+            "chosen_player_ids": {
+              "$tuple": []
+            },
+            "chosen_zone_targets": {
+              "$tuple": []
+            },
+            "cost_option_index": null,
+            "discard_card_ids": {
+              "$tuple": []
+            },
+            "player_id": "A",
+            "sacrifice_card_ids": {
+              "$tuple": []
+            },
+            "x_value": null
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "AdvancePhase",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "AdvancePhase",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "AdvancePhase",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "AdvancePhase",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "AdvancePhase",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "AdvancePhase",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "PlayCard",
+          "fields": {
+            "allocations": {
+              "$tuple": []
+            },
+            "card_id": "card-000003",
+            "chosen_card_ids": {
+              "$tuple": []
+            },
+            "chosen_player_ids": {
+              "$tuple": []
+            },
+            "chosen_zone_targets": {
+              "$tuple": []
+            },
+            "cost_option_index": null,
+            "discard_card_ids": {
+              "$tuple": []
+            },
+            "player_id": "B",
+            "sacrifice_card_ids": {
+              "$tuple": []
+            },
+            "x_value": null
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "AdvancePhase",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "AdvancePhase",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "AdvancePhase",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "AdvancePhase",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "AdvancePhase",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "AdvancePhase",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "AdvancePhase",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "A"
+          }
+        },
+        {
+          "$type": "PassPriority",
+          "fields": {
+            "player_id": "B"
+          }
+        },
+        {
+          "$type": "DeclareAttackers",
+          "fields": {
+            "attacker_ids": {
+              "$tuple": [
+                "card-000001"
+              ]
+            },
+            "defending_player_id": "B",
+            "player_id": "A"
+          }
+        }
+      ]
+    },
+    "engine_version": "0.19.0",
+    "final_digest": "1f2f8124a44f4d599587be89b564fea84d8d53b8513dab3e01bbdcb679be117a",
+    "initial_decks": {
+      "$mapping": [
+        [
+          "A",
+          {
+            "$tuple": [
+              "ATTACKER",
+              "A-F"
+            ]
+          }
+        ],
+        [
+          "B",
+          {
+            "$tuple": [
+              "DEFENDER",
+              "B-F"
+            ]
+          }
+        ]
+      ]
+    },
+    "mulligans": {
+      "$tuple": []
+    },
+    "rules": {
+      "$type": "RuleSet",
+      "fields": {
+        "hand_limit": 8,
+        "initial_hand_size": 2,
+        "legal_action_enumeration_limit": 1000,
+        "minimum_players": 2,
+        "phase_sequence": {
+          "$tuple": [
+            {
+              "$enum": "Phase",
+              "name": "DRAW"
+            },
+            {
+              "$enum": "Phase",
+              "name": "MAINTENANCE"
+            },
+            {
+              "$enum": "Phase",
+              "name": "EFFECTS"
+            },
+            {
+              "$enum": "Phase",
+              "name": "COMBAT"
+            },
+            {
+              "$enum": "Phase",
+              "name": "LEGENDARY"
+            },
+            {
+              "$enum": "Phase",
+              "name": "DISCARD"
+            }
+          ]
+        },
+        "recycle_discard": true,
+        "ruleset_id": "universal",
+        "steps_per_maintenance": 5,
+        "version": "0.19.0",
+        "wound_limit": 50
+      }
+    },
+    "schema_version": "2",
+    "seed": 1902,
+    "started": true,
+    "turn_order": {
+      "$tuple": [
+        "A",
+        "B"
+      ]
+    }
+  },
+  "sha256": "0ced290429d9017f708924c2fe87bb60027ca28b94a287c3b9684d5792ac44f8"
+}

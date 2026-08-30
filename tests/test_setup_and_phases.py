@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 from card_duel_engine import GameEngine, RuleSet
 from card_duel_engine.domain.enums import Phase, Zone
@@ -25,6 +26,54 @@ def advance(engine: GameEngine, player_id: str) -> None:
 
 
 class SetupAndPhaseTests(unittest.TestCase):
+    def test_new_match_publishes_only_after_candidate_validation(self):
+        engine = make_engine()
+        previous = (
+            engine.catalog,
+            engine.state,
+            engine._next_instance,
+            engine._next_stack_item,
+            engine._replacement_replay_choices,
+            engine._replacement_replay_cursor,
+        )
+
+        with patch.object(
+            engine,
+            "_validate_candidate_invariants",
+            side_effect=RuntimeError("fallo candidato"),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "fallo candidato"):
+                engine.new_match(
+                    {"A": test_deck("new-A"), "B": test_deck("new-B")}, seed=99
+                )
+
+        self.assertIs(engine.catalog, previous[0])
+        self.assertIs(engine.state, previous[1])
+        self.assertEqual(
+            (
+                engine._next_instance,
+                engine._next_stack_item,
+                engine._replacement_replay_choices,
+                engine._replacement_replay_cursor,
+            ),
+            previous[2:],
+        )
+
+    def test_new_match_materializes_every_generator_before_preparation(self):
+        engine = GameEngine(RuleSet())
+
+        def failing_deck():
+            yield test_deck("A", 1)[0]
+            raise RuntimeError("generador roto")
+
+        with patch.object(engine, "_prepare_catalog") as prepare_catalog:
+            with self.assertRaisesRegex(RuntimeError, "generador roto"):
+                engine.new_match({"A": failing_deck(), "B": test_deck("B")})
+
+        prepare_catalog.assert_not_called()
+        self.assertEqual(engine.catalog.definitions(), ())
+        self.assertIsNone(engine.state)
+
     def test_match_deals_six_and_draws_for_first_turn(self):
         engine = make_engine()
         self.assertEqual(len(engine.state.players["A"].zones[Zone.HAND]), 7)

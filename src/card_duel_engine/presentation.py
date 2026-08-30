@@ -11,6 +11,8 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Mapping, Protocol
 
+from .catalog import CardCatalogReader
+
 
 @dataclass(frozen=True)
 class CardPresentation:
@@ -39,6 +41,38 @@ class CardPresentationCatalogReader(Protocol):
     def presentations(self) -> tuple[CardPresentation, ...]: ...
     def __contains__(self, card_id: str) -> bool: ...
     def __len__(self) -> int: ...
+
+
+def validate_card_presentations(
+    card_catalog: CardCatalogReader,
+    presentation_catalog: CardPresentationCatalogReader,
+) -> None:
+    """Comprueba la correspondencia por ``card_id`` y retorna ``None`` si es total.
+
+    Las diferencias se comunican mediante ``ValueError`` y se separan por tipo.
+    Los metadatos editoriales no participan en esta validación.
+    """
+    mechanical_ids = {definition.card_id for definition in card_catalog.definitions()}
+    presentation_ids = {
+        presentation.card_id for presentation in presentation_catalog.presentations()
+    }
+
+    errors: list[str] = []
+    orphan_presentations = sorted(presentation_ids - mechanical_ids)
+    if orphan_presentations:
+        errors.append(
+            "Presentaciones huérfanas: " + ", ".join(orphan_presentations)
+        )
+
+    missing_presentations = sorted(mechanical_ids - presentation_ids)
+    if missing_presentations:
+        errors.append(
+            "Definiciones mecánicas sin presentación: "
+            + ", ".join(missing_presentations)
+        )
+
+    if errors:
+        raise ValueError("; ".join(errors))
 
 
 @dataclass(frozen=True)

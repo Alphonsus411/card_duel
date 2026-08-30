@@ -1,14 +1,29 @@
 import unittest
+from dataclasses import dataclass
 
 from card_duel_engine import (
     CardPresentation,
     CardPresentationCatalog,
     CardPresentationSnapshot,
+    validate_card_presentations,
 )
 
 
 def presentation(card_id: str, token: str) -> CardPresentation:
     return CardPresentation(card_id, token, f"Nombre {card_id}", "", "")
+
+
+@dataclass(frozen=True)
+class MechanicalCardStub:
+    card_id: str
+
+
+class MechanicalCatalogStub:
+    def __init__(self, *card_ids: str) -> None:
+        self._definitions = tuple(MechanicalCardStub(card_id) for card_id in card_ids)
+
+    def definitions(self) -> tuple[MechanicalCardStub, ...]:
+        return self._definitions
 
 
 class CardPresentationTests(unittest.TestCase):
@@ -70,6 +85,29 @@ class CardPresentationCatalogTests(unittest.TestCase):
             CardPresentationSnapshot(
                 {"a": presentation("a", "token"), "b": presentation("b", "token")}
             )
+
+
+class CardPresentationValidationTests(unittest.TestCase):
+    def test_returns_none_when_card_ids_match_without_comparing_names(self):
+        mechanical = MechanicalCatalogStub("a")
+        editorial = CardPresentationCatalog()
+        editorial.register(CardPresentation("a", "token", "Nombre distinto", "", ""))
+
+        self.assertIsNone(validate_card_presentations(mechanical, editorial))  # type: ignore[arg-type]
+
+    def test_reports_both_mismatch_types_with_sorted_ids(self):
+        mechanical = MechanicalCatalogStub("missing-z", "shared", "missing-a")
+        editorial = CardPresentationCatalog()
+        editorial.register(presentation("orphan-z", "token-z"))
+        editorial.register(presentation("shared", "token-shared"))
+        editorial.register(presentation("orphan-a", "token-a"))
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Presentaciones huérfanas: orphan-a, orphan-z; "
+            "Definiciones mecánicas sin presentación: missing-a, missing-z",
+        ):
+            validate_card_presentations(mechanical, editorial)  # type: ignore[arg-type]
 
 
 if __name__ == "__main__":

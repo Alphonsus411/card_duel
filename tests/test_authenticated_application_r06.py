@@ -10,7 +10,7 @@ import json
 import tempfile
 import unittest
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import replace
+from dataclasses import fields, is_dataclass, replace
 from pathlib import Path
 from unittest.mock import patch
 
@@ -18,6 +18,7 @@ from card_duel_engine import (
     AccessDenied,
     AuthenticatedMatchApplication,
     AuthenticationRequired,
+    CardCatalog,
     CommandRejected,
     ExternalIdentity,
     InMemoryIdentityAuthorization,
@@ -28,18 +29,29 @@ from card_duel_engine import (
     InvalidMatchId,
     MalformedCommand,
     MatchService,
+    OptionRejected,
     ResourceNotFound,
     SQLiteMatchStore,
     WriteConflict,
 )
-from card_duel_engine.application import Capability
+from card_duel_engine.application import Capability, PublicMatchView
 from card_duel_engine.domain.enums import Zone
 from card_duel_engine.domain.models import GameState
-from card_duel_engine.engine.commands import Concede, PassPriority
+from card_duel_engine.engine.commands import (
+    EXECUTABLE_COMMAND_TYPES,
+    Concede,
+    PassPriority,
+)
 from card_duel_engine.engine.game import GameEngine
 from card_duel_engine.persistence.snapshot import state_digest
 from card_duel_engine.storage import MatchNotFound
 from fixtures import test_deck
+
+
+def tamper_option_id(option_id):
+    """Altera siempre el último carácter, incluso cuando ya termina en cero."""
+    replacement = "1" if option_id[-1] == "0" else "0"
+    return option_id[:-1] + replacement
 
 
 class AuthenticatedApplicationR06Contract:
@@ -59,7 +71,8 @@ class AuthenticatedApplicationR06Contract:
         else:  # pragma: no cover - protege nuevas subclases mal configuradas
             raise AssertionError("La batería R-06 necesita un almacén")
 
-        self.service = MatchService(self.store)
+        self.catalog = CardCatalog()
+        self.service = MatchService(self.store, catalog=self.catalog)
         self.authorization = InMemoryIdentityAuthorization()
         self.app = AuthenticatedMatchApplication(self.service, self.authorization)
         self.identities = {
@@ -383,6 +396,7 @@ class AuthenticatedApplicationR06Contract:
         self.authorization.grant_global(alice, Capability.CREATE_MATCH)
         original = test_deck("duplicate")[0]
         incompatible = replace(original, name=f"{original.name} (interno secreto)")
+        catalog_before = self.catalog.definitions()
 
         with self.assertRaises(InvalidDeck) as caught:
             self.app.create_match(
@@ -396,6 +410,35 @@ class AuthenticatedApplicationR06Contract:
         self.assertNotIn("interno secreto", str(caught.exception))
         with self.assertRaises(MatchNotFound):
             self.service.get_match("invalid-decks")
+        self.assertEqual(self.catalog.definitions(), catalog_before)
+
+    def test_unexpected_engine_errors_propagate_without_side_effects(self):
+        alice = self.identities["alice"]
+        self.authorization.grant_global(alice, Capability.CREATE_MATCH)
+
+        for error_type in (TypeError, AttributeError, RuntimeError, ValueError):
+            match_id = f"unexpected-{error_type.__name__}"
+            catalog_before = self.catalog.definitions()
+            with self.subTest(error_type=error_type):
+                with patch.object(
+                    GameEngine,
+                    "new_match",
+                    side_effect=error_type("detalle interno accidental"),
+                ):
+                    with self.assertRaises(error_type) as caught:
+                        self.app.create_match(
+                            alice,
+                            match_id,
+                            {
+                                "A": test_deck(f"{match_id}-A"),
+                                "B": test_deck(f"{match_id}-B"),
+                            },
+                        )
+
+                self.assertNotIsInstance(caught.exception, InvalidDeck)
+                with self.assertRaises(MatchNotFound):
+                    self.service.get_match(match_id)
+                self.assertEqual(self.catalog.definitions(), catalog_before)
 
     def test_malformed_commands_have_a_safe_specific_public_error(self):
         before = self.fingerprint("one")
@@ -445,20 +488,179 @@ class AuthenticatedApplicationR06Contract:
         self.assertCountEqual(outcomes, ("winner", "conflict"))
         self.assertEqual(self.service.get_match("one").version, 2)
 
+    def test_public_options_distinguish_same_action_type_without_command_fields(self):
+        internal = self.service.view("one", "A")
+        duplicated = replace(
+            internal,
+            legal_actions=(Concede("A"), Concede("A")),
+        )
+        with patch.object(self.service, "view", return_value=duplicated):
+            payload = self.app.view(self.identities["alice"], "one").to_dict()
+
+        first, second = payload["legal_actions"]
+        self.assertEqual(first["action"], second["action"])
+        self.assertNotEqual(first["option_id"], second["option_id"])
+        self.assertEqual(set(first), {"option_id", "action"})
+        self.assertEqual(set(second), {"option_id", "action"})
+
+    def test_repeated_public_views_preserve_ordered_option_correspondence(self):
+        alice = self.identities["alice"]
+
+        first = self.app.view(alice, "one")
+        second = self.app.view(alice, "one")
+
+        self.assertEqual(first.version, second.version)
+        self.assertEqual(
+            tuple((option.action, option.option_id) for option in first.legal_actions),
+            tuple((option.action, option.option_id) for option in second.legal_actions),
+        )
+
+    def test_valid_public_option_executes_the_exact_authoritative_alternative(self):
+        alice = self.identities["alice"]
+        view = self.app.view(alice, "one")
+        selected = next(
+            option for option in view.legal_actions if option.action == "PassPriority"
+        )
+
+        result = self.app.submit_option(
+            alice, "one", selected.option_id, expected_version=view.version
+        )
+
+        self.assertEqual(result.version, 2)
+        self.assertEqual(self.service.get_match("one").engine.state.status.name, "RUNNING")
+
+    def test_every_emitted_option_can_be_submitted_with_its_authoritative_context(self):
+        alice = self.identities["alice"]
+        option_count = len(self.app.view(alice, "one").legal_actions)
+
+        for index in range(option_count):
+            with self.subTest(index=index):
+                match_id = f"option-roundtrip-{index}"
+                self.service.create_match(
+                    match_id,
+                    {
+                        "A": test_deck(f"{match_id}-A"),
+                        "B": test_deck(f"{match_id}-B"),
+                    },
+                    seed=1,
+                )
+                self.authorization.bind_player(alice, match_id, "A")
+                view = self.app.view(alice, match_id)
+
+                result = self.app.submit_option(
+                    alice,
+                    match_id,
+                    view.legal_actions[index].option_id,
+                    expected_version=view.version,
+                )
+
+                self.assertEqual(result.version, view.version + 1)
+
+    def test_public_view_rejects_actions_without_authoritative_identifiers(self):
+        view = self.service.view("one", "A")
+        self.assertTrue(view.legal_actions)
+
+        with self.assertRaisesRegex(
+            ValueError, "acciones legales requieren identificadores autoritativos"
+        ):
+            PublicMatchView.from_view(view)
+
+    def test_bob_option_is_rejected_without_mutating_match(self):
+        alice = self.identities["alice"]
+        bob_option = self.app.view(self.identities["bob"], "one").legal_actions[0]
+        self.assert_rejected_without_mutation(
+            OptionRejected,
+            lambda: self.app.submit_option(
+                alice, "one", bob_option.option_id, expected_version=1
+            ),
+            "one",
+        )
+
+    def test_other_match_option_is_rejected_without_mutating_target_match(self):
+        alice = self.identities["alice"]
+        self.authorization.bind_player(alice, "two", "A")
+        other_match_option = self.app.view(alice, "two").legal_actions[0]
+        self.assert_rejected_without_mutation(
+            OptionRejected,
+            lambda: self.app.submit_option(
+                alice, "one", other_match_option.option_id, expected_version=1
+            ),
+            "one",
+        )
+
+    def test_tampered_option_is_rejected_without_mutating_match(self):
+        alice = self.identities["alice"]
+        original = self.app.view(alice, "one").legal_actions[0].option_id
+        tampered = tamper_option_id(original)
+        self.assertNotEqual(tampered, original)
+        self.assert_rejected_without_mutation(
+            OptionRejected,
+            lambda: self.app.submit_option(
+                alice, "one", tampered, expected_version=1
+            ),
+            "one",
+        )
+
+    def test_option_issued_before_cas_change_retains_write_conflict_semantics(self):
+        alice = self.identities["alice"]
+        alice_view = self.app.view(alice, "one")
+        valid = alice_view.legal_actions[0].option_id
+        self.app.submit_option(alice, "one", valid, expected_version=1)
+        self.assert_rejected_without_mutation(
+            WriteConflict,
+            lambda: self.app.submit_option(
+                alice, "one", valid, expected_version=1
+            ),
+            "one",
+        )
+
+    def test_tampered_option_id_transformation_always_changes_original(self):
+        for original in ("option0", "optiona"):
+            with self.subTest(original=original):
+                tampered = tamper_option_id(original)
+
+                self.assertNotEqual(tampered, original)
+
+    def test_two_public_option_writes_with_same_cas_have_one_winner(self):
+        alice = self.identities["alice"]
+        view = self.app.view(alice, "one")
+        option_id = view.legal_actions[0].option_id
+
+        def submit():
+            try:
+                self.app.submit_option(
+                    alice, "one", option_id, expected_version=view.version
+                )
+                return "winner"
+            except WriteConflict:
+                return "conflict"
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            outcomes = list(pool.map(lambda _: submit(), range(2)))
+        self.assertCountEqual(outcomes, ("winner", "conflict"))
+        self.assertEqual(self.service.get_match("one").version, 2)
+
     def test_public_dto_excludes_internal_and_opponent_private_state(self):
         response = self.app.view(self.identities["alice"], "one")
         payload = response.to_dict()
         encoded = json.dumps(payload)
+        command_field_names = {
+            field.name
+            for command_type in EXECUTABLE_COMMAND_TYPES
+            if is_dataclass(command_type)
+            for field in fields(command_type)
+        }
         forbidden_keys = {
             "engine",
             "state",
             "snapshot",
             "deck",
             "opponent_hand",
-            "chosen_card_ids",
-            "discard_card_ids",
-            "sacrifice_card_ids",
         }
+
+        for action in payload["legal_actions"]:
+            self.assertEqual(set(action), {"option_id", "action"})
+            self.assertTrue(command_field_names.isdisjoint(action))
 
         def inspect_value(value):
             self.assertNotIsInstance(value, (GameEngine, GameState))

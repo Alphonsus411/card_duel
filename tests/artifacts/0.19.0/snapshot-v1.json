@@ -1,0 +1,1634 @@
+{
+  "body": {
+    "catalog": {
+      "$tuple": [
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": null,
+            "card_id": "COMPAT-019-PING",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 0,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": [
+                {
+                  "$type": "EffectDefinition",
+                  "fields": {
+                    "allows_regeneration": true,
+                    "amount": 2,
+                    "destination_zone": null,
+                    "distributed": false,
+                    "duration": {
+                      "$enum": "EffectDuration",
+                      "name": "PERMANENT"
+                    },
+                    "kind": {
+                      "$enum": "EffectKind",
+                      "name": "DEAL_WOUNDS"
+                    },
+                    "maximum_targets": 1,
+                    "minimum_targets": 1,
+                    "phase": null,
+                    "reveal_search_selection": true,
+                    "search_filter": null,
+                    "selection_maximum": 1,
+                    "selection_minimum": 1,
+                    "shuffle_after_search": true,
+                    "target": {
+                      "$enum": "TargetMode",
+                      "name": "CHOSEN_PLAYER"
+                    },
+                    "text_patch": null,
+                    "transform_definition_id": null,
+                    "x_multiplier": 0
+                  }
+                }
+              ]
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "QUICK_RESOURCE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Pulso histórico",
+            "permanent": false,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "compat-0.19.0",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": false,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        }
+      ]
+    },
+    "engine_version": "0.19.0",
+    "next_instance": 25,
+    "next_stack_item": 2,
+    "rules": {
+      "$type": "RuleSet",
+      "fields": {
+        "hand_limit": 6,
+        "initial_hand_size": 6,
+        "legal_action_enumeration_limit": 1000,
+        "minimum_players": 2,
+        "phase_sequence": {
+          "$tuple": [
+            {
+              "$enum": "Phase",
+              "name": "DRAW"
+            },
+            {
+              "$enum": "Phase",
+              "name": "MAINTENANCE"
+            },
+            {
+              "$enum": "Phase",
+              "name": "EFFECTS"
+            },
+            {
+              "$enum": "Phase",
+              "name": "COMBAT"
+            },
+            {
+              "$enum": "Phase",
+              "name": "LEGENDARY"
+            },
+            {
+              "$enum": "Phase",
+              "name": "DISCARD"
+            }
+          ]
+        },
+        "recycle_discard": true,
+        "ruleset_id": "universal",
+        "steps_per_maintenance": 5,
+        "version": "0.19.0",
+        "wound_limit": 50
+      }
+    },
+    "schema_version": "1",
+    "state": {
+      "$type": "GameState",
+      "fields": {
+        "active_player_index": 0,
+        "cards": {
+          "$mapping": [
+            [
+              "card-000001",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "Z",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "COMPAT-019-PING",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000001",
+                  "overridden_definition_id": null,
+                  "owner_id": "Z",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "DISCARD"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000002",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "Z",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "COMPAT-019-PING",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000002",
+                  "overridden_definition_id": null,
+                  "owner_id": "Z",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "DECK"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000003",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "Z",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "COMPAT-019-PING",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000003",
+                  "overridden_definition_id": null,
+                  "owner_id": "Z",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000004",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "Z",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "COMPAT-019-PING",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000004",
+                  "overridden_definition_id": null,
+                  "owner_id": "Z",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000005",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "Z",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "COMPAT-019-PING",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000005",
+                  "overridden_definition_id": null,
+                  "owner_id": "Z",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "DECK"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000006",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "Z",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "COMPAT-019-PING",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000006",
+                  "overridden_definition_id": null,
+                  "owner_id": "Z",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000007",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "Z",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "COMPAT-019-PING",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000007",
+                  "overridden_definition_id": null,
+                  "owner_id": "Z",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000008",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "Z",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "COMPAT-019-PING",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000008",
+                  "overridden_definition_id": null,
+                  "owner_id": "Z",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "DECK"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000009",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "Z",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "COMPAT-019-PING",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000009",
+                  "overridden_definition_id": null,
+                  "owner_id": "Z",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000010",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "Z",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "COMPAT-019-PING",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000010",
+                  "overridden_definition_id": null,
+                  "owner_id": "Z",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "DECK"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000011",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "Z",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "COMPAT-019-PING",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000011",
+                  "overridden_definition_id": null,
+                  "owner_id": "Z",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "DECK"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000012",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "Z",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "COMPAT-019-PING",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000012",
+                  "overridden_definition_id": null,
+                  "owner_id": "Z",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000013",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "A",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "COMPAT-019-PING",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000013",
+                  "overridden_definition_id": null,
+                  "owner_id": "A",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "DECK"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000014",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "A",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "COMPAT-019-PING",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000014",
+                  "overridden_definition_id": null,
+                  "owner_id": "A",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "DECK"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000015",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "A",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "COMPAT-019-PING",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000015",
+                  "overridden_definition_id": null,
+                  "owner_id": "A",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "DECK"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000016",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "A",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "COMPAT-019-PING",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000016",
+                  "overridden_definition_id": null,
+                  "owner_id": "A",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000017",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "A",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "COMPAT-019-PING",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000017",
+                  "overridden_definition_id": null,
+                  "owner_id": "A",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000018",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "A",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "COMPAT-019-PING",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000018",
+                  "overridden_definition_id": null,
+                  "owner_id": "A",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000019",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "A",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "COMPAT-019-PING",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000019",
+                  "overridden_definition_id": null,
+                  "owner_id": "A",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000020",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "A",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "COMPAT-019-PING",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000020",
+                  "overridden_definition_id": null,
+                  "owner_id": "A",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "DECK"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000021",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "A",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "COMPAT-019-PING",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000021",
+                  "overridden_definition_id": null,
+                  "owner_id": "A",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "DECK"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000022",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "A",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "COMPAT-019-PING",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000022",
+                  "overridden_definition_id": null,
+                  "owner_id": "A",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000023",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "A",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "COMPAT-019-PING",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000023",
+                  "overridden_definition_id": null,
+                  "owner_id": "A",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "DECK"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000024",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "A",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "COMPAT-019-PING",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000024",
+                  "overridden_definition_id": null,
+                  "owner_id": "A",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ]
+          ]
+        },
+        "combat": null,
+        "command_history": [
+          {
+            "$type": "PlayCard",
+            "fields": {
+              "allocations": {
+                "$tuple": []
+              },
+              "card_id": "card-000001",
+              "chosen_card_ids": {
+                "$tuple": []
+              },
+              "chosen_player_ids": {
+                "$tuple": [
+                  "A"
+                ]
+              },
+              "chosen_zone_targets": {
+                "$tuple": []
+              },
+              "cost_option_index": null,
+              "discard_card_ids": {
+                "$tuple": []
+              },
+              "player_id": "Z",
+              "sacrifice_card_ids": {
+                "$tuple": []
+              },
+              "x_value": null
+            }
+          },
+          {
+            "$type": "PassPriority",
+            "fields": {
+              "player_id": "A"
+            }
+          },
+          {
+            "$type": "PassPriority",
+            "fields": {
+              "player_id": "Z"
+            }
+          }
+        ],
+        "consecutive_passes": 0,
+        "control_changes": [],
+        "event_log": [
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000001",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "Z",
+              "sequence": 1
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000006",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "Z",
+              "sequence": 2
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000003",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "Z",
+              "sequence": 3
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000004",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "Z",
+              "sequence": 4
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000009",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "Z",
+              "sequence": 5
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000007",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "Z",
+              "sequence": 6
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000024",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "A",
+              "sequence": 7
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000018",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "A",
+              "sequence": 8
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000022",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "A",
+              "sequence": 9
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000017",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "A",
+              "sequence": 10
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000019",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "A",
+              "sequence": 11
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000016",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "A",
+              "sequence": 12
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": null,
+              "event_type": "MATCH_STARTED",
+              "payload": {
+                "$mapping": [
+                  [
+                    "seed",
+                    1900
+                  ]
+                ]
+              },
+              "player_id": null,
+              "sequence": 13
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": null,
+              "event_type": "PHASE_STARTED",
+              "payload": {
+                "$mapping": [
+                  [
+                    "phase",
+                    "DRAW"
+                  ]
+                ]
+              },
+              "player_id": "Z",
+              "sequence": 14
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000012",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "Z",
+              "sequence": 15
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000001",
+              "event_type": "CARD_PLAYED",
+              "payload": {
+                "$mapping": [
+                  [
+                    "printed_cost",
+                    0
+                  ],
+                  [
+                    "paid_cost",
+                    {
+                      "$mapping": [
+                        [
+                          "steps",
+                          0
+                        ],
+                        [
+                          "wounds",
+                          0
+                        ],
+                        [
+                          "discard_count",
+                          0
+                        ],
+                        [
+                          "sacrifice_count",
+                          0
+                        ],
+                        [
+                          "mill_count",
+                          0
+                        ]
+                      ]
+                    }
+                  ],
+                  [
+                    "cost_option_index",
+                    null
+                  ],
+                  [
+                    "x_value",
+                    null
+                  ],
+                  [
+                    "stack_size",
+                    1
+                  ],
+                  [
+                    "player_targets",
+                    {
+                      "$tuple": [
+                        "A"
+                      ]
+                    }
+                  ],
+                  [
+                    "card_targets",
+                    {
+                      "$tuple": []
+                    }
+                  ],
+                  [
+                    "zone_targets",
+                    {
+                      "$tuple": []
+                    }
+                  ],
+                  [
+                    "allocations",
+                    {
+                      "$tuple": []
+                    }
+                  ]
+                ]
+              },
+              "player_id": "Z",
+              "sequence": 16
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": null,
+              "event_type": "PRIORITY_PASSED",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "A",
+              "sequence": 17
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": null,
+              "event_type": "PRIORITY_PASSED",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "Z",
+              "sequence": 18
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000001",
+              "event_type": "WOUNDS_ADDED",
+              "payload": {
+                "$mapping": [
+                  [
+                    "amount",
+                    2
+                  ]
+                ]
+              },
+              "player_id": "A",
+              "sequence": 19
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000001",
+              "event_type": "STACK_ITEM_RESOLVED",
+              "payload": {
+                "$mapping": [
+                  [
+                    "remaining",
+                    0
+                  ]
+                ]
+              },
+              "player_id": "Z",
+              "sequence": 20
+            }
+          }
+        ],
+        "initial_decks": {
+          "$mapping": [
+            [
+              "Z",
+              {
+                "$tuple": [
+                  "COMPAT-019-PING",
+                  "COMPAT-019-PING",
+                  "COMPAT-019-PING",
+                  "COMPAT-019-PING",
+                  "COMPAT-019-PING",
+                  "COMPAT-019-PING",
+                  "COMPAT-019-PING",
+                  "COMPAT-019-PING",
+                  "COMPAT-019-PING",
+                  "COMPAT-019-PING",
+                  "COMPAT-019-PING",
+                  "COMPAT-019-PING"
+                ]
+              }
+            ],
+            [
+              "A",
+              {
+                "$tuple": [
+                  "COMPAT-019-PING",
+                  "COMPAT-019-PING",
+                  "COMPAT-019-PING",
+                  "COMPAT-019-PING",
+                  "COMPAT-019-PING",
+                  "COMPAT-019-PING",
+                  "COMPAT-019-PING",
+                  "COMPAT-019-PING",
+                  "COMPAT-019-PING",
+                  "COMPAT-019-PING",
+                  "COMPAT-019-PING",
+                  "COMPAT-019-PING"
+                ]
+              }
+            ]
+          ]
+        },
+        "pending_move_replacement": null,
+        "pending_search": null,
+        "pending_triggers": [],
+        "phase": {
+          "$enum": "Phase",
+          "name": "DRAW"
+        },
+        "phase_priority_complete": false,
+        "phase_suppressions": [],
+        "players": {
+          "$mapping": [
+            [
+              "Z",
+              {
+                "$type": "PlayerState",
+                "fields": {
+                  "conceded": false,
+                  "discard_recycling_blocked": false,
+                  "drainage_used_turn_serial": null,
+                  "mulligans_taken": 0,
+                  "player_id": "Z",
+                  "steps": 0,
+                  "wound_prevention": 0,
+                  "wounds": 0,
+                  "zones": {
+                    "$mapping": [
+                      [
+                        {
+                          "$enum": "Zone",
+                          "name": "DECK"
+                        },
+                        [
+                          "card-000002",
+                          "card-000011",
+                          "card-000010",
+                          "card-000005",
+                          "card-000008"
+                        ]
+                      ],
+                      [
+                        {
+                          "$enum": "Zone",
+                          "name": "HAND"
+                        },
+                        [
+                          "card-000006",
+                          "card-000003",
+                          "card-000004",
+                          "card-000009",
+                          "card-000007",
+                          "card-000012"
+                        ]
+                      ],
+                      [
+                        {
+                          "$enum": "Zone",
+                          "name": "BATTLEFIELD"
+                        },
+                        []
+                      ],
+                      [
+                        {
+                          "$enum": "Zone",
+                          "name": "DISCARD"
+                        },
+                        [
+                          "card-000001"
+                        ]
+                      ],
+                      [
+                        {
+                          "$enum": "Zone",
+                          "name": "EXILE"
+                        },
+                        []
+                      ],
+                      [
+                        {
+                          "$enum": "Zone",
+                          "name": "REVEAL"
+                        },
+                        []
+                      ]
+                    ]
+                  }
+                }
+              }
+            ],
+            [
+              "A",
+              {
+                "$type": "PlayerState",
+                "fields": {
+                  "conceded": false,
+                  "discard_recycling_blocked": false,
+                  "drainage_used_turn_serial": null,
+                  "mulligans_taken": 0,
+                  "player_id": "A",
+                  "steps": 0,
+                  "wound_prevention": 0,
+                  "wounds": 2,
+                  "zones": {
+                    "$mapping": [
+                      [
+                        {
+                          "$enum": "Zone",
+                          "name": "DECK"
+                        },
+                        [
+                          "card-000023",
+                          "card-000020",
+                          "card-000014",
+                          "card-000015",
+                          "card-000021",
+                          "card-000013"
+                        ]
+                      ],
+                      [
+                        {
+                          "$enum": "Zone",
+                          "name": "HAND"
+                        },
+                        [
+                          "card-000024",
+                          "card-000018",
+                          "card-000022",
+                          "card-000017",
+                          "card-000019",
+                          "card-000016"
+                        ]
+                      ],
+                      [
+                        {
+                          "$enum": "Zone",
+                          "name": "BATTLEFIELD"
+                        },
+                        []
+                      ],
+                      [
+                        {
+                          "$enum": "Zone",
+                          "name": "DISCARD"
+                        },
+                        []
+                      ],
+                      [
+                        {
+                          "$enum": "Zone",
+                          "name": "EXILE"
+                        },
+                        []
+                      ],
+                      [
+                        {
+                          "$enum": "Zone",
+                          "name": "REVEAL"
+                        },
+                        []
+                      ]
+                    ]
+                  }
+                }
+              }
+            ]
+          ]
+        },
+        "priority_player_id": "Z",
+        "random_seed": 1900,
+        "resolution": [],
+        "ruleset_id": "universal",
+        "ruleset_version": "0.19.0",
+        "setup_mulligans": [],
+        "stack": [],
+        "status": {
+          "$enum": "MatchStatus",
+          "name": "RUNNING"
+        },
+        "text_patches": [],
+        "timed_modifiers": [],
+        "turn_number": 1,
+        "turn_order": {
+          "$tuple": [
+            "Z",
+            "A"
+          ]
+        },
+        "turn_serial": 1,
+        "void": [],
+        "winner_ids": {
+          "$tuple": []
+        }
+      }
+    }
+  },
+  "sha256": "b93dc6f07bf93cfb39649263ab48390c823da5068b2057fbeb43a14788901052"
+}

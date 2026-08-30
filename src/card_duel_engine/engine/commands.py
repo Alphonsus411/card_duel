@@ -123,3 +123,32 @@ class SetReplacementOrder(GameCommand):
 @dataclass(frozen=True)
 class ResolveMoveReplacement(GameCommand):
     replacement_index: int
+
+
+# Vocabulario cerrado de comandos que pueden cruzar las fronteras de la aplicación.
+# El orden también es estable para que los consumidores puedan recorrerlo de forma
+# determinista sin descubrir clases mediante introspección.
+EXECUTABLE_COMMAND_TYPES: tuple[type[GameCommand], ...] = (
+    AdvancePhase,
+    DiscardCards,
+    TransmutePermanent,
+    Concede,
+    PlayCard,
+    PassPriority,
+    DeclareAttackers,
+    DeclareBlockers,
+    ResolveCombat,
+    ActivateAbility,
+    EquipCard,
+    DrainSteps,
+    DeclareChallenge,
+    OrderTriggeredAbilities,
+    ChooseTriggeredTargets,
+    ResolveSearchChoice,
+    SetReplacementOrder,
+    ResolveMoveReplacement,
+)
+
+# La pertenencia se consulta en las fronteras de servicio y persistencia; se deriva
+# del único registro para impedir que ambas representaciones puedan divergir.
+EXECUTABLE_COMMAND_TYPE_SET = frozenset(EXECUTABLE_COMMAND_TYPES)

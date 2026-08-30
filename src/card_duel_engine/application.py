@@ -7,6 +7,9 @@ permiten seleccionar un ``player_id``.
 
 from __future__ import annotations
 
+import hashlib
+import hmac
+import secrets
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from enum import Enum
@@ -26,6 +29,7 @@ from .storage.base import (
     InvalidStoredSnapshot,
     MatchNotFound,
     VersionConflict,
+    validate_expected_version,
     validate_match_id,
 )
 
@@ -107,8 +111,9 @@ class PublicPlayerObservation:
 
 @dataclass(frozen=True)
 class PublicLegalAction:
-    """Descripción no ejecutable de una acción, sin elecciones ni objetos internos."""
+    """Alternativa pública seleccionable, sin elecciones ni objetos internos."""
 
+    option_id: str
     action: str
 
 
@@ -122,7 +127,23 @@ class PublicMatchView:
     legal_actions: tuple[PublicLegalAction, ...]
 
     @classmethod
-    def from_view(cls, view: MatchView) -> "PublicMatchView":
+    def from_view(
+        cls,
+        view: MatchView,
+        *,
+        option_ids: Iterable[str] | None = None,
+    ) -> "PublicMatchView":
+        identifiers: tuple[str, ...]
+        if option_ids is None:
+            if view.legal_actions:
+                raise ValueError(
+                    "Las acciones legales requieren identificadores autoritativos"
+                )
+            identifiers = ()
+        else:
+            identifiers = tuple(option_ids)
+        if len(identifiers) != len(view.legal_actions):
+            raise ValueError("Cada acción legal necesita un identificador público")
         return cls(
             match_id=view.match_id,
             version=view.version,
@@ -130,8 +151,8 @@ class PublicMatchView:
             # Del comando solo se publica su discriminador. Sus campos pueden
             # representar elecciones privadas y no pertenecen a un DTO remoto.
             legal_actions=tuple(
-                PublicLegalAction(type(action).__name__)
-                for action in view.legal_actions
+                PublicLegalAction(option_id, type(action).__name__)
+                for option_id, action in zip(identifiers, view.legal_actions)
             ),
         )
 
@@ -141,7 +162,8 @@ class PublicMatchView:
             "version": self.version,
             "observation": self.observation.to_dict(),
             "legal_actions": [
-                {"action": action.action} for action in self.legal_actions
+                {"option_id": action.option_id, "action": action.action}
+                for action in self.legal_actions
             ],
         }
 
@@ -181,9 +203,23 @@ class WriteConflict(ApplicationError):
     public_message = "La versión de escritura ya no es vigente"
 
 
+class InvalidExpectedVersion(ApplicationError):
+    """La versión CAS pública no satisface el contrato del dominio."""
+
+    code = "invalid_expected_version"
+    public_message = "La versión esperada no es válida"
+
+
 class CommandRejected(ApplicationError):
     code = "command_rejected"
     public_message = "El comando fue rechazado"
+
+
+class OptionRejected(ApplicationError):
+    """Una referencia pública no resuelve a una alternativa legal vigente."""
+
+    code = "option_rejected"
+    public_message = "La alternativa pública fue rechazada"
 
 
 class InvalidDeck(ApplicationError):
@@ -296,6 +332,31 @@ class AuthenticatedMatchApplication:
     ) -> None:
         self._service = service
         self._authorization = authorization
+        # Secreto efímero de esta frontera. Los tokens sólo contienen un MAC y
+        # nunca una carga decodificable ni un GameCommand serializado.
+        self._option_secret = secrets.token_bytes(32)
+
+    def _option_id(
+        self, match_id: str, player_id: str, version: int, index: int
+    ) -> str:
+        binding = b"\0".join(
+            (
+                match_id.encode("utf-8"),
+                player_id.encode("utf-8"),
+                str(version).encode("ascii"),
+                str(index).encode("ascii"),
+            )
+        )
+        return hmac.new(self._option_secret, binding, hashlib.sha256).hexdigest()
+
+    def _public_view(self, view: MatchView, player_id: str) -> PublicMatchView:
+        return PublicMatchView.from_view(
+            view,
+            option_ids=(
+                self._option_id(view.match_id, player_id, view.version, index)
+                for index in range(len(view.legal_actions))
+            ),
+        )
 
     @staticmethod
     def _identity(identity: ExternalIdentity | None) -> ExternalIdentity:
@@ -321,6 +382,14 @@ class AuthenticatedMatchApplication:
             validate_match_id(match_id)
         except ValueError:
             raise InvalidMatchId from None
+
+    @staticmethod
+    def _expected_version(value: object) -> int:
+        """Traduce el contrato CAS antes de autorización o persistencia."""
+        try:
+            return validate_expected_version(value)
+        except ValueError:
+            raise InvalidExpectedVersion from None
 
     @staticmethod
     def _translate(operation: Callable[[], T]) -> T:
@@ -367,7 +436,7 @@ class AuthenticatedMatchApplication:
         if player_id is None:
             raise AccessDenied
         view = self._translate(lambda: self._service.view(match_id, player_id))
-        return PublicMatchView.from_view(view)
+        return self._public_view(view, player_id)
 
     def submit(
         self,
@@ -379,6 +448,7 @@ class AuthenticatedMatchApplication:
     ) -> PublicMatchView:
         principal = self._identity(identity)
         self._match_id(match_id)
+        expected_version = self._expected_version(expected_version)
         player_id = self._authorization.player_for(
             principal, match_id, Capability.SUBMIT_COMMAND
         )
@@ -392,7 +462,49 @@ class AuthenticatedMatchApplication:
                 match_id, command, expected_version=expected_version
             )
         )
-        return PublicMatchView.from_view(view)
+        return self._public_view(view, player_id)
+
+    def submit_option(
+        self,
+        identity: ExternalIdentity | None,
+        match_id: str,
+        option_id: str,
+        *,
+        expected_version: int,
+    ) -> PublicMatchView:
+        """Resuelve y ejecuta una alternativa opaca del conjunto legal actual."""
+        principal = self._identity(identity)
+        self._match_id(match_id)
+        expected_version = self._expected_version(expected_version)
+        player_id = self._authorization.player_for(
+            principal, match_id, Capability.SUBMIT_COMMAND
+        )
+        if player_id is None:
+            raise AccessDenied
+        view = self._translate(lambda: self._service.view(match_id, player_id))
+        if view.version != expected_version:
+            raise WriteConflict
+        if type(option_id) is not str:
+            raise OptionRejected
+        command = next(
+            (
+                action
+                for index, action in enumerate(view.legal_actions)
+                if hmac.compare_digest(
+                    option_id,
+                    self._option_id(match_id, player_id, expected_version, index),
+                )
+            ),
+            None,
+        )
+        if command is None:
+            raise OptionRejected
+        submitted = self._translate(
+            lambda: self._service.submit(
+                match_id, command, expected_version=expected_version
+            )
+        )
+        return self._public_view(submitted, player_id)
 
     def submit_from(
         self,
@@ -404,6 +516,7 @@ class AuthenticatedMatchApplication:
     ) -> PublicMatchView:
         principal = self._identity(identity)
         self._match_id(match_id)
+        expected_version = self._expected_version(expected_version)
         player_id = self._authorization.player_for(
             principal, match_id, Capability.SUBMIT_COMMAND
         )
@@ -421,7 +534,7 @@ class AuthenticatedMatchApplication:
                 match_id, command, expected_version=expected_version
             )
         )
-        return PublicMatchView.from_view(submitted)
+        return self._public_view(submitted, player_id)
 
     def administrative_version(
         self, identity: ExternalIdentity | None, match_id: str

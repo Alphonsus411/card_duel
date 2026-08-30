@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
+from .._version import resolve_version
 from ..domain.enums import Phase
 
 
 @dataclass(frozen=True)
 class RuleSet:
     ruleset_id: str = "universal"
-    version: str = "0.19.0"
+    version: str = field(default_factory=resolve_version)
     initial_hand_size: int = 6
     hand_limit: int = 6
     wound_limit: int = 50

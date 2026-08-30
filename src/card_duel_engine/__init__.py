@@ -1,6 +1,10 @@
 """Motor headless y extensible del nuevo juego de cartas."""
 
-from .catalog import CardCatalog
+from ._version import resolve_version
+
+__version__: str = resolve_version()
+
+from .catalog import CardCatalog, CardCatalogSnapshot
 from .application import (
     AccessDenied,
     AuthenticatedMatchApplication,
@@ -11,9 +15,11 @@ from .application import (
     InMemoryIdentityAuthorization,
     InternalLoadFailure,
     InvalidDeck,
+    InvalidExpectedVersion,
     InvalidIdentity,
     InvalidMatchId,
     MalformedCommand,
+    OptionRejected,
     PublicLegalAction,
     PublicMatchView,
     PublicPlayerObservation,
@@ -23,20 +29,30 @@ from .application import (
 from .content import (
     CollectionManifest,
     CollectionRegistry,
+    CollectionRegistrySnapshot,
     CollectionSignatureEnvelope,
     CollectionTrustPolicy,
     PermissiveCollectionTrustPolicy,
     TrustedKey,
     load_manifest,
 )
-from .engine.game import GameEngine
+from .engine.game import EngineSemantics, GameEngine
 from .persistence import dump_replay, dump_snapshot, load_snapshot, replay_from_log
-from .rules.config import RuleSet
+from .rules import (
+    DeckConstructionPolicy,
+    DeckValidationIssue,
+    DeckValidationResult,
+    InvalidDeckConstruction,
+    RuleSet,
+    classic_deck_policy,
+    mythic_deck_policy,
+)
 from .service import CommandSource, MatchService, MatchView
 from .storage import InMemoryMatchStore, SQLiteMatchStore, VersionConflict
 
 __all__ = [
     "CardCatalog",
+    "CardCatalogSnapshot",
     "AccessDenied",
     "AuthenticatedMatchApplication",
     "AuthenticationRequired",
@@ -46,9 +62,11 @@ __all__ = [
     "InMemoryIdentityAuthorization",
     "InternalLoadFailure",
     "InvalidDeck",
+    "InvalidExpectedVersion",
     "InvalidIdentity",
     "InvalidMatchId",
     "MalformedCommand",
+    "OptionRejected",
     "PublicLegalAction",
     "PublicMatchView",
     "PublicPlayerObservation",
@@ -56,16 +74,24 @@ __all__ = [
     "WriteConflict",
     "CollectionManifest",
     "CollectionRegistry",
+    "CollectionRegistrySnapshot",
     "CollectionTrustPolicy",
     "CollectionSignatureEnvelope",
     "PermissiveCollectionTrustPolicy",
     "TrustedKey",
     "GameEngine",
+    "EngineSemantics",
     "InMemoryMatchStore",
     "MatchService",
     "MatchView",
     "CommandSource",
+    "DeckConstructionPolicy",
+    "DeckValidationIssue",
+    "DeckValidationResult",
+    "InvalidDeckConstruction",
     "RuleSet",
+    "classic_deck_policy",
+    "mythic_deck_policy",
     "SQLiteMatchStore",
     "VersionConflict",
     "dump_replay",
@@ -74,4 +100,3 @@ __all__ = [
     "load_snapshot",
     "replay_from_log",
 ]
-__version__ = "0.19.0"

@@ -1,0 +1,5803 @@
+{
+  "cases": [
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 2870.4666666666667,
+        "peak_bytes_per_option": 268.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 11481.866666666667,
+          "median": 9803,
+          "minimum": 8740,
+          "p95": 30994,
+          "standard_deviation": 5579.175295771982
+        },
+        "memory_bytes": {
+          "current": 360,
+          "peak": 1072
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 4,
+          "sha256": "98cc609e122964ac65b4b57861d0b2248be7fe5df56cebeb4e2429617df4d611"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-4/exact-1/limit-8",
+      "parameters": {
+        "candidates": 4,
+        "enumeration_limit": 8,
+        "maximum_targets": 1,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 2502.4333333333334,
+        "peak_bytes_per_option": 268.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 10009.733333333334,
+          "median": 9301,
+          "minimum": 8505,
+          "p95": 17771,
+          "standard_deviation": 2265.7107199875863
+        },
+        "memory_bytes": {
+          "current": 360,
+          "peak": 1072
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 4,
+          "sha256": "98cc609e122964ac65b4b57861d0b2248be7fe5df56cebeb4e2429617df4d611"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-4/exact-1/limit-32",
+      "parameters": {
+        "candidates": 4,
+        "enumeration_limit": 32,
+        "maximum_targets": 1,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 2480.3166666666666,
+        "peak_bytes_per_option": 268.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 9921.266666666666,
+          "median": 9378,
+          "minimum": 8076,
+          "p95": 17549,
+          "standard_deviation": 2256.949029953828
+        },
+        "memory_bytes": {
+          "current": 360,
+          "peak": 1072
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 4,
+          "sha256": "98cc609e122964ac65b4b57861d0b2248be7fe5df56cebeb4e2429617df4d611"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-4/exact-1/limit-128",
+      "parameters": {
+        "candidates": 4,
+        "enumeration_limit": 128,
+        "maximum_targets": 1,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 2875.3333333333335,
+        "peak_bytes_per_option": 268.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 11501.333333333334,
+          "median": 11398,
+          "minimum": 8633,
+          "p95": 15013,
+          "standard_deviation": 1520.4628368017543
+        },
+        "memory_bytes": {
+          "current": 360,
+          "peak": 1072
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 4,
+          "sha256": "98cc609e122964ac65b4b57861d0b2248be7fe5df56cebeb4e2429617df4d611"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-4/exact-1/limit-512",
+      "parameters": {
+        "candidates": 4,
+        "enumeration_limit": 512,
+        "maximum_targets": 1,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 1564.8916666666667,
+        "peak_bytes_per_option": 203.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 12519.133333333333,
+          "median": 11649,
+          "minimum": 11056,
+          "p95": 21215,
+          "standard_deviation": 2499.7276099226337
+        },
+        "memory_bytes": {
+          "current": 392,
+          "peak": 1624
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 8,
+          "sha256": "38e76c655ac87da91cc522d571d950981a8d29191576debe8c77cf927cb5741a"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-4/range-1-4/limit-8",
+      "parameters": {
+        "candidates": 4,
+        "enumeration_limit": 8,
+        "maximum_targets": 4,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 808.0400000000001,
+        "peak_bytes_per_option": 107.2
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 12120.6,
+          "median": 12028,
+          "minimum": 11218,
+          "p95": 13094,
+          "standard_deviation": 629.4021880210731
+        },
+        "memory_bytes": {
+          "current": 840,
+          "peak": 1608
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 15,
+          "sha256": "98c5d77f1482869d62b6d427d1b5f46b913a0a44070e8e5adacc82f00db1e2df"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-4/range-1-4/limit-32",
+      "parameters": {
+        "candidates": 4,
+        "enumeration_limit": 32,
+        "maximum_targets": 4,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 819.6222222222223,
+        "peak_bytes_per_option": 107.2
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 12294.333333333334,
+          "median": 11879,
+          "minimum": 11140,
+          "p95": 17799,
+          "standard_deviation": 1644.2745976207723
+        },
+        "memory_bytes": {
+          "current": 840,
+          "peak": 1608
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 15,
+          "sha256": "98c5d77f1482869d62b6d427d1b5f46b913a0a44070e8e5adacc82f00db1e2df"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-4/range-1-4/limit-128",
+      "parameters": {
+        "candidates": 4,
+        "enumeration_limit": 128,
+        "maximum_targets": 4,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 805.2266666666667,
+        "peak_bytes_per_option": 107.2
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 12078.4,
+          "median": 11999,
+          "minimum": 10781,
+          "p95": 13700,
+          "standard_deviation": 751.360936662838
+        },
+        "memory_bytes": {
+          "current": 840,
+          "peak": 1608
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 15,
+          "sha256": "98c5d77f1482869d62b6d427d1b5f46b913a0a44070e8e5adacc82f00db1e2df"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-4/range-1-4/limit-512",
+      "parameters": {
+        "candidates": 4,
+        "enumeration_limit": 512,
+        "maximum_targets": 4,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 1419.0,
+        "peak_bytes_per_option": 221.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 11352.0,
+          "median": 11412,
+          "minimum": 10585,
+          "p95": 12369,
+          "standard_deviation": 573.3669979042344
+        },
+        "memory_bytes": {
+          "current": 536,
+          "peak": 1768
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 8,
+          "sha256": "c57212e1a8bfa8b7730339744a056cf9ce4707fa3fac0069e6c76ac723da1ea2"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-8/exact-1/limit-8",
+      "parameters": {
+        "candidates": 8,
+        "enumeration_limit": 8,
+        "maximum_targets": 1,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 1320.3666666666666,
+        "peak_bytes_per_option": 158.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 10562.933333333332,
+          "median": 9098,
+          "minimum": 8661,
+          "p95": 26439,
+          "standard_deviation": 4434.260728636038
+        },
+        "memory_bytes": {
+          "current": 584,
+          "peak": 1264
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 8,
+          "sha256": "c57212e1a8bfa8b7730339744a056cf9ce4707fa3fac0069e6c76ac723da1ea2"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-8/exact-1/limit-32",
+      "parameters": {
+        "candidates": 8,
+        "enumeration_limit": 32,
+        "maximum_targets": 1,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 1214.05,
+        "peak_bytes_per_option": 158.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 9712.4,
+          "median": 9363,
+          "minimum": 8951,
+          "p95": 11246,
+          "standard_deviation": 669.2795486832945
+        },
+        "memory_bytes": {
+          "current": 584,
+          "peak": 1264
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 8,
+          "sha256": "c57212e1a8bfa8b7730339744a056cf9ce4707fa3fac0069e6c76ac723da1ea2"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-8/exact-1/limit-128",
+      "parameters": {
+        "candidates": 8,
+        "enumeration_limit": 128,
+        "maximum_targets": 1,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 1346.9333333333334,
+        "peak_bytes_per_option": 158.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 10775.466666666667,
+          "median": 10217,
+          "minimum": 9445,
+          "p95": 15155,
+          "standard_deviation": 1567.9363082302375
+        },
+        "memory_bytes": {
+          "current": 584,
+          "peak": 1264
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 8,
+          "sha256": "c57212e1a8bfa8b7730339744a056cf9ce4707fa3fac0069e6c76ac723da1ea2"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-8/exact-1/limit-512",
+      "parameters": {
+        "candidates": 8,
+        "enumeration_limit": 512,
+        "maximum_targets": 1,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 1450.1,
+        "peak_bytes_per_option": 221.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 11600.8,
+          "median": 11200,
+          "minimum": 10524,
+          "p95": 15082,
+          "standard_deviation": 1105.963264696049
+        },
+        "memory_bytes": {
+          "current": 536,
+          "peak": 1768
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 8,
+          "sha256": "c57212e1a8bfa8b7730339744a056cf9ce4707fa3fac0069e6c76ac723da1ea2"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-8/range-1-4/limit-8",
+      "parameters": {
+        "candidates": 8,
+        "enumeration_limit": 8,
+        "maximum_targets": 4,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 478.9291666666667,
+        "peak_bytes_per_option": 65.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 15325.733333333334,
+          "median": 14519,
+          "minimum": 13677,
+          "p95": 24821,
+          "standard_deviation": 2702.1949138396644
+        },
+        "memory_bytes": {
+          "current": 776,
+          "peak": 2080
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 32,
+          "sha256": "a6b337a68a1b1eb92cea8c547556ae42934a1df84a32cb0f836fbd4118d56097"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-8/range-1-4/limit-32",
+      "parameters": {
+        "candidates": 8,
+        "enumeration_limit": 32,
+        "maximum_targets": 4,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 221.84791666666666,
+        "peak_bytes_per_option": 69.9375
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 28396.533333333333,
+          "median": 26706,
+          "minimum": 25653,
+          "p95": 44107,
+          "standard_deviation": 5060.923459870409
+        },
+        "memory_bytes": {
+          "current": 7712,
+          "peak": 8952
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 128,
+          "sha256": "598dee442c740686aa42f348528922d824087d696069dc8ad894c278e695b2dc"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-8/range-1-4/limit-128",
+      "parameters": {
+        "candidates": 8,
+        "enumeration_limit": 128,
+        "maximum_targets": 4,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 175.5411522633745,
+        "peak_bytes_per_option": 69.77777777777777
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 28437.666666666668,
+          "median": 28229,
+          "minimum": 27458,
+          "p95": 30321,
+          "standard_deviation": 696.3301420064097
+        },
+        "memory_bytes": {
+          "current": 10504,
+          "peak": 11304
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 162,
+          "sha256": "e7dfa2612124b8c5e76621b9f016c6579c6335bb4f0b3bc263727e1a015d33e2"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-8/range-1-4/limit-512",
+      "parameters": {
+        "candidates": 8,
+        "enumeration_limit": 512,
+        "maximum_targets": 4,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 2611.85,
+        "peak_bytes_per_option": 221.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 20894.8,
+          "median": 12969,
+          "minimum": 10882,
+          "p95": 120035,
+          "standard_deviation": 27545.31121158113
+        },
+        "memory_bytes": {
+          "current": 536,
+          "peak": 1768
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 8,
+          "sha256": "c57212e1a8bfa8b7730339744a056cf9ce4707fa3fac0069e6c76ac723da1ea2"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-16/exact-1/limit-8",
+      "parameters": {
+        "candidates": 16,
+        "enumeration_limit": 8,
+        "maximum_targets": 1,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 711.8541666666666,
+        "peak_bytes_per_option": 110.5
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 11389.666666666666,
+          "median": 10425,
+          "minimum": 9724,
+          "p95": 19430,
+          "standard_deviation": 2422.0698546805747
+        },
+        "memory_bytes": {
+          "current": 1032,
+          "peak": 1768
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 16,
+          "sha256": "edaaac6f6238bb65bb22e8187ee7df8d2ad4751f62436f6b82d1d7c29761176d"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-16/exact-1/limit-32",
+      "parameters": {
+        "candidates": 16,
+        "enumeration_limit": 32,
+        "maximum_targets": 1,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 762.7833333333333,
+        "peak_bytes_per_option": 110.5
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 12204.533333333333,
+          "median": 12471,
+          "minimum": 9725,
+          "p95": 15764,
+          "standard_deviation": 1649.3541535429933
+        },
+        "memory_bytes": {
+          "current": 1032,
+          "peak": 1768
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 16,
+          "sha256": "edaaac6f6238bb65bb22e8187ee7df8d2ad4751f62436f6b82d1d7c29761176d"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-16/exact-1/limit-128",
+      "parameters": {
+        "candidates": 16,
+        "enumeration_limit": 128,
+        "maximum_targets": 1,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 657.6958333333333,
+        "peak_bytes_per_option": 110.5
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 10523.133333333333,
+          "median": 10405,
+          "minimum": 9918,
+          "p95": 11825,
+          "standard_deviation": 551.55531605331
+        },
+        "memory_bytes": {
+          "current": 1032,
+          "peak": 1768
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 16,
+          "sha256": "edaaac6f6238bb65bb22e8187ee7df8d2ad4751f62436f6b82d1d7c29761176d"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-16/exact-1/limit-512",
+      "parameters": {
+        "candidates": 16,
+        "enumeration_limit": 512,
+        "maximum_targets": 1,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 1390.5333333333333,
+        "peak_bytes_per_option": 221.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 11124.266666666666,
+          "median": 10796,
+          "minimum": 10423,
+          "p95": 12424,
+          "standard_deviation": 657.2204964487801
+        },
+        "memory_bytes": {
+          "current": 536,
+          "peak": 1768
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 8,
+          "sha256": "c57212e1a8bfa8b7730339744a056cf9ce4707fa3fac0069e6c76ac723da1ea2"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-16/range-1-4/limit-8",
+      "parameters": {
+        "candidates": 16,
+        "enumeration_limit": 8,
+        "maximum_targets": 4,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 448.26666666666665,
+        "peak_bytes_per_option": 77.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 14344.533333333333,
+          "median": 14342,
+          "minimum": 13518,
+          "p95": 15735,
+          "standard_deviation": 668.1367339385669
+        },
+        "memory_bytes": {
+          "current": 1160,
+          "peak": 2464
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 32,
+          "sha256": "c0d8b8a187648b1818e8ed5193b700e84bf2d5abd89820ea3dbab8371ae02479"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-16/range-1-4/limit-32",
+      "parameters": {
+        "candidates": 16,
+        "enumeration_limit": 32,
+        "maximum_targets": 4,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 196.09166666666667,
+        "peak_bytes_per_option": 48.8125
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 25099.733333333334,
+          "median": 25081,
+          "minimum": 23759,
+          "p95": 28275,
+          "standard_deviation": 1136.2156150174683
+        },
+        "memory_bytes": {
+          "current": 5008,
+          "peak": 6248
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 128,
+          "sha256": "7740cce9d092b37afe5f5b24efdb118d9929f6888debfc23ee9c94a2da5f4560"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-16/range-1-4/limit-128",
+      "parameters": {
+        "candidates": 16,
+        "enumeration_limit": 128,
+        "maximum_targets": 4,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 130.44153645833333,
+        "peak_bytes_per_option": 68.09375
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 66786.06666666667,
+          "median": 65981,
+          "minimum": 64908,
+          "p95": 71022,
+          "standard_deviation": 1966.3832087895594
+        },
+        "memory_bytes": {
+          "current": 32648,
+          "peak": 34864
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 512,
+          "sha256": "4760959c86c762ff5d6a9e1770460a4046713818b58df3fcc04ea4fb8b40cfcd"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-16/range-1-4/limit-512",
+      "parameters": {
+        "candidates": 16,
+        "enumeration_limit": 512,
+        "maximum_targets": 4,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 1385.7,
+        "peak_bytes_per_option": 221.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 11085.6,
+          "median": 11044,
+          "minimum": 10371,
+          "p95": 12339,
+          "standard_deviation": 557.6559102938965
+        },
+        "memory_bytes": {
+          "current": 536,
+          "peak": 1768
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 8,
+          "sha256": "c57212e1a8bfa8b7730339744a056cf9ce4707fa3fac0069e6c76ac723da1ea2"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-32/exact-1/limit-8",
+      "parameters": {
+        "candidates": 32,
+        "enumeration_limit": 8,
+        "maximum_targets": 1,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 461.31458333333336,
+        "peak_bytes_per_option": 99.5
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 14762.066666666668,
+          "median": 14338,
+          "minimum": 13130,
+          "p95": 18305,
+          "standard_deviation": 1599.251899512781
+        },
+        "memory_bytes": {
+          "current": 1880,
+          "peak": 3184
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 32,
+          "sha256": "219e591b2df949995927c08a50f8a4d3499dc8d6c5864a27e0b748c52f562fb7"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-32/exact-1/limit-32",
+      "parameters": {
+        "candidates": 32,
+        "enumeration_limit": 32,
+        "maximum_targets": 1,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 371.0520833333333,
+        "peak_bytes_per_option": 83.75
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 11873.666666666666,
+          "median": 11766,
+          "minimum": 11128,
+          "p95": 13003,
+          "standard_deviation": 637.992573475212
+        },
+        "memory_bytes": {
+          "current": 1928,
+          "peak": 2680
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 32,
+          "sha256": "219e591b2df949995927c08a50f8a4d3499dc8d6c5864a27e0b748c52f562fb7"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-32/exact-1/limit-128",
+      "parameters": {
+        "candidates": 32,
+        "enumeration_limit": 128,
+        "maximum_targets": 1,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 375.82708333333335,
+        "peak_bytes_per_option": 83.75
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 12026.466666666667,
+          "median": 11949,
+          "minimum": 11309,
+          "p95": 13454,
+          "standard_deviation": 603.4059124984567
+        },
+        "memory_bytes": {
+          "current": 1928,
+          "peak": 2680
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 32,
+          "sha256": "219e591b2df949995927c08a50f8a4d3499dc8d6c5864a27e0b748c52f562fb7"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-32/exact-1/limit-512",
+      "parameters": {
+        "candidates": 32,
+        "enumeration_limit": 512,
+        "maximum_targets": 1,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 1385.1,
+        "peak_bytes_per_option": 221.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 11080.8,
+          "median": 11053,
+          "minimum": 10267,
+          "p95": 12058,
+          "standard_deviation": 546.2597759831332
+        },
+        "memory_bytes": {
+          "current": 536,
+          "peak": 1768
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 8,
+          "sha256": "c57212e1a8bfa8b7730339744a056cf9ce4707fa3fac0069e6c76ac723da1ea2"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-32/range-1-4/limit-8",
+      "parameters": {
+        "candidates": 32,
+        "enumeration_limit": 8,
+        "maximum_targets": 4,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 447.4125,
+        "peak_bytes_per_option": 99.5
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 14317.2,
+          "median": 13954,
+          "minimum": 12887,
+          "p95": 18527,
+          "standard_deviation": 1443.4501921240155
+        },
+        "memory_bytes": {
+          "current": 1880,
+          "peak": 3184
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 32,
+          "sha256": "219e591b2df949995927c08a50f8a4d3499dc8d6c5864a27e0b748c52f562fb7"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-32/range-1-4/limit-32",
+      "parameters": {
+        "candidates": 32,
+        "enumeration_limit": 32,
+        "maximum_targets": 4,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 197.2828125,
+        "peak_bytes_per_option": 47.8125
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 25252.2,
+          "median": 24791,
+          "minimum": 24218,
+          "p95": 30228,
+          "standard_deviation": 1500.9257714585926
+        },
+        "memory_bytes": {
+          "current": 4880,
+          "peak": 6120
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 128,
+          "sha256": "dbbc6f79abf208283a6abb85394798bf8841cb658a815ee25c98ae80a5e3a7df"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-32/range-1-4/limit-128",
+      "parameters": {
+        "candidates": 32,
+        "enumeration_limit": 128,
+        "maximum_targets": 4,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "target_selections",
+      "derived": {
+        "nanoseconds_per_option": 128.05611979166667,
+        "peak_bytes_per_option": 61.859375
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 65564.73333333334,
+          "median": 63816,
+          "minimum": 62074,
+          "p95": 90954,
+          "standard_deviation": 7084.21511396657
+        },
+        "memory_bytes": {
+          "current": 29456,
+          "peak": 31672
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 512,
+          "sha256": "92d630adbc206ce9324ceef877916455967c287c84edad916d6e74a818d31ee1"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "target_selections/n-32/range-1-4/limit-512",
+      "parameters": {
+        "candidates": 32,
+        "enumeration_limit": 512,
+        "maximum_targets": 4,
+        "minimum_targets": 1
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "zone_target_selections",
+      "derived": {
+        "nanoseconds_per_option": 3288.1666666666665,
+        "peak_bytes_per_option": 372.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 13152.666666666666,
+          "median": 12902,
+          "minimum": 12377,
+          "p95": 14553,
+          "standard_deviation": 648.6541744991996
+        },
+        "memory_bytes": {
+          "current": 816,
+          "peak": 1488
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 4,
+          "sha256": "891586a15647d3f121c714474248e75cedc7cf5a9fd7722a94d81cbfbb73f734"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "zone_target_selections/players-2/zones-2/targets-1-1/limit-8",
+      "parameters": {
+        "enumeration_limit": 8,
+        "maximum_targets": 1,
+        "minimum_targets": 1,
+        "observable_order": "players_then_zones",
+        "players": 2,
+        "zones_per_player": 2
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "zone_target_selections",
+      "derived": {
+        "nanoseconds_per_option": 3441.4666666666667,
+        "peak_bytes_per_option": 372.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 13765.866666666667,
+          "median": 13075,
+          "minimum": 12465,
+          "p95": 20804,
+          "standard_deviation": 2070.1690361164324
+        },
+        "memory_bytes": {
+          "current": 816,
+          "peak": 1488
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 4,
+          "sha256": "891586a15647d3f121c714474248e75cedc7cf5a9fd7722a94d81cbfbb73f734"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "zone_target_selections/players-2/zones-2/targets-1-1/limit-32",
+      "parameters": {
+        "enumeration_limit": 32,
+        "maximum_targets": 1,
+        "minimum_targets": 1,
+        "observable_order": "players_then_zones",
+        "players": 2,
+        "zones_per_player": 2
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "zone_target_selections",
+      "derived": {
+        "nanoseconds_per_option": 3408.633333333333,
+        "peak_bytes_per_option": 372.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 13634.533333333333,
+          "median": 13522,
+          "minimum": 12457,
+          "p95": 16160,
+          "standard_deviation": 1133.797844582954
+        },
+        "memory_bytes": {
+          "current": 816,
+          "peak": 1488
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 4,
+          "sha256": "891586a15647d3f121c714474248e75cedc7cf5a9fd7722a94d81cbfbb73f734"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "zone_target_selections/players-2/zones-2/targets-1-1/limit-128",
+      "parameters": {
+        "enumeration_limit": 128,
+        "maximum_targets": 1,
+        "minimum_targets": 1,
+        "observable_order": "players_then_zones",
+        "players": 2,
+        "zones_per_player": 2
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "zone_target_selections",
+      "derived": {
+        "nanoseconds_per_option": 4869.55,
+        "peak_bytes_per_option": 372.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 19478.2,
+          "median": 13291,
+          "minimum": 12616,
+          "p95": 97062,
+          "standard_deviation": 21539.730152176267
+        },
+        "memory_bytes": {
+          "current": 816,
+          "peak": 1488
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 4,
+          "sha256": "891586a15647d3f121c714474248e75cedc7cf5a9fd7722a94d81cbfbb73f734"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "zone_target_selections/players-2/zones-2/targets-1-1/limit-512",
+      "parameters": {
+        "enumeration_limit": 512,
+        "maximum_targets": 1,
+        "minimum_targets": 1,
+        "observable_order": "players_then_zones",
+        "players": 2,
+        "zones_per_player": 2
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "zone_target_selections",
+      "derived": {
+        "nanoseconds_per_option": 2754.233333333333,
+        "peak_bytes_per_option": 364.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 22033.866666666665,
+          "median": 21830,
+          "minimum": 20896,
+          "p95": 23865,
+          "standard_deviation": 904.1608474686559
+        },
+        "memory_bytes": {
+          "current": 1376,
+          "peak": 2912
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 8,
+          "sha256": "36cec01fe9e3debfc9e83539714b5bd0dbf6772889fb190316e78f2fea4d97c0"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "zone_target_selections/players-2/zones-8/targets-1-3/limit-8",
+      "parameters": {
+        "enumeration_limit": 8,
+        "maximum_targets": 3,
+        "minimum_targets": 1,
+        "observable_order": "players_then_zones",
+        "players": 2,
+        "zones_per_player": 8
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "zone_target_selections",
+      "derived": {
+        "nanoseconds_per_option": 811.6875,
+        "peak_bytes_per_option": 106.75
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 25974.0,
+          "median": 25448,
+          "minimum": 24583,
+          "p95": 30159,
+          "standard_deviation": 1681.7435680184506
+        },
+        "memory_bytes": {
+          "current": 2128,
+          "peak": 3416
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 32,
+          "sha256": "a1ca17306c20e1087e8528b78e8ffdef23d9ead841011ccc0c964b7176a6ecb9"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "zone_target_selections/players-2/zones-8/targets-1-3/limit-32",
+      "parameters": {
+        "enumeration_limit": 32,
+        "maximum_targets": 3,
+        "minimum_targets": 1,
+        "observable_order": "players_then_zones",
+        "players": 2,
+        "zones_per_player": 8
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "zone_target_selections",
+      "derived": {
+        "nanoseconds_per_option": 310.38072916666664,
+        "peak_bytes_per_option": 61.0625
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 39728.73333333333,
+          "median": 39602,
+          "minimum": 37444,
+          "p95": 44114,
+          "standard_deviation": 2081.0172466734584
+        },
+        "memory_bytes": {
+          "current": 6592,
+          "peak": 7816
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 128,
+          "sha256": "66a5a8af1a6ca4c5b5d76d8255b7157fd7120541d2df5fd498d85edfd5003b76"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "zone_target_selections/players-2/zones-8/targets-1-3/limit-128",
+      "parameters": {
+        "enumeration_limit": 128,
+        "maximum_targets": 3,
+        "minimum_targets": 1,
+        "observable_order": "players_then_zones",
+        "players": 2,
+        "zones_per_player": 8
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "zone_target_selections",
+      "derived": {
+        "nanoseconds_per_option": 196.27964205816556,
+        "peak_bytes_per_option": 65.66442953020135
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 58491.333333333336,
+          "median": 57912,
+          "minimum": 57065,
+          "p95": 62961,
+          "standard_deviation": 1649.3411960393098
+        },
+        "memory_bytes": {
+          "current": 18896,
+          "peak": 19568
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 298,
+          "sha256": "0d51a7291f9cd73da82e1e49b1c05258b76611ec8deb7b772fd151f96710678c"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "zone_target_selections/players-2/zones-8/targets-1-3/limit-512",
+      "parameters": {
+        "enumeration_limit": 512,
+        "maximum_targets": 3,
+        "minimum_targets": 1,
+        "observable_order": "players_then_zones",
+        "players": 2,
+        "zones_per_player": 8
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "zone_target_selections",
+      "derived": {
+        "nanoseconds_per_option": 2833.75,
+        "peak_bytes_per_option": 316.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 22670.0,
+          "median": 22323,
+          "minimum": 21442,
+          "p95": 25646,
+          "standard_deviation": 1191.731393513536
+        },
+        "memory_bytes": {
+          "current": 1072,
+          "peak": 2528
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 8,
+          "sha256": "3e4bbc86c53ae311ffb232f602c96976fc93a1ad2b9b43e3028690d40ca4a3e8"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "zone_target_selections/players-3/zones-4/targets-2-2/limit-8",
+      "parameters": {
+        "enumeration_limit": 8,
+        "maximum_targets": 2,
+        "minimum_targets": 2,
+        "observable_order": "players_then_zones",
+        "players": 3,
+        "zones_per_player": 4
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "zone_target_selections",
+      "derived": {
+        "nanoseconds_per_option": 786.6229166666667,
+        "peak_bytes_per_option": 87.25
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 25171.933333333334,
+          "median": 25407,
+          "minimum": 23822,
+          "p95": 27033,
+          "standard_deviation": 883.4630291130036
+        },
+        "memory_bytes": {
+          "current": 1504,
+          "peak": 2792
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 32,
+          "sha256": "13ebc0e08f108951a34f3fed99def3f755b807bfbb07ff483fc8ce1827cad8bc"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "zone_target_selections/players-3/zones-4/targets-2-2/limit-32",
+      "parameters": {
+        "enumeration_limit": 32,
+        "maximum_targets": 2,
+        "minimum_targets": 2,
+        "observable_order": "players_then_zones",
+        "players": 3,
+        "zones_per_player": 4
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "zone_target_selections",
+      "derived": {
+        "nanoseconds_per_option": 419.87070707070706,
+        "peak_bytes_per_option": 44.96969696969697
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 27711.466666666667,
+          "median": 27619,
+          "minimum": 26488,
+          "p95": 29552,
+          "standard_deviation": 709.2938003663188
+        },
+        "memory_bytes": {
+          "current": 2336,
+          "peak": 2968
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 66,
+          "sha256": "28bfe0dc56d1b57bfc645fae9ca90f82010ea6ad6a46f9e8c8c18580a726c8ad"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "zone_target_selections/players-3/zones-4/targets-2-2/limit-128",
+      "parameters": {
+        "enumeration_limit": 128,
+        "maximum_targets": 2,
+        "minimum_targets": 2,
+        "observable_order": "players_then_zones",
+        "players": 3,
+        "zones_per_player": 4
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "zone_target_selections",
+      "derived": {
+        "nanoseconds_per_option": 421.26161616161613,
+        "peak_bytes_per_option": 44.96969696969697
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 27803.266666666666,
+          "median": 27485,
+          "minimum": 26167,
+          "p95": 31750,
+          "standard_deviation": 1273.177547189184
+        },
+        "memory_bytes": {
+          "current": 2336,
+          "peak": 2968
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 66,
+          "sha256": "28bfe0dc56d1b57bfc645fae9ca90f82010ea6ad6a46f9e8c8c18580a726c8ad"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "zone_target_selections/players-3/zones-4/targets-2-2/limit-512",
+      "parameters": {
+        "enumeration_limit": 512,
+        "maximum_targets": 2,
+        "minimum_targets": 2,
+        "observable_order": "players_then_zones",
+        "players": 3,
+        "zones_per_player": 4
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "zone_target_selections",
+      "derived": {
+        "nanoseconds_per_option": 4167.05,
+        "peak_bytes_per_option": 490.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 33336.4,
+          "median": 33207,
+          "minimum": 32284,
+          "p95": 34919,
+          "standard_deviation": 829.3964931545967
+        },
+        "memory_bytes": {
+          "current": 1112,
+          "peak": 3920
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 8,
+          "sha256": "c03e3a9135911993d52fe9fc74b61abdde65e84baf89a56c5b1bf7a2ae81b56f"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "zone_target_selections/players-4/zones-8/targets-0-3/limit-8",
+      "parameters": {
+        "enumeration_limit": 8,
+        "maximum_targets": 3,
+        "minimum_targets": 0,
+        "observable_order": "players_then_zones",
+        "players": 4,
+        "zones_per_player": 8
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "zone_target_selections",
+      "derived": {
+        "nanoseconds_per_option": 1135.96875,
+        "peak_bytes_per_option": 157.75
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 36351.0,
+          "median": 36273,
+          "minimum": 35050,
+          "p95": 38889,
+          "standard_deviation": 1061.8578731907312
+        },
+        "memory_bytes": {
+          "current": 3528,
+          "peak": 5048
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 32,
+          "sha256": "151521ce8d8de75cc5588784de0fdaaa086c52a2a011c6af7cbf708acfabe9bb"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "zone_target_selections/players-4/zones-8/targets-0-3/limit-32",
+      "parameters": {
+        "enumeration_limit": 32,
+        "maximum_targets": 3,
+        "minimum_targets": 0,
+        "observable_order": "players_then_zones",
+        "players": 4,
+        "zones_per_player": 8
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "zone_target_selections",
+      "derived": {
+        "nanoseconds_per_option": 407.79322916666666,
+        "peak_bytes_per_option": 65.0625
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 52197.53333333333,
+          "median": 49484,
+          "minimum": 47474,
+          "p95": 74393,
+          "standard_deviation": 7252.3790467745985
+        },
+        "memory_bytes": {
+          "current": 6872,
+          "peak": 8328
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 128,
+          "sha256": "2cee78bf1c7c8aa1cb99c7c62bce4e37cb818a653de3a24c1a3d22724d3b957a"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "zone_target_selections/players-4/zones-8/targets-0-3/limit-128",
+      "parameters": {
+        "enumeration_limit": 128,
+        "maximum_targets": 3,
+        "minimum_targets": 0,
+        "observable_order": "players_then_zones",
+        "players": 4,
+        "zones_per_player": 8
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "zone_target_selections",
+      "derived": {
+        "nanoseconds_per_option": 194.58567708333334,
+        "peak_bytes_per_option": 69.453125
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 99627.86666666667,
+          "median": 98339,
+          "minimum": 95516,
+          "p95": 112111,
+          "standard_deviation": 4575.980735890187
+        },
+        "memory_bytes": {
+          "current": 33128,
+          "peak": 35560
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 512,
+          "sha256": "9add042dba2ae05d27cc9c0109b0a0abce4cf1c124cf276547f802a71a787f3c"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "zone_target_selections/players-4/zones-8/targets-0-3/limit-512",
+      "parameters": {
+        "enumeration_limit": 512,
+        "maximum_targets": 3,
+        "minimum_targets": 0,
+        "observable_order": "players_then_zones",
+        "players": 4,
+        "zones_per_player": 8
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 18364.216666666667,
+        "peak_bytes_per_option": 564.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 73456.86666666667,
+          "median": 72994,
+          "minimum": 68360,
+          "p95": 83819,
+          "standard_deviation": 3954.819769537394
+        },
+        "memory_bytes": {
+          "current": 672,
+          "peak": 2256
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 4,
+          "sha256": "a8b4c505e361babe40e0edde587138168e09c8e336a1b7d00277506ca36cf83a"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-4/amount-3/targets-1-1/x-0/limit-8",
+      "parameters": {
+        "amount": 3,
+        "candidates": 4,
+        "enumeration_limit": 8,
+        "maximum_targets": 1,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 1,
+        "x_multiplier": 0,
+        "x_value": 0
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 17622.583333333332,
+        "peak_bytes_per_option": 564.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 70490.33333333333,
+          "median": 70102,
+          "minimum": 66992,
+          "p95": 76868,
+          "standard_deviation": 2364.622762624899
+        },
+        "memory_bytes": {
+          "current": 672,
+          "peak": 2256
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 4,
+          "sha256": "a8b4c505e361babe40e0edde587138168e09c8e336a1b7d00277506ca36cf83a"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-4/amount-3/targets-1-1/x-0/limit-32",
+      "parameters": {
+        "amount": 3,
+        "candidates": 4,
+        "enumeration_limit": 32,
+        "maximum_targets": 1,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 1,
+        "x_multiplier": 0,
+        "x_value": 0
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 18059.0,
+        "peak_bytes_per_option": 564.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 72236.0,
+          "median": 71279,
+          "minimum": 66274,
+          "p95": 94467,
+          "standard_deviation": 6795.093114047182
+        },
+        "memory_bytes": {
+          "current": 672,
+          "peak": 2256
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 4,
+          "sha256": "a8b4c505e361babe40e0edde587138168e09c8e336a1b7d00277506ca36cf83a"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-4/amount-3/targets-1-1/x-0/limit-128",
+      "parameters": {
+        "amount": 3,
+        "candidates": 4,
+        "enumeration_limit": 128,
+        "maximum_targets": 1,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 1,
+        "x_multiplier": 0,
+        "x_value": 0
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 17823.983333333334,
+        "peak_bytes_per_option": 564.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 71295.93333333333,
+          "median": 69913,
+          "minimum": 67240,
+          "p95": 89849,
+          "standard_deviation": 5560.769724040865
+        },
+        "memory_bytes": {
+          "current": 672,
+          "peak": 2256
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 4,
+          "sha256": "a8b4c505e361babe40e0edde587138168e09c8e336a1b7d00277506ca36cf83a"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-4/amount-3/targets-1-1/x-0/limit-512",
+      "parameters": {
+        "amount": 3,
+        "candidates": 4,
+        "enumeration_limit": 512,
+        "maximum_targets": 1,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 1,
+        "x_multiplier": 0,
+        "x_value": 0
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 22102.633333333335,
+        "peak_bytes_per_option": 354.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 176821.06666666668,
+          "median": 166649,
+          "minimum": 162797,
+          "p95": 286998,
+          "standard_deviation": 31279.91215613046
+        },
+        "memory_bytes": {
+          "current": 1288,
+          "peak": 2832
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 8,
+          "sha256": "ee964af71f228e7689fdea8e403ef6445dd49d6208abac541bdf767d25052151"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-8/amount-5/targets-1-2/x-0/limit-8",
+      "parameters": {
+        "amount": 5,
+        "candidates": 8,
+        "enumeration_limit": 8,
+        "maximum_targets": 2,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 1,
+        "x_multiplier": 0,
+        "x_value": 0
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 8668.647916666667,
+        "peak_bytes_per_option": 278.75
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 277396.73333333334,
+          "median": 272525,
+          "minimum": 268103,
+          "p95": 323574,
+          "standard_deviation": 14978.02052755335
+        },
+        "memory_bytes": {
+          "current": 6664,
+          "peak": 8920
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 32,
+          "sha256": "917aaf4f185542a7f73a5a5435c4ed46dc7778f9040c1ee0c961548ce4590a94"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-8/amount-5/targets-1-2/x-0/limit-32",
+      "parameters": {
+        "amount": 5,
+        "candidates": 8,
+        "enumeration_limit": 32,
+        "maximum_targets": 2,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 1,
+        "x_multiplier": 0,
+        "x_value": 0
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 5382.333888888888,
+        "peak_bytes_per_option": 235.6
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 645880.0666666667,
+          "median": 644585,
+          "minimum": 624543,
+          "p95": 689123,
+          "standard_deviation": 17237.700304302554
+        },
+        "memory_bytes": {
+          "current": 26376,
+          "peak": 28272
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 120,
+          "sha256": "7b3f6d91aabc1c0af47e34f32e9e5e31519c0d3cc89d217cae5f0514c9212896"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-8/amount-5/targets-1-2/x-0/limit-128",
+      "parameters": {
+        "amount": 5,
+        "candidates": 8,
+        "enumeration_limit": 128,
+        "maximum_targets": 2,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 1,
+        "x_multiplier": 0,
+        "x_value": 0
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 5392.817222222222,
+        "peak_bytes_per_option": 235.6
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 647138.0666666667,
+          "median": 640891,
+          "minimum": 632180,
+          "p95": 681659,
+          "standard_deviation": 15433.761477759754
+        },
+        "memory_bytes": {
+          "current": 26376,
+          "peak": 28272
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 120,
+          "sha256": "7b3f6d91aabc1c0af47e34f32e9e5e31519c0d3cc89d217cae5f0514c9212896"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-8/amount-5/targets-1-2/x-0/limit-512",
+      "parameters": {
+        "amount": 5,
+        "candidates": 8,
+        "enumeration_limit": 512,
+        "maximum_targets": 2,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 1,
+        "x_multiplier": 0,
+        "x_value": 0
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 53527.35833333333,
+        "peak_bytes_per_option": 517.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 428218.86666666664,
+          "median": 406817,
+          "minimum": 391076,
+          "p95": 622595,
+          "standard_deviation": 58653.37410446304
+        },
+        "memory_bytes": {
+          "current": 2008,
+          "peak": 4136
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 8,
+          "sha256": "c4f9f00a07a13598baaa84425944528547aa73c01fb8a19687d08d111a20c017"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-16/amount-10/targets-2-3/x-0/limit-8",
+      "parameters": {
+        "amount": 10,
+        "candidates": 16,
+        "enumeration_limit": 8,
+        "maximum_targets": 3,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 2,
+        "x_multiplier": 0,
+        "x_value": 0
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 16455.095833333333,
+        "peak_bytes_per_option": 306.5
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 526563.0666666667,
+          "median": 495715,
+          "minimum": 486518,
+          "p95": 881588,
+          "standard_deviation": 99129.02377094688
+        },
+        "memory_bytes": {
+          "current": 7488,
+          "peak": 9808
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 32,
+          "sha256": "9a78b8d901d4c13fea7fe978e557df9d56105627592552c53b4bed8d9cdff50c"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-16/amount-10/targets-2-3/x-0/limit-32",
+      "parameters": {
+        "amount": 10,
+        "candidates": 16,
+        "enumeration_limit": 32,
+        "maximum_targets": 3,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 2,
+        "x_multiplier": 0,
+        "x_value": 0
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 7368.004166666667,
+        "peak_bytes_per_option": 250.625
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 943104.5333333333,
+          "median": 927973,
+          "minimum": 893300,
+          "p95": 1047804,
+          "standard_deviation": 46260.066414730085
+        },
+        "memory_bytes": {
+          "current": 28992,
+          "peak": 32080
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 128,
+          "sha256": "61281e69288a0f8fd700d53b8039ac424d3cfb29185b881729c8333919ff3cf5"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-16/amount-10/targets-2-3/x-0/limit-128",
+      "parameters": {
+        "amount": 10,
+        "candidates": 16,
+        "enumeration_limit": 128,
+        "maximum_targets": 3,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 2,
+        "x_multiplier": 0,
+        "x_value": 0
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 6109.157682291667,
+        "peak_bytes_per_option": 236.78125
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 3127888.7333333334,
+          "median": 2651192,
+          "minimum": 2518911,
+          "p95": 9385040,
+          "standard_deviation": 1736905.2641444318
+        },
+        "memory_bytes": {
+          "current": 115008,
+          "peak": 121232
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 512,
+          "sha256": "bc7363b24efb27164d8ded3b78ee4df75d49ec0659d6249045bf10a604f93ca0"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-16/amount-10/targets-2-3/x-0/limit-512",
+      "parameters": {
+        "amount": 10,
+        "candidates": 16,
+        "enumeration_limit": 512,
+        "maximum_targets": 3,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 2,
+        "x_multiplier": 0,
+        "x_value": 0
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 272598.7833333333,
+        "peak_bytes_per_option": 415.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 2180790.2666666666,
+          "median": 1106770,
+          "minimum": 1081299,
+          "p95": 17252716,
+          "standard_deviation": 4169551.6399889784
+        },
+        "memory_bytes": {
+          "current": 1184,
+          "peak": 3320
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 8,
+          "sha256": "3024553fe039e8aa2b5f652d6451384948653e451e3e8617c1e318ea10576b25"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-32/amount-20/targets-1-4/x-0/limit-8",
+      "parameters": {
+        "amount": 20,
+        "candidates": 32,
+        "enumeration_limit": 8,
+        "maximum_targets": 4,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 1,
+        "x_multiplier": 0,
+        "x_value": 0
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 38031.6875,
+        "peak_bytes_per_option": 207.25
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 1217014.0,
+          "median": 1178856,
+          "minimum": 1164041,
+          "p95": 1624195,
+          "standard_deviation": 116313.41441983379
+        },
+        "memory_bytes": {
+          "current": 4552,
+          "peak": 6632
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 32,
+          "sha256": "500c807e11dd75407f3932a75fdc4399c939056cd4124c6de5b574190dec7589"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-32/amount-20/targets-1-4/x-0/limit-32",
+      "parameters": {
+        "amount": 20,
+        "candidates": 32,
+        "enumeration_limit": 32,
+        "maximum_targets": 4,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 1,
+        "x_multiplier": 0,
+        "x_value": 0
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 12272.609895833333,
+        "peak_bytes_per_option": 231.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 1570894.0666666667,
+          "median": 1576589,
+          "minimum": 1538575,
+          "p95": 1597957,
+          "standard_deviation": 16372.556936474377
+        },
+        "memory_bytes": {
+          "current": 26056,
+          "peak": 29568
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 128,
+          "sha256": "f0a457b61bdb49b4785b1eb0a472bebb431afe6d17d1cae9ef8168cff2d45173"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-32/amount-20/targets-1-4/x-0/limit-128",
+      "parameters": {
+        "amount": 20,
+        "candidates": 32,
+        "enumeration_limit": 128,
+        "maximum_targets": 4,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 1,
+        "x_multiplier": 0,
+        "x_value": 0
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 6418.549739583334,
+        "peak_bytes_per_option": 231.875
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 3286297.466666667,
+          "median": 3228887,
+          "minimum": 3159869,
+          "p95": 3507775,
+          "standard_deviation": 128915.67006982658
+        },
+        "memory_bytes": {
+          "current": 112072,
+          "peak": 118720
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 512,
+          "sha256": "befd4629f4c068c7bc23d3d0ade55432c8dd788076dbcd4203c1ed8462ab3dcb"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-32/amount-20/targets-1-4/x-0/limit-512",
+      "parameters": {
+        "amount": 20,
+        "candidates": 32,
+        "enumeration_limit": 512,
+        "maximum_targets": 4,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 1,
+        "x_multiplier": 0,
+        "x_value": 0
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 20898.066666666666,
+        "peak_bytes_per_option": 354.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 167184.53333333333,
+          "median": 163283,
+          "minimum": 159395,
+          "p95": 188406,
+          "standard_deviation": 8129.174882278438
+        },
+        "memory_bytes": {
+          "current": 1288,
+          "peak": 2832
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 8,
+          "sha256": "c56c3908ff7562427bcc833b1f3f964f9227adbad9ef9308261f71204003a8bb"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-8/amount-3/targets-1-2/x-2/limit-8",
+      "parameters": {
+        "amount": 3,
+        "candidates": 8,
+        "enumeration_limit": 8,
+        "maximum_targets": 2,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 1,
+        "x_multiplier": 1,
+        "x_value": 2
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 8585.747916666667,
+        "peak_bytes_per_option": 278.75
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 274743.93333333335,
+          "median": 274440,
+          "minimum": 267689,
+          "p95": 284410,
+          "standard_deviation": 4860.324937207192
+        },
+        "memory_bytes": {
+          "current": 6664,
+          "peak": 8920
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 32,
+          "sha256": "666e1111d04fe03d461d74eb65daa6ba867f25d1f4386fe745073148bcbb7399"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-8/amount-3/targets-1-2/x-2/limit-32",
+      "parameters": {
+        "amount": 3,
+        "candidates": 8,
+        "enumeration_limit": 32,
+        "maximum_targets": 2,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 1,
+        "x_multiplier": 1,
+        "x_value": 2
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 7106.658333333334,
+        "peak_bytes_per_option": 244.75
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 454826.13333333336,
+          "median": 443928,
+          "minimum": 412487,
+          "p95": 646698,
+          "standard_deviation": 62363.54451333461
+        },
+        "memory_bytes": {
+          "current": 13832,
+          "peak": 15664
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 64,
+          "sha256": "c77a7dfd84cce8e277a5ac4c56f7bdd9baab2923e72cec05f2501da11cfb3e64"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-8/amount-3/targets-1-2/x-2/limit-128",
+      "parameters": {
+        "amount": 3,
+        "candidates": 8,
+        "enumeration_limit": 128,
+        "maximum_targets": 2,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 1,
+        "x_multiplier": 1,
+        "x_value": 2
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 6507.10625,
+        "peak_bytes_per_option": 244.75
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 416454.8,
+          "median": 412643,
+          "minimum": 406706,
+          "p95": 437712,
+          "standard_deviation": 10959.04604294683
+        },
+        "memory_bytes": {
+          "current": 13832,
+          "peak": 15664
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 64,
+          "sha256": "c77a7dfd84cce8e277a5ac4c56f7bdd9baab2923e72cec05f2501da11cfb3e64"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-8/amount-3/targets-1-2/x-2/limit-512",
+      "parameters": {
+        "amount": 3,
+        "candidates": 8,
+        "enumeration_limit": 512,
+        "maximum_targets": 2,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 1,
+        "x_multiplier": 1,
+        "x_value": 2
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 50651.03333333333,
+        "peak_bytes_per_option": 517.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 405208.26666666666,
+          "median": 401525,
+          "minimum": 397170,
+          "p95": 423315,
+          "standard_deviation": 8324.337369310259
+        },
+        "memory_bytes": {
+          "current": 2008,
+          "peak": 4136
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 8,
+          "sha256": "5690be29329902baba5bcf82d4a0e6db7e7891bbe29eb4d183e7b5c4e0fd1b7a"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-16/amount-5/targets-2-4/x-3/limit-8",
+      "parameters": {
+        "amount": 5,
+        "candidates": 16,
+        "enumeration_limit": 8,
+        "maximum_targets": 4,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 2,
+        "x_multiplier": 1,
+        "x_value": 3
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 15795.1375,
+        "peak_bytes_per_option": 306.5
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 505444.4,
+          "median": 497841,
+          "minimum": 490527,
+          "p95": 531956,
+          "standard_deviation": 14694.535718131028
+        },
+        "memory_bytes": {
+          "current": 7488,
+          "peak": 9808
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 32,
+          "sha256": "691cda9a62b2a05b6ccf0dbdc272f072ec914929c5f5201ef8dfc59b68421cb3"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-16/amount-5/targets-2-4/x-3/limit-32",
+      "parameters": {
+        "amount": 5,
+        "candidates": 16,
+        "enumeration_limit": 32,
+        "maximum_targets": 4,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 2,
+        "x_multiplier": 1,
+        "x_value": 3
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 7295.544270833333,
+        "peak_bytes_per_option": 250.625
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 933829.6666666666,
+          "median": 919088,
+          "minimum": 895648,
+          "p95": 1007737,
+          "standard_deviation": 38075.244326514956
+        },
+        "memory_bytes": {
+          "current": 28992,
+          "peak": 32080
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 128,
+          "sha256": "03a08d35576d69ff0db1fab83f17ec33642deefdc408e0cd0560dac922d03566"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-16/amount-5/targets-2-4/x-3/limit-128",
+      "parameters": {
+        "amount": 5,
+        "candidates": 16,
+        "enumeration_limit": 128,
+        "maximum_targets": 4,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 2,
+        "x_multiplier": 1,
+        "x_value": 3
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 6093.747265625,
+        "peak_bytes_per_option": 243.828125
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 3119998.6,
+          "median": 2680456,
+          "minimum": 2642772,
+          "p95": 6317254,
+          "standard_deviation": 1047944.1818700351
+        },
+        "memory_bytes": {
+          "current": 117952,
+          "peak": 124840
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 512,
+          "sha256": "81e4b7ae4f68f2fbc371d61f21f5bdc5811c095b3ade4caa07096024d149e16c"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-16/amount-5/targets-2-4/x-3/limit-512",
+      "parameters": {
+        "amount": 5,
+        "candidates": 16,
+        "enumeration_limit": 512,
+        "maximum_targets": 4,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 2,
+        "x_multiplier": 1,
+        "x_value": 3
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 141037.15833333333,
+        "peak_bytes_per_option": 736.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 1128297.2666666666,
+          "median": 1119482,
+          "minimum": 1098884,
+          "p95": 1309771,
+          "standard_deviation": 51644.830668528215
+        },
+        "memory_bytes": {
+          "current": 2672,
+          "peak": 5888
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 8,
+          "sha256": "dcd9d7890dc6056c9ca577752e9b67edc81a1e8f69b6bdf71a24a36346109992"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-32/amount-10/targets-3-5/x-5/limit-8",
+      "parameters": {
+        "amount": 10,
+        "candidates": 32,
+        "enumeration_limit": 8,
+        "maximum_targets": 5,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 3,
+        "x_multiplier": 1,
+        "x_value": 5
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 39576.63333333333,
+        "peak_bytes_per_option": 427.25
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 1266452.2666666666,
+          "median": 1243104,
+          "minimum": 1230805,
+          "p95": 1523994,
+          "standard_deviation": 74579.53078566212
+        },
+        "memory_bytes": {
+          "current": 10264,
+          "peak": 13672
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 32,
+          "sha256": "667eebe6cbbd4f5da54cfb7c6619449a2e4cdba9a10ff2d5bb472807db0965c2"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-32/amount-10/targets-3-5/x-5/limit-32",
+      "parameters": {
+        "amount": 10,
+        "candidates": 32,
+        "enumeration_limit": 32,
+        "maximum_targets": 5,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 3,
+        "x_multiplier": 1,
+        "x_value": 5
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 13678.352604166666,
+        "peak_bytes_per_option": 346.8125
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 1750829.1333333333,
+          "median": 1735937,
+          "minimum": 1720993,
+          "p95": 1879060,
+          "standard_deviation": 38989.84498350943
+        },
+        "memory_bytes": {
+          "current": 40216,
+          "peak": 44392
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 128,
+          "sha256": "19c39420985b3fc5618bfe6affc94c55c28fa14eb51ecc8c2c76b15211acb7ec"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-32/amount-10/targets-3-5/x-5/limit-128",
+      "parameters": {
+        "amount": 10,
+        "candidates": 32,
+        "enumeration_limit": 128,
+        "maximum_targets": 5,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 3,
+        "x_multiplier": 1,
+        "x_value": 5
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 7668.756901041666,
+        "peak_bytes_per_option": 326.828125
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 3926403.533333333,
+          "median": 3842693,
+          "minimum": 3809988,
+          "p95": 4426857,
+          "standard_deviation": 170656.4106664393
+        },
+        "memory_bytes": {
+          "current": 160024,
+          "peak": 167336
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 512,
+          "sha256": "9f5580866621ddf550c8a10764e9cd3ffcdc1b2998d3916865d12aeb389f4c4a"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-32/amount-10/targets-3-5/x-5/limit-512",
+      "parameters": {
+        "amount": 10,
+        "candidates": 32,
+        "enumeration_limit": 512,
+        "maximum_targets": 5,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 3,
+        "x_multiplier": 1,
+        "x_value": 5
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 139574.41666666666,
+        "peak_bytes_per_option": 549.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 1116595.3333333333,
+          "median": 1112145,
+          "minimum": 1095823,
+          "p95": 1197825,
+          "standard_deviation": 24407.900169139226
+        },
+        "memory_bytes": {
+          "current": 1840,
+          "peak": 4392
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 8,
+          "sha256": "291e32f633165dae56e888037f743bb8186d93b67759436cd68b7d2ff473f52a"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-32/amount-20/targets-2-6/x-10/limit-8",
+      "parameters": {
+        "amount": 20,
+        "candidates": 32,
+        "enumeration_limit": 8,
+        "maximum_targets": 6,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 2,
+        "x_multiplier": 1,
+        "x_value": 10
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 39705.60625,
+        "peak_bytes_per_option": 314.5
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 1270579.4,
+          "median": 1201096,
+          "minimum": 1187488,
+          "p95": 2181080,
+          "standard_deviation": 252461.8638693773
+        },
+        "memory_bytes": {
+          "current": 7320,
+          "peak": 10064
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 32,
+          "sha256": "2165d74aa313501e5b03fe87bd1d73aeb7e8e6343b92fa690f378fe1b0d34003"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-32/amount-20/targets-2-6/x-10/limit-32",
+      "parameters": {
+        "amount": 20,
+        "candidates": 32,
+        "enumeration_limit": 32,
+        "maximum_targets": 6,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 2,
+        "x_multiplier": 1,
+        "x_value": 10
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 20057.947916666668,
+        "peak_bytes_per_option": 252.625
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 2567417.3333333335,
+          "median": 1611397,
+          "minimum": 1585728,
+          "p95": 14281419,
+          "standard_deviation": 3247885.6861139825
+        },
+        "memory_bytes": {
+          "current": 28824,
+          "peak": 32336
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 128,
+          "sha256": "73a044bc800585b490643d71b5fb83fb869ac663fe5058f6c059163ab821d87e"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-32/amount-20/targets-2-6/x-10/limit-128",
+      "parameters": {
+        "amount": 20,
+        "candidates": 32,
+        "enumeration_limit": 128,
+        "maximum_targets": 6,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 2,
+        "x_multiplier": 1,
+        "x_value": 10
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "allocation_selections",
+      "derived": {
+        "nanoseconds_per_option": 6326.775260416666,
+        "peak_bytes_per_option": 237.28125
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 3239308.933333333,
+          "median": 3238879,
+          "minimum": 3194965,
+          "p95": 3300091,
+          "standard_deviation": 23879.66792801736
+        },
+        "memory_bytes": {
+          "current": 114840,
+          "peak": 121488
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 512,
+          "sha256": "0f987e54fa708a0b2711030d0cc8d2415e9a720c3fc3cf0a9b7048a6ef7ca970"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "allocation_selections/n-32/amount-20/targets-2-6/x-10/limit-512",
+      "parameters": {
+        "amount": 20,
+        "candidates": 32,
+        "enumeration_limit": 512,
+        "maximum_targets": 6,
+        "memory_profiler": "tracemalloc",
+        "minimum_targets": 2,
+        "x_multiplier": 1,
+        "x_value": 10
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "card_cost_options",
+      "derived": {
+        "nanoseconds_per_option": 10640.533333333333,
+        "peak_bytes_per_option": 1112.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 10640.533333333333,
+          "median": 9947,
+          "minimum": 9475,
+          "p95": 13780,
+          "standard_deviation": 1413.6819639643477
+        },
+        "memory_bytes": {
+          "current": 280,
+          "peak": 1112
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 1,
+          "sha256": "e9b419b7740028af19455eb70edcb7eeed70067caae7eb9accfb99351d3d0a77"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "card_cost_options/fixed/limit-8",
+      "parameters": {
+        "cost_family": "fixed",
+        "definition_id": "BENCH_FIXED",
+        "enumeration_limit": 8
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "card_cost_options",
+      "derived": {
+        "nanoseconds_per_option": 12623.533333333333,
+        "peak_bytes_per_option": 1112.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 12623.533333333333,
+          "median": 11343,
+          "minimum": 9238,
+          "p95": 19080,
+          "standard_deviation": 3486.7293693715455
+        },
+        "memory_bytes": {
+          "current": 280,
+          "peak": 1112
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 1,
+          "sha256": "e9b419b7740028af19455eb70edcb7eeed70067caae7eb9accfb99351d3d0a77"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "card_cost_options/fixed/limit-32",
+      "parameters": {
+        "cost_family": "fixed",
+        "definition_id": "BENCH_FIXED",
+        "enumeration_limit": 32
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "card_cost_options",
+      "derived": {
+        "nanoseconds_per_option": 14402.0,
+        "peak_bytes_per_option": 1112.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 14402.0,
+          "median": 13024,
+          "minimum": 9976,
+          "p95": 28955,
+          "standard_deviation": 5265.581720678434
+        },
+        "memory_bytes": {
+          "current": 280,
+          "peak": 1112
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 1,
+          "sha256": "e9b419b7740028af19455eb70edcb7eeed70067caae7eb9accfb99351d3d0a77"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "card_cost_options/fixed/limit-128",
+      "parameters": {
+        "cost_family": "fixed",
+        "definition_id": "BENCH_FIXED",
+        "enumeration_limit": 128
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "card_cost_options",
+      "derived": {
+        "nanoseconds_per_option": 14016.666666666666,
+        "peak_bytes_per_option": 1112.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 14016.666666666666,
+          "median": 13878,
+          "minimum": 10629,
+          "p95": 20276,
+          "standard_deviation": 2461.659012787534
+        },
+        "memory_bytes": {
+          "current": 280,
+          "peak": 1112
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 1,
+          "sha256": "e9b419b7740028af19455eb70edcb7eeed70067caae7eb9accfb99351d3d0a77"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "card_cost_options/fixed/limit-512",
+      "parameters": {
+        "cost_family": "fixed",
+        "definition_id": "BENCH_FIXED",
+        "enumeration_limit": 512
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "card_cost_options",
+      "derived": {
+        "nanoseconds_per_option": 33049.2,
+        "peak_bytes_per_option": 2048.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 33049.2,
+          "median": 31354,
+          "minimum": 26407,
+          "p95": 49321,
+          "standard_deviation": 7328.266860003706
+        },
+        "memory_bytes": {
+          "current": 544,
+          "peak": 2048
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 1,
+          "sha256": "d28bca0a25066aeece92bca1a241c2a7bb4567a49dd66a0289781336f2375aab"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "card_cost_options/dynamic/limit-8",
+      "parameters": {
+        "cost_family": "dynamic",
+        "definition_id": "BENCH_DYNAMIC",
+        "enumeration_limit": 8
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "card_cost_options",
+      "derived": {
+        "nanoseconds_per_option": 34950.0,
+        "peak_bytes_per_option": 2048.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 34950.0,
+          "median": 35650,
+          "minimum": 26977,
+          "p95": 47430,
+          "standard_deviation": 5195.8695683618325
+        },
+        "memory_bytes": {
+          "current": 544,
+          "peak": 2048
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 1,
+          "sha256": "d28bca0a25066aeece92bca1a241c2a7bb4567a49dd66a0289781336f2375aab"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "card_cost_options/dynamic/limit-32",
+      "parameters": {
+        "cost_family": "dynamic",
+        "definition_id": "BENCH_DYNAMIC",
+        "enumeration_limit": 32
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "card_cost_options",
+      "derived": {
+        "nanoseconds_per_option": 31494.0,
+        "peak_bytes_per_option": 2048.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 31494.0,
+          "median": 30728,
+          "minimum": 25035,
+          "p95": 45220,
+          "standard_deviation": 5912.952296200508
+        },
+        "memory_bytes": {
+          "current": 544,
+          "peak": 2048
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 1,
+          "sha256": "d28bca0a25066aeece92bca1a241c2a7bb4567a49dd66a0289781336f2375aab"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "card_cost_options/dynamic/limit-128",
+      "parameters": {
+        "cost_family": "dynamic",
+        "definition_id": "BENCH_DYNAMIC",
+        "enumeration_limit": 128
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "card_cost_options",
+      "derived": {
+        "nanoseconds_per_option": 28673.933333333334,
+        "peak_bytes_per_option": 2048.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 28673.933333333334,
+          "median": 27910,
+          "minimum": 24915,
+          "p95": 42052,
+          "standard_deviation": 4187.460591996516
+        },
+        "memory_bytes": {
+          "current": 544,
+          "peak": 2048
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 1,
+          "sha256": "d28bca0a25066aeece92bca1a241c2a7bb4567a49dd66a0289781336f2375aab"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "card_cost_options/dynamic/limit-512",
+      "parameters": {
+        "cost_family": "dynamic",
+        "definition_id": "BENCH_DYNAMIC",
+        "enumeration_limit": 512
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "card_cost_options",
+      "derived": {
+        "nanoseconds_per_option": 9999.625,
+        "peak_bytes_per_option": 451.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 79997.0,
+          "median": 73184,
+          "minimum": 66964,
+          "p95": 164620,
+          "standard_deviation": 24052.542758362517
+        },
+        "memory_bytes": {
+          "current": 1888,
+          "peak": 3608
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 8,
+          "sha256": "f40e610f1316a2f4cf710bd6b635639fc550c4096f6cbf7a662ab48a1b6789e4"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "card_cost_options/x/limit-8",
+      "parameters": {
+        "cost_family": "x",
+        "definition_id": "BENCH_X",
+        "enumeration_limit": 8
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "card_cost_options",
+      "derived": {
+        "nanoseconds_per_option": 7530.720634920634,
+        "peak_bytes_per_option": 296.76190476190476
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 158145.13333333333,
+          "median": 154756,
+          "minimum": 148956,
+          "p95": 178080,
+          "standard_deviation": 8315.031104371568
+        },
+        "memory_bytes": {
+          "current": 4592,
+          "peak": 6232
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 21,
+          "sha256": "36ae2a1ac10f6b35a6c8db7f7ad297bdc6c3457ae10dd1f7da639a375daee7fc"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "card_cost_options/x/limit-32",
+      "parameters": {
+        "cost_family": "x",
+        "definition_id": "BENCH_X",
+        "enumeration_limit": 32
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "card_cost_options",
+      "derived": {
+        "nanoseconds_per_option": 8598.228571428572,
+        "peak_bytes_per_option": 296.76190476190476
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 180562.8,
+          "median": 155664,
+          "minimum": 148401,
+          "p95": 520759,
+          "standard_deviation": 94322.27263195657
+        },
+        "memory_bytes": {
+          "current": 4592,
+          "peak": 6232
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 21,
+          "sha256": "36ae2a1ac10f6b35a6c8db7f7ad297bdc6c3457ae10dd1f7da639a375daee7fc"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "card_cost_options/x/limit-128",
+      "parameters": {
+        "cost_family": "x",
+        "definition_id": "BENCH_X",
+        "enumeration_limit": 128
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "card_cost_options",
+      "derived": {
+        "nanoseconds_per_option": 7496.196825396825,
+        "peak_bytes_per_option": 296.76190476190476
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 157420.13333333333,
+          "median": 156937,
+          "minimum": 148913,
+          "p95": 169934,
+          "standard_deviation": 5780.185141210156
+        },
+        "memory_bytes": {
+          "current": 4592,
+          "peak": 6232
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 21,
+          "sha256": "36ae2a1ac10f6b35a6c8db7f7ad297bdc6c3457ae10dd1f7da639a375daee7fc"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "card_cost_options/x/limit-512",
+      "parameters": {
+        "cost_family": "x",
+        "definition_id": "BENCH_X",
+        "enumeration_limit": 512
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "card_cost_options",
+      "derived": {
+        "nanoseconds_per_option": 5379.022222222223,
+        "peak_bytes_per_option": 434.6666666666667
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 16137.066666666668,
+          "median": 13546,
+          "minimum": 10343,
+          "p95": 49804,
+          "standard_deviation": 9798.12639864426
+        },
+        "memory_bytes": {
+          "current": 472,
+          "peak": 1304
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 3,
+          "sha256": "59b1709d1dccfae66330491af66acd6749a2d5b716a074923b442c412a18524c"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "card_cost_options/alt-fixed/limit-8",
+      "parameters": {
+        "cost_family": "alt-fixed",
+        "definition_id": "BENCH_ALT_FIXED",
+        "enumeration_limit": 8
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "card_cost_options",
+      "derived": {
+        "nanoseconds_per_option": 4861.2,
+        "peak_bytes_per_option": 434.6666666666667
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 14583.6,
+          "median": 14896,
+          "minimum": 9861,
+          "p95": 21460,
+          "standard_deviation": 2919.559355206095
+        },
+        "memory_bytes": {
+          "current": 472,
+          "peak": 1304
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 3,
+          "sha256": "59b1709d1dccfae66330491af66acd6749a2d5b716a074923b442c412a18524c"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "card_cost_options/alt-fixed/limit-32",
+      "parameters": {
+        "cost_family": "alt-fixed",
+        "definition_id": "BENCH_ALT_FIXED",
+        "enumeration_limit": 32
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "card_cost_options",
+      "derived": {
+        "nanoseconds_per_option": 5534.044444444445,
+        "peak_bytes_per_option": 434.6666666666667
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 16602.133333333335,
+          "median": 16051,
+          "minimum": 12393,
+          "p95": 21552,
+          "standard_deviation": 3031.288077620438
+        },
+        "memory_bytes": {
+          "current": 472,
+          "peak": 1304
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 3,
+          "sha256": "59b1709d1dccfae66330491af66acd6749a2d5b716a074923b442c412a18524c"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "card_cost_options/alt-fixed/limit-128",
+      "parameters": {
+        "cost_family": "alt-fixed",
+        "definition_id": "BENCH_ALT_FIXED",
+        "enumeration_limit": 128
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "card_cost_options",
+      "derived": {
+        "nanoseconds_per_option": 4179.888888888889,
+        "peak_bytes_per_option": 434.6666666666667
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 12539.666666666666,
+          "median": 12288,
+          "minimum": 9930,
+          "p95": 16450,
+          "standard_deviation": 1909.2027755309905
+        },
+        "memory_bytes": {
+          "current": 472,
+          "peak": 1304
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 3,
+          "sha256": "59b1709d1dccfae66330491af66acd6749a2d5b716a074923b442c412a18524c"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "card_cost_options/alt-fixed/limit-512",
+      "parameters": {
+        "cost_family": "alt-fixed",
+        "definition_id": "BENCH_ALT_FIXED",
+        "enumeration_limit": 512
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "card_cost_options",
+      "derived": {
+        "nanoseconds_per_option": 17943.8,
+        "peak_bytes_per_option": 1388.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 35887.6,
+          "median": 32876,
+          "minimum": 28744,
+          "p95": 51324,
+          "standard_deviation": 7270.973287178075
+        },
+        "memory_bytes": {
+          "current": 736,
+          "peak": 2776
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 2,
+          "sha256": "c89b7c56bd405aba77e7168c1c09a34cba97255010d447596671bb6d12be7288"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "card_cost_options/alt-dynamic/limit-8",
+      "parameters": {
+        "cost_family": "alt-dynamic",
+        "definition_id": "BENCH_ALT_DYNAMIC",
+        "enumeration_limit": 8
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "card_cost_options",
+      "derived": {
+        "nanoseconds_per_option": 16023.833333333334,
+        "peak_bytes_per_option": 1388.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 32047.666666666668,
+          "median": 30663,
+          "minimum": 28736,
+          "p95": 52431,
+          "standard_deviation": 5877.342507662876
+        },
+        "memory_bytes": {
+          "current": 736,
+          "peak": 2776
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 2,
+          "sha256": "c89b7c56bd405aba77e7168c1c09a34cba97255010d447596671bb6d12be7288"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "card_cost_options/alt-dynamic/limit-32",
+      "parameters": {
+        "cost_family": "alt-dynamic",
+        "definition_id": "BENCH_ALT_DYNAMIC",
+        "enumeration_limit": 32
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "card_cost_options",
+      "derived": {
+        "nanoseconds_per_option": 15840.433333333332,
+        "peak_bytes_per_option": 1388.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 31680.866666666665,
+          "median": 31271,
+          "minimum": 28632,
+          "p95": 40140,
+          "standard_deviation": 3040.611565990976
+        },
+        "memory_bytes": {
+          "current": 736,
+          "peak": 2776
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 2,
+          "sha256": "c89b7c56bd405aba77e7168c1c09a34cba97255010d447596671bb6d12be7288"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "card_cost_options/alt-dynamic/limit-128",
+      "parameters": {
+        "cost_family": "alt-dynamic",
+        "definition_id": "BENCH_ALT_DYNAMIC",
+        "enumeration_limit": 128
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "card_cost_options",
+      "derived": {
+        "nanoseconds_per_option": 15385.366666666667,
+        "peak_bytes_per_option": 1388.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 30770.733333333334,
+          "median": 29763,
+          "minimum": 28168,
+          "p95": 40983,
+          "standard_deviation": 3161.2055671998364
+        },
+        "memory_bytes": {
+          "current": 736,
+          "peak": 2776
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 2,
+          "sha256": "c89b7c56bd405aba77e7168c1c09a34cba97255010d447596671bb6d12be7288"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "card_cost_options/alt-dynamic/limit-512",
+      "parameters": {
+        "cost_family": "alt-dynamic",
+        "definition_id": "BENCH_ALT_DYNAMIC",
+        "enumeration_limit": 512
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "card_cost_options",
+      "derived": {
+        "nanoseconds_per_option": 7825.992592592593,
+        "peak_bytes_per_option": 440.8888888888889
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 70433.93333333333,
+          "median": 69573,
+          "minimum": 67420,
+          "p95": 76367,
+          "standard_deviation": 2455.275616378119
+        },
+        "memory_bytes": {
+          "current": 2080,
+          "peak": 3968
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 9,
+          "sha256": "f48c5771b5a5d13296c571a55842709d926d04640cdc4e6b142684dd92d33dd7"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "card_cost_options/alt-x/limit-8",
+      "parameters": {
+        "cost_family": "alt-x",
+        "definition_id": "BENCH_ALT_X",
+        "enumeration_limit": 8
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "card_cost_options",
+      "derived": {
+        "nanoseconds_per_option": 7235.675757575757,
+        "peak_bytes_per_option": 299.6363636363636
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 159184.86666666667,
+          "median": 157172,
+          "minimum": 152027,
+          "p95": 172587,
+          "standard_deviation": 5982.57052810993
+        },
+        "memory_bytes": {
+          "current": 4792,
+          "peak": 6592
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 22,
+          "sha256": "0390cece20f901fc4c57e71723205bd00bb99ec7fffb641c34a7e9876375e01c"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "card_cost_options/alt-x/limit-32",
+      "parameters": {
+        "cost_family": "alt-x",
+        "definition_id": "BENCH_ALT_X",
+        "enumeration_limit": 32
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "card_cost_options",
+      "derived": {
+        "nanoseconds_per_option": 7055.087878787878,
+        "peak_bytes_per_option": 299.6363636363636
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 155211.93333333332,
+          "median": 156053,
+          "minimum": 151540,
+          "p95": 157846,
+          "standard_deviation": 2178.765425866764
+        },
+        "memory_bytes": {
+          "current": 4792,
+          "peak": 6592
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 22,
+          "sha256": "0390cece20f901fc4c57e71723205bd00bb99ec7fffb641c34a7e9876375e01c"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "card_cost_options/alt-x/limit-128",
+      "parameters": {
+        "cost_family": "alt-x",
+        "definition_id": "BENCH_ALT_X",
+        "enumeration_limit": 128
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "card_cost_options",
+      "derived": {
+        "nanoseconds_per_option": 7287.578787878788,
+        "peak_bytes_per_option": 299.6363636363636
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 160326.73333333334,
+          "median": 155143,
+          "minimum": 152317,
+          "p95": 196133,
+          "standard_deviation": 12363.036817561491
+        },
+        "memory_bytes": {
+          "current": 4792,
+          "peak": 6592
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 22,
+          "sha256": "0390cece20f901fc4c57e71723205bd00bb99ec7fffb641c34a7e9876375e01c"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "card_cost_options/alt-x/limit-512",
+      "parameters": {
+        "cost_family": "alt-x",
+        "definition_id": "BENCH_ALT_X",
+        "enumeration_limit": 512
+      },
+      "scenario": "synthetic_microbenchmark",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "legal_plays",
+      "derived": {
+        "microseconds_per_legal_command": 6.281344647809207,
+        "nanoseconds_per_option": 6281.344647809206,
+        "peak_bytes_per_option": 366.3560732113145
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 7550176.266666667,
+          "median": 7521709,
+          "minimum": 7429055,
+          "p95": 7809277,
+          "standard_deviation": 114351.34351604186
+        },
+        "memory_bytes": {
+          "current": 414776,
+          "peak": 440360
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 1202,
+          "sha256": "c42f82f5a862b23e740279c99479bdca9d584b0eb3b70718b2df4231a9837559"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_plays/current/small",
+      "parameters": {
+        "dimensions": [
+          "player_targets",
+          "card_targets",
+          "zone_targets",
+          "allocations",
+          "discard_choices",
+          "sacrifice_choices"
+        ],
+        "enumeration_limit": 128,
+        "player_id": "A",
+        "scenario_size": "SMALL",
+        "semantics": "CURRENT"
+      },
+      "scenario": "SMALL",
+      "semantics": "CURRENT"
+    },
+    {
+      "category": "legal_ability_activations",
+      "derived": {
+        "microseconds_per_legal_command": 10.120264583333334,
+        "nanoseconds_per_option": 10120.264583333334,
+        "peak_bytes_per_option": 441.875
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 1295393.8666666667,
+          "median": 1285347,
+          "minimum": 1267598,
+          "p95": 1338651,
+          "standard_deviation": 23084.59584988182
+        },
+        "memory_bytes": {
+          "current": 53984,
+          "peak": 56560
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 128,
+          "sha256": "490aa4b660c3c392297fb526a2179ca76fbebcbc785b9f268138d7b8f385979e"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_ability_activations/current/small",
+      "parameters": {
+        "dimensions": [
+          "player_targets",
+          "card_targets",
+          "zone_targets",
+          "allocations",
+          "discard_choices",
+          "sacrifice_choices"
+        ],
+        "enumeration_limit": 128,
+        "player_id": "A",
+        "scenario_size": "SMALL",
+        "semantics": "CURRENT"
+      },
+      "scenario": "SMALL",
+      "semantics": "CURRENT"
+    },
+    {
+      "category": "trigger_target_commands",
+      "derived": {
+        "microseconds_per_legal_command": 8.948648958333333,
+        "nanoseconds_per_option": 8948.648958333333,
+        "peak_bytes_per_option": 397.4375
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 1145427.0666666667,
+          "median": 1134096,
+          "minimum": 1110875,
+          "p95": 1223573,
+          "standard_deviation": 33501.30857245231
+        },
+        "memory_bytes": {
+          "current": 48520,
+          "peak": 50872
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 128,
+          "sha256": "7c36ef91a96f2e5ec4a3905e2c34a1c9fd5a2e7488df959fa3646bb609a06bd0"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "trigger_target_commands/current/small",
+      "parameters": {
+        "dimensions": [
+          "player_targets",
+          "card_targets",
+          "zone_targets",
+          "allocations",
+          "discard_choices",
+          "sacrifice_choices"
+        ],
+        "enumeration_limit": 128,
+        "player_id": "A",
+        "scenario_size": "SMALL",
+        "semantics": "CURRENT"
+      },
+      "scenario": "SMALL",
+      "semantics": "CURRENT"
+    },
+    {
+      "category": "legal_plays",
+      "derived": {
+        "microseconds_per_legal_command": 14.968432121212123,
+        "nanoseconds_per_option": 14968.432121212121,
+        "peak_bytes_per_option": 326.56
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 8232637.666666667,
+          "median": 8218890,
+          "minimum": 8116859,
+          "p95": 8532716,
+          "standard_deviation": 110258.02615272613
+        },
+        "memory_bytes": {
+          "current": 157104,
+          "peak": 179608
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 550,
+          "sha256": "268ac6e067938781e29a3818a2a50863c4994325ac50acb0492c1c461b239d9e"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_plays/current/medium",
+      "parameters": {
+        "dimensions": [
+          "player_targets",
+          "card_targets",
+          "zone_targets",
+          "allocations",
+          "discard_choices",
+          "sacrifice_choices"
+        ],
+        "enumeration_limit": 128,
+        "player_id": "A",
+        "scenario_size": "MEDIUM",
+        "semantics": "CURRENT"
+      },
+      "scenario": "MEDIUM",
+      "semantics": "CURRENT"
+    },
+    {
+      "category": "legal_ability_activations",
+      "derived": {
+        "microseconds_per_legal_command": 14.336534375,
+        "nanoseconds_per_option": 14336.534375,
+        "peak_bytes_per_option": 448.9375
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 1835076.4,
+          "median": 1826107,
+          "minimum": 1795422,
+          "p95": 2042156,
+          "standard_deviation": 59347.86591036181
+        },
+        "memory_bytes": {
+          "current": 53888,
+          "peak": 57464
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 128,
+          "sha256": "c9f90fccb2177f16441e9a568131640a47a55a1de8a4687494bd117afdd80ee2"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_ability_activations/current/medium",
+      "parameters": {
+        "dimensions": [
+          "player_targets",
+          "card_targets",
+          "zone_targets",
+          "allocations",
+          "discard_choices",
+          "sacrifice_choices"
+        ],
+        "enumeration_limit": 128,
+        "player_id": "A",
+        "scenario_size": "MEDIUM",
+        "semantics": "CURRENT"
+      },
+      "scenario": "MEDIUM",
+      "semantics": "CURRENT"
+    },
+    {
+      "category": "trigger_target_commands",
+      "derived": {
+        "microseconds_per_legal_command": 13.333005729166667,
+        "nanoseconds_per_option": 13333.005729166667,
+        "peak_bytes_per_option": 397.3125
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 1706624.7333333334,
+          "median": 1661674,
+          "minimum": 1627219,
+          "p95": 2261197,
+          "standard_deviation": 156665.45625197055
+        },
+        "memory_bytes": {
+          "current": 47504,
+          "peak": 50856
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 128,
+          "sha256": "1df1beeb72e8189b1d69ec9f5f5ba0daf601f4991f77ed3505cdc28265bf0726"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "trigger_target_commands/current/medium",
+      "parameters": {
+        "dimensions": [
+          "player_targets",
+          "card_targets",
+          "zone_targets",
+          "allocations",
+          "discard_choices",
+          "sacrifice_choices"
+        ],
+        "enumeration_limit": 128,
+        "player_id": "A",
+        "scenario_size": "MEDIUM",
+        "semantics": "CURRENT"
+      },
+      "scenario": "MEDIUM",
+      "semantics": "CURRENT"
+    },
+    {
+      "category": "legal_plays",
+      "derived": {
+        "microseconds_per_legal_command": 32.730234424242425,
+        "nanoseconds_per_option": 32730.234424242426,
+        "peak_bytes_per_option": 318.70545454545453
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 18001628.933333334,
+          "median": 17895363,
+          "minimum": 17724594,
+          "p95": 19422530,
+          "standard_deviation": 424690.1283489724
+        },
+        "memory_bytes": {
+          "current": 153672,
+          "peak": 175288
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 550,
+          "sha256": "7091291e73bb72ba2d7265abf3cf222be51d9b41236db8d572339305bf4054fa"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_plays/current/stress_controlled",
+      "parameters": {
+        "dimensions": [
+          "player_targets",
+          "card_targets",
+          "zone_targets",
+          "allocations",
+          "discard_choices",
+          "sacrifice_choices"
+        ],
+        "enumeration_limit": 128,
+        "player_id": "A",
+        "scenario_size": "STRESS_CONTROLLED",
+        "semantics": "CURRENT"
+      },
+      "scenario": "STRESS_CONTROLLED",
+      "semantics": "CURRENT"
+    },
+    {
+      "category": "legal_ability_activations",
+      "derived": {
+        "microseconds_per_legal_command": 28.336224479166667,
+        "nanoseconds_per_option": 28336.224479166667,
+        "peak_bytes_per_option": 440.375
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 3627036.7333333334,
+          "median": 3604264,
+          "minimum": 3572953,
+          "p95": 3821177,
+          "standard_deviation": 62601.7291551082
+        },
+        "memory_bytes": {
+          "current": 52480,
+          "peak": 56368
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 128,
+          "sha256": "52ee863ae6fd5b44c64f2ddc475d7ad119ec6fa76563a8b47b8358ea12501925"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_ability_activations/current/stress_controlled",
+      "parameters": {
+        "dimensions": [
+          "player_targets",
+          "card_targets",
+          "zone_targets",
+          "allocations",
+          "discard_choices",
+          "sacrifice_choices"
+        ],
+        "enumeration_limit": 128,
+        "player_id": "A",
+        "scenario_size": "STRESS_CONTROLLED",
+        "semantics": "CURRENT"
+      },
+      "scenario": "STRESS_CONTROLLED",
+      "semantics": "CURRENT"
+    },
+    {
+      "category": "trigger_target_commands",
+      "derived": {
+        "microseconds_per_legal_command": 27.0798375,
+        "nanoseconds_per_option": 27079.8375,
+        "peak_bytes_per_option": 384.75
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 3466219.2,
+          "median": 3436942,
+          "minimum": 3385000,
+          "p95": 3672493,
+          "standard_deviation": 77167.03443477106
+        },
+        "memory_bytes": {
+          "current": 45584,
+          "peak": 49248
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 128,
+          "sha256": "b748881b5227823e41e2d47cde7ff9b29e9382bbf897881e92675e362562264d"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "trigger_target_commands/current/stress_controlled",
+      "parameters": {
+        "dimensions": [
+          "player_targets",
+          "card_targets",
+          "zone_targets",
+          "allocations",
+          "discard_choices",
+          "sacrifice_choices"
+        ],
+        "enumeration_limit": 128,
+        "player_id": "A",
+        "scenario_size": "STRESS_CONTROLLED",
+        "semantics": "CURRENT"
+      },
+      "scenario": "STRESS_CONTROLLED",
+      "semantics": "CURRENT"
+    },
+    {
+      "category": "legal_plays",
+      "derived": {
+        "microseconds_per_legal_command": 7.476620798668885,
+        "nanoseconds_per_option": 7476.620798668884,
+        "peak_bytes_per_option": 366.3560732113145
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 8986898.2,
+          "median": 7930359,
+          "minimum": 7560558,
+          "p95": 22797487,
+          "standard_deviation": 3846715.7083395403
+        },
+        "memory_bytes": {
+          "current": 414776,
+          "peak": 440360
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 1202,
+          "sha256": "c42f82f5a862b23e740279c99479bdca9d584b0eb3b70718b2df4231a9837559"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_plays/legacy_019/small",
+      "parameters": {
+        "dimensions": [
+          "player_targets",
+          "card_targets",
+          "zone_targets",
+          "allocations",
+          "discard_choices",
+          "sacrifice_choices"
+        ],
+        "enumeration_limit": 128,
+        "player_id": "A",
+        "scenario_size": "SMALL",
+        "semantics": "LEGACY_019"
+      },
+      "scenario": "SMALL",
+      "semantics": "LEGACY_019"
+    },
+    {
+      "category": "legal_ability_activations",
+      "derived": {
+        "microseconds_per_legal_command": 10.258378645833332,
+        "nanoseconds_per_option": 10258.378645833332,
+        "peak_bytes_per_option": 441.875
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 1313072.4666666666,
+          "median": 1302206,
+          "minimum": 1262412,
+          "p95": 1387439,
+          "standard_deviation": 39349.04171072506
+        },
+        "memory_bytes": {
+          "current": 53984,
+          "peak": 56560
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 128,
+          "sha256": "490aa4b660c3c392297fb526a2179ca76fbebcbc785b9f268138d7b8f385979e"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_ability_activations/legacy_019/small",
+      "parameters": {
+        "dimensions": [
+          "player_targets",
+          "card_targets",
+          "zone_targets",
+          "allocations",
+          "discard_choices",
+          "sacrifice_choices"
+        ],
+        "enumeration_limit": 128,
+        "player_id": "A",
+        "scenario_size": "SMALL",
+        "semantics": "LEGACY_019"
+      },
+      "scenario": "SMALL",
+      "semantics": "LEGACY_019"
+    },
+    {
+      "category": "trigger_target_commands",
+      "derived": {
+        "microseconds_per_legal_command": 9.024605208333332,
+        "nanoseconds_per_option": 9024.605208333332,
+        "peak_bytes_per_option": 397.4375
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 1155149.4666666666,
+          "median": 1138458,
+          "minimum": 1115502,
+          "p95": 1257671,
+          "standard_deviation": 42517.91435025051
+        },
+        "memory_bytes": {
+          "current": 48520,
+          "peak": 50872
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 128,
+          "sha256": "7c36ef91a96f2e5ec4a3905e2c34a1c9fd5a2e7488df959fa3646bb609a06bd0"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "trigger_target_commands/legacy_019/small",
+      "parameters": {
+        "dimensions": [
+          "player_targets",
+          "card_targets",
+          "zone_targets",
+          "allocations",
+          "discard_choices",
+          "sacrifice_choices"
+        ],
+        "enumeration_limit": 128,
+        "player_id": "A",
+        "scenario_size": "SMALL",
+        "semantics": "LEGACY_019"
+      },
+      "scenario": "SMALL",
+      "semantics": "LEGACY_019"
+    },
+    {
+      "category": "legal_plays",
+      "derived": {
+        "microseconds_per_legal_command": 15.613734181818185,
+        "nanoseconds_per_option": 15613.734181818183,
+        "peak_bytes_per_option": 326.56
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 8587553.8,
+          "median": 8607303,
+          "minimum": 8194702,
+          "p95": 8960096,
+          "standard_deviation": 258835.07371109613
+        },
+        "memory_bytes": {
+          "current": 157104,
+          "peak": 179608
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 550,
+          "sha256": "268ac6e067938781e29a3818a2a50863c4994325ac50acb0492c1c461b239d9e"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_plays/legacy_019/medium",
+      "parameters": {
+        "dimensions": [
+          "player_targets",
+          "card_targets",
+          "zone_targets",
+          "allocations",
+          "discard_choices",
+          "sacrifice_choices"
+        ],
+        "enumeration_limit": 128,
+        "player_id": "A",
+        "scenario_size": "MEDIUM",
+        "semantics": "LEGACY_019"
+      },
+      "scenario": "MEDIUM",
+      "semantics": "LEGACY_019"
+    },
+    {
+      "category": "legal_ability_activations",
+      "derived": {
+        "microseconds_per_legal_command": 15.246645833333334,
+        "nanoseconds_per_option": 15246.645833333334,
+        "peak_bytes_per_option": 448.9375
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 1951570.6666666667,
+          "median": 1865773,
+          "minimum": 1810225,
+          "p95": 2968684,
+          "standard_deviation": 287779.26102797873
+        },
+        "memory_bytes": {
+          "current": 53888,
+          "peak": 57464
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 128,
+          "sha256": "c9f90fccb2177f16441e9a568131640a47a55a1de8a4687494bd117afdd80ee2"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_ability_activations/legacy_019/medium",
+      "parameters": {
+        "dimensions": [
+          "player_targets",
+          "card_targets",
+          "zone_targets",
+          "allocations",
+          "discard_choices",
+          "sacrifice_choices"
+        ],
+        "enumeration_limit": 128,
+        "player_id": "A",
+        "scenario_size": "MEDIUM",
+        "semantics": "LEGACY_019"
+      },
+      "scenario": "MEDIUM",
+      "semantics": "LEGACY_019"
+    },
+    {
+      "category": "trigger_target_commands",
+      "derived": {
+        "microseconds_per_legal_command": 13.241853645833332,
+        "nanoseconds_per_option": 13241.853645833333,
+        "peak_bytes_per_option": 397.3125
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 1694957.2666666666,
+          "median": 1671991,
+          "minimum": 1657746,
+          "p95": 1813997,
+          "standard_deviation": 49754.29809210552
+        },
+        "memory_bytes": {
+          "current": 47504,
+          "peak": 50856
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 128,
+          "sha256": "1df1beeb72e8189b1d69ec9f5f5ba0daf601f4991f77ed3505cdc28265bf0726"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "trigger_target_commands/legacy_019/medium",
+      "parameters": {
+        "dimensions": [
+          "player_targets",
+          "card_targets",
+          "zone_targets",
+          "allocations",
+          "discard_choices",
+          "sacrifice_choices"
+        ],
+        "enumeration_limit": 128,
+        "player_id": "A",
+        "scenario_size": "MEDIUM",
+        "semantics": "LEGACY_019"
+      },
+      "scenario": "MEDIUM",
+      "semantics": "LEGACY_019"
+    },
+    {
+      "category": "legal_plays",
+      "derived": {
+        "microseconds_per_legal_command": 34.95464303030303,
+        "nanoseconds_per_option": 34954.643030303036,
+        "peak_bytes_per_option": 318.70545454545453
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 19225053.666666668,
+          "median": 18683355,
+          "minimum": 18187401,
+          "p95": 25481974,
+          "standard_deviation": 1808038.9767295104
+        },
+        "memory_bytes": {
+          "current": 153672,
+          "peak": 175288
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 550,
+          "sha256": "7091291e73bb72ba2d7265abf3cf222be51d9b41236db8d572339305bf4054fa"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_plays/legacy_019/stress_controlled",
+      "parameters": {
+        "dimensions": [
+          "player_targets",
+          "card_targets",
+          "zone_targets",
+          "allocations",
+          "discard_choices",
+          "sacrifice_choices"
+        ],
+        "enumeration_limit": 128,
+        "player_id": "A",
+        "scenario_size": "STRESS_CONTROLLED",
+        "semantics": "LEGACY_019"
+      },
+      "scenario": "STRESS_CONTROLLED",
+      "semantics": "LEGACY_019"
+    },
+    {
+      "category": "legal_ability_activations",
+      "derived": {
+        "microseconds_per_legal_command": 29.574825,
+        "nanoseconds_per_option": 29574.825,
+        "peak_bytes_per_option": 440.375
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 3785577.6,
+          "median": 3672973,
+          "minimum": 3604783,
+          "p95": 4586092,
+          "standard_deviation": 252213.05882578154
+        },
+        "memory_bytes": {
+          "current": 52480,
+          "peak": 56368
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 128,
+          "sha256": "52ee863ae6fd5b44c64f2ddc475d7ad119ec6fa76563a8b47b8358ea12501925"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_ability_activations/legacy_019/stress_controlled",
+      "parameters": {
+        "dimensions": [
+          "player_targets",
+          "card_targets",
+          "zone_targets",
+          "allocations",
+          "discard_choices",
+          "sacrifice_choices"
+        ],
+        "enumeration_limit": 128,
+        "player_id": "A",
+        "scenario_size": "STRESS_CONTROLLED",
+        "semantics": "LEGACY_019"
+      },
+      "scenario": "STRESS_CONTROLLED",
+      "semantics": "LEGACY_019"
+    },
+    {
+      "category": "trigger_target_commands",
+      "derived": {
+        "microseconds_per_legal_command": 28.188946875000003,
+        "nanoseconds_per_option": 28188.946875,
+        "peak_bytes_per_option": 384.75
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 3608185.2,
+          "median": 3476426,
+          "minimum": 3400489,
+          "p95": 4242240,
+          "standard_deviation": 271603.2011877937
+        },
+        "memory_bytes": {
+          "current": 45584,
+          "peak": 49248
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 128,
+          "sha256": "b748881b5227823e41e2d47cde7ff9b29e9382bbf897881e92675e362562264d"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "trigger_target_commands/legacy_019/stress_controlled",
+      "parameters": {
+        "dimensions": [
+          "player_targets",
+          "card_targets",
+          "zone_targets",
+          "allocations",
+          "discard_choices",
+          "sacrifice_choices"
+        ],
+        "enumeration_limit": 128,
+        "player_id": "A",
+        "scenario_size": "STRESS_CONTROLLED",
+        "semantics": "LEGACY_019"
+      },
+      "scenario": "STRESS_CONTROLLED",
+      "semantics": "LEGACY_019"
+    },
+    {
+      "category": "legal_actions",
+      "derived": {
+        "microseconds_per_legal_command": 32.542353125,
+        "nanoseconds_per_option": 32542.353125,
+        "peak_bytes_per_option": 1419.125
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 4165421.2,
+          "median": 3404768,
+          "minimum": 3120703,
+          "p95": 10284757,
+          "standard_deviation": 2146566.3813079717
+        },
+        "memory_bytes": {
+          "current": 178600,
+          "peak": 181648
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 128,
+          "sha256": "9ee5f3400a045148865a32b74bfe05a643cee8aa7d46cda55f1cef9499cd24f6"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_actions/current/small/limit-8",
+      "parameters": {
+        "enumeration_limit": 8,
+        "player_id": "A",
+        "scenario_size": "SMALL",
+        "semantics": "CURRENT"
+      },
+      "scenario": "SMALL",
+      "semantics": "CURRENT"
+    },
+    {
+      "category": "legal_actions",
+      "derived": {
+        "microseconds_per_legal_command": 11.371309719222463,
+        "nanoseconds_per_option": 11371.309719222463,
+        "peak_bytes_per_option": 621.4600431965442
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 5264916.4,
+          "median": 5123344,
+          "minimum": 5035759,
+          "p95": 6071712,
+          "standard_deviation": 292787.2741640251
+        },
+        "memory_bytes": {
+          "current": 278864,
+          "peak": 287736
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 463,
+          "sha256": "d0b819dd65577a148f21c08e6cc46005d495b1feeed48883e27cd3d734998d44"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_actions/current/small/limit-32",
+      "parameters": {
+        "enumeration_limit": 32,
+        "player_id": "A",
+        "scenario_size": "SMALL",
+        "semantics": "CURRENT"
+      },
+      "scenario": "SMALL",
+      "semantics": "CURRENT"
+    },
+    {
+      "category": "legal_actions",
+      "derived": {
+        "microseconds_per_legal_command": 7.457505468572725,
+        "nanoseconds_per_option": 7457.5054685727255,
+        "peak_bytes_per_option": 370.7011572498298
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 10955075.533333333,
+          "median": 10599721,
+          "minimum": 10304904,
+          "p95": 12849953,
+          "standard_deviation": 754199.4071672355
+        },
+        "memory_bytes": {
+          "current": 518584,
+          "peak": 544560
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 1469,
+          "sha256": "64390a1066b8f86f4074637e633b544764527802d959e9f4b32ade53f0a90d88"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_actions/current/small/limit-128",
+      "parameters": {
+        "enumeration_limit": 128,
+        "player_id": "A",
+        "scenario_size": "SMALL",
+        "semantics": "CURRENT"
+      },
+      "scenario": "SMALL",
+      "semantics": "CURRENT"
+    },
+    {
+      "category": "legal_actions",
+      "derived": {
+        "microseconds_per_legal_command": 4.996685730346101,
+        "nanoseconds_per_option": 4996.685730346101,
+        "peak_bytes_per_option": 245.97060949168875
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 20741242.466666665,
+          "median": 19502423,
+          "minimum": 18921146,
+          "p95": 36611225,
+          "standard_deviation": 4420740.120526246
+        },
+        "memory_bytes": {
+          "current": 949464,
+          "peak": 1021024
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 4151,
+          "sha256": "f4901c2c18b073dab51be145d8f3c15981306f8a28205d6542d5fe903debc0f0"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_actions/current/small/limit-512",
+      "parameters": {
+        "enumeration_limit": 512,
+        "player_id": "A",
+        "scenario_size": "SMALL",
+        "semantics": "CURRENT"
+      },
+      "scenario": "SMALL",
+      "semantics": "CURRENT"
+    },
+    {
+      "category": "legal_actions",
+      "derived": {
+        "microseconds_per_legal_command": 57.5170631043257,
+        "nanoseconds_per_option": 57517.0631043257,
+        "peak_bytes_per_option": 416.2442748091603
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 7534735.266666667,
+          "median": 7476709,
+          "minimum": 7368084,
+          "p95": 8421715,
+          "standard_deviation": 251481.50592395646
+        },
+        "memory_bytes": {
+          "current": 51320,
+          "peak": 54528
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 131,
+          "sha256": "fae1520bc6894cb5a0f7cef2810aaec4473c4cfca7a004e17c33f4629182ec01"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_actions/current/medium/limit-8",
+      "parameters": {
+        "enumeration_limit": 8,
+        "player_id": "A",
+        "scenario_size": "MEDIUM",
+        "semantics": "CURRENT"
+      },
+      "scenario": "MEDIUM",
+      "semantics": "CURRENT"
+    },
+    {
+      "category": "legal_actions",
+      "derived": {
+        "microseconds_per_legal_command": 25.631037393767706,
+        "nanoseconds_per_option": 25631.037393767703,
+        "peak_bytes_per_option": 316.39660056657226
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 9047756.2,
+          "median": 9002881,
+          "minimum": 8854102,
+          "p95": 9489677,
+          "standard_deviation": 166253.3757312271
+        },
+        "memory_bytes": {
+          "current": 104752,
+          "peak": 111688
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 353,
+          "sha256": "c6492f4f5ed9326625afd67b00bc8a88474902d61b8c91ad616a2ad04f2ccffc"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_actions/current/medium/limit-32",
+      "parameters": {
+        "enumeration_limit": 32,
+        "player_id": "A",
+        "scenario_size": "MEDIUM",
+        "semantics": "CURRENT"
+      },
+      "scenario": "MEDIUM",
+      "semantics": "CURRENT"
+    },
+    {
+      "category": "legal_actions",
+      "derived": {
+        "microseconds_per_legal_command": 15.68695180234913,
+        "nanoseconds_per_option": 15686.95180234913,
+        "peak_bytes_per_option": 325.13244228432563
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 12910361.333333334,
+          "median": 12392043,
+          "minimum": 12073225,
+          "p95": 19691255,
+          "standard_deviation": 1894993.7157205134
+        },
+        "memory_bytes": {
+          "current": 252600,
+          "peak": 267584
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 823,
+          "sha256": "0e94cbf2783b9025832147d94d55cceff9da2b3815d05209517e08daaad3efc0"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_actions/current/medium/limit-128",
+      "parameters": {
+        "enumeration_limit": 128,
+        "player_id": "A",
+        "scenario_size": "MEDIUM",
+        "semantics": "CURRENT"
+      },
+      "scenario": "MEDIUM",
+      "semantics": "CURRENT"
+    },
+    {
+      "category": "legal_actions",
+      "derived": {
+        "microseconds_per_legal_command": 10.915346870142715,
+        "nanoseconds_per_option": 10915.346870142715,
+        "peak_bytes_per_option": 344.4679949130988
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 25749303.266666666,
+          "median": 24019762,
+          "minimum": 23424808,
+          "p95": 40164362,
+          "standard_deviation": 4420685.675483765
+        },
+        "memory_bytes": {
+          "current": 771504,
+          "peak": 812600
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 2359,
+          "sha256": "13fb282dace9d69ea9190f3a24de586e0d3608d4e5211972e6f194fe9acb0bbc"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_actions/current/medium/limit-512",
+      "parameters": {
+        "enumeration_limit": 512,
+        "player_id": "A",
+        "scenario_size": "MEDIUM",
+        "semantics": "CURRENT"
+      },
+      "scenario": "MEDIUM",
+      "semantics": "CURRENT"
+    },
+    {
+      "category": "legal_actions",
+      "derived": {
+        "microseconds_per_legal_command": 151.9196143884892,
+        "nanoseconds_per_option": 151919.6143884892,
+        "peak_bytes_per_option": 391.6546762589928
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 21116826.4,
+          "median": 21002841,
+          "minimum": 20619259,
+          "p95": 21923194,
+          "standard_deviation": 445943.32101749687
+        },
+        "memory_bytes": {
+          "current": 51168,
+          "peak": 54440
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 139,
+          "sha256": "b3add94743cc63b56fe31778415e2d1d51664c504ea9ea6b15b23ba00e6aa53d"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_actions/current/stress_controlled/limit-8",
+      "parameters": {
+        "enumeration_limit": 8,
+        "player_id": "A",
+        "scenario_size": "STRESS_CONTROLLED",
+        "semantics": "CURRENT"
+      },
+      "scenario": "STRESS_CONTROLLED",
+      "semantics": "CURRENT"
+    },
+    {
+      "category": "legal_actions",
+      "derived": {
+        "microseconds_per_legal_command": 61.834910433979694,
+        "nanoseconds_per_option": 61834.91043397969,
+        "peak_bytes_per_option": 300.49861495844874
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 22322402.666666668,
+          "median": 22289693,
+          "minimum": 22075209,
+          "p95": 22813559,
+          "standard_deviation": 226996.11045304174
+        },
+        "memory_bytes": {
+          "current": 101480,
+          "peak": 108480
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 361,
+          "sha256": "5ed80f992c4c1747e8f8da70e8d1e62d077daa0ab710b4ec40373964d901a432"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_actions/current/stress_controlled/limit-32",
+      "parameters": {
+        "enumeration_limit": 32,
+        "player_id": "A",
+        "scenario_size": "STRESS_CONTROLLED",
+        "semantics": "CURRENT"
+      },
+      "scenario": "STRESS_CONTROLLED",
+      "semantics": "CURRENT"
+    },
+    {
+      "category": "legal_actions",
+      "derived": {
+        "microseconds_per_legal_command": 31.237802567188126,
+        "nanoseconds_per_option": 31237.802567188126,
+        "peak_bytes_per_option": 315.77376654632974
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 25958613.933333334,
+          "median": 25829541,
+          "minimum": 25324194,
+          "p95": 26974867,
+          "standard_deviation": 527805.7071402136
+        },
+        "memory_bytes": {
+          "current": 247360,
+          "peak": 262408
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 831,
+          "sha256": "819f98ef64451c8177367e0be2ecab97dd33494b0e5417781c2f06011212e4ee"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_actions/current/stress_controlled/limit-128",
+      "parameters": {
+        "enumeration_limit": 128,
+        "player_id": "A",
+        "scenario_size": "STRESS_CONTROLLED",
+        "semantics": "CURRENT"
+      },
+      "scenario": "STRESS_CONTROLLED",
+      "semantics": "CURRENT"
+    },
+    {
+      "category": "legal_actions",
+      "derived": {
+        "microseconds_per_legal_command": 17.27741785663991,
+        "nanoseconds_per_option": 17277.41785663991,
+        "peak_bytes_per_option": 349.1170257710182
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 40895648.06666667,
+          "median": 37685245,
+          "minimum": 36972189,
+          "p95": 55134504,
+          "standard_deviation": 6908832.158664511
+        },
+        "memory_bytes": {
+          "current": 785200,
+          "peak": 826360
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 2367,
+          "sha256": "69f9a611bcf0bb3da9e19a42938f2bcf83f340fb8d3452299dbfa2f7873a98c0"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_actions/current/stress_controlled/limit-512",
+      "parameters": {
+        "enumeration_limit": 512,
+        "player_id": "A",
+        "scenario_size": "STRESS_CONTROLLED",
+        "semantics": "CURRENT"
+      },
+      "scenario": "STRESS_CONTROLLED",
+      "semantics": "CURRENT"
+    },
+    {
+      "category": "legal_actions",
+      "derived": {
+        "microseconds_per_legal_command": 24.696963020833334,
+        "nanoseconds_per_option": 24696.963020833333,
+        "peak_bytes_per_option": 1418.25
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 3161211.2666666666,
+          "median": 3123884,
+          "minimum": 3104371,
+          "p95": 3560845,
+          "standard_deviation": 112514.76483838953
+        },
+        "memory_bytes": {
+          "current": 178488,
+          "peak": 181536
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 128,
+          "sha256": "9ee5f3400a045148865a32b74bfe05a643cee8aa7d46cda55f1cef9499cd24f6"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_actions/legacy_019/small/limit-8",
+      "parameters": {
+        "enumeration_limit": 8,
+        "player_id": "A",
+        "scenario_size": "SMALL",
+        "semantics": "LEGACY_019"
+      },
+      "scenario": "SMALL",
+      "semantics": "LEGACY_019"
+    },
+    {
+      "category": "legal_actions",
+      "derived": {
+        "microseconds_per_legal_command": 11.068347444204463,
+        "nanoseconds_per_option": 11068.347444204463,
+        "peak_bytes_per_option": 621.4600431965442
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 5124644.866666666,
+          "median": 5122073,
+          "minimum": 5066659,
+          "p95": 5266418,
+          "standard_deviation": 49825.60026570774
+        },
+        "memory_bytes": {
+          "current": 278864,
+          "peak": 287736
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 463,
+          "sha256": "d0b819dd65577a148f21c08e6cc46005d495b1feeed48883e27cd3d734998d44"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_actions/legacy_019/small/limit-32",
+      "parameters": {
+        "enumeration_limit": 32,
+        "player_id": "A",
+        "scenario_size": "SMALL",
+        "semantics": "LEGACY_019"
+      },
+      "scenario": "SMALL",
+      "semantics": "LEGACY_019"
+    },
+    {
+      "category": "legal_actions",
+      "derived": {
+        "microseconds_per_legal_command": 7.303945858860904,
+        "nanoseconds_per_option": 7303.945858860903,
+        "peak_bytes_per_option": 370.7011572498298
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 10729496.466666667,
+          "median": 10486764,
+          "minimum": 10355855,
+          "p95": 14055082,
+          "standard_deviation": 925030.3455473282
+        },
+        "memory_bytes": {
+          "current": 518584,
+          "peak": 544560
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 1469,
+          "sha256": "64390a1066b8f86f4074637e633b544764527802d959e9f4b32ade53f0a90d88"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_actions/legacy_019/small/limit-128",
+      "parameters": {
+        "enumeration_limit": 128,
+        "player_id": "A",
+        "scenario_size": "SMALL",
+        "semantics": "LEGACY_019"
+      },
+      "scenario": "SMALL",
+      "semantics": "LEGACY_019"
+    },
+    {
+      "category": "legal_actions",
+      "derived": {
+        "microseconds_per_legal_command": 4.855151112181804,
+        "nanoseconds_per_option": 4855.151112181803,
+        "peak_bytes_per_option": 245.97060949168875
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 20153732.266666666,
+          "median": 19059616,
+          "minimum": 18688266,
+          "p95": 35113474,
+          "standard_deviation": 4144960.9565898287
+        },
+        "memory_bytes": {
+          "current": 949464,
+          "peak": 1021024
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 4151,
+          "sha256": "f4901c2c18b073dab51be145d8f3c15981306f8a28205d6542d5fe903debc0f0"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_actions/legacy_019/small/limit-512",
+      "parameters": {
+        "enumeration_limit": 512,
+        "player_id": "A",
+        "scenario_size": "SMALL",
+        "semantics": "LEGACY_019"
+      },
+      "scenario": "SMALL",
+      "semantics": "LEGACY_019"
+    },
+    {
+      "category": "legal_actions",
+      "derived": {
+        "microseconds_per_legal_command": 57.51347226463104,
+        "nanoseconds_per_option": 57513.47226463104,
+        "peak_bytes_per_option": 416.2442748091603
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 7534264.866666666,
+          "median": 7471638,
+          "minimum": 7406664,
+          "p95": 8175407,
+          "standard_deviation": 197288.3978139134
+        },
+        "memory_bytes": {
+          "current": 51320,
+          "peak": 54528
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 131,
+          "sha256": "fae1520bc6894cb5a0f7cef2810aaec4473c4cfca7a004e17c33f4629182ec01"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_actions/legacy_019/medium/limit-8",
+      "parameters": {
+        "enumeration_limit": 8,
+        "player_id": "A",
+        "scenario_size": "MEDIUM",
+        "semantics": "LEGACY_019"
+      },
+      "scenario": "MEDIUM",
+      "semantics": "LEGACY_019"
+    },
+    {
+      "category": "legal_actions",
+      "derived": {
+        "microseconds_per_legal_command": 25.46115014164306,
+        "nanoseconds_per_option": 25461.15014164306,
+        "peak_bytes_per_option": 316.39660056657226
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 8987786.0,
+          "median": 8960447,
+          "minimum": 8905320,
+          "p95": 9333610,
+          "standard_deviation": 104972.03964117574
+        },
+        "memory_bytes": {
+          "current": 104752,
+          "peak": 111688
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 353,
+          "sha256": "c6492f4f5ed9326625afd67b00bc8a88474902d61b8c91ad616a2ad04f2ccffc"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_actions/legacy_019/medium/limit-32",
+      "parameters": {
+        "enumeration_limit": 32,
+        "player_id": "A",
+        "scenario_size": "MEDIUM",
+        "semantics": "LEGACY_019"
+      },
+      "scenario": "MEDIUM",
+      "semantics": "LEGACY_019"
+    },
+    {
+      "category": "legal_actions",
+      "derived": {
+        "microseconds_per_legal_command": 15.192179424868366,
+        "nanoseconds_per_option": 15192.179424868367,
+        "peak_bytes_per_option": 325.13244228432563
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 12503163.666666666,
+          "median": 12265823,
+          "minimum": 12104521,
+          "p95": 15589597,
+          "standard_deviation": 873042.3460496115
+        },
+        "memory_bytes": {
+          "current": 252600,
+          "peak": 267584
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 823,
+          "sha256": "0e94cbf2783b9025832147d94d55cceff9da2b3815d05209517e08daaad3efc0"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_actions/legacy_019/medium/limit-128",
+      "parameters": {
+        "enumeration_limit": 128,
+        "player_id": "A",
+        "scenario_size": "MEDIUM",
+        "semantics": "LEGACY_019"
+      },
+      "scenario": "MEDIUM",
+      "semantics": "LEGACY_019"
+    },
+    {
+      "category": "legal_actions",
+      "derived": {
+        "microseconds_per_legal_command": 11.023430549667939,
+        "nanoseconds_per_option": 11023.430549667939,
+        "peak_bytes_per_option": 344.4679949130988
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 26004272.666666668,
+          "median": 24058740,
+          "minimum": 23542430,
+          "p95": 50240666,
+          "standard_deviation": 6772526.872739447
+        },
+        "memory_bytes": {
+          "current": 771504,
+          "peak": 812600
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 2359,
+          "sha256": "13fb282dace9d69ea9190f3a24de586e0d3608d4e5211972e6f194fe9acb0bbc"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_actions/legacy_019/medium/limit-512",
+      "parameters": {
+        "enumeration_limit": 512,
+        "player_id": "A",
+        "scenario_size": "MEDIUM",
+        "semantics": "LEGACY_019"
+      },
+      "scenario": "MEDIUM",
+      "semantics": "LEGACY_019"
+    },
+    {
+      "category": "legal_actions",
+      "derived": {
+        "microseconds_per_legal_command": 153.87663836930454,
+        "nanoseconds_per_option": 153876.63836930456,
+        "peak_bytes_per_option": 391.6546762589928
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 21388852.733333334,
+          "median": 21484299,
+          "minimum": 20899883,
+          "p95": 22055793,
+          "standard_deviation": 354594.3961954412
+        },
+        "memory_bytes": {
+          "current": 51168,
+          "peak": 54440
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 139,
+          "sha256": "b3add94743cc63b56fe31778415e2d1d51664c504ea9ea6b15b23ba00e6aa53d"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_actions/legacy_019/stress_controlled/limit-8",
+      "parameters": {
+        "enumeration_limit": 8,
+        "player_id": "A",
+        "scenario_size": "STRESS_CONTROLLED",
+        "semantics": "LEGACY_019"
+      },
+      "scenario": "STRESS_CONTROLLED",
+      "semantics": "LEGACY_019"
+    },
+    {
+      "category": "legal_actions",
+      "derived": {
+        "microseconds_per_legal_command": 63.47331246537396,
+        "nanoseconds_per_option": 63473.312465373965,
+        "peak_bytes_per_option": 300.49861495844874
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 22913865.8,
+          "median": 22516524,
+          "minimum": 22096772,
+          "p95": 26105588,
+          "standard_deviation": 1189200.3603301914
+        },
+        "memory_bytes": {
+          "current": 101480,
+          "peak": 108480
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 361,
+          "sha256": "5ed80f992c4c1747e8f8da70e8d1e62d077daa0ab710b4ec40373964d901a432"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_actions/legacy_019/stress_controlled/limit-32",
+      "parameters": {
+        "enumeration_limit": 32,
+        "player_id": "A",
+        "scenario_size": "STRESS_CONTROLLED",
+        "semantics": "LEGACY_019"
+      },
+      "scenario": "STRESS_CONTROLLED",
+      "semantics": "LEGACY_019"
+    },
+    {
+      "category": "legal_actions",
+      "derived": {
+        "microseconds_per_legal_command": 31.145551945447256,
+        "nanoseconds_per_option": 31145.551945447252,
+        "peak_bytes_per_option": 315.77376654632974
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 25881953.666666668,
+          "median": 25574157,
+          "minimum": 25312751,
+          "p95": 27934999,
+          "standard_deviation": 671611.6169750263
+        },
+        "memory_bytes": {
+          "current": 247360,
+          "peak": 262408
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 831,
+          "sha256": "819f98ef64451c8177367e0be2ecab97dd33494b0e5417781c2f06011212e4ee"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_actions/legacy_019/stress_controlled/limit-128",
+      "parameters": {
+        "enumeration_limit": 128,
+        "player_id": "A",
+        "scenario_size": "STRESS_CONTROLLED",
+        "semantics": "LEGACY_019"
+      },
+      "scenario": "STRESS_CONTROLLED",
+      "semantics": "LEGACY_019"
+    },
+    {
+      "category": "legal_actions",
+      "derived": {
+        "microseconds_per_legal_command": 18.6614189832418,
+        "nanoseconds_per_option": 18661.418983241798,
+        "peak_bytes_per_option": 349.1170257710182
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 44171578.733333334,
+          "median": 37674799,
+          "minimum": 36944585,
+          "p95": 78417205,
+          "standard_deviation": 11773661.73849199
+        },
+        "memory_bytes": {
+          "current": 785200,
+          "peak": 826360
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 2367,
+          "sha256": "69f9a611bcf0bb3da9e19a42938f2bcf83f340fb8d3452299dbfa2f7873a98c0"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "legal_actions/legacy_019/stress_controlled/limit-512",
+      "parameters": {
+        "enumeration_limit": 512,
+        "player_id": "A",
+        "scenario_size": "STRESS_CONTROLLED",
+        "semantics": "LEGACY_019"
+      },
+      "scenario": "STRESS_CONTROLLED",
+      "semantics": "LEGACY_019"
+    },
+    {
+      "category": "trigger_order_options",
+      "derived": {
+        "microseconds_per_legal_command": 2.5763238095238097,
+        "nanoseconds_per_option": 2576.3238095238094,
+        "peak_bytes_per_option": 277.7142857142857
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 18034.266666666666,
+          "median": 17481,
+          "minimum": 16133,
+          "p95": 21764,
+          "standard_deviation": 1725.6478479800262
+        },
+        "memory_bytes": {
+          "current": 1208,
+          "peak": 1944
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 7,
+          "sha256": "b4047b67d9e5dd19f72d34d156df44a164f324f5e0e97e41ef2681af534d6e4e"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "trigger_order_options/current/small/limit-512",
+      "parameters": {
+        "enumeration_limit": 512,
+        "player_id": "A",
+        "scenario_size": "SMALL",
+        "semantics": "CURRENT"
+      },
+      "scenario": "SMALL",
+      "semantics": "CURRENT"
+    },
+    {
+      "category": "trigger_order_options",
+      "derived": {
+        "microseconds_per_legal_command": 1.0906192837465563,
+        "nanoseconds_per_option": 1090.6192837465564,
+        "peak_bytes_per_option": 170.3801652892562
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 131964.93333333332,
+          "median": 126674,
+          "minimum": 123934,
+          "p95": 169612,
+          "standard_deviation": 13468.179967541837
+        },
+        "memory_bytes": {
+          "current": 19352,
+          "peak": 20616
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 121,
+          "sha256": "725d0af1306acaaf29940475cf2c0be8a3e1ec44a05061f93acf45e78756b44b"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "trigger_order_options/current/medium/limit-512",
+      "parameters": {
+        "enumeration_limit": 512,
+        "player_id": "A",
+        "scenario_size": "MEDIUM",
+        "semantics": "CURRENT"
+      },
+      "scenario": "MEDIUM",
+      "semantics": "CURRENT"
+    },
+    {
+      "category": "trigger_order_options",
+      "derived": {
+        "microseconds_per_legal_command": 1.046311241065627,
+        "nanoseconds_per_option": 1046.311241065627,
+        "peak_bytes_per_option": 192.85769980506822
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 536757.6666666666,
+          "median": 525372,
+          "minimum": 505636,
+          "p95": 591659,
+          "standard_deviation": 25193.21697732679
+        },
+        "memory_bytes": {
+          "current": 94536,
+          "peak": 98936
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 513,
+          "sha256": "1f9f69bafa5e5d86e65bff7ce42d61035c16074af7981ff9d6f0e413375e9d5c"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "trigger_order_options/current/stress_controlled/limit-512",
+      "parameters": {
+        "enumeration_limit": 512,
+        "player_id": "A",
+        "scenario_size": "STRESS_CONTROLLED",
+        "semantics": "CURRENT"
+      },
+      "scenario": "STRESS_CONTROLLED",
+      "semantics": "CURRENT"
+    },
+    {
+      "category": "trigger_order_options",
+      "derived": {
+        "microseconds_per_legal_command": 2.483676190476191,
+        "nanoseconds_per_option": 2483.6761904761906,
+        "peak_bytes_per_option": 277.7142857142857
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 17385.733333333334,
+          "median": 16881,
+          "minimum": 16136,
+          "p95": 23349,
+          "standard_deviation": 1756.3935235373108
+        },
+        "memory_bytes": {
+          "current": 1208,
+          "peak": 1944
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 7,
+          "sha256": "b4047b67d9e5dd19f72d34d156df44a164f324f5e0e97e41ef2681af534d6e4e"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "trigger_order_options/legacy_019/small/limit-512",
+      "parameters": {
+        "enumeration_limit": 512,
+        "player_id": "A",
+        "scenario_size": "SMALL",
+        "semantics": "LEGACY_019"
+      },
+      "scenario": "SMALL",
+      "semantics": "LEGACY_019"
+    },
+    {
+      "category": "trigger_order_options",
+      "derived": {
+        "microseconds_per_legal_command": 1.072831955922865,
+        "nanoseconds_per_option": 1072.831955922865,
+        "peak_bytes_per_option": 170.3801652892562
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 129812.66666666667,
+          "median": 127067,
+          "minimum": 125171,
+          "p95": 155440,
+          "standard_deviation": 7680.112672784603
+        },
+        "memory_bytes": {
+          "current": 19352,
+          "peak": 20616
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 121,
+          "sha256": "725d0af1306acaaf29940475cf2c0be8a3e1ec44a05061f93acf45e78756b44b"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "trigger_order_options/legacy_019/medium/limit-512",
+      "parameters": {
+        "enumeration_limit": 512,
+        "player_id": "A",
+        "scenario_size": "MEDIUM",
+        "semantics": "LEGACY_019"
+      },
+      "scenario": "MEDIUM",
+      "semantics": "LEGACY_019"
+    },
+    {
+      "category": "trigger_order_options",
+      "derived": {
+        "microseconds_per_legal_command": 1.024372449642625,
+        "nanoseconds_per_option": 1024.372449642625,
+        "peak_bytes_per_option": 192.85769980506822
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 525503.0666666667,
+          "median": 516496,
+          "minimum": 502473,
+          "p95": 626446,
+          "standard_deviation": 29832.250632175783
+        },
+        "memory_bytes": {
+          "current": 94536,
+          "peak": 98936
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 513,
+          "sha256": "1f9f69bafa5e5d86e65bff7ce42d61035c16074af7981ff9d6f0e413375e9d5c"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "trigger_order_options/legacy_019/stress_controlled/limit-512",
+      "parameters": {
+        "enumeration_limit": 512,
+        "player_id": "A",
+        "scenario_size": "STRESS_CONTROLLED",
+        "semantics": "LEGACY_019"
+      },
+      "scenario": "STRESS_CONTROLLED",
+      "semantics": "LEGACY_019"
+    },
+    {
+      "category": "deepcopy",
+      "derived": {
+        "nanoseconds_per_option": 1479874.8666666667,
+        "peak_bytes_per_option": 78016.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 1479874.8666666667,
+          "median": 1401817,
+          "minimum": 1358649,
+          "p95": 1887969,
+          "standard_deviation": 181390.2805101541
+        },
+        "memory_bytes": {
+          "current": 41488,
+          "peak": 78016
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 1,
+          "sha256": "8be5ad183bad406d53e1d3408f9d6570233001845e958ad596712e262cc34126"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "deepcopy/game_state/small",
+      "parameters": {
+        "enumeration_limit": 128,
+        "scenario_size": "SMALL"
+      },
+      "scenario": "SMALL",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "deepcopy",
+      "derived": {
+        "nanoseconds_per_option": 1550402.7333333334,
+        "peak_bytes_per_option": 84928.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 1550402.7333333334,
+          "median": 1544068,
+          "minimum": 1486993,
+          "p95": 1637711,
+          "standard_deviation": 47444.055591020144
+        },
+        "memory_bytes": {
+          "current": 45672,
+          "peak": 84928
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 1,
+          "sha256": "33468e0e7c517cb28932e3f9d38f0ffbc4d6d2660494c9be78cc7fa327599cd0"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "deepcopy/game_state/medium",
+      "parameters": {
+        "enumeration_limit": 128,
+        "scenario_size": "MEDIUM"
+      },
+      "scenario": "MEDIUM",
+      "semantics": "not_applicable"
+    },
+    {
+      "category": "deepcopy",
+      "derived": {
+        "nanoseconds_per_option": 2568082.466666667,
+        "peak_bytes_per_option": 148424.0
+      },
+      "measured": {
+        "duration_ns": {
+          "mean": 2568082.466666667,
+          "median": 2477768,
+          "minimum": 2434533,
+          "p95": 3192681,
+          "standard_deviation": 215655.38273394384
+        },
+        "memory_bytes": {
+          "current": 77952,
+          "peak": 148424
+        },
+        "repetitions": 15,
+        "result": {
+          "count": 1,
+          "sha256": "f04b31eb1b7b1a13020dfc3327236360e663a0c60ac38ec6610406625c0bcfed"
+        },
+        "warmup_repetitions": 5
+      },
+      "name": "deepcopy/game_state/stress_controlled",
+      "parameters": {
+        "enumeration_limit": 128,
+        "scenario_size": "STRESS_CONTROLLED"
+      },
+      "scenario": "STRESS_CONTROLLED",
+      "semantics": "not_applicable"
+    }
+  ],
+  "metadata": {
+    "engine_version": "0.20.1",
+    "git_sha": "dd8a1fb99035a18f6cedbd048489ce8e158e0a13",
+    "hardware": {
+      "cpu_count": 3,
+      "machine": "x86_64"
+    },
+    "platform": "Linux-6.18.35-x86_64-with-glibc2.39",
+    "processor": "x86_64",
+    "profile": "full",
+    "python_implementation": "CPython",
+    "python_version": "3.12.13"
+  },
+  "profiles": [
+    {
+      "category": "legal_actions",
+      "function_limit": 20,
+      "parameters": {
+        "enumeration_limit": 128,
+        "player_id": "A"
+      },
+      "result": {
+        "count": 823,
+        "sha256": "0e94cbf2783b9025832147d94d55cceff9da2b3815d05209517e08daaad3efc0"
+      },
+      "scenario": "MEDIUM",
+      "semantics": "CURRENT",
+      "sort": "cumulative",
+      "text": "         37777 function calls (36913 primitive calls) in 0.026 seconds\n\n   Ordered by: cumulative time\n   List reduced from 96 to 20 due to restriction <20>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    0.029    0.029 /workspace/card_duel/src/card_duel_engine/engine/game.py:645(legal_actions)\n        1    0.000    0.000    0.029    0.029 /workspace/card_duel/src/card_duel_engine/engine/actions.py:73(legal_actions)\n        1    0.001    0.001    0.019    0.019 /workspace/card_duel/src/card_duel_engine/engine/game.py:768(_legal_plays)\n      270    0.000    0.000    0.014    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:1114(_card_can_be_targeted)\n      270    0.002    0.000    0.013    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:2002(_effective_keywords)\n      272    0.003    0.000    0.011    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:1965(_continuous_effects_for)\n       56    0.000    0.000    0.010    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:850(_allocation_selections)\n       56    0.003    0.000    0.010    0.000 /workspace/card_duel/src/card_duel_engine/engine/options.py:127(allocation_selections)\n       10    0.001    0.000    0.009    0.001 /workspace/card_duel/src/card_duel_engine/engine/game.py:1183(_legal_ability_activations)\n      171    0.000    0.000    0.008    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:779(<genexpr>)\n     5749    0.004    0.000    0.008    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:2117(_definition)\n       37    0.000    0.000    0.005    0.000 {method 'extend' of 'list' objects}\n       76    0.000    0.000    0.004    0.000 /workspace/card_duel/src/card_duel_engine/engine/options.py:141(<genexpr>)\n     5749    0.003    0.000    0.004    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:2121(_definition_for)\n       72    0.000    0.000    0.004    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:180(_option_card_can_be_targeted)\n     1456    0.001    0.000    0.002    0.000 /workspace/card_duel/src/card_duel_engine/engine/options.py:158(<genexpr>)\n       38    0.000    0.000    0.002    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:1246(<genexpr>)\n      944    0.001    0.000    0.001    0.000 <string>:2(__init__)\n        9    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:722(_card_cost_options)\n        9    0.000    0.000    0.001    0.000 /workspace/card_duel/src/card_duel_engine/engine/options.py:54(card_cost_options)\n\n\n"
+    },
+    {
+      "category": "legal_actions",
+      "function_limit": 20,
+      "parameters": {
+        "enumeration_limit": 128,
+        "player_id": "A"
+      },
+      "result": {
+        "count": 831,
+        "sha256": "819f98ef64451c8177367e0be2ecab97dd33494b0e5417781c2f06011212e4ee"
+      },
+      "scenario": "STRESS_CONTROLLED",
+      "semantics": "CURRENT",
+      "sort": "cumulative",
+      "text": "         93013 function calls (92277 primitive calls) in 0.054 seconds\n\n   Ordered by: cumulative time\n   List reduced from 96 to 20 due to restriction <20>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    0.057    0.057 /workspace/card_duel/src/card_duel_engine/engine/game.py:645(legal_actions)\n        1    0.000    0.000    0.057    0.057 /workspace/card_duel/src/card_duel_engine/engine/actions.py:73(legal_actions)\n      510    0.001    0.000    0.043    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:1114(_card_can_be_targeted)\n      510    0.005    0.000    0.041    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:2002(_effective_keywords)\n        1    0.001    0.001    0.040    0.040 /workspace/card_duel/src/card_duel_engine/engine/game.py:768(_legal_plays)\n      512    0.010    0.000    0.035    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:1965(_continuous_effects_for)\n    19005    0.012    0.000    0.026    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:2117(_definition)\n      315    0.000    0.000    0.026    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:779(<genexpr>)\n       56    0.000    0.000    0.017    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:850(_allocation_selections)\n       56    0.002    0.000    0.017    0.000 /workspace/card_duel/src/card_duel_engine/engine/options.py:127(allocation_selections)\n       18    0.000    0.000    0.016    0.001 /workspace/card_duel/src/card_duel_engine/engine/game.py:1183(_legal_ability_activations)\n       45    0.000    0.000    0.012    0.000 {method 'extend' of 'list' objects}\n    19005    0.010    0.000    0.012    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:2121(_definition_for)\n      140    0.000    0.000    0.012    0.000 /workspace/card_duel/src/card_duel_engine/engine/options.py:141(<genexpr>)\n      136    0.000    0.000    0.011    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:180(_option_card_can_be_targeted)\n       70    0.000    0.000    0.006    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:1246(<genexpr>)\n    19005    0.003    0.000    0.003    0.000 /workspace/card_duel/src/card_duel_engine/catalog.py:58(get)\n    20656    0.002    0.000    0.002    0.000 /workspace/card_duel/src/card_duel_engine/engine/game.py:2342(_require_state)\n     1392    0.001    0.000    0.002    0.000 /workspace/card_duel/src/card_duel_engine/engine/options.py:158(<genexpr>)\n      880    0.001    0.000    0.001    0.000 <string>:2(__init__)\n\n\n"
+    }
+  ],
+  "schema_version": 1,
+  "statistical_conventions": {
+    "p95": "nearest-rank: sorted_samples[ceil(0.95 * n) - 1], without interpolation",
+    "standard_deviation": "sample standard deviation (n - 1 denominator)"
+  }
+}

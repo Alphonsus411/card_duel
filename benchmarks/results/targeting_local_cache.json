@@ -1,0 +1,399 @@
+{
+  "cases": {
+    "medium_legal_actions": {
+      "counters": {
+        "baseline": {
+          "count": 823,
+          "counters": {
+            "_card_can_be_targeted": 270,
+            "_continuous_effects_for": 272,
+            "_definition": 5749,
+            "_effective_keywords": 270
+          },
+          "fingerprint": "0e94cbf2783b9025832147d94d55cceff9da2b3815d05209517e08daaad3efc0",
+          "ns": null,
+          "state_fingerprint": "33468e0e7c517cb28932e3f9d38f0ffbc4d6d2660494c9be78cc7fa327599cd0"
+        },
+        "optimized": {
+          "count": 823,
+          "counters": {
+            "_card_can_be_targeted": 270,
+            "_continuous_effects_for": 20,
+            "_definition": 709,
+            "_effective_keywords": 270
+          },
+          "fingerprint": "0e94cbf2783b9025832147d94d55cceff9da2b3815d05209517e08daaad3efc0",
+          "ns": null,
+          "state_fingerprint": "33468e0e7c517cb28932e3f9d38f0ffbc4d6d2660494c9be78cc7fa327599cd0"
+        }
+      },
+      "memory": {
+        "baseline": {
+          "count": 823,
+          "fingerprint": "0e94cbf2783b9025832147d94d55cceff9da2b3815d05209517e08daaad3efc0",
+          "peak_bytes": 287712,
+          "state_fingerprint": "33468e0e7c517cb28932e3f9d38f0ffbc4d6d2660494c9be78cc7fa327599cd0"
+        },
+        "optimized": {
+          "count": 823,
+          "fingerprint": "0e94cbf2783b9025832147d94d55cceff9da2b3815d05209517e08daaad3efc0",
+          "peak_bytes": 293792,
+          "state_fingerprint": "33468e0e7c517cb28932e3f9d38f0ffbc4d6d2660494c9be78cc7fa327599cd0"
+        }
+      },
+      "raw_ns": {
+        "baseline": [
+          14844891,
+          13110204,
+          13357962,
+          13393832,
+          13455670,
+          19459945,
+          13367243,
+          13163917,
+          14251745,
+          13651896,
+          14981205,
+          14086480,
+          13030194,
+          14684030,
+          13316625,
+          14614051,
+          13456531,
+          13829410,
+          13481225,
+          19048975,
+          13062953,
+          13369045,
+          13613661,
+          19543995,
+          14140010,
+          17610767,
+          13387463,
+          14106024,
+          13333572,
+          13244808
+        ],
+        "optimized": [
+          7379828,
+          7951099,
+          7416708,
+          8740898,
+          7599262,
+          7768005,
+          7494625,
+          7483770,
+          10130745,
+          7889514,
+          10337491,
+          8159812,
+          8026117,
+          7969941,
+          7437104,
+          8021238,
+          7490883,
+          8023960,
+          13207319,
+          7717218,
+          7808949,
+          7437806,
+          8261570,
+          7676778,
+          7487000,
+          7602522,
+          7742635,
+          8651602,
+          7528642,
+          7482522
+        ]
+      },
+      "summary_ns": {
+        "baseline": {
+          "mean": 14399944.3,
+          "median": 13547443.0,
+          "p95": 19459945.0,
+          "stdev": 1901049.733644041
+        },
+        "optimized": {
+          "mean": 8130852.1,
+          "median": 7755320.0,
+          "p95": 10337491.0,
+          "stdev": 1192544.1696012295
+        }
+      },
+      "validation": {
+        "count": 823,
+        "fingerprint": "0e94cbf2783b9025832147d94d55cceff9da2b3815d05209517e08daaad3efc0",
+        "state_fingerprint": "33468e0e7c517cb28932e3f9d38f0ffbc4d6d2660494c9be78cc7fa327599cd0"
+      }
+    },
+    "stress_legal_actions": {
+      "counters": {
+        "baseline": {
+          "count": 831,
+          "counters": {
+            "_card_can_be_targeted": 510,
+            "_continuous_effects_for": 512,
+            "_definition": 19005,
+            "_effective_keywords": 510
+          },
+          "fingerprint": "819f98ef64451c8177367e0be2ecab97dd33494b0e5417781c2f06011212e4ee",
+          "ns": null,
+          "state_fingerprint": "f04b31eb1b7b1a13020dfc3327236360e663a0c60ac38ec6610406625c0bcfed"
+        },
+        "optimized": {
+          "count": 831,
+          "counters": {
+            "_card_can_be_targeted": 510,
+            "_continuous_effects_for": 36,
+            "_definition": 1869,
+            "_effective_keywords": 510
+          },
+          "fingerprint": "819f98ef64451c8177367e0be2ecab97dd33494b0e5417781c2f06011212e4ee",
+          "ns": null,
+          "state_fingerprint": "f04b31eb1b7b1a13020dfc3327236360e663a0c60ac38ec6610406625c0bcfed"
+        }
+      },
+      "memory": {
+        "baseline": {
+          "count": 831,
+          "fingerprint": "819f98ef64451c8177367e0be2ecab97dd33494b0e5417781c2f06011212e4ee",
+          "peak_bytes": 283440,
+          "state_fingerprint": "f04b31eb1b7b1a13020dfc3327236360e663a0c60ac38ec6610406625c0bcfed"
+        },
+        "optimized": {
+          "count": 831,
+          "fingerprint": "819f98ef64451c8177367e0be2ecab97dd33494b0e5417781c2f06011212e4ee",
+          "peak_bytes": 294464,
+          "state_fingerprint": "f04b31eb1b7b1a13020dfc3327236360e663a0c60ac38ec6610406625c0bcfed"
+        }
+      },
+      "raw_ns": {
+        "baseline": [
+          27107016,
+          28139902,
+          27389787,
+          26351168,
+          26989663,
+          26283135,
+          26916808,
+          25894093,
+          27375111,
+          26425224,
+          27238492,
+          26635320,
+          32391944,
+          28768360,
+          26322053,
+          26648849,
+          26878058,
+          31006913,
+          26383612,
+          26067139,
+          26477915,
+          26817423,
+          30920292,
+          27194991,
+          26516105,
+          26277877,
+          28607691,
+          26108007,
+          26464167,
+          33711789
+        ],
+        "optimized": [
+          7872953,
+          7930902,
+          8598944,
+          7994827,
+          8057809,
+          8438039,
+          8614892,
+          8200706,
+          8047379,
+          8743170,
+          8747647,
+          8197651,
+          8798984,
+          7942759,
+          8459273,
+          8509341,
+          8095520,
+          9985487,
+          7909424,
+          8111833,
+          8061680,
+          8178269,
+          8644039,
+          8116430,
+          8261172,
+          8331293,
+          8009716,
+          8659994,
+          8490811,
+          8209410
+        ]
+      },
+      "summary_ns": {
+        "baseline": {
+          "mean": 27543630.133333333,
+          "median": 26847740.5,
+          "p95": 32391944.0,
+          "stdev": 1953863.3661192053
+        },
+        "optimized": {
+          "mean": 8340678.466666667,
+          "median": 8205058.0,
+          "p95": 8798984.0,
+          "stdev": 419783.8981785528
+        }
+      },
+      "validation": {
+        "count": 831,
+        "fingerprint": "819f98ef64451c8177367e0be2ecab97dd33494b0e5417781c2f06011212e4ee",
+        "state_fingerprint": "f04b31eb1b7b1a13020dfc3327236360e663a0c60ac38ec6610406625c0bcfed"
+      }
+    },
+    "stress_legal_plays": {
+      "counters": {
+        "baseline": {
+          "count": 550,
+          "counters": {
+            "_card_can_be_targeted": 374,
+            "_continuous_effects_for": 374,
+            "_definition": 13847,
+            "_effective_keywords": 374
+          },
+          "fingerprint": "7091291e73bb72ba2d7265abf3cf222be51d9b41236db8d572339305bf4054fa",
+          "ns": null,
+          "state_fingerprint": "f04b31eb1b7b1a13020dfc3327236360e663a0c60ac38ec6610406625c0bcfed"
+        },
+        "optimized": {
+          "count": 550,
+          "counters": {
+            "_card_can_be_targeted": 374,
+            "_continuous_effects_for": 374,
+            "_definition": 13847,
+            "_effective_keywords": 374
+          },
+          "fingerprint": "7091291e73bb72ba2d7265abf3cf222be51d9b41236db8d572339305bf4054fa",
+          "ns": null,
+          "state_fingerprint": "f04b31eb1b7b1a13020dfc3327236360e663a0c60ac38ec6610406625c0bcfed"
+        }
+      },
+      "memory": {
+        "baseline": {
+          "count": 550,
+          "fingerprint": "7091291e73bb72ba2d7265abf3cf222be51d9b41236db8d572339305bf4054fa",
+          "peak_bytes": 190208,
+          "state_fingerprint": "f04b31eb1b7b1a13020dfc3327236360e663a0c60ac38ec6610406625c0bcfed"
+        },
+        "optimized": {
+          "count": 550,
+          "fingerprint": "7091291e73bb72ba2d7265abf3cf222be51d9b41236db8d572339305bf4054fa",
+          "peak_bytes": 190248,
+          "state_fingerprint": "f04b31eb1b7b1a13020dfc3327236360e663a0c60ac38ec6610406625c0bcfed"
+        }
+      },
+      "raw_ns": {
+        "baseline": [
+          18611615,
+          18420538,
+          18413303,
+          19618551,
+          18129791,
+          18189759,
+          18126155,
+          18700248,
+          21270083,
+          19986818,
+          18425394,
+          19661949,
+          18205312,
+          18700697,
+          18745502,
+          18448824,
+          18372660,
+          22778866,
+          18149114,
+          20427494,
+          19696980,
+          18440565,
+          20052947,
+          18773896,
+          19613186,
+          24210958,
+          18292870,
+          18038935,
+          19132139,
+          19847064
+        ],
+        "optimized": [
+          19152262,
+          18526469,
+          27325099,
+          18735490,
+          19302484,
+          18705189,
+          18469595,
+          21810255,
+          18893488,
+          19133614,
+          20428405,
+          18962504,
+          18894359,
+          18961952,
+          18913170,
+          18837935,
+          19887671,
+          21808426,
+          19503381,
+          19615021,
+          25585620,
+          19522708,
+          18885262,
+          18486720,
+          19752847,
+          20133409,
+          19354231,
+          22140334,
+          19003054,
+          20271391
+        ]
+      },
+      "summary_ns": {
+        "baseline": {
+          "mean": 19249407.1,
+          "median": 18700472.5,
+          "p95": 22778866.0,
+          "stdev": 1422504.8097268024
+        },
+        "optimized": {
+          "mean": 19966744.833333332,
+          "median": 19227373.0,
+          "p95": 25585620.0,
+          "stdev": 2023512.8870797264
+        }
+      },
+      "validation": {
+        "count": 550,
+        "fingerprint": "7091291e73bb72ba2d7265abf3cf222be51d9b41236db8d572339305bf4054fa",
+        "state_fingerprint": "f04b31eb1b7b1a13020dfc3327236360e663a0c60ac38ec6610406625c0bcfed"
+      }
+    }
+  },
+  "environment": {
+    "executable": "/workspace/card_duel/.venv/bin/python",
+    "platform": "Linux-6.18.35-x86_64-with-glibc2.39",
+    "python": "3.12.13 (main, May  1 2026, 05:53:44) [GCC 13.3.0]"
+  },
+  "protocol": {
+    "cpu": 0,
+    "samples": 30,
+    "warmups": 5
+  },
+  "revisions": {
+    "baseline": "baee1911d4963ce79cc72573bdbd075be9a79cdf",
+    "optimized": "8d71d44ba61f3858e5fb4545707d370822f9d4be"
+  }
+}

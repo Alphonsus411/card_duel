@@ -2,7 +2,7 @@ import hashlib
 import json
 import unittest
 
-from card_duel_engine import GameEngine, RuleSet
+from card_duel_engine import EngineSemantics, GameEngine, RuleSet
 from card_duel_engine.catalog import CardCatalog
 from card_duel_engine.content import (
     CollectionManifest,
@@ -22,6 +22,7 @@ from card_duel_engine.domain import (
     ZoneTarget,
 )
 from card_duel_engine.domain.errors import IllegalAction, InvariantViolation
+from card_duel_engine.domain.models import StackItem
 from card_duel_engine.engine import (
     PassPriority,
     PlayCard,
@@ -69,6 +70,122 @@ def recalculate_snapshot_fingerprints(envelope):
 
 
 class PersistenceV090Tests(unittest.TestCase):
+    def test_snapshot_serializes_and_restores_current_semantics_for_019_rules(self):
+        engine = GameEngine(RuleSet(version="0.19.0"))
+        engine.new_match({"A": test_deck("CA"), "B": test_deck("CB")}, seed=907)
+
+        document = json.loads(dump_snapshot(engine))
+        self.assertEqual(document["body"]["schema_version"], "2")
+        self.assertEqual(document["body"]["engine_semantics"], "CURRENT")
+        self.assertIs(load_snapshot(document).semantics, EngineSemantics.CURRENT)
+
+    def test_snapshot_restores_legacy_019_semantics(self):
+        engine = GameEngine(RuleSet(version="0.19.0"))
+        engine.new_match({"A": test_deck("LA"), "B": test_deck("LB")}, seed=908)
+        document = json.loads(dump_snapshot(engine))
+        document["body"]["engine_semantics"] = "LEGACY_019"
+        recalculate_snapshot_fingerprints(document)
+
+        restored = load_snapshot(document)
+
+        self.assertIs(restored.semantics, EngineSemantics.LEGACY_019)
+        self.assertEqual(
+            json.loads(dump_snapshot(restored))["body"]["engine_semantics"],
+            "LEGACY_019",
+        )
+
+    def test_snapshot_without_semantics_defaults_to_current(self):
+        engine = GameEngine(RuleSet(version="0.19.0"))
+        engine.new_match({"A": test_deck("MA"), "B": test_deck("MB")}, seed=911)
+        document = json.loads(dump_snapshot(engine))
+        del document["body"]["engine_semantics"]
+        recalculate_snapshot_fingerprints(document)
+
+        self.assertIs(load_snapshot(document).semantics, EngineSemantics.CURRENT)
+
+    def test_snapshot_rejects_invalid_semantics_fields_and_version_pair(self):
+        engine = GameEngine(RuleSet(version="0.20.9"))
+        engine.new_match({"A": test_deck("VA"), "B": test_deck("VB")}, seed=912)
+        baseline = json.loads(dump_snapshot(engine))
+        cases = ((17, "cadena"), ("FUTURE", "desconocida"), ("LEGACY_019", "0.19.0"))
+        for value, message in cases:
+            with self.subTest(value=value):
+                document = json.loads(json.dumps(baseline))
+                document["body"]["engine_semantics"] = value
+                recalculate_snapshot_fingerprints(document)
+                with self.assertRaisesRegex(ValueError, message):
+                    load_snapshot(document)
+
+    def test_snapshot_v2_roundtrip_preserves_ability_source_profile_and_counters(self):
+        engine = GameEngine(RuleSet())
+        engine.new_match({"A": test_deck("PA"), "B": test_deck("PB")}, seed=909)
+        source = force_zone(engine, "PA-000", "A", Zone.BATTLEFIELD)
+        target = force_zone(engine, "PB-000", "B", Zone.BATTLEFIELD)
+        engine.state.stack.append(StackItem(
+            "stack-profile", "A", source,
+            (EffectDefinition(EffectKind.DEAL_DAMAGE, 1, TargetMode.CHOSEN_PERMANENT),),
+            chosen_card_ids=(target,), ability_id="captured",
+            ability_source_profile=engine._ability_source_profile(source),
+        ))
+        before = (
+            state_digest(engine),
+            tuple(engine.state.event_log),
+            tuple(engine.state.command_history),
+            engine._next_instance,
+            engine._next_stack_item,
+        )
+        payload = dump_snapshot(engine)
+        restored = load_snapshot(payload)
+        after = (
+            state_digest(restored),
+            tuple(restored.state.event_log),
+            tuple(restored.state.command_history),
+            restored._next_instance,
+            restored._next_stack_item,
+        )
+        self.assertEqual(after, before)
+        self.assertEqual(
+            restored.state.stack[-1].ability_source_profile,
+            engine.state.stack[-1].ability_source_profile,
+        )
+
+    def test_old_v2_stack_item_derives_profile_for_present_and_moved_source(self):
+        engine = GameEngine(RuleSet())
+        engine.new_match({"A": test_deck("OA"), "B": test_deck("OB")}, seed=910)
+        source = force_zone(engine, "OA-000", "A", Zone.BATTLEFIELD)
+        engine.state.stack.append(StackItem(
+            "legacy-stack", "A", source, (), ability_id="legacy"
+        ))
+        envelope = json.loads(dump_snapshot(engine))
+
+        def remove_profile(value):
+            if isinstance(value, dict):
+                if value.get("$type") == "StackItem":
+                    value["fields"].pop("ability_source_profile")
+                for child in value.values():
+                    remove_profile(child)
+            elif isinstance(value, list):
+                for child in value:
+                    remove_profile(child)
+
+        remove_profile(envelope["body"]["state"])
+        recalculate_snapshot_fingerprints(envelope)
+        restored = load_snapshot(envelope)
+        self.assertIsNotNone(restored.state.stack[-1].ability_source_profile)
+
+        engine._move_card(source, Zone.DISCARD, "A")
+        envelope = json.loads(dump_snapshot(engine))
+        remove_profile(envelope["body"]["state"])
+        recalculate_snapshot_fingerprints(envelope)
+        restored = load_snapshot(envelope)
+        profile = restored.state.stack[-1].ability_source_profile
+        self.assertIsNotNone(profile)
+        self.assertFalse(profile.was_on_battlefield)
+        self.assertTrue(profile.was_effective_creature)
+        self.assertFalse(profile.nature_is_certain)
+        roundtrip = load_snapshot(dump_snapshot(restored))
+        self.assertEqual(roundtrip.state.stack[-1].ability_source_profile, profile)
+
     def make_pending_search_snapshot(self):
         prize = CardDefinition(
             "SNAP_SEARCH_PRIZE", "Objetivo", CardKind.CREATURE, 2, base_strength=2

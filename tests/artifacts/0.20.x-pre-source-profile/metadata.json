@@ -1,0 +1,62 @@
+{
+  "artifacts": [
+    {
+      "commands": 10,
+      "events": 29,
+      "file": "pending-ability-source-present.replay-v2.json",
+      "file_sha256": "4bd292e36b669e48e38b448aa4ac2987a8f25f66a8db8078c4b7d99f1dda2221",
+      "final": {
+        "next_instance": 25,
+        "next_stack_item": 3,
+        "phase": "EFFECTS",
+        "priority_player_id": "B",
+        "turn_serial": 1
+      },
+      "final_digest": "68f6b9173d3b055962ce1327e87b227b7806e5a1ccd2741cd8cfb41297cde7fd",
+      "last_event": "ABILITY_ACTIVATED",
+      "source_zone": "BATTLEFIELD",
+      "stack": [
+        {
+          "ability_id": "pending_shot",
+          "chosen_player_ids": [
+            "B"
+          ],
+          "item_id": "stack-000002",
+          "source_card_id": "card-000001"
+        }
+      ]
+    },
+    {
+      "commands": 10,
+      "events": 29,
+      "file": "pending-ability-source-sacrificed.replay-v2.json",
+      "file_sha256": "e5a82d21e095f46929d3ad9aaec891ab53ddbb72fa639a0bdcb213827e4b1400",
+      "final": {
+        "next_instance": 25,
+        "next_stack_item": 3,
+        "phase": "EFFECTS",
+        "priority_player_id": "B",
+        "turn_serial": 1
+      },
+      "final_digest": "7aab358c511fb97b388e18dbefdaa9194feb195eec55ff2a858c6bee2f4b8a1b",
+      "last_event": "ABILITY_ACTIVATED",
+      "source_zone": "DISCARD",
+      "stack": [
+        {
+          "ability_id": "pending_shot",
+          "chosen_player_ids": [
+            "B"
+          ],
+          "item_id": "stack-000002",
+          "source_card_id": "card-000011"
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "engine_version": "0.20.1",
+    "git_commit": "c0c1ee1^",
+    "python": "3.12.13",
+    "resolved_commit": "8535c0da4027df974d4b88855c3caf1b5b6df037"
+  }
+}

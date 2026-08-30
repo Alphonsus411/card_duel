@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from enum import Enum, auto
 import random
 from copy import deepcopy
 from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import replace
 from itertools import combinations, islice, permutations, product
 
-from ..catalog import CardCatalog
+from ..catalog import CardCatalog, CardCatalogReader
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -18,6 +19,8 @@ from ..domain.enums import (
     ControllerScope,
     EffectDuration,
     EffectKind,
+    LordDomain,
+    Keyword,
     MatchStatus,
     MoveReason,
     Phase,
@@ -25,8 +28,14 @@ from ..domain.enums import (
     TriggerKind,
     Zone,
 )
-from ..domain.errors import IllegalAction, InvariantViolation, PaymentError
+from ..domain.errors import (
+    IllegalAction,
+    InvalidDeckDefinition,
+    InvariantViolation,
+    PaymentError,
+)
 from ..domain.models import (
+    AbilitySourceProfile,
     AppliedTextPatch,
     CardDefinition,
     CardInstance,
@@ -53,7 +62,14 @@ from ..domain.models import (
 from ..rules.config import RuleSet
 from ..rules.resolvers import apply_text_patch, resolve_dynamic_cost, resolve_x_cost
 from .combat import CombatContext, CombatManager
+from .actions import (
+    LegalActionContext,
+    LegalActionEnumerator,
+    _LegalActionQueryContext,
+)
 from .effects import EffectContext, EffectManager
+from .options import ActionOptionContext, ActionOptionResolver
+from .phases import PhaseManager
 from .stack import StackContext, StackManager
 from .zones import MoveReplacementChoiceRequired, ZoneContext, ZoneManager
 from .commands import (
@@ -79,6 +95,13 @@ from .commands import (
 )
 
 
+class EngineSemantics(Enum):
+    """Semántica permanente con la que un motor interpreta sus comandos."""
+
+    CURRENT = auto()
+    LEGACY_019 = auto()
+
+
 class GameEngine:
     """Autoridad única sobre una partida; ninguna interfaz modifica el estado."""
 
@@ -87,7 +110,7 @@ class GameEngine:
         self.registry: CollectionRegistry | None = (
             catalog if catalog is not None and not isinstance(catalog, CardCatalog) else None
         )
-        self.catalog: CardCatalog = (
+        self.catalog: CardCatalogReader = (
             self.registry.catalog
             if self.registry is not None
             else catalog if isinstance(catalog, CardCatalog) else CardCatalog()
@@ -97,15 +120,119 @@ class GameEngine:
         self._next_stack_item = 1
         self._replacement_replay_choices: tuple[int, ...] = ()
         self._replacement_replay_cursor = 0
+        # La versión declarativa de RuleSet no selecciona comportamiento. Solo
+        # el cargador de replays puede construir una instancia histórica.
+        self._semantics = EngineSemantics.CURRENT
         self._combat = CombatManager(self)
         self._stack = StackManager(self)
         self._zones = ZoneManager(self)
         self._effects = EffectManager(self)
+        self._phases = PhaseManager(self)
+        self._options = ActionOptionResolver(self)
+        self._legal_action_enumerator = LegalActionEnumerator(self)
+
+    @property
+    def _phase_sequence(self) -> tuple[Phase, ...]:
+        """Proyecta la secuencia configurada al coordinador de fases."""
+        return self.rules.phase_sequence
+
+    @property
+    def _phase_hand_limit(self) -> int:
+        """Proyecta el límite de mano sin entregar el RuleSet completo."""
+        return self.rules.hand_limit
+
+    @property
+    def _combat_action_enumerator(self) -> CombatManager:
+        """Expone al enumerador general únicamente las acciones de combate."""
+        return self._combat
+
+    @property
+    def _legal_action_state(self) -> GameState:
+        """Comparte con el enumerador el estado autoritativo, sin clonarlo."""
+        return self._require_state()
+
+    @property
+    def _legal_action_enumeration_limit(self) -> int:
+        """Expone solo el límite combinatorio requerido por la enumeración."""
+        return self.rules.legal_action_enumeration_limit
+
+    @property
+    def _legal_action_hand_limit(self) -> int:
+        """Expone solo el tamaño de mano requerido por la enumeración."""
+        return self.rules.hand_limit
+
+    @property
+    def _option_state(self) -> GameState:
+        """Expone a las opciones el estado autoritativo, sin clonarlo."""
+        return self._require_state()
+
+    @property
+    def _option_enumeration_limit(self) -> int:
+        """Expone solo el límite combinatorio requerido por las opciones."""
+        return self.rules.legal_action_enumeration_limit
+
+    def _option_resolve_dynamic_cost(
+        self, definition: DynamicCostDefinition, player_id: str
+    ) -> CompositeCost:
+        return self._resolve_dynamic_cost(definition, player_id)
+
+    def _option_resolve_x_cost(
+        self, definition: XCostDefinition, x_value: int
+    ) -> CompositeCost:
+        return self._resolve_x_cost(definition, x_value)
+
+    def _option_card_can_be_targeted(
+        self,
+        source_definition: CardDefinition | None,
+        target_card_id: str,
+        from_ability: bool = False,
+        source_card_id: str | None = None,
+        query_context: _LegalActionQueryContext | None = None,
+    ) -> bool:
+        return self._card_can_be_targeted(
+            source_definition,
+            target_card_id,
+            from_ability,
+            source_card_id,
+            query_context=query_context,
+        )
+
+    def _option_effect_amount(
+        self, effect: EffectDefinition, x_value: int
+    ) -> int:
+        return self._effect_amount(effect, x_value)
 
     @property
     def _combat_action_enumeration_limit(self) -> int:
         """Expone al gestor de combate únicamente su límite de enumeración."""
         return self.rules.legal_action_enumeration_limit
+
+    @classmethod
+    def _for_restoration(
+        cls,
+        rules: RuleSet,
+        catalog: CardCatalog,
+        semantics: EngineSemantics,
+    ) -> GameEngine:
+        """Construye un motor restaurado con semántica ya identificada.
+
+        La comprobación en tiempo de ejecución evita que los cargadores puedan
+        introducir nombres, versiones u otros sustitutos de ``EngineSemantics``.
+        """
+        if not isinstance(semantics, EngineSemantics):
+            raise TypeError("La semántica del motor no es válida")
+        engine = cls(rules, catalog)
+        engine._semantics = semantics
+        return engine
+
+    @property
+    def semantics(self) -> EngineSemantics:
+        """Expone la autoridad semántica como una propiedad de solo lectura."""
+        return self._semantics
+
+    @property
+    def _legacy_019(self) -> bool:
+        return self.semantics is EngineSemantics.LEGACY_019
 
     def _consume_replacement_replay_choice(self) -> int | None:
         """Consume una elección grabada sin exponer el cursor al gestor de zonas."""
@@ -122,43 +249,35 @@ class GameEngine:
         seed: int = 0,
         auto_start: bool = True,
     ) -> GameState:
-        if len(decks) < self.rules.minimum_players:
-            raise ValueError(f"Se necesitan al menos {self.rules.minimum_players} jugadores")
-
-        # Materializar y validar todo antes de tocar el catalogo o reemplazar una
-        # partida existente. Ademas de aceptar generadores, esta fase evita que un
-        # error tardio deje definiciones registradas parcialmente.
+        # Las entradas potencialmente perezosas se consumen antes de cualquier
+        # otra preparación, de modo que un generador que falle no pueda dejar
+        # cambios observables en el motor.
         prepared_decks = {
             player_id: tuple(definitions) for player_id, definitions in decks.items()
         }
-        incoming_definitions: dict[str, CardDefinition] = {}
-        for definitions in prepared_decks.values():
-            for definition in definitions:
-                if definition.card_id in self.catalog:
-                    if self.catalog.get(definition.card_id) != definition:
-                        raise ValueError(
-                            f"La definición {definition.card_id} no coincide con el catálogo"
-                        )
-                elif self.registry is not None:
-                    raise ValueError(
-                        f"La definición {definition.card_id} no está registrada"
-                    )
-                previous = incoming_definitions.setdefault(definition.card_id, definition)
-                if previous != definition:
-                    raise ValueError(
-                        f"Definiciones incompatibles para {definition.card_id}"
-                    )
+        turn_order = tuple(prepared_decks)
+        if len(prepared_decks) < self.rules.minimum_players:
+            raise InvalidDeckDefinition(
+                f"Se necesitan al menos {self.rules.minimum_players} jugadores"
+            )
 
-        for definition in incoming_definitions.values():
-            if definition.card_id not in self.catalog:
-                self.catalog.register(definition)
-
-        self._next_instance = 1
-        self._next_stack_item = 1
-        self._replacement_replay_choices = ()
-        self._replacement_replay_cursor = 0
+        # Conservar explícitamente todas las referencias publicadas. La
+        # preparación no las usa como espacio de trabajo ni necesita rollback.
+        previous_values = (
+            self.catalog,
+            self.state,
+            self._next_instance,
+            self._next_stack_item,
+            self._replacement_replay_choices,
+            self._replacement_replay_cursor,
+        )
+        candidate_catalog = self._prepare_catalog(prepared_decks)
+        next_instance = 1
+        next_stack_item = 1
+        replacement_replay_choices: tuple[int, ...] = ()
+        replacement_replay_cursor = 0
         rng = random.Random(seed)
-        players = {player_id: PlayerState(player_id) for player_id in decks}
+        players = {player_id: PlayerState(player_id) for player_id in turn_order}
         cards: dict[str, CardInstance] = {}
         initial_decks: dict[str, tuple[str, ...]] = {}
 
@@ -166,35 +285,110 @@ class GameEngine:
             definition_ids: list[str] = []
             for definition in definitions:
                 definition_ids.append(definition.card_id)
-                instance_id = f"card-{self._next_instance:06d}"
-                self._next_instance += 1
-                cards[instance_id] = CardInstance(
-                    instance_id=instance_id,
-                    definition_id=definition.card_id,
-                    owner_id=player_id,
-                    controller_id=player_id,
+                instance, next_instance = self._create_candidate_instance(
+                    definition, player_id, next_instance
                 )
-                players[player_id].zones[Zone.DECK].append(instance_id)
+                cards[instance.instance_id] = instance
+                players[player_id].zones[Zone.DECK].append(instance.instance_id)
             initial_decks[player_id] = tuple(definition_ids)
             rng.shuffle(players[player_id].zones[Zone.DECK])
 
-        self.state = GameState(
+        candidate_state = GameState(
             ruleset_id=self.rules.ruleset_id,
             ruleset_version=self.rules.version,
             players=players,
-            turn_order=tuple(decks),
+            turn_order=turn_order,
             cards=cards,
-            priority_player_id=tuple(decks)[0],
+            priority_player_id=turn_order[0],
             random_seed=seed,
             initial_decks=initial_decks,
             status=MatchStatus.SETUP,
         )
-        for player_id in self.state.turn_order:
-            self._draw(player_id, self.rules.initial_hand_size)
+
+        # Las operaciones de arranque siguen exactamente los mismos caminos del
+        # motor, pero sobre un coordinador candidato que aún no está publicado.
+        candidate = GameEngine(self.rules)
+        candidate._semantics = self.semantics
+        candidate.catalog = candidate_catalog
+        candidate.state = candidate_state
+        candidate._next_instance = next_instance
+        candidate._next_stack_item = next_stack_item
+        candidate._replacement_replay_choices = replacement_replay_choices
+        candidate._replacement_replay_cursor = replacement_replay_cursor
+        for player_id in candidate_state.turn_order:
+            candidate._draw(player_id, self.rules.initial_hand_size)
         if auto_start:
-            self.start_match()
-        self.validate_invariants()
-        return self.state
+            candidate.start_match()
+        self._validate_candidate_invariants(candidate_state, candidate_catalog)
+
+        # Punto único de publicación: simples asignaciones posteriores a toda
+        # operación capaz de fallar.
+        assert previous_values == (
+            self.catalog,
+            self.state,
+            self._next_instance,
+            self._next_stack_item,
+            self._replacement_replay_choices,
+            self._replacement_replay_cursor,
+        )
+        self.catalog = candidate_catalog
+        self.state = candidate_state
+        self._next_instance = candidate._next_instance
+        self._next_stack_item = candidate._next_stack_item
+        self._replacement_replay_choices = candidate._replacement_replay_choices
+        self._replacement_replay_cursor = candidate._replacement_replay_cursor
+        return candidate_state
+
+    def _prepare_catalog(
+        self, prepared_decks: Mapping[str, tuple[CardDefinition, ...]]
+    ) -> CardCatalogReader:
+        """Valida definiciones y devuelve el catálogo aislado de la partida."""
+        authoritative = self.registry.catalog if self.registry is not None else self.catalog
+        candidate = (
+            authoritative
+            if self.registry is not None
+            else CardCatalog({card.card_id: card for card in authoritative.definitions()})
+        )
+        incoming_definitions: dict[str, CardDefinition] = {}
+        for definitions in prepared_decks.values():
+            for definition in definitions:
+                if definition.card_id in authoritative:
+                    if authoritative.get(definition.card_id) != definition:
+                        raise InvalidDeckDefinition(
+                            f"La definición {definition.card_id} no coincide con el catálogo"
+                        )
+                elif self.registry is not None:
+                    raise InvalidDeckDefinition(
+                        f"La definición {definition.card_id} no está registrada"
+                    )
+                previous = incoming_definitions.setdefault(definition.card_id, definition)
+                if previous != definition:
+                    raise InvalidDeckDefinition(
+                        f"Definiciones incompatibles para {definition.card_id}"
+                    )
+
+        if isinstance(candidate, CardCatalog):
+            for definition in incoming_definitions.values():
+                if definition.card_id not in candidate:
+                    candidate.register(definition)
+        return candidate
+
+    @staticmethod
+    def _create_candidate_instance(
+        definition: CardDefinition, player_id: str, next_instance: int
+    ) -> tuple[CardInstance, int]:
+        instance_id = f"card-{next_instance:06d}"
+        return CardInstance(
+            instance_id=instance_id,
+            definition_id=definition.card_id,
+            owner_id=player_id,
+            controller_id=player_id,
+        ), next_instance + 1
+
+    def _validate_candidate_invariants(
+        self, state: GameState, catalog: CardCatalogReader
+    ) -> None:
+        self._validate_invariants(state, catalog)
 
     def start_match(self) -> None:
         state = self._require_state()
@@ -234,11 +428,12 @@ class GameEngine:
         self, command: GameCommand, replay_choices: tuple[int, ...]
     ) -> None:
         state = self._require_running_state()
-        transactional = bool(replay_choices) or any(
-            definition.deferred_replacement_choice
-            for definition in self.catalog.definitions()
-        )
-        snapshot = deepcopy(state) if transactional else None
+        # Todo comando se ejecuta contra un respaldo. Además de las elecciones
+        # diferidas, esto protege las operaciones compuestas (Drenaje y
+        # Transmutación incluidas) frente a cualquier fallo posterior a una
+        # primera escritura, incluida la validación final de invariantes.
+        snapshot = deepcopy(state)
+        next_instance = self._next_instance
         next_stack_item = self._next_stack_item
         self._replacement_replay_choices = replay_choices
         self._replacement_replay_cursor = 0
@@ -252,6 +447,7 @@ class GameEngine:
                     "Se solicitó una sustitución sin respaldo transaccional"
                 )
             self.state = snapshot
+            self._next_instance = next_instance
             self._next_stack_item = next_stack_item
             assert snapshot.priority_player_id is not None
             self.state.pending_move_replacement = PendingMoveReplacement(
@@ -279,9 +475,9 @@ class GameEngine:
             )
             self.validate_invariants()
         except Exception:
-            if snapshot is not None:
-                self.state = snapshot
-                self._next_stack_item = next_stack_item
+            self.state = snapshot
+            self._next_instance = next_instance
+            self._next_stack_item = next_stack_item
             raise
         finally:
             self._replacement_replay_choices = ()
@@ -456,129 +652,7 @@ class GameEngine:
         )
 
     def legal_actions(self, player_id: str) -> tuple[GameCommand, ...]:
-        state = self._require_state()
-        if state.status in (MatchStatus.FINISHED, MatchStatus.BLOCKED):
-            return ()
-        if state.status is not MatchStatus.RUNNING:
-            raise IllegalAction("La partida no está en ejecución")
-        if player_id not in state.players:
-            return ()
-        actions: list[GameCommand] = []
-        player = state.players[player_id]
-
-        if state.pending_move_replacement:
-            pending = state.pending_move_replacement
-            if player_id != pending.chooser_id:
-                return (Concede(player_id),)
-            return tuple(
-                ResolveMoveReplacement(player_id, index)
-                for index in pending.candidate_indices
-            ) + (Concede(player_id),)
-
-        if state.pending_search:
-            search = state.pending_search
-            if player_id != search.chooser_id:
-                return (Concede(player_id),)
-            actions.extend(
-                ResolveSearchChoice(player_id, tuple(selection))
-                for count in range(search.minimum, search.maximum + 1)
-                for selection in islice(
-                    combinations(search.eligible_card_ids, count),
-                    self.rules.legal_action_enumeration_limit,
-                )
-            )
-            actions.append(Concede(player_id))
-            return tuple(actions[: self.rules.legal_action_enumeration_limit + 1])
-
-        if state.pending_triggers:
-            if player_id != state.priority_player_id:
-                return (Concede(player_id),)
-            unlocked = next(
-                (item for item in state.pending_triggers if not item.targets_locked),
-                None,
-            )
-            if unlocked is not None:
-                actions.extend(self._trigger_target_commands(player_id, unlocked))
-                actions.append(Concede(player_id))
-                return tuple(actions)
-            item_ids = tuple(item.item_id for item in state.pending_triggers)
-            actions.extend(
-                OrderTriggeredAbilities(player_id, tuple(order))
-                for order in islice(
-                    permutations(item_ids),
-                    self.rules.legal_action_enumeration_limit,
-                )
-            )
-            actions.append(Concede(player_id))
-            return tuple(actions)
-
-        if state.phase is Phase.COMBAT:
-            actions.extend(self._combat.legal_actions(player_id))
-
-        if player_id == state.priority_player_id:
-            actions.extend(self._legal_plays(player_id))
-            if (
-                player_id == state.active_player_id
-                and player.drainage_used_turn_serial != state.turn_serial
-            ):
-                actions.extend(DrainSteps(player_id, amount) for amount in range(1, 6))
-            for card_id in player.zones[Zone.BATTLEFIELD]:
-                definition = self._definition(card_id)
-                replacements = self._replacement_definitions(definition)
-                if definition.player_orders_replacements and len(replacements) > 1:
-                    actions.extend(
-                        SetReplacementOrder(player_id, card_id, tuple(order))
-                        for order in islice(
-                            permutations(range(len(replacements))),
-                            self.rules.legal_action_enumeration_limit,
-                        )
-                        if tuple(order) != state.cards[card_id].replacement_order
-                    )
-                if definition.transmutable:
-                    actions.append(TransmutePermanent(player_id, card_id))
-                actions.extend(self._legal_ability_activations(player_id, card_id))
-                if definition.kind is CardKind.EQUIPMENT:
-                    for creature_id in player.zones[Zone.BATTLEFIELD]:
-                        if self._is_creature(creature_id):
-                            if player.steps >= definition.cost:
-                                actions.append(EquipCard(player_id, card_id, creature_id))
-            actions.append(PassPriority(player_id))
-
-        if (
-            player_id == state.active_player_id
-            and state.phase_priority_complete
-            and not state.stack
-        ):
-            if state.phase is Phase.DISCARD:
-                excess = max(0, len(player.zones[Zone.HAND]) - self.rules.hand_limit)
-                if excess:
-                    actions.extend(
-                        DiscardCards(player_id, tuple(card_ids))
-                        for card_ids in combinations(player.zones[Zone.HAND], excess)
-                    )
-                else:
-                    actions.append(AdvancePhase(player_id))
-            elif not (state.phase is Phase.COMBAT and state.combat and not state.combat.resolved):
-                actions.append(AdvancePhase(player_id))
-
-        actions.append(Concede(player_id))
-        command_order = {
-            DiscardCards: 0,
-            DeclareBlockers: 0,
-            ResolveCombat: 0,
-            DeclareAttackers: 1,
-            DeclareChallenge: 1,
-            AdvancePhase: 2,
-            PlayCard: 10,
-            ActivateAbility: 11,
-            DrainSteps: 11,
-            EquipCard: 12,
-            TransmutePermanent: 20,
-            PassPriority: 90,
-            SetReplacementOrder: 95,
-            Concede: 100,
-        }
-        return tuple(sorted(actions, key=lambda action: command_order[type(action)]))
+        return self._legal_action_enumerator.legal_actions(player_id)
 
     def _trigger_target_commands(
         self, player_id: str, item: StackItem
@@ -593,7 +667,7 @@ class GameEngine:
             for player in state.players.values()
             for card_id in player.zones[Zone.BATTLEFIELD]
             if self._card_can_be_targeted(
-                definition, card_id, item.ability_id is not None
+                definition, card_id, item.ability_id is not None, item.source_card_id
             )
         )
         card_targets = self._target_selections(
@@ -604,6 +678,7 @@ class GameEngine:
             item.effects,
             definition,
             from_ability=item.ability_id is not None,
+            source_card_id=item.source_card_id,
         )
         return [
             ChooseTriggeredTargets(
@@ -656,42 +731,8 @@ class GameEngine:
     def _card_cost_options(
         self, definition: CardDefinition, player_id: str
     ) -> tuple[tuple[int | None, int | None, CompositeCost], ...]:
-        result: list[tuple[int | None, int | None, CompositeCost]] = []
-        if definition.x_cost is not None:
-            result.extend(
-                (None, x_value, self._resolve_x_cost(definition.x_cost, x_value))
-                for x_value in islice(
-                    range(definition.x_cost.minimum, definition.x_cost.maximum + 1),
-                    self.rules.legal_action_enumeration_limit,
-                )
-            )
-        else:
-            normal = (
-                self._resolve_dynamic_cost(definition.dynamic_cost, player_id)
-                if definition.dynamic_cost is not None
-                else CompositeCost(steps=definition.cost)
-            )
-            result.append((None, None, normal))
-        alternatives: list[CompositeCost] = [*definition.alternative_costs]
-        alternatives.extend(
-            self._resolve_dynamic_cost(item, player_id)
-            for item in definition.dynamic_alternative_costs
-        )
-        result.extend((index, None, cost) for index, cost in enumerate(alternatives))
-        first_x_index = len(alternatives)
-        for offset, x_cost in enumerate(definition.x_alternative_costs):
-            result.extend(
-                (
-                    first_x_index + offset,
-                    x_value,
-                    self._resolve_x_cost(x_cost, x_value),
-                )
-                for x_value in islice(
-                    range(x_cost.minimum, x_cost.maximum + 1),
-                    self.rules.legal_action_enumeration_limit,
-                )
-            )
-        return tuple(result)
+        """Conserva la consulta histórica delegándola al resolver de opciones."""
+        return self._options.card_cost_options(definition, player_id)
 
     def _card_cost_for_option(
         self,
@@ -733,12 +774,16 @@ class GameEngine:
             )
         raise PaymentError("La opción de coste alternativo no existe")
 
-    def _legal_plays(self, player_id: str) -> list[PlayCard]:
+    def _legal_plays(
+        self,
+        player_id: str,
+        query_context: _LegalActionQueryContext | None = None,
+    ) -> list[PlayCard]:
         state = self._require_running_state()
         player = state.players[player_id]
         result: list[PlayCard] = []
         for card_id in player.zones[Zone.HAND]:
-            definition = self._definition(card_id)
+            definition = self._definition(card_id, query_context)
             if not self._timing_allows_play(player_id, definition):
                 continue
             player_targets = self._target_selections(
@@ -748,7 +793,9 @@ class GameEngine:
                 permanent_id
                 for owner in state.players.values()
                 for permanent_id in owner.zones[Zone.BATTLEFIELD]
-                if self._card_can_be_targeted(definition, permanent_id)
+                if self._card_can_be_targeted(
+                    definition, permanent_id, query_context=query_context
+                )
             )
             card_targets = self._target_selections(
                 definition.effects, TargetMode.CHOSEN_PERMANENT, eligible_cards
@@ -757,7 +804,10 @@ class GameEngine:
             costs = self._card_cost_options(definition, player_id)
             for cost_index, x_value, cost in costs:
                 allocation_targets = self._allocation_selections(
-                    definition.effects, definition, x_value=x_value or 0
+                    definition.effects,
+                    definition,
+                    x_value=x_value or 0,
+                    query_context=query_context,
                 )
                 hand_pool = tuple(
                     candidate
@@ -812,29 +862,8 @@ class GameEngine:
     def _zone_target_selections(
         self, effects: tuple[EffectDefinition, ...]
     ) -> tuple[tuple[ZoneTarget, ...], ...]:
-        state = self._require_state()
-        candidates = tuple(
-            ZoneTarget(player_id, zone)
-            for player_id, player in state.players.items()
-            for zone in player.zones
-        )
-        targeted = tuple(
-            effect for effect in effects if effect.target is TargetMode.CHOSEN_ZONE
-        )
-        if not targeted:
-            return ((),)
-        minimum = max(effect.minimum_targets for effect in targeted)
-        maximum = min(effect.maximum_targets for effect in targeted)
-        return tuple(
-            islice(
-                (
-                    tuple(selection)
-                    for count in range(minimum, min(maximum, len(candidates)) + 1)
-                    for selection in combinations(candidates, count)
-                ),
-                self.rules.legal_action_enumeration_limit,
-            )
-        )
+        """Conserva la consulta histórica delegándola al resolver de opciones."""
+        return self._options.zone_target_selections(effects)
 
     def _allocation_selections(
         self,
@@ -842,45 +871,25 @@ class GameEngine:
         source_definition: CardDefinition,
         *,
         from_ability: bool = False,
+        source_card_id: str | None = None,
         x_value: int = 0,
+        query_context: _LegalActionQueryContext | None = None,
     ) -> tuple[tuple[TargetAllocation, ...], ...]:
-        state = self._require_state()
-        effect = next((item for item in effects if item.distributed), None)
-        if effect is None:
-            return ((),)
-        candidates = [*state.turn_order]
-        candidates.extend(
-            card_id
-            for player in state.players.values()
-            for card_id in player.zones[Zone.BATTLEFIELD]
-            if self._card_can_be_targeted(source_definition, card_id, from_ability)
+        """Conserva la consulta histórica delegándola al resolver de opciones."""
+        return self._options.allocation_selections(
+            effects,
+            source_definition,
+            from_ability=from_ability,
+            source_card_id=source_card_id,
+            x_value=x_value,
+            query_context=query_context,
         )
-        results: list[tuple[TargetAllocation, ...]] = []
-        for count in range(effect.minimum_targets, min(effect.maximum_targets, len(candidates)) + 1):
-            for selected in combinations(candidates, count):
-                for amounts in self._positive_compositions(
-                    self._effect_amount(effect, x_value), count
-                ):
-                    results.append(
-                        tuple(
-                            TargetAllocation(target_id, amount)
-                            for target_id, amount in zip(selected, amounts, strict=True)
-                        )
-                    )
-                    if len(results) >= self.rules.legal_action_enumeration_limit:
-                        return tuple(results)
-        return tuple(results)
 
     def _positive_compositions(
         self, total: int, parts: int
     ) -> Iterator[tuple[int, ...]]:
-        if parts == 1:
-            if total >= 1:
-                yield (total,)
-            return
-        for first in range(1, total - parts + 2):
-            for rest in self._positive_compositions(total - first, parts - 1):
-                yield (first, *rest)
+        """Conserva la consulta histórica delegándola al resolver de opciones."""
+        return self._options.positive_compositions(total, parts)
 
     @staticmethod
     def _effect_amount(effect: EffectDefinition, x_value: int) -> int:
@@ -895,23 +904,8 @@ class GameEngine:
         mode: TargetMode,
         candidates: Iterable[str],
     ) -> tuple[tuple[str, ...], ...]:
-        targeted = tuple(effect for effect in effects if effect.target is mode)
-        if not targeted:
-            return ((),)
-        minimum = max(effect.minimum_targets for effect in targeted)
-        maximum = min(effect.maximum_targets for effect in targeted)
-        pool = tuple(candidates)
-        maximum = min(maximum, len(pool))
-        return tuple(
-            islice(
-                (
-                    tuple(selection)
-                    for count in range(minimum, maximum + 1)
-                    for selection in combinations(pool, count)
-                ),
-                self.rules.legal_action_enumeration_limit,
-            )
-        )
+        """Conserva la consulta histórica delegándola al resolver de opciones."""
+        return self._options.target_selections(effects, mode, candidates)
 
     def _play_card(self, command: PlayCard) -> None:
         state = self._require_running_state()
@@ -1058,6 +1052,7 @@ class GameEngine:
         source_definition: CardDefinition,
         *,
         from_ability: bool = False,
+        source_card_id: str | None = None,
         x_value: int = 0,
     ) -> None:
         state = self._require_running_state()
@@ -1090,7 +1085,9 @@ class GameEngine:
         for card_id in chosen_card_ids:
             if card_id not in state.cards or state.cards[card_id].zone is not Zone.BATTLEFIELD:
                 raise IllegalAction("Permanente objetivo inexistente")
-            if not self._card_can_be_targeted(source_definition, card_id, from_ability):
+            if not self._card_can_be_targeted(
+                source_definition, card_id, from_ability, source_card_id
+            ):
                 raise IllegalAction("El permanente es inmune a esta fuente")
         zone_effects = tuple(
             effect for effect in effects if effect.target is TargetMode.CHOSEN_ZONE
@@ -1129,40 +1126,104 @@ class GameEngine:
                     continue
                 if target_id not in state.cards or state.cards[target_id].zone is not Zone.BATTLEFIELD:
                     raise IllegalAction("Objetivo de reparto inexistente")
-                if not self._card_can_be_targeted(source_definition, target_id, from_ability):
+                if not self._card_can_be_targeted(
+                    source_definition, target_id, from_ability, source_card_id
+                ):
                     raise IllegalAction("Un objetivo del reparto es inmune a esta fuente")
 
     def _card_can_be_targeted(
         self,
-        source: CardDefinition,
+        source: CardDefinition | None,
         target_card_id: str,
         from_ability: bool = False,
+        source_card_id: str | None = None,
+        source_profile: AbilitySourceProfile | None = None,
+        query_context: _LegalActionQueryContext | None = None,
     ) -> bool:
         state = self._require_state()
-        target = self._definition(target_card_id)
-        keywords = self._effective_keywords(target_card_id)
-        if target.rank is CardRank.DIVINE and (
-            from_ability or source.kind in {CardKind.EVENT, CardKind.QUICK_RESOURCE}
-        ):
-            return False
+        if from_ability and source_profile is None:
+            source_instance = (
+                state.cards.get(source_card_id)
+                if source_card_id is not None
+                else None
+            )
+            if source_instance is None or source_instance.zone is not Zone.BATTLEFIELD:
+                raise IllegalAction(
+                    "La fuente de la habilidad debe existir en el campo de batalla"
+                ) from None
+        target = self._definition(target_card_id, query_context)
+        keywords = self._effective_keywords(target_card_id, query_context)
+        if from_ability and source_profile is not None and not source_profile.nature_is_certain:
+            return not (
+                target.rank is CardRank.DIVINE
+                or bool(
+                    keywords
+                    & {"IMMUNE_ABILITIES", "IMMUNE_EVENT", "IMMUNE_QUICK"}
+                )
+            )
+        source_kind = (
+            source_profile.effective_kind
+            if source_profile is not None
+            else source.kind if source is not None else CardKind.EVENT
+        )
+        if target.rank is CardRank.DIVINE:
+            if source_kind in {CardKind.EVENT, CardKind.QUICK_RESOURCE}:
+                return False
+            if (
+                from_ability
+                and source_card_id != target_card_id
+                and (
+                    source_profile.was_effective_creature
+                    if source_profile is not None
+                    else source_card_id is not None and self._is_creature(source_card_id)
+                )
+            ):
+                return False
         if "IMMUNE_ABILITIES" in keywords and from_ability:
             return False
-        if "IMMUNE_QUICK" in keywords and source.kind is CardKind.QUICK_RESOURCE:
+        if "IMMUNE_QUICK" in keywords and source_kind is CardKind.QUICK_RESOURCE:
             return False
-        if "IMMUNE_EVENT" in keywords and source.kind is CardKind.EVENT:
+        if "IMMUNE_EVENT" in keywords and source_kind is CardKind.EVENT:
             return False
         return True
 
+    def _ability_source_profile(self, source_card_id: str) -> AbilitySourceProfile:
+        """Congela únicamente los rasgos de fuente que afectan al targeting."""
+
+        state = self._require_state()
+        instance = state.cards[source_card_id]
+        definition = self._definition(source_card_id)
+        return AbilitySourceProfile(
+            source_card_id=source_card_id,
+            printed_kind=definition.kind,
+            was_effective_creature=self._is_creature(source_card_id),
+            was_permanent=definition.permanent,
+            was_on_battlefield=instance.zone is Zone.BATTLEFIELD,
+        )
+
     def _legal_ability_activations(
-        self, player_id: str, source_card_id: str
+        self,
+        player_id: str,
+        source_card_id: str,
+        query_context: _LegalActionQueryContext | None = None,
     ) -> list[ActivateAbility]:
+        if not self._ability_source_can_activate(player_id, source_card_id):
+            return []
         state = self._require_running_state()
         player = state.players[player_id]
         source = state.cards[source_card_id]
-        definition = self._definition(source_card_id)
+        definition = self._definition(source_card_id, query_context)
         result: list[ActivateAbility] = []
         for ability in definition.abilities:
             if ability.trigger is not None:
+                continue
+            # La naturaleza de Señor no convierte implícitamente la habilidad
+            # en Evento: únicamente conserva la ventana general de Fase Activa.
+            if (
+                not self._legacy_019
+                and definition.lord_domain is not None
+                and state.phase is not Phase.EFFECTS
+            ):
                 continue
             if ability.allowed_phases and state.phase not in ability.allowed_phases:
                 continue
@@ -1210,7 +1271,13 @@ class GameEngine:
                     card_id
                     for owner in state.players.values()
                     for card_id in owner.zones[Zone.BATTLEFIELD]
-                    if self._card_can_be_targeted(definition, card_id, True)
+                    if self._card_can_be_targeted(
+                        definition,
+                        card_id,
+                        True,
+                        source_card_id,
+                        query_context=query_context,
+                    )
                 )
                 card_targets = self._target_selections(
                     ability.effects, TargetMode.CHOSEN_PERMANENT, eligible_cards
@@ -1220,7 +1287,9 @@ class GameEngine:
                     ability.effects,
                     definition,
                     from_ability=True,
+                    source_card_id=source_card_id,
                     x_value=x_value or 0,
+                    query_context=query_context,
                 )
                 for (
                     discarded,
@@ -1261,8 +1330,9 @@ class GameEngine:
         if command.player_id != state.priority_player_id:
             raise IllegalAction("El jugador no posee prioridad")
         player = state.players[command.player_id]
-        if command.source_card_id not in player.zones[Zone.BATTLEFIELD]:
-            raise IllegalAction("La fuente debe ser un permanente bajo control propio")
+        self._validate_ability_activation_source(
+            command.player_id, command.source_card_id
+        )
         source = state.cards[command.source_card_id]
         definition = self._definition(command.source_card_id)
         ability = next(
@@ -1271,10 +1341,17 @@ class GameEngine:
         )
         if ability is None or ability.trigger is not None:
             raise IllegalAction("Habilidad activada inexistente")
+        if (
+            not self._legacy_019
+            and definition.lord_domain is not None
+            and state.phase is not Phase.EFFECTS
+        ):
+            raise IllegalAction("Las habilidades generales de Señor requieren la Fase Activa")
         if ability.allowed_phases and state.phase not in ability.allowed_phases:
             raise IllegalAction("La habilidad no puede activarse en esta fase")
         if ability.once_per_turn and ability.ability_id in source.activated_this_turn:
             raise IllegalAction("La habilidad ya se activó este turno")
+        source_profile = self._ability_source_profile(command.source_card_id)
         self._validate_effect_targets(
             ability.effects,
             command.chosen_player_ids,
@@ -1283,6 +1360,7 @@ class GameEngine:
             command.allocations,
             definition,
             from_ability=True,
+            source_card_id=command.source_card_id,
             x_value=command.x_value or 0,
         )
         if ability.x_cost is not None:
@@ -1363,6 +1441,7 @@ class GameEngine:
                 allocations=command.allocations,
                 ability_id=ability.ability_id,
                 x_value=command.x_value or 0,
+                ability_source_profile=source_profile,
             )
         )
         self._next_stack_item += 1
@@ -1397,6 +1476,31 @@ class GameEngine:
             },
         )
         self._run_state_based_actions()
+
+    def _validate_ability_activation_source(
+        self, player_id: str, source_card_id: str
+    ) -> None:
+        """Valida presencia, zona, control y condición permanente al activar."""
+
+        if not self._ability_source_can_activate(player_id, source_card_id):
+            raise IllegalAction("La fuente debe ser un permanente bajo control propio")
+
+    def _ability_source_can_activate(
+        self, player_id: str, source_card_id: str
+    ) -> bool:
+        """Comprueba la autoridad de una fuente sin modificar el estado."""
+
+        state = self._require_running_state()
+        player = state.players.get(player_id)
+        source = state.cards.get(source_card_id)
+        if player is None or source is None:
+            return False
+        return (
+            source.zone is Zone.BATTLEFIELD
+            and source.controller_id == player_id
+            and source_card_id in player.zones[Zone.BATTLEFIELD]
+            and self._definition(source_card_id).permanent
+        )
 
     def _equip_card(self, command: EquipCard) -> None:
         state = self._require_running_state()
@@ -1434,12 +1538,14 @@ class GameEngine:
             raise IllegalAction("El jugador no posee prioridad")
         if command.player_id != state.active_player_id:
             raise IllegalAction("Drenaje solo puede usarse durante la Fase Activa propia")
+        if not self._legacy_019 and state.phase is not Phase.EFFECTS:
+            raise IllegalAction("Drenaje solo puede usarse durante la Fase Activa propia")
         player = state.players[command.player_id]
         if player.drainage_used_turn_serial == state.turn_serial:
             raise IllegalAction("Drenaje ya se utilizó este turno")
-        if not 1 <= command.amount <= 5:
+        if type(command.amount) is not int or not 1 <= command.amount <= 5:
             raise IllegalAction("Drenaje permite recuperar entre uno y cinco Pasos")
-        wounds = (command.amount - 1) * 3
+        wounds = max(0, command.amount - 1) * 3
         player.steps += command.amount
         player.wounds += wounds
         player.drainage_used_turn_serial = state.turn_serial
@@ -1500,6 +1606,7 @@ class GameEngine:
             command.allocations,
             definition,
             from_ability=item.ability_id is not None,
+            source_card_id=item.source_card_id,
         )
         state.pending_triggers[index] = replace(
             item,
@@ -1617,53 +1724,13 @@ class GameEngine:
         return False
 
     def _advance_phase(self, player_id: str) -> None:
-        state = self._require_running_state()
-        if player_id != state.active_player_id:
-            raise IllegalAction("Solo el jugador activo puede avanzar la fase")
-        if state.stack or not state.phase_priority_complete:
-            raise IllegalAction("La ventana de prioridad debe estar cerrada")
-        if state.phase is Phase.COMBAT and state.combat and not state.combat.resolved:
-            raise IllegalAction("El combate declarado debe resolverse")
-        if state.phase is Phase.DISCARD:
-            if len(state.players[player_id].zones[Zone.HAND]) > self.rules.hand_limit:
-                raise IllegalAction("Debe descartarse hasta el límite de mano")
-            self._finish_turn()
-            self._enter_phase_or_skip(Phase.DRAW)
-            return
-        index = self.rules.phase_sequence.index(state.phase)
-        self._enter_phase_or_skip(self.rules.phase_sequence[index + 1])
+        self._phases.advance_phase(player_id)
 
     def _finish_turn(self) -> None:
-        state = self._require_running_state()
-        self._cleanup_end_of_turn()
-        state.turn_serial += 1
-        state.active_player_index = (state.active_player_index + 1) % len(
-            state.turn_order
-        )
-        if state.active_player_index == 0:
-            state.turn_number += 1
+        self._phases.finish_turn()
 
     def _enter_phase_or_skip(self, phase: Phase) -> None:
-        state = self._require_running_state()
-        skipped = 0
-        while self._phase_is_suppressed(state.active_player_id, phase):
-            self._emit(
-                "PHASE_SKIPPED",
-                state.active_player_id,
-                payload={"phase": phase.name},
-            )
-            skipped += 1
-            if skipped > len(self.rules.phase_sequence) * len(state.turn_order):
-                state.status = MatchStatus.BLOCKED
-                self._emit("ALL_PHASES_SUPPRESSED")
-                return
-            if phase is Phase.DISCARD:
-                self._finish_turn()
-                phase = Phase.DRAW
-            else:
-                index = self.rules.phase_sequence.index(phase)
-                phase = self.rules.phase_sequence[index + 1]
-        self._enter_phase(phase)
+        self._phases.enter_phase_or_skip(phase)
 
     def _phase_is_suppressed(self, player_id: str, phase: Phase) -> bool:
         state = self._require_running_state()
@@ -1885,8 +1952,12 @@ class GameEngine:
 
     def _is_lord_creature(self, card_id: str) -> bool:
         state = self._require_state()
+        instance = state.cards[card_id]
         definition = self._definition(card_id)
-        return definition.lord_domain is not None and self._is_creature(card_id)
+        return definition.lord_domain is not None and instance.transformed_as_creature
+
+    def _lord_domain(self, card_id: str) -> LordDomain | None:
+        return self._definition(card_id).lord_domain
 
     def _current_strength(self, card_id: str) -> int:
         state = self._require_state()
@@ -1921,15 +1992,20 @@ class GameEngine:
         )
 
     def _continuous_effects_for(
-        self, target_card_id: str
+        self,
+        target_card_id: str,
+        query_context: _LegalActionQueryContext | None = None,
     ) -> Iterator[tuple[str, ContinuousEffectDefinition]]:
+        if query_context is not None and target_card_id in query_context.continuous_effects:
+            return iter(query_context.continuous_effects[target_card_id])
         state = self._require_state()
         target = state.cards[target_card_id]
-        target_definition = self._definition(target_card_id)
+        target_definition = self._definition(target_card_id, query_context)
+        materialized: list[tuple[str, ContinuousEffectDefinition]] = []
         for source_id, source in state.cards.items():
             if source.zone is not Zone.BATTLEFIELD:
                 continue
-            source_definition = self._definition(source_id)
+            source_definition = self._definition(source_id, query_context)
             for effect in source_definition.continuous_effects:
                 if effect.excludes_source and source_id == target_card_id:
                     continue
@@ -1945,8 +2021,9 @@ class GameEngine:
                     continue
                 if effect.affected_kinds:
                     kind_matches = target_definition.kind in effect.affected_kinds
-                    if CardKind.CREATURE in effect.affected_kinds and self._is_creature(
-                        target_card_id
+                    if CardKind.CREATURE in effect.affected_kinds and (
+                        target_definition.kind is CardKind.CREATURE
+                        or target.transformed_as_creature
                     ):
                         kind_matches = True
                     if not kind_matches:
@@ -1955,22 +2032,37 @@ class GameEngine:
                     effect.affected_subtypes & target_definition.subtypes
                 ):
                     continue
-                yield source_id, effect
+                materialized.append((source_id, effect))
+        result = tuple(materialized)
+        if query_context is not None:
+            query_context.continuous_effects[target_card_id] = result
+        return iter(result)
 
-    def _effective_keywords(self, card_id: str) -> frozenset[str]:
+    def _effective_keywords(
+        self,
+        card_id: str,
+        query_context: _LegalActionQueryContext | None = None,
+    ) -> frozenset[str | Keyword]:
+        if query_context is not None and card_id in query_context.keywords:
+            return query_context.keywords[card_id]
         state = self._require_state()
         instance = state.cards[card_id]
-        definition = self._definition(card_id)
+        definition = self._definition(card_id, query_context)
         keywords = set(definition.keywords)
-        for _, effect in self._continuous_effects_for(card_id):
+        for _, effect in self._continuous_effects_for(card_id, query_context):
             keywords.update(effect.grant_keywords)
             keywords.difference_update(effect.remove_keywords)
         for equipment in state.cards.values():
             if equipment.zone is Zone.BATTLEFIELD and equipment.attached_to == card_id:
                 keywords.update(
-                    self._definition(equipment.instance_id).equipment_granted_keywords
+                    self._definition(
+                        equipment.instance_id, query_context
+                    ).equipment_granted_keywords
                 )
-        return frozenset(keywords)
+        result = frozenset(keywords)
+        if query_context is not None:
+            query_context.keywords[card_id] = result
+        return result
 
     def _run_state_based_actions(self) -> None:
         state = self._require_running_state()
@@ -2072,15 +2164,30 @@ class GameEngine:
     ) -> CardDefinition:
         return apply_text_patch(definition, patch)
 
-    def _definition(self, card_id: str) -> CardDefinition:
+    def _definition(
+        self,
+        card_id: str,
+        query_context: _LegalActionQueryContext | None = None,
+    ) -> CardDefinition:
+        if query_context is not None and card_id in query_context.definitions:
+            return query_context.definitions[card_id]
         state = self._require_state()
+        result = self._definition_for(state, self.catalog, card_id)
+        if query_context is not None:
+            query_context.definitions[card_id] = result
+        return result
+
+    @classmethod
+    def _definition_for(
+        cls, state: GameState, catalog: CardCatalogReader, card_id: str
+    ) -> CardDefinition:
         instance = state.cards[card_id]
-        definition = self.catalog.get(
+        definition = catalog.get(
             instance.overridden_definition_id or instance.definition_id
         )
         for applied in state.text_patches:
             if applied.target_card_id == card_id:
-                definition = self._apply_text_patch_to_definition(
+                definition = cls._apply_text_patch_to_definition(
                     definition, applied.patch
                 )
         return definition
@@ -2115,7 +2222,11 @@ class GameEngine:
         )
 
     def validate_invariants(self) -> None:
-        state = self._require_state()
+        self._validate_invariants(self._require_state(), self.catalog)
+
+    def _validate_invariants(
+        self, state: GameState, catalog: CardCatalogReader
+    ) -> None:
         if (
             state.ruleset_id != self.rules.ruleset_id
             or state.ruleset_version != self.rules.version
@@ -2186,7 +2297,7 @@ class GameEngine:
             raise InvariantViolation("Supresión de fase con jugador inexistente")
         if any(
             instance.overridden_definition_id is not None
-            and instance.overridden_definition_id not in self.catalog
+            and instance.overridden_definition_id not in catalog
             for instance in state.cards.values()
         ):
             raise InvariantViolation("Transformación con definición inexistente")
@@ -2233,7 +2344,13 @@ class GameEngine:
             target = state.cards.get(instance.attached_to)
             if instance.zone is not Zone.BATTLEFIELD or target is None or target.zone is not Zone.BATTLEFIELD:
                 raise InvariantViolation(f"Anexo incoherente para {card_id}")
-            if not self._is_creature(instance.attached_to):
+            target_definition = self._definition_for(
+                state, catalog, instance.attached_to
+            )
+            if not (
+                target_definition.kind is CardKind.CREATURE
+                or target.transformed_as_creature
+            ):
                 raise InvariantViolation(f"Equipo unido a un objetivo no criatura: {card_id}")
         if any(
             modifier.target_card_id not in state.cards
@@ -2250,7 +2367,9 @@ class GameEngine:
         for card_id, instance in state.cards.items():
             if not instance.replacement_order:
                 continue
-            replacements = self._replacement_definitions(self._definition(card_id))
+            replacements = self._replacement_definitions(
+                self._definition_for(state, catalog, card_id)
+            )
             if instance.zone is not Zone.BATTLEFIELD or set(
                 instance.replacement_order
             ) != set(range(len(replacements))):
@@ -2297,4 +2416,6 @@ def _verify_manager_contexts(engine: GameEngine) -> None:
     stack: StackContext = engine
     zones: ZoneContext = engine
     effects: EffectContext = engine
-    _ = (combat, stack, zones, effects)
+    actions: LegalActionContext = engine
+    options: ActionOptionContext = engine
+    _ = (combat, stack, zones, effects, actions, options)

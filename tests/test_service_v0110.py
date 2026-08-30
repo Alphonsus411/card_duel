@@ -1,7 +1,11 @@
 import tempfile
 import unittest
+from unittest.mock import patch
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import MISSING, fields
 from pathlib import Path
+from types import UnionType
+from typing import get_args, get_origin
 
 from card_duel_engine import (
     InMemoryMatchStore,
@@ -10,9 +14,18 @@ from card_duel_engine import (
     VersionConflict,
 )
 from card_duel_engine.domain.errors import IllegalAction
+from card_duel_engine.catalog import CardCatalog
+from card_duel_engine.engine.game import GameEngine
 from card_duel_engine.domain.enums import MatchStatus
-from card_duel_engine.engine.commands import Concede, PassPriority
+from card_duel_engine.engine import commands as command_module
+from card_duel_engine.engine.commands import (
+    EXECUTABLE_COMMAND_TYPES,
+    Concede,
+    GameCommand,
+    PassPriority,
+)
 from card_duel_engine.persistence.snapshot import state_digest
+from card_duel_engine.service import MalformedGameCommand
 from fixtures import test_deck
 
 
@@ -87,6 +100,60 @@ class MatchServiceV0110Tests(unittest.TestCase):
     def decks(self):
         return {"A": test_deck("A"), "B": test_deck("B")}
 
+    @staticmethod
+    def command_instance(command_type):
+        values = {"player_id": "A"}
+        for field in fields(command_type):
+            if field.name in values or field.default is not MISSING:
+                continue
+            annotation = field.type
+            origin = get_origin(annotation)
+            if annotation == "int" or annotation is int:
+                values[field.name] = 0
+            elif annotation == "str" or annotation is str:
+                values[field.name] = "value"
+            elif origin is tuple or str(annotation).startswith("tuple["):
+                values[field.name] = ()
+            elif origin is UnionType and type(None) in get_args(annotation):
+                values[field.name] = None
+            else:  # pragma: no cover - obliga a ampliar la fábrica al añadir campos
+                raise AssertionError(f"Campo de prueba desconocido: {field}")
+        return command_type(**values)
+
+    def test_executable_command_registry_is_complete_and_has_no_duplicates(self):
+        concrete_commands = {
+            value
+            for value in vars(command_module).values()
+            if isinstance(value, type)
+            and value.__module__ == command_module.__name__
+            and issubclass(value, GameCommand)
+            and value is not GameCommand
+        }
+        self.assertEqual(set(EXECUTABLE_COMMAND_TYPES), concrete_commands)
+        self.assertEqual(len(EXECUTABLE_COMMAND_TYPES), len(set(EXECUTABLE_COMMAND_TYPES)))
+
+    def test_command_validation_uses_exact_registered_types(self):
+        class InventedCommand(GameCommand):
+            pass
+
+        class InventedConcede(Concede):
+            pass
+
+        rejected = (
+            object(),
+            GameCommand("A"),
+            InventedCommand("A"),
+            InventedConcede("A"),
+        )
+        for command in rejected:
+            with self.subTest(command=type(command).__name__):
+                with self.assertRaises(MalformedGameCommand):
+                    MatchService.validate_command(command)
+
+        for command_type in EXECUTABLE_COMMAND_TYPES:
+            with self.subTest(command_type=command_type.__name__):
+                MatchService.validate_command(self.command_instance(command_type))
+
     def test_create_view_submit_and_isolation(self):
         service = MatchService(InMemoryMatchStore())
         self.assertEqual(service.create_match("match", self.decks(), seed=7), 1)
@@ -95,6 +162,37 @@ class MatchServiceV0110Tests(unittest.TestCase):
         updated = service.submit("match", action, expected_version=view.version)
         self.assertEqual(updated.version, 2)
         self.assertEqual(service.get_match("match").version, 2)
+
+    def test_late_engine_failure_never_calls_store_or_mutates_shared_catalog(self):
+        class AccidentalSetupFailure(RuntimeError):
+            pass
+
+        class RecordingStore(InMemoryMatchStore):
+            def __init__(self):
+                super().__init__()
+                self.create_calls = []
+
+            def create(self, match_id, engine):
+                self.create_calls.append((match_id, engine))
+                return super().create(match_id, engine)
+
+        catalog = CardCatalog()
+        store = RecordingStore()
+        service = MatchService(store, catalog=catalog)
+        definitions_before = catalog.definitions()
+
+        with patch.object(
+            GameEngine,
+            "_validate_candidate_invariants",
+            side_effect=AccidentalSetupFailure("fallo accidental tardío"),
+        ):
+            with self.assertRaisesRegex(AccidentalSetupFailure, "accidental tardío"):
+                service.create_match("not-created", self.decks(), seed=41)
+
+        self.assertEqual(store.create_calls, [])
+        self.assertEqual(catalog.definitions(), definitions_before)
+        with self.assertRaises(KeyError):
+            store.load("not-created")
 
     def test_stale_version_is_rejected_without_mutation(self):
         service = MatchService(InMemoryMatchStore())

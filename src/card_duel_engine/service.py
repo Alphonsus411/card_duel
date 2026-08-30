@@ -4,16 +4,18 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Protocol, cast
 
 from .catalog import CardCatalog
 from .content.registry import CollectionRegistry
 from .controllers.base import PlayerObservation
+from .domain.errors import InvalidDeckDefinition
 from .domain.models import CardDefinition
-from .engine.commands import GameCommand
+from .engine.commands import EXECUTABLE_COMMAND_TYPE_SET, GameCommand
 from .engine.game import GameEngine
 from .rules.config import RuleSet
-from .storage.base import StoredMatch
+from .rules.deck import DeckConstructionPolicy, InvalidDeckConstruction
+from .storage.base import StoredMatch, validate_expected_version
 
 
 class DeckValidationFailure(ValueError):
@@ -57,11 +59,13 @@ class MatchService:
         *,
         engine_factory: Callable[[], GameEngine] | None = None,
         catalog: CardCatalog | CollectionRegistry | None = None,
+        deck_policy: DeckConstructionPolicy | None = None,
     ) -> None:
         self.store = store
         if engine_factory is not None and catalog is not None:
             raise ValueError("No se puede combinar engine_factory y catalog")
         self._engine_factory = engine_factory or (lambda: GameEngine(catalog=catalog))
+        self._deck_policy = deck_policy
 
     def create_match(
         self,
@@ -71,11 +75,20 @@ class MatchService:
         seed: int = 0,
         auto_start: bool = True,
     ) -> int:
+        prepared_decks: Mapping[str, Iterable[CardDefinition]] = decks
+        if self._deck_policy is not None:
+            try:
+                prepared_decks = {
+                    player_id: self._deck_policy.require_valid(deck)
+                    for player_id, deck in decks.items()
+                }
+            except InvalidDeckConstruction:
+                raise DeckValidationFailure from None
         engine = self._engine_factory()
         try:
-            engine.new_match(decks, seed=seed, auto_start=auto_start)
-        except (TypeError, ValueError) as exc:
-            raise DeckValidationFailure from exc
+            engine.new_match(prepared_decks, seed=seed, auto_start=auto_start)
+        except InvalidDeckDefinition:
+            raise DeckValidationFailure from None
         return self.store.create(match_id, engine)
 
     def get_match(self, match_id: str) -> StoredMatch:
@@ -113,6 +126,7 @@ class MatchService:
         *,
         expected_version: int,
     ) -> MatchView:
+        expected_version = validate_expected_version(expected_version)
         self.validate_command(command)
         stored = self.store.load(match_id)
         # El CAS se comprueba antes de ejecutar para evitar trabajo y errores engañosos.
@@ -133,11 +147,12 @@ class MatchService:
     @staticmethod
     def validate_command(command: object) -> None:
         """Rechaza objetos ajenos sin ejecutar ni ocultar errores del motor."""
+        if type(command) not in EXECUTABLE_COMMAND_TYPE_SET:
+            raise MalformedGameCommand
+        validated_command = cast(GameCommand, command)
         if (
-            not isinstance(command, GameCommand)
-            or type(command) not in GameCommand.__subclasses__()
-            or type(command.player_id) is not str
-            or not command.player_id
+            type(validated_command.player_id) is not str
+            or not validated_command.player_id
         ):
             raise MalformedGameCommand
 

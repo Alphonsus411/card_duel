@@ -1,9 +1,18 @@
-# Línea base de reglas 0.10
+# Línea base de reglas 0.20
 
 Esta especificación deriva del reglamento base y de las actualizaciones de la
 Edición Mítica. No incluye textos de cartas antiguas.
 
-## Reglas incorporadas
+## Fuentes primarias
+
+1. `Fantasy Tokens.pdf` es la fuente base verificable.
+2. `Fantasy Tokens Edicion Mitica.pdf` (2018-06-13) es la actualización posterior
+   y prevalece únicamente ante una modificación expresa.
+3. `docs/RULES_SOURCES.json` fija nombre, hash SHA-256, tamaño y número de páginas;
+   `docs/RULES_TRACEABILITY.md` registra página física e interna.
+4. Código, pruebas y este documento son derivados, no nuevas fuentes normativas.
+
+## Reglas universales incorporadas
 
 - Mano inicial de seis cartas.
 - Mulligan: cada repetición reduce en uno la nueva mano, hasta una carta.
@@ -34,14 +43,19 @@ Edición Mítica. No incluye textos de cartas antiguas.
 - Un efecto puede exigir un intervalo de objetivos distintos y se aplica a cada
   objetivo que siga siendo legal al resolverse.
 - Los efectos continuos pueden seleccionar por controlador, tipo y subtipo.
-- Un Divino no puede ser objetivo de Eventos, Recursos Rápidos ni habilidades,
-  pero conserva Transmutación y sus propias habilidades.
+- Un Divino no puede ser objetivo de Eventos, Recursos Rápidos ni habilidades
+  de criaturas permanentes según el tipo efectivo de la fuente; conserva
+  Transmutación y sus propias habilidades.
 - Los Señores poseen los dominios Abismo, Elíseo, Magia o Reinos. Si su Fuerza
   llega a cero se envían al descarte incluso si son indestructibles.
 - Pagar Fuerza forma parte del coste atómico de una habilidad de Señor.
-- Un Señor no criatura solo puede iniciar Desafío mientras esté transformado.
-- Desafío sustituye el combate normal: enfrenta un Señor criatura con una sola
-  criatura contraria, sin daño sobrante al jugador y sin girarlas automáticamente.
+- Un Señor de Reinos sólo es elegible para Desafío cuando ya está transformado
+  en criatura y enderezado; el dominio no le concede una transformación gratis.
+  Abismo, Elíseo y Magia requieren además la autorización declarativa
+  `CAN_CHALLENGE`, que no los reclasifica como Eventos.
+- Desafío se declara una vez por turno en Fase de Efectos (Fase Activa) y
+  sustituye el combate normal en ambos sentidos: enfrenta un Señor criatura con
+  una sola criatura contraria, sin daño sobrante ni giro automático.
 - Los disparos simultáneos esperan a que su controlador indique el orden exacto.
 - Una zona puede ser objetivo sin mostrar sus cartas; mover desde mazo usa su parte superior.
 - Una cantidad de daño puede repartirse entre jugadores y criaturas. Cada parte
@@ -91,7 +105,16 @@ Edición Mítica. No incluye textos de cartas antiguas.
 - La acción interrumpida no produce pagos, daño, eventos ni movimientos
   parciales; se reproduce completa después de cada elección.
 
-## Normalizaciones internas
+## Reglas de formato
+
+- Clásico y Mística se representan mediante `DeckConstructionPolicy` optativas;
+  una partida sin política mantiene el contrato histórico de `RuleSet`.
+- La legalidad de colección se inyecta antes de crear la partida y no incorpora
+  cartas al catálogo distribuido.
+- `N-POINTS-01` impide fijar un presupuesto: las fuentes mencionan 200, 300,
+  300–400 y aproximadamente 300 puntos sin una única cifra autoritativa.
+
+## Normalizaciones del motor
 
 - `wounds` representa Heridas acumuladas; curar reduce este contador.
 - `DISCARD` representa tanto "Pila" como "Pila de Descartes".
@@ -99,6 +122,9 @@ Edición Mítica. No incluye textos de cartas antiguas.
 - Los términos visibles podrán cambiarse en la capa de presentación.
 - En Drenaje se interpreta “hasta 1 Paso” como el primer Paso gratuito y el
   máximo de cinco como cuatro Pasos adicionales a tres Heridas cada uno.
+- En partidas actuales Drenaje sólo se acepta en Fase de Efectos (Fase Activa).
+  La semántica 0.19 fuera de esa fase existe únicamente durante la reproducción
+  de fixtures históricos y nunca habilita comandos nuevos.
 - Se exige que el Señor que inicia Desafío esté enderezado, por herencia de las
   condiciones generales para declarar combate.
 - “Regenerar criaturas” aparece en las reglas generales, pero Mítica no define
@@ -143,10 +169,33 @@ Edición Mítica. No incluye textos de cartas antiguas.
 
 ## Precedencia normativa
 
+- `Fantasy Tokens.pdf` es la fuente base. `Fantasy Tokens Edicion Mitica.pdf`
+  (2018-06-13) prevalece solo donde modifica expresamente la base; una adición no
+  es por sí sola contradicción. Las contradicciones y ambigüedades quedan
+  bloqueadas. Este documento, el código y las pruebas son derivados, no prueba
+  normativa.
 - La regla antigua afirmaba que un Divino era inmune incluso al descarte. Mítica
-  especifica inmunidad frente a Eventos, Recursos Rápidos y habilidades, y dice
-  expresamente que puede transmutarse. La versión 0.5 aplica la formulación de
-  Mítica por ser posterior y más específica.
+  (física 3 / interna 2) especifica inmunidad frente a Eventos, Recursos Rápidos
+  y habilidades, y permite expresamente la Transmutación. La versión 0.5 aplica
+  esa formulación por ser una modificación posterior expresa.
+- La frase sobre habilidades de Señor «a modo de Eventos» (Mítica, física 3 /
+  interna 2) solo respalda su temporización en Fase Activa; no respalda su
+  reclasificación universal como Eventos. La cuestión sigue bloqueada.
+- La auditoría y sus categorías A–E están en `MYTHIC_RULES_AUDIT.md`.
+
+## Reglas bloqueadas
+
+No se infieren reglas para `N-POINTS-01`, la posible reclasificación universal de
+habilidades de Señor, el reparto ambiguo entre bloqueadores ni las condiciones
+terminales con tres o más participantes. Los esquemas persistentes siguen siendo
+v1/v2; no existe ni se anticipa un esquema v3.
+
+## Contenido de cartas
+
+El catálogo de producción continúa vacío. Las cartas concretas del PDF no son
+reglas universales ni se transcriben al paquete; solo existen definiciones
+sintéticas bajo `tests/fixtures.py`. Un futuro corpus pertenece a R-03B.4 y deberá
+cargarse externamente mediante manifiestos, no como tarea inmediata.
 
 ## Pendientes explícitos
 
@@ -169,10 +218,9 @@ omitir `expected_version`/CAS ni reinterpretar comandos.
   esta normalización debe revisarse si aparece una aclaración normativa.
 - Nuevas migraciones cuando aparezcan futuros esquemas 3 o posteriores.
 - Extracción de pila, combate y movimientos a resolutores especializados.
-- El inventario documental de la contradicción base–Mítica sobre Divinos está
-  completado en `RULES_TRACEABILITY.md`; cualquier modificación normativa del
-  motor o de expectativas reglamentarias de pruebas sigue bloqueada hasta una
-  aclaración oficial paginada.
+- La auditoría base–Mítica está completada en `MYTHIC_RULES_AUDIT.md`; los puntos
+  de mazo (`N-POINTS-01`) y la posible reclasificación de habilidades de Señor
+  (`M-LORD-EVENT-01`) siguen bloqueados hasta una aclaración oficial.
 
 Nada de lo anterior debe completarse mediante suposiciones silenciosas.
 
@@ -237,3 +285,16 @@ partidas de dos jugadores conservan exactamente sus condiciones de victoria.
 La autenticación de colecciones es infraestructura y no modifica ninguna regla,
 carta ni resultado. El manifiesto y los documentos persistentes permanecen en
 esquema v2; el sobre de firma usa su propio esquema v1 separado.
+
+
+## Compatibilidad 0.20.0
+
+La deserialización de documentos v1/v2 y la reproducción semántica son garantías
+distintas. `R-COMPAT-019-REPLAY` activa sólo durante replays cuyo `RuleSet` es
+0.19 la conducta histórica necesaria para los fixtures generados con el commit
+documentado en `tests/artifacts/0.19.0/README.md`; después restaura el modo
+normal. En partidas actuales Drenaje exige Fase de Efectos y Desafío exige Fase
+Activa, uso único, exclusión de combate y elegibilidad declarada. El puente
+legacy tiene vida limitada y sólo podrá retirarse mediante una decisión de
+compatibilidad versionada. No se crea v3, no se añaden cartas de producción y
+no cambian las condiciones terminales multijugador.

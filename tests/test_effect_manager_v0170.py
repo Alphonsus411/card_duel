@@ -4,11 +4,12 @@ from copy import deepcopy
 import unittest
 
 from card_duel_engine.catalog import CardCatalog
-from card_duel_engine.domain.enums import CardKind, EffectDuration, EffectKind, MatchStatus, Phase, TargetMode, Zone
+from card_duel_engine.domain.enums import CardKind, CardRank, EffectDuration, EffectKind, MatchStatus, Phase, TargetMode, Zone
 from card_duel_engine.domain.errors import UnsupportedEffectError
-from card_duel_engine.domain.models import CardDefinition, CardInstance, EffectDefinition, GameState, PlayerState, StackItem, TargetAllocation, TextPatchDefinition, ZoneTarget
+from card_duel_engine.domain.models import AbilitySourceProfile, CardDefinition, CardInstance, EffectDefinition, GameState, PlayerState, StackItem, TargetAllocation, TextPatchDefinition, ZoneTarget
 from card_duel_engine.engine.effects import EffectManager
 from card_duel_engine import GameEngine
+from card_duel_engine.persistence import dump_snapshot, load_snapshot
 
 
 def engine_with_battlefield() -> tuple[GameEngine, StackItem, str]:
@@ -31,6 +32,132 @@ def engine_with_battlefield() -> tuple[GameEngine, StackItem, str]:
 
 
 class EffectManagerTests(unittest.TestCase):
+    def test_kind_immunities_use_only_the_frozen_profile_after_two_snapshots(self):
+        """La resolución no vuelve a mirar una copia ni una fuente que ya se fue."""
+
+        for kind, keyword in (
+            (CardKind.EVENT, "IMMUNE_EVENT"),
+            (CardKind.QUICK_RESOURCE, "IMMUNE_QUICK"),
+        ):
+            with self.subTest(kind=kind):
+                engine, _, target = engine_with_battlefield()
+                state = engine._require_running_state()
+                target_definition = engine.catalog.get("target")
+                engine.catalog._cards["target"] = CardDefinition(
+                    target_definition.card_id,
+                    target_definition.name,
+                    target_definition.kind,
+                    target_definition.cost,
+                    base_strength=target_definition.base_strength,
+                    keywords=frozenset({keyword}),
+                )
+                state.stack.append(StackItem(
+                    "frozen-kind", "A", "source-i",
+                    (EffectDefinition(
+                        EffectKind.DEAL_DAMAGE, 1, TargetMode.CHOSEN_PERMANENT,
+                    ),),
+                    chosen_card_ids=(target,), ability_id="copied-ability",
+                    ability_source_profile=AbilitySourceProfile(
+                        "source-i", kind, False, False, True,
+                    ),
+                ))
+                # El estado posterior contradice deliberadamente el perfil apilado.
+                state.cards["source-i"].overridden_definition_id = None
+                state.players["A"].zones[Zone.BATTLEFIELD].remove("source-i")
+                state.players["A"].zones[Zone.DISCARD].append("source-i")
+                state.cards["source-i"].zone = Zone.DISCARD
+                state.ruleset_id = engine.rules.ruleset_id
+                state.ruleset_version = engine.rules.version
+
+                restored = load_snapshot(dump_snapshot(engine))
+                restored = load_snapshot(dump_snapshot(restored))
+                item = restored.state.stack.pop()
+                EffectManager(restored).apply(item.effects[0], item, target)
+
+                self.assertEqual(restored.state.cards[target].damage, 0)
+                self.assertEqual(restored.state.event_log[-1].payload["reason"], "immune")
+
+    def test_resolution_uses_captured_source_profile_for_divine_targeting(self):
+        for effective_creature, expected_damage in ((True, 0), (False, 1)):
+            with self.subTest(effective_creature=effective_creature):
+                engine, _, target = engine_with_battlefield()
+                state = engine._require_running_state()
+                divine = engine.catalog.get("target")
+                engine.catalog._cards["target"] = CardDefinition(
+                    divine.card_id, divine.name, divine.kind, divine.cost,
+                    rank=CardRank.DIVINE, base_strength=divine.base_strength,
+                )
+                state.players["A"].zones[Zone.BATTLEFIELD].remove("source-i")
+                state.players["A"].zones[Zone.DISCARD].append("source-i")
+                state.cards["source-i"].zone = Zone.DISCARD
+                profile = AbilitySourceProfile(
+                    "source-i", CardKind.ARTIFACT, effective_creature, True, True
+                )
+                item = StackItem(
+                    "stack-profile", "A", "source-i", (), ability_id="ability",
+                    ability_source_profile=profile,
+                )
+                EffectManager(engine).apply(
+                    EffectDefinition(EffectKind.DEAL_DAMAGE, 1, TargetMode.CHOSEN_PERMANENT),
+                    item,
+                    target,
+                )
+                self.assertEqual(state.cards[target].damage, expected_damage)
+                if effective_creature:
+                    self.assertEqual(state.event_log[-1].event_type, "EFFECT_FIZZLED")
+
+    def test_acquired_ability_immunity_is_a_normal_fizzle(self):
+        engine, _, target = engine_with_battlefield()
+        state = engine._require_running_state()
+        state.players["A"].zones[Zone.BATTLEFIELD].remove("source-i")
+        state.players["A"].zones[Zone.DISCARD].append("source-i")
+        state.cards["source-i"].zone = Zone.DISCARD
+        definition = engine.catalog.get("target")
+        engine.catalog._cards["target"] = CardDefinition(
+            definition.card_id, definition.name, definition.kind, definition.cost,
+            base_strength=definition.base_strength,
+            keywords=frozenset({"IMMUNE_ABILITIES"}),
+        )
+        item = StackItem(
+            "stack-immune", "A", "source-i", (), ability_id="ability",
+            ability_source_profile=AbilitySourceProfile(
+                "source-i", CardKind.ARTIFACT, False, True, True
+            ),
+        )
+        EffectManager(engine).apply(
+            EffectDefinition(EffectKind.DEAL_DAMAGE, 1, TargetMode.CHOSEN_PERMANENT),
+            item,
+            target,
+        )
+        self.assertEqual(state.cards[target].damage, 0)
+        self.assertEqual(state.event_log[-1].payload["reason"], "immune")
+
+    def test_uncertain_legacy_source_never_crosses_kind_or_ability_immunities(self):
+        for keyword in ("IMMUNE_EVENT", "IMMUNE_QUICK", "IMMUNE_ABILITIES"):
+            with self.subTest(keyword=keyword):
+                engine, _, target = engine_with_battlefield()
+                state = engine._require_running_state()
+                definition = engine.catalog.get("target")
+                engine.catalog._cards["target"] = CardDefinition(
+                    definition.card_id, definition.name, definition.kind,
+                    definition.cost, base_strength=definition.base_strength,
+                    keywords=frozenset({keyword}),
+                )
+                del state.cards["source-i"]
+                state.players["A"].zones[Zone.BATTLEFIELD].remove("source-i")
+                item = StackItem(
+                    "legacy-unknown", "A", "source-i", (), ability_id="old",
+                    ability_source_profile=AbilitySourceProfile(
+                        "source-i", CardKind.EVENT, True, True, False,
+                        nature_is_certain=False,
+                    ),
+                )
+                EffectManager(engine).apply(
+                    EffectDefinition(EffectKind.DEAL_DAMAGE, 1, TargetMode.CHOSEN_PERMANENT),
+                    item, target,
+                )
+                self.assertEqual(state.cards[target].damage, 0)
+                self.assertEqual(state.event_log[-1].payload["reason"], "immune")
     def test_closed_registry_contains_every_effect_kind(self):
         engine, _, _ = engine_with_battlefield()
         self.assertEqual(engine._effects.supported_kinds, frozenset(EffectKind))

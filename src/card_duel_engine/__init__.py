@@ -21,6 +21,9 @@ from .application import (
     WriteConflict,
 )
 from .content import (
+    CardPresentation,
+    CardPresentationCatalog,
+    CardPresentationSnapshot,
     CollectionManifest,
     CollectionRegistry,
     CollectionSignatureEnvelope,
@@ -54,6 +57,9 @@ __all__ = [
     "PublicPlayerObservation",
     "ResourceNotFound",
     "WriteConflict",
+    "CardPresentation",
+    "CardPresentationCatalog",
+    "CardPresentationSnapshot",
     "CollectionManifest",
     "CollectionRegistry",
     "CollectionTrustPolicy",

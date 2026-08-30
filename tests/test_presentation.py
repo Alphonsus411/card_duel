@@ -1,7 +1,7 @@
 import unittest
 from dataclasses import dataclass
 
-from card_duel_engine import (
+from card_duel_engine.presentation import (
     CardPresentation,
     CardPresentationCatalog,
     CardPresentationSnapshot,

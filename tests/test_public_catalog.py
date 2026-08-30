@@ -2,15 +2,11 @@ import json
 import unittest
 from dataclasses import FrozenInstanceError
 
-from card_duel_engine import (
-    CardCatalog,
-    CardPresentation,
-    CardPresentationCatalog,
-    PublicCard,
-    PublicCardCatalog,
-)
+from card_duel_engine.catalog import CardCatalog
 from card_duel_engine.domain.enums import CardKind, CardRank, Keyword
 from card_duel_engine.domain.models import CardDefinition
+from card_duel_engine.presentation import CardPresentation, CardPresentationCatalog
+from card_duel_engine.public_catalog import PublicCard, PublicCardCatalog
 
 
 def definition(card_id: str, name: str = "Nombre mecánico") -> CardDefinition:

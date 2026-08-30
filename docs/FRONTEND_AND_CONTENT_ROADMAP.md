@@ -136,6 +136,15 @@ se ordenan por `card_id`; y la salida convierte colecciones y enums a valores
 JSON-safe. El contrato de integración especifica el esquema, la política de
 nombres y los datos internos deliberadamente excluidos.
 
+El cierre se verificó con las pruebas específicas de presentación y catálogo,
+la suite completa con cobertura de ramas (90%, por encima de `fail_under = 88`),
+el tipado configurado en `pyproject.toml` y las regresiones de Fase 1-A, CAS,
+privacidad, `submit_option()`, persistencia y replay. La versión permanece en
+`0.20.1` en todas sus fuentes, CI conserva Python 3.11, 3.12 y 3.13, y la
+revisión de alcance confirma que esta fase no cambia modelos de dominio, motor,
+mecánicas, persistencia, SQLite, replay, colecciones de producción, manifests ni
+dependencias runtime.
+
 ### 4.4 Fase 1-C — NEXT
 
 Las vistas o eventos adicionales que falten para cerrar el contrato pertenecen

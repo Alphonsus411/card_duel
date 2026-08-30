@@ -203,21 +203,79 @@ deben convertirse en canales laterales que revelen esas categorías. Las pruebas
 de frontera deben comprobar tanto campos presentes como ausencia de campos y
 variaciones privadas.
 
-## Catálogo mecánico y presentación pública
+## Fase 1-B — catálogo público de cartas (implementada)
 
-`CardDefinition` permanece como la verdad mecánica, inmutable y consumida por
-reglas, catálogo y motor. No se redefine para satisfacer necesidades visuales,
-no se convierte en carga confiable de cliente y no debe serializarse sin filtro
-como catálogo de UI.
+La Fase 1-B incorpora una proyección pública, determinista y serializable que
+combina la definición mecánica con metadatos editoriales. Su alcance termina en
+el modelo y en sus validaciones: no aporta una colección de producción, una UI,
+un transporte remoto ni infraestructura de cliente.
 
-Un futuro catálogo/presentación pública será una proyección separada, segura y
-serializable para el jugador. Podrá ofrecer identidad pública estable y datos
-de presentación autorizados —por ejemplo, rótulos, texto visible y recursos
-visuales— sin entregar estructuras ejecutables, efectos internos, información
-de zonas ocultas ni objetos de dominio. La presentación nunca reemplaza a
-`CardDefinition` para determinar costes, efectos o legalidad; el servidor sigue
-siendo autoritativo y define explícitamente qué proyección corresponde al
-contexto del jugador.
+### Presentación editorial pasiva y fuentes de autoridad
+
+`CardDefinition` permanece como la verdad mecánica inmutable consumida por las
+reglas, el catálogo mecánico y el motor. `CardPresentation` es exclusivamente
+metadato editorial pasivo con cinco campos: `card_id`, `token`, `name`,
+`rules_text` y `art`. Ninguno es ejecutable: ni el texto se evalúa, ni el arte o
+el token codifican comportamiento, ni la presentación determina costes,
+efectos, habilidades, legalidad o resultados. Modificar un dato editorial no
+puede modificar la mecánica proyectada.
+
+`CardPresentationCatalog` registra esas entradas editoriales y exige unicidad
+global de `card_id` y de `token` dentro del catálogo completo. Su
+`CardPresentationSnapshot` es una fotografía inmutable y desacoplada: posteriores
+altas en el registro no cambian el snapshot ya obtenido. Tanto el catálogo como
+el snapshot enumeran presentaciones en orden determinista ascendente por
+`card_id`.
+
+La unión entre las fuentes es **exclusivamente por igualdad de `card_id`**. El
+`token`, cualquiera de los nombres y los demás campos no son claves de unión ni
+pueden seleccionar una definición. Antes de construir el catálogo público,
+`validate_card_presentations()` comprueba cobertura completa en ambas
+direcciones: rechaza presentaciones editoriales huérfanas, sin definición
+mecánica, y definiciones mecánicas sin presentación. Por tanto, cada
+`card_id` mecánico tiene exactamente una presentación y cada presentación
+corresponde exactamente a una definición.
+
+### Campos publicados por `PublicCard`
+
+Cada `PublicCard` publica exactamente los siguientes campos:
+
+| Procedencia | Campos públicos |
+| --- | --- |
+| `CardDefinition` | `card_id`, `mechanical_name`, `kind`, `cost`, `rank`, `base_strength`, `set_id`, `revision`, `keywords`, `subtypes` |
+| `CardPresentation` | `token`, `name`, `rules_text`, `art` |
+
+La política de nombres es explícita: `mechanical_name` procede de
+`CardDefinition.name`, mientras que `name` procede de `CardPresentation.name`.
+Ambos pueden diferir legítimamente. El nombre editorial sirve para presentación
+humana y nunca controla reglas, búsquedas mecánicas, unión, legalidad o
+resultados; la autoridad mecánica sigue siendo `CardDefinition`.
+
+La proyección copia sólo datos declarativos necesarios y deliberadamente no
+copia efectos, habilidades, costes dinámicos ni otros *internals*. Esos datos
+pueden contener estructura ejecutable, estado contextual o detalles del dominio
+que permitirían duplicar o inferir reglas fuera de la frontera autoritativa. El
+`cost` publicado es únicamente el coste base declarativo de la definición; no
+es el resultado de aplicar modificadores ni autoriza al consumidor a calcular
+un coste efectivo.
+
+### Determinismo, serialización y aislamiento
+
+`PublicCardCatalog` valida primero la cobertura y construye sus cartas en orden
+ascendente por `card_id`, con independencia del orden de registro de cualquiera
+de las fuentes. En la proyección, los `frozenset` mecánicos `keywords` y
+`subtypes` se ordenan y se copian como tuplas inmutables; los valores enum de
+`kind`, `rank` y, cuando corresponde, `keywords` se convierten en cadenas
+estables en minúsculas. En `to_dict()`, esas tuplas se materializan como listas,
+de modo que el resultado contiene sólo diccionarios, listas, cadenas, enteros y
+`null`, todos JSON-safe, sin enums, `frozenset`, tuplas u objetos de dominio.
+
+Finalmente, `PublicCardCatalog` contiene nuevas instancias de `PublicCard` con
+copias de los valores públicos; no conserva referencias a `CardDefinition`,
+`CardPresentation`, sus catálogos ni sus snapshots autoritativos. Sus tuplas
+internas son inmutables y cada llamada a `to_dict()` crea colecciones públicas
+nuevas, por lo que mutar la carga resultante no modifica el catálogo público ni
+ninguna fuente.
 
 ## Errores públicos seguros
 

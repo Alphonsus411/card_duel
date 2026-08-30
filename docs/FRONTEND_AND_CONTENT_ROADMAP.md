@@ -104,7 +104,18 @@ nunca sustituye la resolución del backend.
 
 ## 4. Contrato UI y alternativas legales
 
-### 4.1 Fase 1-A implementada
+### 4.1 Estado de la Fase 1
+
+| Entrega | Estado |
+| --- | --- |
+| Fase 1-A | **COMPLETE** |
+| Fase 1-B | **COMPLETE** |
+| Fase 1-C | **NEXT** |
+| Fase 1 | **IN PROGRESS** |
+
+La Fase 1 no está completa y la Fase 2 no se ha iniciado.
+
+### 4.2 Fase 1-A — COMPLETE
 
 `PublicLegalAction.option_id` identifica de forma opaca cada alternativa
 concreta y `PublicLegalAction.action` conserva el tipo general presentable. La
@@ -115,12 +126,22 @@ el comando correspondiente sin recibir sus campos del cliente.
 No se debe compensar esta deuda reconstruyendo comandos en el cliente, leyendo
 estado privado ni duplicando enumeración de reglas.
 
-### 4.2 Alcance pendiente de la Fase 1
+### 4.3 Fase 1-B — COMPLETE
 
-La Fase 1-A cubre únicamente valores `option_id` opacos, resolución server-side,
-CAS, rechazo seguro y pruebas de privacidad/persistencia. **No declara completa
-la Fase 1**: snapshots/eventos adicionales y el catálogo público pertenecen a
-entregas posteriores expresamente autorizadas.
+La Fase 1-B entrega el modelo editorial pasivo `CardPresentation`, su catálogo
+y snapshot validados, y `PublicCardCatalog` como proyección pública separada de
+las fuentes mecánica y editorial. La cobertura se comprueba en ambas
+direcciones por `card_id`; el token editorial es globalmente único; las cartas
+se ordenan por `card_id`; y la salida convierte colecciones y enums a valores
+JSON-safe. El contrato de integración especifica el esquema, la política de
+nombres y los datos internos deliberadamente excluidos.
+
+### 4.4 Fase 1-C — NEXT
+
+Las vistas o eventos adicionales que falten para cerrar el contrato pertenecen
+a la Fase 1-C y requieren su propia entrega expresamente autorizada. **La Fase 1
+permanece IN PROGRESS** hasta que se satisfagan todos sus criterios; este estado
+no declara completa la Fase 1 ni inicia la Fase 2.
 
 Los valores `option_id` no son comandos serializados, no conceden autoridad ni
 permiten inferir información privada. Un `option_id` inexistente, alterado o de

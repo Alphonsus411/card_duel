@@ -12,6 +12,7 @@ from .presentation import (
     CardPresentationSnapshot,
     validate_card_presentations,
 )
+from .public_catalog import PublicCard, PublicCardCatalog
 from .application import (
     AccessDenied,
     AuthenticatedMatchApplication,
@@ -65,6 +66,8 @@ __all__ = [
     "CardPresentationCatalogReader",
     "CardPresentationSnapshot",
     "validate_card_presentations",
+    "PublicCard",
+    "PublicCardCatalog",
     "AccessDenied",
     "AuthenticatedMatchApplication",
     "AuthenticationRequired",

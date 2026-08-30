@@ -1,6 +1,6 @@
 """Motor headless y extensible del nuevo juego de cartas."""
 
-from .catalog import CardCatalog
+from .catalog import CardCatalog, CardCatalogReader, CardCatalogSnapshot
 from .application import (
     AccessDenied,
     AuthenticatedMatchApplication,
@@ -24,6 +24,8 @@ from .content import (
     CardPresentation,
     CardPresentationCatalog,
     CardPresentationSnapshot,
+    PublicCard,
+    PublicCardCatalog,
     CollectionManifest,
     CollectionRegistry,
     CollectionSignatureEnvelope,
@@ -40,6 +42,8 @@ from .storage import InMemoryMatchStore, SQLiteMatchStore, VersionConflict
 
 __all__ = [
     "CardCatalog",
+    "CardCatalogReader",
+    "CardCatalogSnapshot",
     "AccessDenied",
     "AuthenticatedMatchApplication",
     "AuthenticationRequired",
@@ -60,6 +64,8 @@ __all__ = [
     "CardPresentation",
     "CardPresentationCatalog",
     "CardPresentationSnapshot",
+    "PublicCard",
+    "PublicCardCatalog",
     "CollectionManifest",
     "CollectionRegistry",
     "CollectionTrustPolicy",

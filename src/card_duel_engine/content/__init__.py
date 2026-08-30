@@ -14,6 +14,7 @@ from .presentation import (
     CardPresentationCatalog,
     CardPresentationSnapshot,
 )
+from .public_catalog import PublicCard, PublicCardCatalog
 from .signature import (
     CollectionSignatureEnvelope,
     dump_signature_envelope,
@@ -37,6 +38,8 @@ __all__ = [
     "CardPresentation",
     "CardPresentationCatalog",
     "CardPresentationSnapshot",
+    "PublicCard",
+    "PublicCardCatalog",
     "CollectionSignatureEnvelope",
     "dump_signature_envelope",
     "load_signature_envelope",

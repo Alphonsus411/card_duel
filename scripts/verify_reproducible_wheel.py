@@ -30,6 +30,8 @@ PACKAGE_FILES = frozenset({
     "card_duel_engine/catalog.py",
     "card_duel_engine/content/__init__.py",
     "card_duel_engine/content/manifest.py",
+    "card_duel_engine/content/presentation.py",
+    "card_duel_engine/content/public_catalog.py",
     "card_duel_engine/content/registry.py",
     "card_duel_engine/content/signature.py",
     "card_duel_engine/controllers/__init__.py",

@@ -46,3 +46,20 @@ def quick_damage_fixture(card_id: str = "TEST-QUICK-DAMAGE") -> CardDefinition:
         ),
         set_id="test-fixtures",
     )
+
+
+def public_card_fixture(card_id: str = "TEST-PUBLIC-CARD") -> CardDefinition:
+    """Definición inequívoca para probar proyecciones, no contenido de producción."""
+
+    return CardDefinition(
+        card_id=card_id,
+        name="Nombre mecánico que no debe publicarse",
+        kind=CardKind.CREATURE,
+        cost=17,
+        rank=CardRank.DIVINE,
+        base_strength=23,
+        set_id="test-public-catalog",
+        revision=41,
+        keywords=frozenset(("zeta", "alfa")),
+        subtypes=frozenset(("sabio", "arcano")),
+    )

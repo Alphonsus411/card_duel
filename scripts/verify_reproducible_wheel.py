@@ -27,46 +27,60 @@ FORBIDDEN_SUFFIXES = {
 FORBIDDEN_PARTS = {"tests", "test", "__pycache__", ".git", ".github", ".idea"}
 SECRET_PATTERN = re.compile(rb"(BEGIN (RSA |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{16})")
 
-
-class WheelPolicy(NamedTuple):
-    version: str
-    wheel_name: str
-    dist_info: str
-    package_files: frozenset[str]
-    allowed_content: frozenset[str]
-    canonical_order: tuple[str, ...]
-
-
-def policy_for(source: Path) -> WheelPolicy:
-    """Deriva toda la política del contenido del checkout que se va a construir."""
-    version = read_project_version(source)
-    dist_info = f"card_duel_engine-{version}.dist-info"
-    package_root = source / "src" / "card_duel_engine"
-    package_files = frozenset(
-        path.relative_to(source / "src").as_posix()
-        for path in package_root.rglob("*.py")
-        if path.is_file()
-    )
-    allowed = frozenset({
-        *package_files,
-        f"{dist_info}/METADATA",
-        f"{dist_info}/WHEEL",
-        f"{dist_info}/top_level.txt",
-        f"{dist_info}/RECORD",
-    })
-    order = (
-        tuple(sorted(package_files, key=lambda name: (name.count("/"), name)))
-        + tuple(sorted(name for name in allowed if name.startswith(f"{dist_info}/") and not name.endswith("/RECORD")))
-        + (f"{dist_info}/RECORD",)
-    )
-    return WheelPolicy(
-        version=version,
-        wheel_name=f"card_duel_engine-{version}-py3-none-any.whl",
-        dist_info=dist_info,
-        package_files=package_files,
-        allowed_content=allowed,
-        canonical_order=order,
-    )
+PACKAGE_FILES = frozenset({
+    "card_duel_engine/__init__.py",
+    "card_duel_engine/application.py",
+    "card_duel_engine/catalog.py",
+    "card_duel_engine/content/__init__.py",
+    "card_duel_engine/content/manifest.py",
+    "card_duel_engine/content/presentation.py",
+    "card_duel_engine/content/public_catalog.py",
+    "card_duel_engine/content/registry.py",
+    "card_duel_engine/content/signature.py",
+    "card_duel_engine/controllers/__init__.py",
+    "card_duel_engine/controllers/base.py",
+    "card_duel_engine/domain/__init__.py",
+    "card_duel_engine/domain/enums.py",
+    "card_duel_engine/domain/errors.py",
+    "card_duel_engine/domain/models.py",
+    "card_duel_engine/engine/__init__.py",
+    "card_duel_engine/engine/combat.py",
+    "card_duel_engine/engine/commands.py",
+    "card_duel_engine/engine/effects.py",
+    "card_duel_engine/engine/game.py",
+    "card_duel_engine/engine/stack.py",
+    "card_duel_engine/engine/zones.py",
+    "card_duel_engine/persistence/__init__.py",
+    "card_duel_engine/persistence/codec.py",
+    "card_duel_engine/persistence/migrations.py",
+    "card_duel_engine/persistence/replay.py",
+    "card_duel_engine/persistence/snapshot.py",
+    "card_duel_engine/rules/__init__.py",
+    "card_duel_engine/rules/config.py",
+    "card_duel_engine/rules/resolvers.py",
+    "card_duel_engine/service.py",
+    "card_duel_engine/simulation/__init__.py",
+    "card_duel_engine/simulation/agents.py",
+    "card_duel_engine/simulation/runner.py",
+    "card_duel_engine/storage/__init__.py",
+    "card_duel_engine/storage/base.py",
+    "card_duel_engine/storage/sqlite.py",
+})
+ALLOWED_CONTENT = frozenset({
+    *PACKAGE_FILES,
+    f"{DIST_INFO}/METADATA",
+    f"{DIST_INFO}/WHEEL",
+    f"{DIST_INFO}/top_level.txt",
+    f"{DIST_INFO}/RECORD",
+})
+CANONICAL_ORDER = (
+    tuple(sorted(
+        (name for name in ALLOWED_CONTENT if name.startswith("card_duel_engine/")),
+        key=lambda name: (name.count("/"), name),
+    ))
+    + tuple(sorted(name for name in ALLOWED_CONTENT if name.startswith(f"{DIST_INFO}/") and not name.endswith("/RECORD")))
+    + (f"{DIST_INFO}/RECORD",)
+)
 
 
 def sha256(path: Path) -> str:

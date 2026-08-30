@@ -11,22 +11,18 @@ from .domain.models import CardDefinition
 
 
 class CardCatalogReader(Protocol):
-    """Interfaz mínima de consulta compartida por catálogos y fotografías."""
+    """Lectura mecánica mínima requerida por consumidores desacoplados."""
 
     def get(self, card_id: str) -> CardDefinition: ...
+
     def definitions(self) -> tuple[CardDefinition, ...]: ...
-    def __contains__(self, card_id: str) -> bool: ...
-    def __len__(self) -> int: ...
 
 
-@dataclass(frozen=True)
 class CardCatalogSnapshot:
-    """Fotografía inmutable de un catálogo, sin operaciones de escritura."""
+    """Copia inmutable del conjunto de definiciones mecánicas."""
 
-    _cards: Mapping[str, CardDefinition]
-
-    def __init__(self, cards: Mapping[str, CardDefinition]) -> None:
-        object.__setattr__(self, "_cards", MappingProxyType(dict(cards)))
+    def __init__(self, definitions: Mapping[str, CardDefinition]) -> None:
+        self._cards = MappingProxyType(dict(definitions))
 
     def get(self, card_id: str) -> CardDefinition:
         try:
@@ -35,9 +31,9 @@ class CardCatalogSnapshot:
             raise KeyError(f"Carta desconocida: {card_id}") from exc
 
     def definitions(self) -> tuple[CardDefinition, ...]:
-        return tuple(self._cards.values())
+        return tuple(self._cards[key] for key in sorted(self._cards))
 
-    def __contains__(self, card_id: str) -> bool:
+    def __contains__(self, card_id: object) -> bool:
         return card_id in self._cards
 
     def __len__(self) -> int:
@@ -63,6 +59,11 @@ class CardCatalog:
 
     def definitions(self) -> tuple[CardDefinition, ...]:
         return tuple(self._cards.values())
+
+    def snapshot(self) -> CardCatalogSnapshot:
+        """Congela el estado mecánico actual sin incorporar presentación."""
+
+        return CardCatalogSnapshot(self._cards)
 
     def __contains__(self, card_id: str) -> bool:
         return card_id in self._cards

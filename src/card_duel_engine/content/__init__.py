@@ -1,4 +1,4 @@
-"""Punto de extensión para colecciones futuras; vacío deliberadamente."""
+"""Contenido externo y metadatos editoriales desacoplados del motor."""
 from .manifest import (
     CollectionManifest,
     dump_manifest,
@@ -14,6 +14,12 @@ from .registry import (
     CollectionTrustPolicy,
 )
 from .registry import PermissiveCollectionTrustPolicy, TrustedKey, TrustedKeyResolver, TrustPolicy
+from .presentation import (
+    CardPresentation,
+    CardPresentationCatalog,
+    CardPresentationSnapshot,
+)
+from .public_catalog import PublicCard, PublicCardCatalog
 from .signature import (
     CollectionSignatureEnvelope,
     dump_signature_envelope,
@@ -35,6 +41,11 @@ __all__ = [
     "TrustedKey",
     "TrustedKeyResolver",
     "TrustPolicy",
+    "CardPresentation",
+    "CardPresentationCatalog",
+    "CardPresentationSnapshot",
+    "PublicCard",
+    "PublicCardCatalog",
     "CollectionSignatureEnvelope",
     "dump_signature_envelope",
     "load_signature_envelope",

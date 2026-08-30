@@ -1,10 +1,6 @@
 """Motor headless y extensible del nuevo juego de cartas."""
 
-from ._version import resolve_version
-
-__version__: str = resolve_version()
-
-from .catalog import CardCatalog, CardCatalogSnapshot
+from .catalog import CardCatalog, CardCatalogReader, CardCatalogSnapshot
 from .application import (
     AccessDenied,
     AuthenticatedMatchApplication,
@@ -27,6 +23,11 @@ from .application import (
     WriteConflict,
 )
 from .content import (
+    CardPresentation,
+    CardPresentationCatalog,
+    CardPresentationSnapshot,
+    PublicCard,
+    PublicCardCatalog,
     CollectionManifest,
     CollectionRegistry,
     CollectionRegistrySnapshot,
@@ -52,6 +53,7 @@ from .storage import InMemoryMatchStore, SQLiteMatchStore, VersionConflict
 
 __all__ = [
     "CardCatalog",
+    "CardCatalogReader",
     "CardCatalogSnapshot",
     "AccessDenied",
     "AuthenticatedMatchApplication",
@@ -72,6 +74,11 @@ __all__ = [
     "PublicPlayerObservation",
     "ResourceNotFound",
     "WriteConflict",
+    "CardPresentation",
+    "CardPresentationCatalog",
+    "CardPresentationSnapshot",
+    "PublicCard",
+    "PublicCardCatalog",
     "CollectionManifest",
     "CollectionRegistry",
     "CollectionRegistrySnapshot",

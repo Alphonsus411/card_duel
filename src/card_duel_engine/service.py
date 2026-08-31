@@ -9,6 +9,7 @@ from typing import Protocol, cast
 from .catalog import CardCatalog
 from .content.registry import CollectionRegistry
 from .controllers.base import PlayerObservation
+from .domain.enums import MatchStatus
 from .domain.errors import InvalidDeckDefinition
 from .domain.models import CardDefinition
 from .engine.commands import EXECUTABLE_COMMAND_TYPE_SET, GameCommand
@@ -46,6 +47,7 @@ class CommandSource(Protocol):
 class MatchView:
     match_id: str
     version: int
+    status: str
     observation: PlayerObservation
     legal_actions: tuple[GameCommand, ...]
 
@@ -112,9 +114,19 @@ class MatchService:
     def _view_for(
         match_id: str, version: int, engine: GameEngine, player_id: str
     ) -> MatchView:
+        state = engine.state
+        if state is None:  # ``observe`` produciría el mismo error, pero sin contexto.
+            raise RuntimeError("No hay partida activa")
+        public_status = {
+            MatchStatus.SETUP: "setup",
+            MatchStatus.RUNNING: "running",
+            MatchStatus.FINISHED: "finished",
+            MatchStatus.BLOCKED: "blocked",
+        }[state.status]
         return MatchView(
             match_id,
             version,
+            public_status,
             engine.observe(player_id),
             engine.legal_actions(player_id),
         )

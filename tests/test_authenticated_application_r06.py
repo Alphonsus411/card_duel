@@ -565,6 +565,55 @@ class AuthenticatedApplicationR06Contract:
         ):
             PublicMatchView.from_view(view)
 
+    def test_public_option_projects_authoritative_terminal_status(self):
+        alice = self.identities["alice"]
+        before = self.app.view(alice, "one")
+        concession = next(
+            option for option in before.legal_actions if option.action == "Concede"
+        )
+
+        self.assertEqual(before.status, "running")
+        self.assertEqual(before.to_dict()["status"], "running")
+
+        after = self.app.submit_option(
+            alice, "one", concession.option_id, expected_version=before.version
+        )
+
+        self.assertEqual(after.status, "finished")
+        self.assertEqual(after.to_dict()["status"], "finished")
+        self.assertIsInstance(json.dumps(after.to_dict()), str)
+        self.assertNotIn("snapshot", after.to_dict())
+        self.assertNotIn("state", after.to_dict())
+
+    def test_terminal_domain_state_without_winner_does_not_invent_one(self):
+        match_id = "multiplayer-terminal"
+        alice = self.identities["alice"]
+        self.service.create_match(
+            match_id,
+            {
+                player_id: test_deck(f"{match_id}-{player_id}")
+                for player_id in ("A", "B", "C")
+            },
+            seed=3,
+        )
+        self.authorization.bind_player(alice, match_id, "A")
+        before = self.app.view(alice, match_id)
+        concession = next(
+            option for option in before.legal_actions if option.action == "Concede"
+        )
+
+        after = self.app.submit_option(
+            alice, match_id, concession.option_id, expected_version=before.version
+        )
+
+        self.assertEqual(after.status, "blocked")
+        self.assertEqual(after.to_dict()["status"], "blocked")
+        self.assertNotIn("winner_ids", after.to_dict())
+        self.assertEqual(
+            self.service.get_match(match_id).engine.state.winner_ids,
+            (),
+        )
+
     def test_bob_option_is_rejected_without_mutating_match(self):
         alice = self.identities["alice"]
         bob_option = self.app.view(self.identities["bob"], "one").legal_actions[0]
@@ -657,6 +706,8 @@ class AuthenticatedApplicationR06Contract:
             "deck",
             "opponent_hand",
         }
+
+        self.assertEqual(payload["status"], "running")
 
         for action in payload["legal_actions"]:
             self.assertEqual(set(action), {"option_id", "action"})

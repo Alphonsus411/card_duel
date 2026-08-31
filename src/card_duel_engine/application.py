@@ -116,6 +116,10 @@ class PublicLegalAction:
     option_id: str
     action: str
 
+    def to_dict(self) -> dict[str, str]:
+        """Proyecta la acción al esquema mínimo admitido por el transporte."""
+        return {"option_id": self.option_id, "action": self.action}
+
 
 @dataclass(frozen=True)
 class PublicMatchView:
@@ -164,10 +168,7 @@ class PublicMatchView:
             "version": self.version,
             "status": self.status,
             "observation": self.observation.to_dict(),
-            "legal_actions": [
-                {"option_id": action.option_id, "action": action.action}
-                for action in self.legal_actions
-            ],
+            "legal_actions": [action.to_dict() for action in self.legal_actions],
         }
 
 

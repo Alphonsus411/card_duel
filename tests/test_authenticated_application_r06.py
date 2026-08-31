@@ -19,6 +19,7 @@ from card_duel_engine import (
     AuthenticatedMatchApplication,
     AuthenticationRequired,
     CardCatalog,
+    CardPresentation,
     CommandRejected,
     ExternalIdentity,
     InMemoryIdentityAuthorization,
@@ -38,19 +39,25 @@ from card_duel_engine import (
 from card_duel_engine.application import (
     ApplicationError,
     Capability,
+    PublicLegalAction,
     PublicMatchView,
+    PublicPlayerObservation,
 )
 from card_duel_engine.domain.enums import Zone
-from card_duel_engine.domain.models import GameState
+from card_duel_engine.domain.models import CardDefinition, GameState
 from card_duel_engine.engine.commands import (
     EXECUTABLE_COMMAND_TYPES,
     Concede,
+    GameCommand,
     PassPriority,
 )
 from card_duel_engine.engine.game import GameEngine
 from card_duel_engine.persistence.snapshot import state_digest
 from card_duel_engine.storage import MatchNotFound
+from card_duel_engine.service import MatchView
+from card_duel_engine.storage import StoredMatch
 from fixtures import test_deck
+from json_contract_helpers import assert_json_contract
 
 
 def tamper_option_id(option_id):
@@ -813,6 +820,33 @@ class AuthenticatedApplicationR06Contract:
         }
         self.assertTrue(opponent_hidden)
         self.assertTrue(all(card_id not in encoded for card_id in opponent_hidden))
+
+    def test_each_public_dto_has_a_strict_json_contract(self):
+        response = self.app.view(self.identities["alice"], "one")
+        self.assertIsInstance(response.observation, PublicPlayerObservation)
+        self.assertTrue(response.legal_actions)
+        self.assertIsInstance(response.legal_actions[0], PublicLegalAction)
+        forbidden_types = (
+            CardDefinition,
+            CardPresentation,
+            GameCommand,
+            GameState,
+            GameEngine,
+            MatchView,
+            StoredMatch,
+        )
+
+        payloads = (
+            response.observation.to_dict(),
+            response.legal_actions[0].to_dict(),
+            response.to_dict(),
+        )
+        for payload in payloads:
+            with self.subTest(dto_keys=tuple(payload)):
+                assert_json_contract(
+                    self, payload, forbidden_types=forbidden_types
+                )
+                self.assertIsInstance(json.dumps(payload), str)
 
 
 class InMemoryAuthenticatedApplicationR06Tests(

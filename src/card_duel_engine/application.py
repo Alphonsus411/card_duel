@@ -123,6 +123,7 @@ class PublicMatchView:
 
     match_id: str
     version: int
+    status: str
     observation: PublicPlayerObservation
     legal_actions: tuple[PublicLegalAction, ...]
 
@@ -147,6 +148,7 @@ class PublicMatchView:
         return cls(
             match_id=view.match_id,
             version=view.version,
+            status=view.status,
             observation=PublicPlayerObservation.from_observation(view.observation),
             # Del comando solo se publica su discriminador. Sus campos pueden
             # representar elecciones privadas y no pertenecen a un DTO remoto.
@@ -160,6 +162,7 @@ class PublicMatchView:
         return {
             "match_id": self.match_id,
             "version": self.version,
+            "status": self.status,
             "observation": self.observation.to_dict(),
             "legal_actions": [
                 {"option_id": action.option_id, "action": action.action}

@@ -6,7 +6,7 @@
     "quality"
   ],
   "lockfile": {
-    "sha256": "cfe0c9328d7b24a9a123307dcb615440746b2665b9b4f6ba0b78bf8e61878b32",
+    "sha256": "38ac3489dafa0f7d548bd732471787b03485638386b0362ba29122e234aa3526",
     "status": "ok",
     "unchanged": true
   },
@@ -23,15 +23,15 @@
   "profile": "runtime",
   "quality": {
     "compileall": true,
-    "coverage_percent": 88.0,
+    "coverage_percent": 89.0,
     "mypy": true,
     "status": "ok"
   },
   "schema_version": 2,
   "security": {
-    "python_files_analyzed": 82,
+    "python_files_analyzed": 103,
     "status": "ok",
-    "tracked_files_scanned": 122
+    "tracked_files_scanned": 186
   },
   "status": "ok",
   "version": "0.20.1"

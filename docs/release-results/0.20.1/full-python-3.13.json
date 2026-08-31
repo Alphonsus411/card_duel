@@ -10,7 +10,7 @@
     "package"
   ],
   "lockfile": {
-    "sha256": "cfe0c9328d7b24a9a123307dcb615440746b2665b9b4f6ba0b78bf8e61878b32",
+    "sha256": "38ac3489dafa0f7d548bd732471787b03485638386b0362ba29122e234aa3526",
     "status": "ok",
     "unchanged": true
   },
@@ -30,7 +30,7 @@
       "build_source": "detached-worktree",
       "builds_compared": 2,
       "filename": "card_duel_engine-0.20.1-py3-none-any.whl",
-      "files": 41,
+      "files": 46,
       "fixtures_absent": true,
       "license": "Apache-2.0",
       "pdfs_absent": [
@@ -41,9 +41,9 @@
       "record_integrity": true,
       "root_is_purelib": true,
       "runtime_dependencies": [],
-      "sha256": "4239907c2b5744c605d57410b05ba0c62e00f5b137727f62ebdd65f4d26a8d62",
-      "source_commit": "006534eb9acc3b0e2fc67e409938ec5724e99077",
-      "source_date_epoch": 1785774407,
+      "sha256": "2052e4ff0a332512777c3b1ef331299651356a9785aa0566edea00c5d25affde",
+      "source_commit": "0c0f405a77204b6fef046c320f1444f5f0795261",
+      "source_date_epoch": 1788193304,
       "source_tree_clean": true,
       "tag": "py3-none-any",
       "version": "0.20.1",
@@ -52,6 +52,8 @@
         "card_duel_engine/_version.py",
         "card_duel_engine/application.py",
         "card_duel_engine/catalog.py",
+        "card_duel_engine/presentation.py",
+        "card_duel_engine/public_catalog.py",
         "card_duel_engine/service.py",
         "card_duel_engine/content/__init__.py",
         "card_duel_engine/content/manifest.py",
@@ -64,10 +66,13 @@
         "card_duel_engine/domain/errors.py",
         "card_duel_engine/domain/models.py",
         "card_duel_engine/engine/__init__.py",
+        "card_duel_engine/engine/actions.py",
         "card_duel_engine/engine/combat.py",
         "card_duel_engine/engine/commands.py",
         "card_duel_engine/engine/effects.py",
         "card_duel_engine/engine/game.py",
+        "card_duel_engine/engine/options.py",
+        "card_duel_engine/engine/phases.py",
         "card_duel_engine/engine/stack.py",
         "card_duel_engine/engine/zones.py",
         "card_duel_engine/persistence/__init__.py",
@@ -96,7 +101,7 @@
       "3.12",
       "3.13"
     ],
-    "sha256": "4239907c2b5744c605d57410b05ba0c62e00f5b137727f62ebdd65f4d26a8d62",
+    "sha256": "2052e4ff0a332512777c3b1ef331299651356a9785aa0566edea00c5d25affde",
     "status": "ok",
     "wheel": "card_duel_engine-0.20.1-py3-none-any.whl"
   },
@@ -107,7 +112,7 @@
   "profile": "full",
   "quality": {
     "compileall": true,
-    "coverage_percent": 88.0,
+    "coverage_percent": 89.0,
     "mypy": true,
     "status": "ok"
   },
@@ -117,9 +122,9 @@
   },
   "schema_version": 2,
   "security": {
-    "python_files_analyzed": 82,
+    "python_files_analyzed": 103,
     "status": "ok",
-    "tracked_files_scanned": 122
+    "tracked_files_scanned": 186
   },
   "simulations": {
     "commands": 54000,

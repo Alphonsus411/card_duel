@@ -5,7 +5,7 @@
 - **Fecha de ejecución:** 31 de agosto de 2026 (UTC).
 - **Directorio de trabajo:** `/workspace/card_duel`.
 - **Rama verificada:** `work`.
-- **HEAD verificado:** `6b4d348`.
+- **HEAD verificado:** `0c0f405a77204b6fef046c320f1444f5f0795261`.
 - **Base de comparación solicitada:**
   `3fe33c6ac8fce6997036bdc36717f0e0fb481b4d`.
 - **Versión resuelta en todas las superficies:** `0.20.1`.
@@ -48,9 +48,10 @@ uv run --python 3.13 python scripts/verify_release.py \
 
 **Resultado:** los cuatro perfiles terminaron con `status = "ok"`. Cada perfil
 runtime completó metadata, lockfile, seguridad y calidad. El perfil full añadió
-fuentes normativas, simulaciones, persistencia y auditoría de paquete. Los JSON
-ya conservados coincidieron con el resultado generado, por lo que no fue
-necesario modificarlos.
+fuentes normativas, simulaciones, persistencia y auditoría de paquete. Los cuatro
+JSON se actualizaron conforme a la convención existente para conservar la
+evidencia del `HEAD` verificado: cobertura del 89 %, inventario actual del
+checkout y, en el perfil full, procedencia y SHA-256 del wheel candidato local.
 
 ## Suite completa, tipos y cobertura
 
@@ -81,7 +82,7 @@ uv run --python 3.13 python -m coverage report
 
 **Resultado:** cobertura total mostrada del **89 %**. La ejecución respetó
 `branch = true` y superó `fail_under = 88` de `pyproject.toml`. Los perfiles de
-release registraron un total formateado del **88,0 %**, también aceptado por el
+release registraron un total formateado del **89,0 %**, también aceptado por el
 umbral configurado.
 
 ## Pruebas focales
@@ -155,13 +156,14 @@ git diff --no-ext-diff --unified=3 \
   3fe33c6ac8fce6997036bdc36717f0e0fb481b4d...HEAD
 ```
 
-`git diff --check` terminó correctamente. La revisión completa del rango previo
-a este informe mostró únicamente los ocho archivos esperados de documentación,
-frontera de aplicación/servicio y pruebas:
+`git diff --check` terminó correctamente. La revisión completa del rango mostró
+únicamente los nueve archivos esperados de documentación, frontera de
+aplicación/servicio y pruebas (antes de refrescar los cuatro JSON de evidencia):
 
 ```text
 M  docs/FRONTEND_AND_CONTENT_ROADMAP.md
 M  docs/UI_INTEGRATION_CONTRACT_0.20.1.md
+A  docs/audits/PHASE_1_FINAL_VERIFICATION_0.20.1.md
 M  src/card_duel_engine/application.py
 M  src/card_duel_engine/service.py
 A  tests/json_contract_helpers.py
@@ -196,4 +198,3 @@ registran los veredictos finales:
 > **GO — PHASE 1-C COMPLETE**
 
 > **GO — PHASE 1 COMPLETE**
-

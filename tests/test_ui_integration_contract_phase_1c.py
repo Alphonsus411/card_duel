@@ -5,7 +5,15 @@ de recibir su resultado, los tests se comportan como un consumidor remoto: sólo
 presentan una identidad, leen DTO públicos y reenvían un ``option_id`` opaco.
 """
 
+import ast
+import inspect
+from pathlib import Path
+import tomllib
+from typing import get_type_hints
 import unittest
+
+import card_duel_engine.application as application_module
+import card_duel_engine.public_catalog as public_catalog_module
 
 from card_duel_engine import (
     AuthenticatedMatchApplication,
@@ -26,6 +34,9 @@ from card_duel_engine import (
 )
 
 from fixtures import test_deck
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def tamper_option_id(option_id: str) -> str:
@@ -80,6 +91,109 @@ def compose_ui_contract():
 
 
 class UIIntegrationContractPhase1CTests(unittest.TestCase):
+    def test_phase_1c_boundary_is_in_process_and_adds_no_transport_dependencies(self):
+        """Acota la fase a tipos Python, sin adoptar ningún transporte."""
+        forbidden_imports = {
+            "expo",
+            "fastapi",
+            "httpx",
+            "jwt",
+            "orjson",
+            "requests",
+            "simplejson",
+            "typescript",
+            "ujson",
+            "websocket",
+            "websockets",
+        }
+        forbidden_annotation_terms = forbidden_imports | {
+            "http",
+            "reactnative",
+            "request",
+            "response",
+            "rest",
+            "statuscode",
+        }
+
+        for module in (application_module, public_catalog_module):
+            path = Path(inspect.getsourcefile(module) or "")
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            imported_roots = set()
+            public_annotations = []
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    imported_roots.update(
+                        alias.name.split(".", 1)[0].lower() for alias in node.names
+                    )
+                elif isinstance(node, ast.ImportFrom) and node.level == 0:
+                    imported_roots.add((node.module or "").split(".", 1)[0].lower())
+                elif (
+                    isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+                    and not node.name.startswith("_")
+                ):
+                    public_annotations.extend(
+                        annotation
+                        for annotation in (
+                            node.returns,
+                            *(argument.annotation for argument in node.args.posonlyargs),
+                            *(argument.annotation for argument in node.args.args),
+                            *(argument.annotation for argument in node.args.kwonlyargs),
+                        )
+                        if annotation is not None
+                    )
+                elif (
+                    isinstance(node, ast.AnnAssign)
+                    and isinstance(node.target, ast.Name)
+                    and not node.target.id.startswith("_")
+                ):
+                    public_annotations.append(node.annotation)
+            with self.subTest(module=module.__name__):
+                self.assertTrue(forbidden_imports.isdisjoint(imported_roots))
+                for annotation in public_annotations:
+                    annotation_names = {
+                        name.id.lower().replace("_", "")
+                        for name in ast.walk(annotation)
+                        if isinstance(name, ast.Name)
+                    } | {
+                        name.attr.lower().replace("_", "")
+                        for name in ast.walk(annotation)
+                        if isinstance(name, ast.Attribute)
+                    }
+                    self.assertFalse(
+                        forbidden_annotation_terms & annotation_names,
+                        ast.unparse(annotation),
+                    )
+
+        view_signature = inspect.signature(AuthenticatedMatchApplication.view)
+        view_hints = get_type_hints(AuthenticatedMatchApplication.view)
+        self.assertEqual(tuple(view_signature.parameters), ("self", "identity", "match_id"))
+        self.assertEqual(view_hints["identity"], ExternalIdentity | None)
+        self.assertIs(view_hints["match_id"], str)
+        self.assertIs(view_hints["return"], PublicMatchView)
+
+        submit_signature = inspect.signature(
+            AuthenticatedMatchApplication.submit_option
+        )
+        submit_hints = get_type_hints(AuthenticatedMatchApplication.submit_option)
+        self.assertEqual(
+            tuple(submit_signature.parameters),
+            ("self", "identity", "match_id", "option_id", "expected_version"),
+        )
+        self.assertEqual(submit_hints["identity"], ExternalIdentity | None)
+        self.assertIs(submit_hints["match_id"], str)
+        self.assertIs(submit_hints["option_id"], str)
+        self.assertIs(submit_hints["expected_version"], int)
+        self.assertIs(submit_hints["return"], PublicMatchView)
+        self.assertIs(
+            submit_signature.parameters["expected_version"].kind,
+            inspect.Parameter.KEYWORD_ONLY,
+        )
+
+        project = tomllib.loads(
+            (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        )["project"]
+        self.assertEqual(project["dependencies"], [])
+
     def setUp(self):
         (
             self.application,

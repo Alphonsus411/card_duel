@@ -110,10 +110,14 @@ nunca sustituye la resolución del backend.
 | --- | --- |
 | Fase 1-A | **COMPLETE** |
 | Fase 1-B | **COMPLETE** |
-| Fase 1-C | **NEXT** |
-| Fase 1 | **IN PROGRESS** |
+| Fase 1-C | **COMPLETE** |
+| Fase 1 | **COMPLETE** |
+| Fase 2 | **NEXT** |
+| Fase 3 | **PENDING** |
 
-La Fase 1 no está completa y la Fase 2 no se ha iniciado.
+La Fase 1 está completa. La Fase 2 es la siguiente entrega, pero **no se ha
+iniciado**; la Fase 3 permanece pendiente. Este cierre no crea frontend, Expo ni
+contenido.
 
 ### 4.2 Fase 1-A — COMPLETE
 
@@ -145,12 +149,14 @@ revisión de alcance confirma que esta fase no cambia modelos de dominio, motor,
 mecánicas, persistencia, SQLite, replay, colecciones de producción, manifests ni
 dependencias runtime.
 
-### 4.4 Fase 1-C — NEXT
+### 4.4 Fase 1-C — COMPLETE
 
-Las vistas o eventos adicionales que falten para cerrar el contrato pertenecen
-a la Fase 1-C y requieren su propia entrega expresamente autorizada. **La Fase 1
-permanece IN PROGRESS** hasta que se satisfagan todos sus criterios; este estado
-no declara completa la Fase 1 ni inicia la Fase 2.
+La Fase 1-C cierra el flujo autenticado completo: una identidad obtiene un
+`PublicMatchView`, selecciona `option_id` con la versión CAS observada y recibe
+de `submit_option()` el `PublicMatchView` autoritativo posterior. El mismo DTO
+expresa estado dinámico y terminalidad mediante `status`; no hace falta un DTO
+`PublicMatchResult`. El catálogo público permanece como referencia estática
+independiente. Este cierre completa la Fase 1 y **no inicia la Fase 2**.
 
 Los valores `option_id` no son comandos serializados, no conceden autoridad ni
 permiten inferir información privada. Un `option_id` inexistente, alterado o de

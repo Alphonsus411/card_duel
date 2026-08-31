@@ -410,6 +410,13 @@ class AuthenticatedMatchApplication:
             raise MalformedCommand from None
         except InvalidStoredSnapshot:
             raise InternalLoadFailure from None
+        except Exception:
+            # La excepción se abandona antes de construir el error público para
+            # que ni siquiera quede accesible mediante ``__context__``.  El
+            # encadenamiento se suprime además de forma explícita: esta frontera
+            # nunca expone detalles inesperados de servicio, motor o almacén.
+            pass
+        raise ApplicationError from None
 
     def create_match(
         self,

@@ -1,33 +1,77 @@
-# Contrato conceptual de integración de UI 0.20.1
+# Contrato implementado de integración de UI 0.20.1
 
 ## Propósito, alcance y estado
 
-Este documento describe, por inspección, la frontera pública existente en
-`application.py` y la frontera interna de servicio en `service.py`. Además fija
-los requisitos conceptuales de una **Fase 1** de integración de interfaz. No
-modifica ni implementa el contrato 0.20.1, no convierte los DTO actuales en un
-protocolo remoto y no autoriza un adaptador de transporte.
+Este documento fija el contrato de integración de UI **implementado y validado**
+en 0.20.1 por `application.py`, `public_catalog.py` y la frontera interna de
+`service.py`. La Fase 1 está cerrada: ya no es una propuesta pendiente. Los DTO
+y casos de uso descritos aquí son la superficie estable en proceso sobre la que
+podrá construirse un transporte, pero no constituyen por sí mismos un protocolo
+remoto ni autorizan uno.
 
 El diseño es deliberadamente neutral respecto del transporte. No introduce ni
 selecciona HTTP, REST, FastAPI, WebSocket, JWT, infraestructura o *deployment*.
 Una decisión posterior deberá definir por separado alcance, amenazas,
 dependencias y criterios propios antes de habilitar cualquier transporte.
 
-Este contrato desarrolla, sin cerrarla, la deuda **«Identidad pública de alternativas legales para un transporte futuro»** de
+Este contrato cierra para 0.20.1 la deuda **«Identidad pública de alternativas legales para un transporte futuro»** de
 [`ENGINEERING_BACKLOG.md`](ENGINEERING_BACKLOG.md#identidad-pública-de-alternativas-legales-para-un-transporte-futuro)
 y conserva las invariantes de **R-06 — Frontera autenticada; transporte fuera
 de alcance** de [`ARCHITECTURE.md`](ARCHITECTURE.md#r-06--frontera-autenticada-transporte-fuera-de-alcance).
 No cambia reglas, cartas ni mecánicas, ni decide o desbloquea los asuntos
 normativos `N-POINTS-01`, `M-LORD-EVENT-01`, R-02, R-03B o R-05.
 
-## Contrato público actual observado
+## Flujo público implementado
+
+El recorrido que debe consumir una UI es, literalmente:
+
+```text
+identity
+  → AuthenticatedMatchApplication
+  → PublicMatchView
+  → option_id + expected_version
+  → submit_option()
+  → PublicMatchView
+```
+
+La infraestructura autenticadora produce `identity`; la aplicación resuelve de
+ella el actor autorizado. `view()` entrega un `PublicMatchView`. El cliente
+elige un `option_id` de `legal_actions` y lo devuelve junto con
+`expected_version=PublicMatchView.version`. `submit_option()` vuelve a cargar y
+enumerar el estado autoritativo, valida el CAS, resuelve la referencia y, si la
+operación tiene éxito, devuelve el **snapshot público autoritativo posterior a
+la operación**, incluida su nueva versión, estado y nuevas acciones legales.
+No es una predicción, un acuse ni un delta. No se necesita ni existe en este
+contrato un `PublicMatchResult`: tanto lectura como escritura convergen en
+`PublicMatchView`.
+
+## Esquema público estable 0.20.1
+
+Los nombres siguientes son el esquema estable de 0.20.1. Su orden aquí coincide
+con el DTO, aunque los consumidores no deben atribuir semántica al orden de las
+claves JSON.
+
+| DTO | Nombres exactos de campos |
+| --- | --- |
+| `PublicMatchView` | `match_id`, `version`, `status`, `observation`, `legal_actions` |
+| `PublicPlayerObservation` | `player_id`, `active_player_id`, `phase`, `own_hand`, `own_steps`, `own_wounds`, `opponent_hand_sizes`, `public_event_count`, `own_battlefield`, `opponent_battlefields`, `stack_size` |
+| `PublicLegalAction` | `option_id`, `action` |
+| `PublicCard` | `card_id`, `mechanical_name`, `kind`, `cost`, `rank`, `base_strength`, `set_id`, `revision`, `keywords`, `subtypes`, `token`, `name`, `rules_text`, `art` |
+| `PublicCardCatalog` | `cards` |
+
+Cualquier eliminación, cambio de nombre o cambio futuro incompatible de esos
+campos requiere una modificación explícita de este contrato. Esta garantía no
+introduce todavía versionado de protocolo: 0.20.1 es una versión del producto y
+`PublicMatchView.version` es exclusivamente la versión CAS de la partida.
+
+## DTO de partida
 
 ### DTO de salida
 
-Los tres DTO son dataclasses inmutables. La conversión a diccionario produce
-únicamente valores simples, listas, diccionarios y enteros aptos para una
-serialización exterior; que sean serializables no implica que hoy constituyan
-un protocolo de red.
+Los tres DTO de partida son dataclasses inmutables. La conversión a diccionario
+produce únicamente valores simples, listas, diccionarios y enteros aptos para
+una serialización exterior; que sean serializables no implica que hoy
+constituyan un protocolo de red.
 
 #### `PublicPlayerObservation`
 
@@ -49,16 +93,24 @@ y `action` es el nombre presentable del tipo del `GameCommand` legal interno. No
 publica los campos del comando ni las elecciones que esos campos pudieran
 codificar.
 
-#### `PublicMatchView`
+#### `PublicMatchView` y decisión terminal
 
-Agrupa `match_id`, `version`, una `PublicPlayerObservation` y la tupla
+Agrupa `match_id`, `version`, `status`, una `PublicPlayerObservation` y la tupla
 `legal_actions`. Se construye exclusivamente desde un `MatchView` autorizado.
 `version` es la versión observada que participa en el contrato CAS; no debe
 confundirse con una versión de esquema o del producto.
 
-`to_dict()` conserva una forma explícita y estable: identificador y versión de
-partida, observación pública y una lista de objetos con los campos `option_id` y
-`action`.
+La decisión implementada para terminalidad es publicar **un único campo exacto,
+`status`**, cuyos valores del dominio son `running`, `finished` y `blocked`.
+`finished` representa una partida terminada con resultado determinado;
+`blocked`, un estado terminal sin ganador determinable (por ejemplo, ciertos
+casos multijugador); `running`, una partida todavía operable. En estados
+terminales `legal_actions` es una lista vacía. No se publican `winner_ids`,
+`winner_id`, causa, snapshot ni estado interno, y la frontera nunca inventa un
+ganador. Ésta es deliberadamente toda la información terminal pública 0.20.1.
+
+`to_dict()` conserva la forma estable enumerada arriba: identificador, versión
+CAS, estado, observación pública y una lista de acciones legales.
 
 ### Casos de uso de `AuthenticatedMatchApplication`
 
@@ -119,7 +171,7 @@ evita que una escritura concurrente sea sobrescrita entre carga y guardado.
 - ni `GameEngine`, ni `GameState`, ni un `StoredMatch` pueden ser respuesta de
   aplicación o material serializable para una UI.
 
-## Trust boundary y reparto de autoridad
+## Autoridad del backend y reparto de confianza
 
 La frontera se rige por estas responsabilidades no intercambiables:
 
@@ -203,7 +255,18 @@ deben convertirse en canales laterales que revelen esas categorías. Las pruebas
 de frontera deben comprobar tanto campos presentes como ausencia de campos y
 variaciones privadas.
 
-## Fase 1-B — catálogo público de cartas (implementada)
+## Catálogo estático independiente del estado dinámico
+
+`PublicMatchView` es el snapshot **dinámico**, por identidad y partida: cambia
+con cada transición y contiene observación y opciones del actor. En cambio,
+`PublicCardCatalog` es una referencia **estática**, independiente de partida,
+identidad, versión, zonas, cantidades, posiciones y pertenencia a una partida.
+No se incrusta uno en otro ni se exige que tengan el mismo ciclo de vida. El
+cliente puede usar los `card_id` públicos para relacionar visualmente ambos,
+pero el catálogo no concede visibilidad, pertenencia, legalidad ni autoridad y
+la vista no transporta el catálogo.
+
+## Catálogo público de cartas
 
 La Fase 1-B incorpora una proyección pública, determinista y serializable que
 combina la definición mecánica con metadatos editoriales. Su alcance termina en
@@ -279,23 +342,24 @@ ninguna fuente.
 
 ## Errores públicos seguros
 
-`AuthenticatedMatchApplication` expone actualmente esta taxonomía estable:
+`AuthenticatedMatchApplication` expone esta taxonomía pública completa y
+estable. Cada clase tiene exactamente el código y mensaje seguro indicados:
 
-| Código | Clase pública | Significado seguro |
+| Código | Clase pública | Mensaje público exacto |
 | --- | --- | --- |
-| `application_error` | `ApplicationError` | Fallo público genérico. |
-| `authentication_required` | `AuthenticationRequired` | Falta identidad autenticada. |
-| `invalid_identity` | `InvalidIdentity` | La identidad no satisface el contrato. |
-| `access_denied` | `AccessDenied` | La identidad carece de capacidad o no corresponde al actor. |
-| `resource_not_found` | `ResourceNotFound` | La partida solicitada no existe. |
-| `write_conflict` | `WriteConflict` | El CAS observado ya no es vigente. |
-| `invalid_expected_version` | `InvalidExpectedVersion` | El valor CAS no satisface el contrato. |
-| `command_rejected` | `CommandRejected` | El motor rechazó la acción por ilegal. |
-| `invalid_deck` | `InvalidDeck` | Las definiciones de mazo son inválidas o incompatibles. |
-| `malformed_command` | `MalformedCommand` | El objeto no pertenece al vocabulario cerrado admitido. |
-| `internal_load_failure` | `InternalLoadFailure` | La partida existe pero no pudo cargarse con seguridad. |
-| `invalid_match_id` | `InvalidMatchId` | El identificador de partida no es válido. |
-| `option_rejected` | `OptionRejected` | La referencia no corresponde a una alternativa pública vigente. |
+| `application_error` | `ApplicationError` | `La operación no pudo completarse` |
+| `authentication_required` | `AuthenticationRequired` | `Se requiere una identidad autenticada` |
+| `invalid_identity` | `InvalidIdentity` | `La identidad autenticada no es válida` |
+| `access_denied` | `AccessDenied` | `La identidad no está autorizada para esta operación` |
+| `resource_not_found` | `ResourceNotFound` | `El recurso solicitado no existe` |
+| `write_conflict` | `WriteConflict` | `La versión de escritura ya no es vigente` |
+| `invalid_expected_version` | `InvalidExpectedVersion` | `La versión esperada no es válida` |
+| `command_rejected` | `CommandRejected` | `El comando fue rechazado` |
+| `option_rejected` | `OptionRejected` | `La alternativa pública fue rechazada` |
+| `invalid_deck` | `InvalidDeck` | `La definición de los mazos no es válida` |
+| `malformed_command` | `MalformedCommand` | `El comando no tiene un formato válido` |
+| `internal_load_failure` | `InternalLoadFailure` | `No se pudo cargar el recurso solicitado` |
+| `invalid_match_id` | `InvalidMatchId` | `El identificador de partida no es válido` |
 
 La traducción actual elimina la causa interna (`from None`) y cada error sólo
 conserva un mensaje público predeterminado. Todo error futuro, incluidos los de
@@ -305,10 +369,27 @@ acciones legales, snapshots ni estado interno. Cuando distinguir causas revele
 existencia, autorización o información privada, deberán compartir un rechazo
 indistinguible y no observable más allá de lo necesario.
 
-## Criterios verificables de aceptación de Fase 1
+## Reglas JSON-safe y neutralidad de transporte
 
-Fase 1 sólo podrá considerarse aceptada cuando pruebas automatizadas de contrato
-y frontera demuestren simultáneamente:
+Los métodos `to_dict()` producen árboles formados sólo por diccionarios con
+claves de texto, listas, cadenas, enteros y `null`. Tuplas y `frozenset` se
+materializan como listas; enums se proyectan a cadenas estables; no aparecen
+bytes, objetos de dominio, comandos, excepciones, `repr`, snapshots ni motores.
+Cada llamada crea contenedores desacoplados: mutar el resultado serializado no
+modifica el DTO ni sus fuentes. `bool` no es una versión válida aunque sea
+subclase de `int`; `expected_version` debe ser un `int` exacto mayor o igual que
+uno.
+
+El contrato es neutral respecto del transporte y se prueba en proceso. Ninguna
+semántica depende de HTTP, REST, WebSocket, códigos HTTP, JSON Web Tokens,
+FastAPI, Expo o React Native. Un adaptador futuro deberá preservar identidad,
+campos, CAS, taxonomía de errores y privacidad sin convertir detalles de
+transporte en reglas del juego.
+
+## Matriz de aceptación satisfecha
+
+Fase 1 se considera aceptada porque las pruebas automatizadas de contrato y
+frontera demuestran simultáneamente:
 
 1. **Vistas públicas estables:** los DTO públicos tienen esquema documentado,
    determinista y compatible; contienen sólo la observación del actor resuelto.
@@ -340,6 +421,6 @@ y frontera demuestren simultáneamente:
     transporte concreto y la suite 0.20.1 conserva legalidad, persistencia,
     observaciones y traducciones de error existentes.
 
-Estos criterios son condiciones de diseño verificables, no una autorización de
-implementación. Cualquier entrega futura deberá respetar la deuda registrada y
-R-06, y obtener antes la decisión documental que corresponda.
+Estos criterios describen el contrato ya implementado en 0.20.1. No autorizan
+iniciar la Fase 2, crear un frontend, inicializar Expo, añadir contenido real ni
+escoger un transporte.

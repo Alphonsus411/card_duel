@@ -27,6 +27,7 @@ from card_duel_engine import (
     InvalidDeck,
     InvalidIdentity,
     InvalidMatchId,
+    InvalidExpectedVersion,
     MalformedCommand,
     MatchService,
     OptionRejected,
@@ -34,7 +35,11 @@ from card_duel_engine import (
     SQLiteMatchStore,
     WriteConflict,
 )
-from card_duel_engine.application import Capability, PublicMatchView
+from card_duel_engine.application import (
+    ApplicationError,
+    Capability,
+    PublicMatchView,
+)
 from card_duel_engine.domain.enums import Zone
 from card_duel_engine.domain.models import GameState
 from card_duel_engine.engine.commands import (
@@ -412,20 +417,27 @@ class AuthenticatedApplicationR06Contract:
             self.service.get_match("invalid-decks")
         self.assertEqual(self.catalog.definitions(), catalog_before)
 
-    def test_unexpected_engine_errors_propagate_without_side_effects(self):
+    def test_unexpected_engine_errors_are_indistinguishable_without_side_effects(self):
         alice = self.identities["alice"]
         self.authorization.grant_global(alice, Capability.CREATE_MATCH)
 
-        for error_type in (TypeError, AttributeError, RuntimeError, ValueError):
+        failures = (
+            (TypeError, "detalle interno accidental"),
+            (AttributeError, "token=super-secreto"),
+            (RuntimeError, "snapshot privado de Alice"),
+            (ValueError, "carta-interna-42"),
+        )
+        observed = []
+        for error_type, sensitive_message in failures:
             match_id = f"unexpected-{error_type.__name__}"
             catalog_before = self.catalog.definitions()
             with self.subTest(error_type=error_type):
                 with patch.object(
                     GameEngine,
                     "new_match",
-                    side_effect=error_type("detalle interno accidental"),
+                    side_effect=error_type(sensitive_message),
                 ):
-                    with self.assertRaises(error_type) as caught:
+                    with self.assertRaises(ApplicationError) as caught:
                         self.app.create_match(
                             alice,
                             match_id,
@@ -435,10 +447,84 @@ class AuthenticatedApplicationR06Contract:
                             },
                         )
 
-                self.assertNotIsInstance(caught.exception, InvalidDeck)
+                exception = caught.exception
+                observed.append((exception.code, str(exception), exception.args))
+                self.assertIs(type(exception), ApplicationError)
+                self.assertEqual(exception.code, "application_error")
+                self.assertEqual(str(exception), ApplicationError.public_message)
+                self.assertEqual(exception.args, (ApplicationError.public_message,))
+                self.assertNotIn(sensitive_message, str(exception))
+                self.assertNotIn(sensitive_message, repr(exception.args))
+                self.assertIsNone(exception.__cause__)
+                self.assertIsNone(exception.__context__)
+                self.assertTrue(exception.__suppress_context__)
                 with self.assertRaises(MatchNotFound):
                     self.service.get_match(match_id)
                 self.assertEqual(self.catalog.definitions(), catalog_before)
+
+        self.assertEqual(len(set(observed)), 1)
+
+    def test_complete_public_error_taxonomy_has_only_stable_public_data(self):
+        taxonomy = (
+            (ApplicationError, "application_error", "La operación no pudo completarse"),
+            (
+                AuthenticationRequired,
+                "authentication_required",
+                "Se requiere una identidad autenticada",
+            ),
+            (
+                InvalidIdentity,
+                "invalid_identity",
+                "La identidad autenticada no es válida",
+            ),
+            (
+                AccessDenied,
+                "access_denied",
+                "La identidad no está autorizada para esta operación",
+            ),
+            (ResourceNotFound, "resource_not_found", "El recurso solicitado no existe"),
+            (
+                WriteConflict,
+                "write_conflict",
+                "La versión de escritura ya no es vigente",
+            ),
+            (
+                InvalidExpectedVersion,
+                "invalid_expected_version",
+                "La versión esperada no es válida",
+            ),
+            (CommandRejected, "command_rejected", "El comando fue rechazado"),
+            (InvalidDeck, "invalid_deck", "La definición de los mazos no es válida"),
+            (
+                MalformedCommand,
+                "malformed_command",
+                "El comando no tiene un formato válido",
+            ),
+            (
+                InternalLoadFailure,
+                "internal_load_failure",
+                "No se pudo cargar el recurso solicitado",
+            ),
+            (
+                InvalidMatchId,
+                "invalid_match_id",
+                "El identificador de partida no es válido",
+            ),
+            (OptionRejected, "option_rejected", "La alternativa pública fue rechazada"),
+        )
+
+        for error_type, code, message in taxonomy:
+            with self.subTest(code=code):
+                exception = error_type()
+                self.assertEqual(exception.code, code)
+                self.assertEqual(exception.public_message, message)
+                self.assertEqual(str(exception), message)
+                self.assertEqual(exception.args, (message,))
+                self.assertEqual(vars(exception), {})
+                self.assertIsNone(exception.__cause__)
+                self.assertIsNone(exception.__context__)
+                self.assertNotIn("GameEngine", repr(exception))
+                self.assertNotIn("GameState", repr(exception))
 
     def test_malformed_commands_have_a_safe_specific_public_error(self):
         before = self.fingerprint("one")
@@ -459,9 +545,7 @@ class AuthenticatedApplicationR06Contract:
             self.app.view(self.identities["alice"], "one")
 
         self.assertEqual(caught.exception.code, "internal_load_failure")
-        self.assertEqual(
-            caught.exception.args, (InternalLoadFailure.public_message,)
-        )
+        self.assertEqual(caught.exception.args, (InternalLoadFailure.public_message,))
         self.assertNotIn("texto interno", str(caught.exception))
         if self.store_kind == "memory":
             self.assertEqual(self.store._records["one"][0], version)
@@ -527,7 +611,9 @@ class AuthenticatedApplicationR06Contract:
         )
 
         self.assertEqual(result.version, 2)
-        self.assertEqual(self.service.get_match("one").engine.state.status.name, "RUNNING")
+        self.assertEqual(
+            self.service.get_match("one").engine.state.status.name, "RUNNING"
+        )
 
     def test_every_emitted_option_can_be_submitted_with_its_authoritative_context(self):
         alice = self.identities["alice"]
@@ -644,9 +730,7 @@ class AuthenticatedApplicationR06Contract:
         self.assertNotEqual(tampered, original)
         self.assert_rejected_without_mutation(
             OptionRejected,
-            lambda: self.app.submit_option(
-                alice, "one", tampered, expected_version=1
-            ),
+            lambda: self.app.submit_option(alice, "one", tampered, expected_version=1),
             "one",
         )
 
@@ -657,9 +741,7 @@ class AuthenticatedApplicationR06Contract:
         self.app.submit_option(alice, "one", valid, expected_version=1)
         self.assert_rejected_without_mutation(
             WriteConflict,
-            lambda: self.app.submit_option(
-                alice, "one", valid, expected_version=1
-            ),
+            lambda: self.app.submit_option(alice, "one", valid, expected_version=1),
             "one",
         )
 

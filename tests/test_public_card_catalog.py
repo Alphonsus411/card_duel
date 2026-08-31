@@ -1,15 +1,13 @@
 import json
 import unittest
 from dataclasses import FrozenInstanceError
-from enum import Enum
-from types import MappingProxyType
-from typing import Any
 
 from card_duel_engine.catalog import CardCatalog
 from card_duel_engine.domain.enums import CardKind, CardRank, Keyword
 from card_duel_engine.domain.models import CardDefinition
 from card_duel_engine.presentation import CardPresentation, CardPresentationCatalog
 from card_duel_engine.public_catalog import PublicCard, PublicCardCatalog
+from json_contract_helpers import assert_json_contract
 
 
 MECHANICAL_FIELDS = (
@@ -52,52 +50,6 @@ def synthetic_presentation(
     art: str = "art/editorial-v1.webp",
 ) -> CardPresentation:
     return CardPresentation(card_id, token, name, rules_text, art)
-
-
-def assert_json_safe(test: unittest.TestCase, value: Any, path: str = "root") -> None:
-    """Acepta recursivamente solo valores JSON; ``bool`` se trata antes que ``int``."""
-    value_type = type(value)
-    if value_type in (str, float, bool, type(None)):
-        return
-    if value_type is int:  # bool es subclase de int, pero no entra por identidad.
-        return
-    if value_type is list:
-        for index, item in enumerate(value):
-            assert_json_safe(test, item, f"{path}[{index}]")
-        return
-    if value_type is dict:
-        for key, item in value.items():
-            test.assertIs(type(key), str, f"clave no JSON en {path}: {key!r}")
-            assert_json_safe(test, item, f"{path}.{key}")
-        return
-    test.fail(f"tipo no JSON en {path}: {value_type.__name__}")
-
-
-def contains_forbidden_object(value: object) -> bool:
-    """Detecta representaciones internas aunque aparezcan en una rama anidada."""
-    forbidden = (
-        CardDefinition,
-        CardPresentation,
-        Enum,
-        tuple,
-        set,
-        frozenset,
-        MappingProxyType,
-    )
-    if isinstance(value, forbidden) or callable(value):
-        return True
-    if type(value) is dict:
-        mapping = value  # El chequeo por identidad evita aceptar subclases del engine.
-        return any(
-            contains_forbidden_object(key) or contains_forbidden_object(item)
-            for key, item in mapping.items()  # type: ignore[union-attr]
-        )
-    if type(value) is list:
-        return any(
-            contains_forbidden_object(item)
-            for item in value  # type: ignore[union-attr]
-        )
-    return False
 
 
 def projected_mechanics(card: PublicCard) -> tuple[object, ...]:
@@ -184,9 +136,10 @@ class PublicCardProjectionTests(unittest.TestCase):
             synthetic_definition(), synthetic_presentation()
         ).to_dict()
 
-        assert_json_safe(self, payload)
+        assert_json_contract(
+            self, payload, forbidden_types=(CardDefinition, CardPresentation)
+        )
         self.assertIsInstance(json.dumps(payload), str)
-        self.assertFalse(contains_forbidden_object(payload))
 
     def test_public_card_is_frozen_and_serialized_collections_are_detached(self):
         card = PublicCard.from_sources(
@@ -226,9 +179,10 @@ class PublicCardCatalogTests(unittest.TestCase):
     def test_to_dict_is_deeply_json_safe(self):
         payload = build_catalog(("second", "first")).to_dict()
 
-        assert_json_safe(self, payload)
+        assert_json_contract(
+            self, payload, forbidden_types=(CardDefinition, CardPresentation)
+        )
         self.assertIsInstance(json.dumps(payload), str)
-        self.assertFalse(contains_forbidden_object(payload))
 
     def test_returned_collections_cannot_mutate_catalog_state(self):
         catalog = build_catalog(("b", "a"))

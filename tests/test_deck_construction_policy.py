@@ -264,6 +264,22 @@ class DeckConstructionPolicyTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "clasificación aplicable"):
             DeckConstructionPolicy(mythic_min_cost=5, mythic_max_cost=50)
 
+    def test_mythic_profile_exposes_every_format_limit_explicitly(self):
+        policy = mythic_deck_policy()
+
+        self.assertEqual(policy.min_cards, 40)
+        self.assertEqual(policy.max_cards, 60)
+        self.assertEqual(policy.max_standard_copies, 5)
+        self.assertEqual(policy.max_legendary_copies, 4)
+        self.assertTrue(policy.forbid_zero_cost)
+        self.assertIsNone(policy.max_zero_cost_copies)
+        self.assertIsNone(policy.max_zero_cost_total)
+        self.assertEqual(policy.mythic_min_cost, 5)
+        self.assertEqual(policy.mythic_max_cost, 50)
+        self.assertEqual(policy.min_points, 50)
+        self.assertIsNone(policy.point_budget)
+        self.assertTrue(policy._is_mythic("any-set"))
+
     def test_mythic_size_boundaries(self):
         policy = mythic_deck_policy(
             allowed_set_ids=frozenset({"new"}), mythic_set_ids=frozenset({"new"})
@@ -326,6 +342,27 @@ class DeckConstructionPolicyTests(unittest.TestCase):
         self.assertFalse(policy.validate(distinct_six + [card("seventh", cost=0)]).is_valid)
         self.assertFalse(policy.validate(base + [card("same", cost=0), card("same", cost=0)] + legal_cards(4)).is_valid)
 
+    def test_classic_profile_exposes_every_format_limit_explicitly(self):
+        policy = classic_deck_policy()
+
+        self.assertEqual(policy.min_cards, 40)
+        self.assertEqual(policy.max_cards, 60)
+        self.assertEqual(policy.max_standard_copies, 5)
+        self.assertEqual(policy.max_legendary_copies, 4)
+        self.assertFalse(policy.forbid_zero_cost)
+        self.assertEqual(policy.max_zero_cost_copies, 1)
+        self.assertEqual(policy.max_zero_cost_total, 6)
+        self.assertIsNone(policy.mythic_min_cost)
+        self.assertIsNone(policy.mythic_max_cost)
+        self.assertEqual(policy.min_points, 50)
+        self.assertIsNone(policy.point_budget)
+
+        configured = classic_deck_policy(
+            max_standard_copies=3, max_legendary_copies=2
+        )
+        self.assertEqual(configured.max_standard_copies, 3)
+        self.assertEqual(configured.max_legendary_copies, 2)
+
     def test_classic_exact_general_size_and_copy_limits(self):
         policy = classic_deck_policy()
         for size, valid in ((39, False), (40, True), (60, True), (61, False)):
@@ -345,6 +382,30 @@ class DeckConstructionPolicyTests(unittest.TestCase):
         self.assertIsNone(mythic_deck_policy().point_budget)
         self.assertIsNone(classic_deck_policy().point_budget)
         self.assertFalse(classic_deck_policy(point_budget=4).validate(legal_cards(40)).is_valid)
+
+    def test_mythic_point_budget_defaults_to_none_regression(self):
+        self.assertIsNone(mythic_deck_policy().point_budget)
+
+    def test_mythic_300_point_budget_is_only_an_example_of_caller_configuration(self):
+        # Ejemplo de configuración de la aplicación; no define una norma del formato.
+        deck = [card(f"configured-{index}", cost=8) for index in range(40)]
+
+        self.assertTrue(mythic_deck_policy().validate(deck).is_valid)
+        configured_result = mythic_deck_policy(point_budget=300).validate(deck)
+        self.assertEqual(
+            [issue.code for issue in configured_result.issues], ["points.exceeded"]
+        )
+
+    def test_explicitly_unbounded_profiles_accept_points_above_unconfigured_figures(self):
+        high_points_deck = [card(f"high-{index}", cost=50) for index in range(40)]
+
+        self.assertEqual(deck_points(high_points_deck), 2000)
+        self.assertTrue(
+            classic_deck_policy(point_budget=None).validate(high_points_deck).is_valid
+        )
+        self.assertTrue(
+            mythic_deck_policy(point_budget=None).validate(high_points_deck).is_valid
+        )
 
     def test_points_are_card_cost_sum_and_base_minimum_is_fifty(self):
         below = [card(f"low-{index}", cost=1) for index in range(40)]

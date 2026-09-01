@@ -324,6 +324,12 @@ class AbilityDefinition:
 
 @dataclass(frozen=True)
 class CardDefinition:
+    """Definición mecánica de una carta.
+
+    ``cost`` está expresado en Pasos. Ese mismo valor, sin una puntuación
+    paralela, se suma para obtener los puntos de construcción del mazo.
+    """
+
     card_id: str
     name: str
     kind: CardKind

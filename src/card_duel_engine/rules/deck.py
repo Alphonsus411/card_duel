@@ -62,8 +62,14 @@ class InvalidDeckConstruction(ValueError):
 class DeckConstructionPolicy:
     """Restricciones declarativas de un formato de construcción.
 
-    ``point_budget`` queda deliberadamente bajo control de la aplicación. Su
-    ausencia representa la decisión abierta ``N-POINTS-01``.
+    Los puntos son la suma de ``CardDefinition.cost`` (Pasos); no existe una
+    puntuación paralela por carta. ``min_points`` recoge el mínimo base de 50.
+    ``point_budget`` es solamente un máximo opcional bajo control de la
+    aplicación: no tiene valor predeterminado porque ``N-POINTS-01`` bloquea
+    las cifras Míticas 200, 300 y 400.
+
+    La equivalencia de puntos es una relación entre las barajas participantes
+    y, por tanto, no puede decidirla ``validate``, que recibe una sola baraja.
     """
 
     min_cards: int | None = None
@@ -79,6 +85,7 @@ class DeckConstructionPolicy:
     mythic_set_predicate: SetPredicate | None = None
     mythic_min_cost: int | None = None
     mythic_max_cost: int | None = None
+    min_points: int | None = 50
     point_budget: int | None = None
 
     def __post_init__(self) -> None:
@@ -86,7 +93,7 @@ class DeckConstructionPolicy:
             "min_cards", "max_cards", "max_standard_copies",
             "max_legendary_copies", "max_zero_cost_copies",
             "max_zero_cost_total", "mythic_min_cost", "mythic_max_cost",
-            "point_budget",
+            "min_points", "point_budget",
         )
         for name in nonnegative:
             value = getattr(self, name)
@@ -184,7 +191,10 @@ class DeckConstructionPolicy:
                 or (self.mythic_max_cost is not None and card.cost > self.mythic_max_cost)
             ):
                 issues.append(DeckValidationIssue("mythic.cost_range", f"{card_id} tiene coste Mítico fuera del intervalo {self.mythic_min_cost}–{self.mythic_max_cost}", card_id))
-        if self.point_budget is not None and sum(card.cost for card in materialized) > self.point_budget:
+        points = sum(card.cost for card in materialized)
+        if self.min_points is not None and points < self.min_points:
+            issues.append(DeckValidationIssue("points.below_minimum", f"El mazo tiene {points} puntos; mínimo {self.min_points}"))
+        if self.point_budget is not None and points > self.point_budget:
             issues.append(DeckValidationIssue("points.exceeded", f"El mazo supera el presupuesto de {self.point_budget} puntos"))
         return DeckValidationResult(materialized, tuple(issues))
 

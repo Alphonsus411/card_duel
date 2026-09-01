@@ -80,7 +80,7 @@ class DeckConstructionPolicyTests(unittest.TestCase):
             "min_cards", "max_cards", "max_standard_copies",
             "max_legendary_copies", "max_zero_cost_copies",
             "max_zero_cost_total", "mythic_min_cost", "mythic_max_cost",
-            "point_budget",
+            "min_points", "point_budget",
         )
 
         class IntLike:
@@ -286,6 +286,14 @@ class DeckConstructionPolicyTests(unittest.TestCase):
         self.assertIsNone(classic_deck_policy().point_budget)
         self.assertFalse(classic_deck_policy(point_budget=4).validate(legal_cards(40)).is_valid)
 
+    def test_points_are_card_cost_sum_and_base_minimum_is_fifty(self):
+        below = [card(f"low-{index}", cost=1) for index in range(40)]
+        exact = [card(f"exact-{index}", cost=1) for index in range(50)]
+
+        result = classic_deck_policy().validate(below)
+        self.assertEqual([issue.code for issue in result.issues], ["points.below_minimum"])
+        self.assertTrue(classic_deck_policy().validate(exact).is_valid)
+
     def test_one_shot_generator_is_materialized_once_and_returned(self):
         iterations = 0
         source = legal_cards(40)
@@ -310,7 +318,7 @@ class DeckConstructionPolicyTests(unittest.TestCase):
         first = policy.validate(deck).issues
         second = policy.validate(iter(deck)).issues
         self.assertEqual(first, second)
-        self.assertEqual([issue.code for issue in first], ["deck.too_small", "copies.exceeded", "set.not_allowed", "cost.zero_forbidden", "mythic.cost_range"])
+        self.assertEqual([issue.code for issue in first], ["deck.too_small", "copies.exceeded", "set.not_allowed", "cost.zero_forbidden", "mythic.cost_range", "points.below_minimum"])
 
     def test_invalid_policy_configuration_prevents_game_engine_construction(self):
         with patch("card_duel_engine.engine.game.GameEngine") as engine_class:

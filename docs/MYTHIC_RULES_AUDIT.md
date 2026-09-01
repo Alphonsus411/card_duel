@@ -62,7 +62,7 @@ para generalizar una mecánica.
 | ID | Categoría | Ubicación | Hallazgo y decisión de auditoría |
 |---|---|---|---|
 | M-SCOPE-01 | B | Mítica, física 2 / interna 1 | La introducción declara obligatorias las actualizaciones para juego competitivo y recomienda su uso en partidas amistosas. Es alcance de formato, no sustitución indiscriminada de toda regla base. |
-| N-POINTS-01 | E | Mítica, física 2 / interna 1 | **Contradicción abierta:** el mismo bloque menciona 200 puntos por baraja y jugador, un máximo situado en el intervalo 300–400, y aproximadamente 300 como recomendación; después vuelve a indicar 300 al resumir los ajustes. La base, por su parte, exige equivalencia y un mínimo de 50 (`Fantasy Tokens.pdf`, reglas básicas 1–2, p. 5). No se eligen 200, 300, 400 ni otro valor normativo. |
+| N-POINTS-01 | E | Base, físicas 3 y 5; Mítica, física 2 / interna 1 | **Normativa base confirmada y contradicción Mítica abierta:** cada carta tiene un valor fijo en Pasos, y los puntos del mazo se obtienen sumando esos mismos valores; no son conceptos distintos. El mínimo base inequívoco es 50 puntos. La regla básica 1 confirma además que la equivalencia se compara entre las barajas participantes, no que sea una propiedad validable sobre una baraja aislada. El bloque Mítico menciona 200 puntos por baraja y jugador, un máximo situado en el intervalo 300–400, aproximadamente 300 como recomendación y de nuevo 300 al resumir. Las cifras 200, 300 y 400 son contradictorias entre sí: ninguna se elige ni puede convertirse en valor predeterminado. |
 | M-DECK-02 | B | Mítica, física 2 / interna 1 | Construcción: mínimo de 40 y máximo de 60 cartas; hasta cinco copias de una no Legendaria y cuatro de una Legendaria, sujeto a las restricciones de formato. Estos límites se registran aparte de `N-POINTS-01`. |
 | M-FORMAT-03 | B | Mítica, física 2 / interna 1 | Clásico admite todas las ediciones con restricciones propias para coste cero; Mística admite desde Edición Mítica, prohíbe Alfa/Beta y fija para sus cartas costes entre 5 y 50 Pasos. Son reglas de formato, no texto universal de cartas. |
 | M-DECK-04 | B | Mítica, física 2 / interna 1 | Los ajustes base por coste en Pasos se declaran vigentes y se añaden límites de cartas, puntos y edición. La cifra de puntos permanece bloqueada por `N-POINTS-01`. |
@@ -81,7 +81,12 @@ para generalizar una mecánica.
 
 ## Bloqueos y efectos derivados
 
-- `N-POINTS-01` impide afirmar un total normativo de puntos para barajas Míticas.
+- `N-POINTS-01` no bloquea la semántica base: `CardDefinition.cost` expresa
+  Pasos, su suma da los puntos del mazo y el mínimo es 50. Sí impide afirmar
+  un total normativo Mítico o predeterminar 200, 300 o 400.
+- La equivalencia exige comparar dos o más barajas. Una validación de una sola
+  baraja puede comprobar el mínimo y un máximo configurado explícitamente,
+  pero no declarar por sí sola que los totales son equivalentes.
 - `M-LORD-EVENT-01` impide tratar todas las habilidades de Señor como Eventos;
   solo permite documentar la Fase Activa indicada.
 - Las demás dudas que requieran completar silencios del texto siguen bloqueadas.

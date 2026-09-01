@@ -61,6 +61,24 @@ tras integrar las correcciones y ejecutar sus pruebas. Siguen fuera del cierre
 `N-POINTS-01`, `M-LORD-EVENT-01`, los finales multijugador no definidos y los
 límites de alcance sobre catálogo, transporte y formatos persistentes nuevos.
 
+### Aclaración normativa de puntos
+
+La lectura directa de `Fantasy Tokens.pdf` (físicas 3 y 5) confirma que el
+coste de una carta está expresado en Pasos y que los puntos de una baraja son
+la suma de esos mismos valores. No existe fundamento para duplicar el dato en
+`CardDefinition`. La base fija un mínimo inequívoco de 50 puntos y formula la
+equivalencia como comparación entre barajas, no como atributo de una sola.
+
+`Fantasy Tokens Edicion Mitica.pdf` (física 2 / interna 1) no contradice esa
+identidad entre Pasos y puntos, pero sí ofrece cifras incompatibles para el
+total: 200, el intervalo máximo 300–400 y la recomendación/resumen de 300. Por
+`N-POINTS-01`, las tres cifras permanecen bloqueadas y ninguna puede ser el
+presupuesto predeterminado de `classic_deck_policy` ni de
+`mythic_deck_policy`. `DeckConstructionPolicy.validate` suma directamente
+`CardDefinition.cost`, comprueba el mínimo base y cualquier máximo que el
+llamador configure expresamente; no pretende resolver equivalencia sin recibir
+las demás barajas.
+
 ## Causas, correcciones y regresiones
 
 - **Bloqueo de pila y procedencia de habilidades.** Al sacar el elemento superior

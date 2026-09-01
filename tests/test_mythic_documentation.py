@@ -152,7 +152,7 @@ class MythicDocumentationTests(unittest.TestCase):
                 failures.append(f"{path.relative_to(ROOT)}: {claim}")
         self.assertEqual(failures, [])
 
-    def test_production_package_contains_no_concrete_card_definitions(self):
+    def test_concrete_card_definitions_live_only_in_content_modules(self):
         calls: list[str] = []
         for path in sorted(PACKAGE.rglob("*.py")):
             tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
@@ -162,8 +162,12 @@ class MythicDocumentationTests(unittest.TestCase):
                     or isinstance(node.func, ast.Attribute)
                     and node.func.attr == "CardDefinition"
                 ):
-                    calls.append(f"{path.relative_to(ROOT)}:{node.lineno}")
-        self.assertEqual(calls, [], "Las cartas concretas deben llegar como datos de colección")
+                    calls.append(path.relative_to(ROOT).as_posix())
+        self.assertEqual(
+            set(calls),
+            {"src/card_duel_engine/content/base_set.py"},
+            "Las cartas concretas deben permanecer en módulos de contenido",
+        )
 
     def test_production_package_bundles_no_catalog_data_files(self):
         catalog_suffixes = {".csv", ".json", ".pdf", ".tsv", ".yaml", ".yml"}

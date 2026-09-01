@@ -6,7 +6,9 @@ from .base_set import (
     BASE_SET_MANIFEST,
     BASE_SET_REVISION,
     build_base_card_catalog,
+    build_base_collection_registry,
     build_base_card_presentation_catalog,
+    build_base_public_card_catalog,
     build_base_catalogs,
 )
 from .manifest import (
@@ -37,7 +39,9 @@ __all__ = [
     "BASE_SET_MANIFEST",
     "BASE_SET_REVISION",
     "build_base_card_catalog",
+    "build_base_collection_registry",
     "build_base_card_presentation_catalog",
+    "build_base_public_card_catalog",
     "build_base_catalogs",
     "CollectionManifest",
     "dump_manifest",

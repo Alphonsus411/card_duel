@@ -1,4 +1,5 @@
-"""Punto de extensión para colecciones futuras; vacío deliberadamente."""
+"""Contenido canónico y contratos para colecciones extensibles."""
+from .base_set import BASE_CARD_DEFINITIONS, BASE_SET_ID, BASE_SET_REVISION
 from .manifest import (
     CollectionManifest,
     dump_manifest,
@@ -21,6 +22,9 @@ from .signature import (
 )
 
 __all__ = [
+    "BASE_CARD_DEFINITIONS",
+    "BASE_SET_ID",
+    "BASE_SET_REVISION",
     "CollectionManifest",
     "dump_manifest",
     "load_manifest",

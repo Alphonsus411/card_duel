@@ -112,12 +112,14 @@ nunca sustituye la resolución del backend.
 | Fase 1-B | **COMPLETE** |
 | Fase 1-C | **COMPLETE** |
 | Fase 1 | **COMPLETE** |
-| Fase 2 | **NEXT** |
-| Fase 3 | **PENDING** |
+| Fase 2-A — COMPLETE | Microcolección base documentada y validada |
+| Fase 2 — IN PROGRESS | Colección tokenizada en desarrollo |
+| Fase 2-B — NEXT | Siguiente entrega de contenido |
+| Fase 3 — PENDING | Shell Expo pendiente |
 
-La Fase 1 está completa. La Fase 2 es la siguiente entrega, pero **no se ha
-iniciado**; la Fase 3 permanece pendiente. Este cierre no crea frontend, Expo ni
-contenido.
+La Fase 1 está completa. La Fase 2 está en progreso: la Fase 2-A ya cerró la
+microcolección base y la Fase 2-B es la siguiente entrega. La Fase 3 permanece
+pendiente. Estos estados no crean frontend ni inicializan Expo.
 
 ### 4.2 Fase 1-A — COMPLETE
 
@@ -156,12 +158,27 @@ La Fase 1-C cierra el flujo autenticado completo: una identidad obtiene un
 de `submit_option()` el `PublicMatchView` autoritativo posterior. El mismo DTO
 expresa estado dinámico y terminalidad mediante `status`; no hace falta un DTO
 `PublicMatchResult`. El catálogo público permanece como referencia estática
-independiente. Este cierre completa la Fase 1 y **no inicia la Fase 2**.
+independiente. Este cierre completó la Fase 1; posteriormente, la Fase 2-A
+inició la Fase 2 con la microcolección base.
 
 Los valores `option_id` no son comandos serializados, no conceden autoridad ni
 permiten inferir información privada. Un `option_id` inexistente, alterado o de
 otra partida o actor recibe el mismo rechazo seguro; un CAS obsoleto se rechaza
 como conflicto de escritura.
+
+### 4.5 Fase 2-A — COMPLETE
+
+La Fase 2-A publica y documenta la microcolección `base`, revisión 1, formada
+por ocho cartas y por el esquema editorial explícito `BASE-001`…`BASE-008`. El
+inventario canónico, la separación entre autoridad mecánica y datos editoriales
+y las limitaciones deliberadas están en
+[`BASE_CARD_SET.md`](BASE_CARD_SET.md); la evaluación enlazada de capacidades
+confirma que ninguna de las ocho cartas abre un gap mecánico obligatorio.
+
+Este estado se registró únicamente después de superar la matriz completa: suite
+de pruebas con cobertura de ramas, umbral de cobertura, tipado estático y
+construcción de los artefactos distribuibles. El cierre de Fase 2-A no completa
+la Fase 2: **Fase 2-B — NEXT** y **Fase 2 — IN PROGRESS**.
 
 ## 5. Modelo de contenido y presentación
 

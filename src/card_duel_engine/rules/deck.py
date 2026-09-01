@@ -69,7 +69,8 @@ class DeckConstructionPolicy:
     """Restricciones declarativas de un formato de construcción.
 
     Los puntos son la suma de ``CardDefinition.cost`` (Pasos); no existe una
-    puntuación paralela por carta. ``min_points`` recoge el mínimo base de 50.
+    puntuación paralela por carta. ``min_points`` permite configurar un mínimo
+    cuando el formato aplicable lo establezca.
     ``point_budget`` es solamente un máximo opcional bajo control de la
     aplicación: no tiene valor predeterminado porque ``N-POINTS-01`` bloquea
     las cifras Míticas 200, 300 y 400.
@@ -91,7 +92,7 @@ class DeckConstructionPolicy:
     mythic_set_predicate: SetPredicate | None = None
     mythic_min_cost: int | None = None
     mythic_max_cost: int | None = None
-    min_points: int | None = 50
+    min_points: int | None = None
     point_budget: int | None = None
 
     def __post_init__(self) -> None:
@@ -126,6 +127,8 @@ class DeckConstructionPolicy:
             raise ValueError("El mínimo de cartas no puede superar el máximo")
         if self.mythic_min_cost is not None and self.mythic_max_cost is not None and self.mythic_min_cost > self.mythic_max_cost:
             raise ValueError("El coste Mítico mínimo no puede superar el máximo")
+        if self.min_points is not None and self.point_budget is not None and self.min_points > self.point_budget:
+            raise ValueError("El mínimo de puntos no puede superar el presupuesto máximo")
         if self.allowed_set_ids is not None and self.set_predicate is not None:
             raise ValueError("Use conjuntos permitidos o un predicado, no ambos")
         if allowed_set_ids is not None and not mythic_set_ids.issubset(allowed_set_ids):
@@ -199,9 +202,9 @@ class DeckConstructionPolicy:
                 issues.append(DeckValidationIssue("mythic.cost_range", f"{card_id} tiene coste Mítico fuera del intervalo {self.mythic_min_cost}–{self.mythic_max_cost}", card_id))
         points = deck_points(materialized)
         if self.min_points is not None and points < self.min_points:
-            issues.append(DeckValidationIssue("points.below_minimum", f"El mazo tiene {points} puntos; mínimo {self.min_points}"))
+            issues.append(DeckValidationIssue("deck.points_below_minimum", f"El mazo tiene {points} puntos; mínimo {self.min_points}"))
         if self.point_budget is not None and points > self.point_budget:
-            issues.append(DeckValidationIssue("points.exceeded", f"El mazo supera el presupuesto de {self.point_budget} puntos"))
+            issues.append(DeckValidationIssue("deck.points_exceeded", f"El mazo supera el presupuesto de {self.point_budget} puntos"))
         return DeckValidationResult(materialized, tuple(issues))
 
     def require_valid(self, cards: Iterable[CardDefinition]) -> tuple[CardDefinition, ...]:
@@ -259,7 +262,8 @@ def mythic_deck_policy(
         allowed_set_ids=allowed_set_ids, set_predicate=set_predicate,
         mythic_set_ids=frozenset() if mythic_set_ids is None else mythic_set_ids,
         mythic_set_predicate=mythic_set_predicate,
-        mythic_min_cost=5, mythic_max_cost=50, point_budget=point_budget,
+        mythic_min_cost=5, mythic_max_cost=50, min_points=50,
+        point_budget=point_budget,
     )
 
 
@@ -276,5 +280,5 @@ def classic_deck_policy(
         max_legendary_copies=max_legendary_copies,
         max_zero_cost_copies=1, max_zero_cost_total=6,
         allowed_set_ids=allowed_set_ids, set_predicate=set_predicate,
-        point_budget=point_budget,
+        min_points=50, point_budget=point_budget,
     )

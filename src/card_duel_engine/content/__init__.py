@@ -1,5 +1,14 @@
 """Contenido canónico y contratos para colecciones extensibles."""
-from .base_set import BASE_CARD_DEFINITIONS, BASE_SET_ID, BASE_SET_REVISION
+from .base_set import (
+    BASE_CARD_DEFINITIONS,
+    BASE_CARD_PRESENTATIONS,
+    BASE_SET_ID,
+    BASE_SET_MANIFEST,
+    BASE_SET_REVISION,
+    build_base_card_catalog,
+    build_base_card_presentation_catalog,
+    build_base_catalogs,
+)
 from .manifest import (
     CollectionManifest,
     dump_manifest,
@@ -23,8 +32,13 @@ from .signature import (
 
 __all__ = [
     "BASE_CARD_DEFINITIONS",
+    "BASE_CARD_PRESENTATIONS",
     "BASE_SET_ID",
+    "BASE_SET_MANIFEST",
     "BASE_SET_REVISION",
+    "build_base_card_catalog",
+    "build_base_card_presentation_catalog",
+    "build_base_catalogs",
     "CollectionManifest",
     "dump_manifest",
     "load_manifest",

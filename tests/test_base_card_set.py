@@ -12,14 +12,21 @@ from pathlib import Path
 import pytest
 
 from card_duel_engine import (
+    AuthenticatedMatchApplication,
+    Capability,
     CardCatalog,
     CardPresentation,
     CardPresentationCatalog,
     CollectionManifest,
     CollectionRegistry,
+    ExternalIdentity,
     GameEngine,
+    InMemoryIdentityAuthorization,
+    InMemoryMatchStore,
+    MatchService,
     PublicCard,
     PublicCardCatalog,
+    PublicMatchView,
     classic_deck_policy,
     validate_card_presentations,
 )
@@ -232,3 +239,43 @@ def test_real_forty_card_deck_is_validated_before_engine_smoke_test() -> None:
     engine = GameEngine(catalog=build_base_card_catalog())
     engine.new_match({"A": validated_deck, "B": validated_deck}, seed=1)
     assert engine.state is not None
+
+
+def test_base_manifest_creates_match_through_authenticated_public_boundary() -> None:
+    registry = CollectionRegistry()
+    registry.register(load_manifest(dump_manifest(BASE_SET_MANIFEST)))
+    snapshot = registry.snapshot()
+    definitions = snapshot.catalog.definitions()
+    decks = {
+        player_id: tuple(card for card in definitions for _ in range(5))
+        for player_id in ("A", "B")
+    }
+
+    authorization = InMemoryIdentityAuthorization()
+    identity = ExternalIdentity("https://identity.example", "base-set-smoke-user")
+    application = AuthenticatedMatchApplication(
+        MatchService(
+            InMemoryMatchStore(),
+            catalog=registry,
+            deck_policy=classic_deck_policy(allowed_set_ids={BASE_SET_ID}),
+        ),
+        authorization,
+    )
+    match_id = "base-set-authenticated-smoke"
+    authorization.grant_global(identity, Capability.CREATE_MATCH)
+
+    created_version = application.create_match(identity, match_id, decks, seed=17)
+    authorization.bind_player(identity, match_id, "A")
+    view = application.view(identity, match_id)
+
+    assert created_version == 1
+    assert isinstance(view, PublicMatchView)
+    assert view.match_id == match_id
+    assert view.version == created_version
+    assert view.observation.player_id == "A"
+    assert view.observation.opponent_hand_sizes.keys() == {"B"}
+
+    payload = view.to_dict()
+    assert payload["observation"]["player_id"] == "A"
+    assert "opponent_hands" not in payload["observation"]
+    assert isinstance(json.dumps(payload), str)

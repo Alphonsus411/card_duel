@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pickle
 import unittest
+from dataclasses import replace
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -11,10 +12,12 @@ from card_duel_engine import (
     InMemoryMatchStore,
     MatchService,
     classic_deck_policy,
+    deck_points,
     mythic_deck_policy,
 )
 from card_duel_engine.domain.enums import CardKind, CardRank
 from card_duel_engine.domain.models import CardDefinition
+from card_duel_engine.presentation import CardPresentation
 from card_duel_engine.service import DeckValidationFailure
 from card_duel_engine.storage import MatchNotFound
 
@@ -32,6 +35,63 @@ def legal_cards(size: int, *, set_id: str = "new") -> list[CardDefinition]:
 
 
 class DeckConstructionPolicyTests(unittest.TestCase):
+    def test_deck_points_is_exact_cost_sum(self):
+        cards = [card("low", cost=0), card("middle", cost=7), card("high", cost=13)]
+
+        self.assertEqual(deck_points(cards), 20)
+        self.assertIs(type(deck_points(cards)), int)
+
+    def test_deck_points_consumes_one_shot_iterable_once(self):
+        iterations = 0
+
+        def one_shot():
+            nonlocal iterations
+            iterations += 1
+            if iterations > 1:
+                raise AssertionError("segunda iteración")
+            yield card("first", cost=2)
+            yield card("second", cost=3)
+
+        self.assertEqual(deck_points(one_shot()), 5)
+        self.assertEqual(iterations, 1)
+
+    def test_deck_points_is_deterministic(self):
+        cards = (card("first", cost=2), card("second", cost=3))
+
+        self.assertEqual(deck_points(cards), deck_points(cards))
+
+    def test_deck_points_empty_deck_is_zero_int(self):
+        points = deck_points(())
+
+        self.assertEqual(points, 0)
+        self.assertIs(type(points), int)
+
+    def test_deck_points_is_independent_of_card_id(self):
+        original = card("original-id", cost=8)
+
+        self.assertEqual(deck_points((original,)), deck_points((replace(original, card_id="other-id"),)))
+
+    def test_deck_points_is_independent_of_name_and_editorial_presentation(self):
+        original = card("mechanical-id", cost=8)
+        renamed = replace(original, name="Nombre mecánico distinto")
+        first_presentation = CardPresentation(
+            original.card_id, "token-a", "Nombre editorial A", "Texto A", "arte-a"
+        )
+        second_presentation = CardPresentation(
+            original.card_id, "token-b", "Nombre editorial B", "Texto B", "arte-b"
+        )
+
+        self.assertNotEqual(first_presentation, second_presentation)
+        self.assertEqual(deck_points((original,)), deck_points((renamed,)))
+
+    def test_deck_points_does_not_mutate_card_definitions(self):
+        cards = (card("first", cost=2), card("second", cost=3))
+        before = pickle.dumps(cards)
+
+        deck_points(cards)
+
+        self.assertEqual(pickle.dumps(cards), before)
+
     def test_equivalent_mythic_policies_have_equal_hashes_and_pickle_roundtrip(self):
         first = mythic_deck_policy()
         second = mythic_deck_policy()

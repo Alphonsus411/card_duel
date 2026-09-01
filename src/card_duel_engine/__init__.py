@@ -53,6 +53,7 @@ from .rules import (
     InvalidDeckConstruction,
     RuleSet,
     classic_deck_policy,
+    deck_points,
     mythic_deck_policy,
 )
 from .service import CommandSource, MatchService, MatchView
@@ -106,6 +107,7 @@ __all__ = [
     "InvalidDeckConstruction",
     "RuleSet",
     "classic_deck_policy",
+    "deck_points",
     "mythic_deck_policy",
     "SQLiteMatchStore",
     "VersionConflict",

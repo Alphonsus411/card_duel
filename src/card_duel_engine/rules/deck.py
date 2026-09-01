@@ -17,6 +17,12 @@ from ..domain.models import CardDefinition
 SetPredicate = Callable[[str], bool]
 
 
+def deck_points(cards: Iterable[CardDefinition]) -> int:
+    """Devuelve los puntos del mazo usando únicamente el coste de cada carta."""
+    materialized = tuple(cards)
+    return sum(card.cost for card in materialized)
+
+
 def _all_sets_are_mythic(_set_id: str) -> bool:
     """Clasifica cualquier colección como Mítica en el perfil aislado."""
     return True
@@ -191,7 +197,7 @@ class DeckConstructionPolicy:
                 or (self.mythic_max_cost is not None and card.cost > self.mythic_max_cost)
             ):
                 issues.append(DeckValidationIssue("mythic.cost_range", f"{card_id} tiene coste Mítico fuera del intervalo {self.mythic_min_cost}–{self.mythic_max_cost}", card_id))
-        points = sum(card.cost for card in materialized)
+        points = deck_points(materialized)
         if self.min_points is not None and points < self.min_points:
             issues.append(DeckValidationIssue("points.below_minimum", f"El mazo tiene {points} puntos; mínimo {self.min_points}"))
         if self.point_budget is not None and points > self.point_budget:

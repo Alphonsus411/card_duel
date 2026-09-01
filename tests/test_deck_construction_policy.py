@@ -160,7 +160,10 @@ class DeckConstructionPolicyTests(unittest.TestCase):
     def test_numeric_relationships_and_nonnegative_limits_are_preserved(self):
         for arguments in (
             {"min_cards": -1},
+            {"min_points": -1},
+            {"point_budget": -1},
             {"min_cards": 2, "max_cards": 1},
+            {"min_points": 51, "point_budget": 50},
             {"mythic_min_cost": 6, "mythic_max_cost": 5,
              "mythic_set_ids": {"myth"}},
         ):
@@ -342,17 +345,38 @@ class DeckConstructionPolicyTests(unittest.TestCase):
             self.assertEqual(policy.validate(deck).is_valid, valid)
 
     def test_factories_have_no_default_points_budget_n_points_01(self):
+        self.assertIsNone(DeckConstructionPolicy().min_points)
+        self.assertEqual(mythic_deck_policy().min_points, 50)
+        self.assertEqual(classic_deck_policy().min_points, 50)
         self.assertIsNone(mythic_deck_policy().point_budget)
         self.assertIsNone(classic_deck_policy().point_budget)
-        self.assertFalse(classic_deck_policy(point_budget=4).validate(legal_cards(40)).is_valid)
+        self.assertFalse(classic_deck_policy(point_budget=199).validate(legal_cards(40)).is_valid)
 
     def test_points_are_card_cost_sum_and_base_minimum_is_fifty(self):
-        below = [card(f"low-{index}", cost=1) for index in range(40)]
+        below = [card(f"low-{index}", cost=1) for index in range(39)] + [
+            card("low-edge", cost=10)
+        ]
         exact = [card(f"exact-{index}", cost=1) for index in range(50)]
 
         result = classic_deck_policy().validate(below)
-        self.assertEqual([issue.code for issue in result.issues], ["points.below_minimum"])
+        self.assertEqual(
+            [issue.code for issue in result.issues],
+            ["deck.points_below_minimum"],
+        )
         self.assertTrue(classic_deck_policy().validate(exact).is_valid)
+
+    def test_explicit_point_budget_boundaries_and_optional_ceiling(self):
+        at_budget = [card(f"at-{index}", cost=1) for index in range(50)]
+        above_budget = [card(f"above-{index}", cost=1) for index in range(51)]
+
+        self.assertTrue(
+            DeckConstructionPolicy(point_budget=50).validate(at_budget).is_valid
+        )
+        result = DeckConstructionPolicy(point_budget=50).validate(above_budget)
+        self.assertEqual([issue.code for issue in result.issues], ["deck.points_exceeded"])
+        self.assertTrue(
+            DeckConstructionPolicy(point_budget=None).validate(above_budget).is_valid
+        )
 
     def test_one_shot_generator_is_materialized_once_and_returned(self):
         iterations = 0
@@ -378,7 +402,7 @@ class DeckConstructionPolicyTests(unittest.TestCase):
         first = policy.validate(deck).issues
         second = policy.validate(iter(deck)).issues
         self.assertEqual(first, second)
-        self.assertEqual([issue.code for issue in first], ["deck.too_small", "copies.exceeded", "set.not_allowed", "cost.zero_forbidden", "mythic.cost_range", "points.below_minimum"])
+        self.assertEqual([issue.code for issue in first], ["deck.too_small", "copies.exceeded", "set.not_allowed", "cost.zero_forbidden", "mythic.cost_range", "deck.points_below_minimum"])
 
     def test_invalid_policy_configuration_prevents_game_engine_construction(self):
         with patch("card_duel_engine.engine.game.GameEngine") as engine_class:

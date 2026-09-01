@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ..catalog import CardCatalog
-from ..domain.enums import CardKind, CardRank, Keyword
+from ..domain.enums import CardKind, Keyword
 from ..domain.models import CardDefinition
 from ..presentation import (
     CardPresentation,
@@ -86,7 +86,6 @@ BASE_CARD_DEFINITIONS: tuple[CardDefinition, ...] = (
         name="First Arena Champion",
         kind=CardKind.CREATURE,
         cost=7,
-        rank=CardRank.LEGENDARY,
         base_strength=6,
         set_id=BASE_SET_ID,
         revision=BASE_SET_REVISION,
@@ -98,7 +97,6 @@ BASE_CARD_DEFINITIONS: tuple[CardDefinition, ...] = (
         name="Ancient Grove Keeper",
         kind=CardKind.CREATURE,
         cost=8,
-        rank=CardRank.LEGENDARY,
         base_strength=9,
         set_id=BASE_SET_ID,
         revision=BASE_SET_REVISION,

@@ -10,7 +10,9 @@ from ..presentation import (
     CardPresentationCatalog,
     validate_card_presentations,
 )
+from ..public_catalog import PublicCardCatalog
 from .manifest import CollectionManifest
+from .registry import CollectionRegistry
 
 BASE_SET_ID = "base"
 BASE_SET_REVISION = 1
@@ -173,7 +175,17 @@ BASE_SET_MANIFEST = CollectionManifest(
     revision=BASE_SET_REVISION,
     engine_min_version="0.20.1",
     cards=BASE_CARD_DEFINITIONS,
+    metadata={"corpus": "initial"},
+    dependencies=(),
 )
+
+
+def build_base_collection_registry() -> CollectionRegistry:
+    """Publica la colección base y su procedencia en un único registro."""
+
+    registry = CollectionRegistry()
+    registry.register(BASE_SET_MANIFEST)
+    return registry
 
 
 def build_base_card_catalog() -> CardCatalog:
@@ -195,6 +207,14 @@ def build_base_card_presentation_catalog() -> CardPresentationCatalog:
     return catalog
 
 
+def build_base_public_card_catalog() -> PublicCardCatalog:
+    """Une las fuentes mecánica y editorial únicamente por ``card_id``."""
+
+    registry = build_base_collection_registry()
+    presentation_catalog = build_base_card_presentation_catalog()
+    return PublicCardCatalog(registry.catalog, presentation_catalog)
+
+
 def build_base_catalogs() -> tuple[CardCatalog, CardPresentationCatalog]:
     """Construye ambos catálogos y valida que describan el mismo corpus."""
 
@@ -211,6 +231,8 @@ __all__ = [
     "BASE_SET_MANIFEST",
     "BASE_SET_REVISION",
     "build_base_card_catalog",
+    "build_base_collection_registry",
     "build_base_card_presentation_catalog",
+    "build_base_public_card_catalog",
     "build_base_catalogs",
 ]

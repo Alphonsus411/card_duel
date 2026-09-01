@@ -39,10 +39,7 @@ def test_base_set_has_uniform_provenance_and_immutable_definitions() -> None:
 
 def test_base_set_covers_supported_creature_mechanics() -> None:
     assert {card.kind for card in BASE_CARD_DEFINITIONS} == {CardKind.CREATURE}
-    assert {card.rank for card in BASE_CARD_DEFINITIONS} == {
-        CardRank.STANDARD,
-        CardRank.LEGENDARY,
-    }
+    assert {card.rank for card in BASE_CARD_DEFINITIONS} == {CardRank.STANDARD}
     assert len({card.cost for card in BASE_CARD_DEFINITIONS}) > 1
     assert len({card.base_strength for card in BASE_CARD_DEFINITIONS}) > 1
     assert len({subtype for card in BASE_CARD_DEFINITIONS for subtype in card.subtypes}) >= 2

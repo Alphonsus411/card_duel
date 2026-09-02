@@ -146,6 +146,10 @@ def decode_value(value: Any) -> Any:
         )
         if cls is model_module.AbilitySourceProfile:
             compatible_missing.add("nature_is_certain")
+        if cls is model_module.EffectDefinition:
+            compatible_missing.update(
+                {"failure_destination_zone", "exhaustion_policy"}
+            )
         missing_required = (expected - supplied) - compatible_missing
         if missing_required or supplied - expected:
             raise ValueError(

@@ -2,6 +2,11 @@
 
 ## Sin publicar
 
+- Añadido el efecto declarativo general `REVEAL_UNTIL`, con filtro mecánico,
+  destinos separados para acierto y fallos, agotamiento explícito, resolución
+  ordenada/atómica y persistencia determinista. Se mantiene la versión 0.20.1
+  y todavía no se publica ninguna carta concreta que lo utilice.
+
 ## 0.20.1
 
 - Cerrada la compatibilidad de digest a 0.20.0 y 0.20.1: sólo se acepta la

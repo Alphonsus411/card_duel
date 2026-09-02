@@ -81,6 +81,7 @@ class EffectManager:
             EffectKind.COPY_DEFINITION: self._copy_definition,
             EffectKind.TRANSFORM_DEFINITION: self._transform_definition,
             EffectKind.MODIFY_TEXT: self._modify_text,
+            EffectKind.REVEAL_UNTIL: self._reveal_until,
         }
 
     @property
@@ -270,6 +271,38 @@ class EffectManager:
     def _search_zone(self, effect: EffectDefinition, item: StackItem, target: str, player: PlayerState | None, zone_target: ZoneTarget | None) -> None:
         # StackManager pausa y reanuda las búsquedas; este handler completa el registro.
         return
+
+    def _reveal_until(self, effect: EffectDefinition, item: StackItem, target: str, player: PlayerState | None, zone_target: ZoneTarget | None) -> None:
+        """Procesa la cima en orden; no crea elecciones ni estado pendiente."""
+        assert zone_target is not None
+        assert effect.search_filter is not None
+        assert effect.destination_zone is not None
+        assert effect.failure_destination_zone is not None
+        state = self._context._require_running_state()
+        revealed = 0
+        matched = False
+        while state.players[target].zones[zone_target.zone]:
+            card_id = state.players[target].zones[zone_target.zone][-1]
+            definition = self._context._definition(card_id)
+            is_match = effect.search_filter.matches(definition)
+            destination = effect.destination_zone if is_match else effect.failure_destination_zone
+            self._context._emit(
+                "CARD_REVEALED",
+                item.controller_id,
+                card_id,
+                {"source_zone": zone_target.zone.name},
+            )
+            self._context._move_card(card_id, destination, target, reason=MoveReason.RULE)
+            revealed += 1
+            if is_match:
+                matched = True
+                break
+        self._context._emit(
+            "REVEAL_UNTIL_COMPLETED",
+            item.controller_id,
+            item.source_card_id,
+            {"target_player": target, "source_zone": zone_target.zone.name, "revealed": revealed, "matched": matched},
+        )
 
     def _deal_harm(self, effect: EffectDefinition, item: StackItem, target: str, player: PlayerState | None, zone_target: ZoneTarget | None) -> None:
         raise UnsupportedEffectError("DEAL_HARM requiere TargetAllocation")

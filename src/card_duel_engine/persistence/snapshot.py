@@ -72,6 +72,11 @@ def legacy_state_digest_without_ability_source_profile(engine: GameEngine) -> st
             fields = transformed.get("fields")
             if isinstance(fields, dict):
                 fields.pop("ability_source_profile", None)
+        if transformed.get("$type") == "EffectDefinition":
+            fields = transformed.get("fields")
+            if isinstance(fields, dict):
+                fields.pop("failure_destination_zone", None)
+                fields.pop("exhaustion_policy", None)
         return transformed
 
     return _digest_encoded_state(omit_profile(_canonical_encoded_state(engine)))

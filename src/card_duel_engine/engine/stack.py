@@ -144,6 +144,14 @@ class StackManager:
         state = self._context._require_running_state()
         for effect_index in range(start_index, len(item.effects)):
             effect = item.effects[effect_index]
+            if effect.kind is EffectKind.REVEAL_UNTIL and len(item.chosen_zone_targets) != 1:
+                self._context._emit(
+                    "EFFECT_FIZZLED",
+                    item.controller_id,
+                    item.source_card_id,
+                    {"reason": "reveal_until_requires_one_zone"},
+                )
+                continue
             if effect.kind is EffectKind.SEARCH_ZONE:
                 if len(item.chosen_zone_targets) != 1:
                     self._context._emit(

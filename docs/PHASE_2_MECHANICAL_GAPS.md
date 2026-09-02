@@ -156,3 +156,25 @@ entre 200, 300 y 400 es una **ambigüedad normativa, no un defecto de software**
 el código no selecciona esas cifras ni ninguna otra como presupuesto Mítico
 predeterminado. La síntesis, referencias y límites se documentan en
 `PHASE_2_DECK_POINTS_CONFORMANCE.md`.
+### Capacidad general cerrada: revelar desde la cima hasta coincidencia
+
+La entrada Mítica nº026 aporta evidencia inequívoca: «mira la primera carta de
+tu mazo», mueve a la mano si cumple el tipo, descarta en caso contrario y
+«continua este proceso» hasta encontrarlo. La revisión de Fase 2-C clasificó
+esta conducta como `GAP` y como capacidad general reutilizable, no como una
+excepción de carta.
+
+La abstracción mínima es `EffectKind.REVEAL_UNTIL`: reutiliza `CardFilter`,
+declara el destino del primer acierto, el destino de cada fallo y una política
+explícita de agotamiento. La resolución consume la cima en orden, emite una
+revelación y un movimiento por carta y termina limpiamente si se agota la zona.
+No compara `card_id`, nombre, token, raza, texto editorial ni catálogo.
+
+No se añade estado autoritativo pendiente: el proceso es automático y ocurre
+dentro de la transacción de resolución de la pila. Por ello snapshots y replays
+mantienen sus esquemas actuales; el codec declarativo conserva los campos y el
+enum nuevos de forma determinista, mientras que documentos anteriores, que no
+los contienen, conservan sus valores por defecto. Tampoco aparecen nuevas
+acciones legales u opciones públicas: prioridad, pila y objetivos de zona usan
+los contratos existentes, y no se exponen identificadores seleccionables del
+mazo a `MatchService`, `PublicMatchView` ni `PublicLegalAction`.

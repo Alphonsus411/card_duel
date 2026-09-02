@@ -16,6 +16,7 @@ from .enums import (
     Keyword,
     MoveReason,
     Phase,
+    RevealExhaustionPolicy,
     TargetMode,
     TriggerKind,
     Zone,
@@ -142,6 +143,8 @@ class EffectDefinition:
     transform_definition_id: str | None = None
     text_patch: TextPatchDefinition | None = None
     x_multiplier: int = 0
+    failure_destination_zone: Zone | None = None
+    exhaustion_policy: RevealExhaustionPolicy | None = None
 
     def __post_init__(self) -> None:
         if self.amount < 0 and self.kind is not EffectKind.MODIFY_STRENGTH:
@@ -173,7 +176,7 @@ class EffectDefinition:
             EffectKind.MODIFY_TEXT,
         }
         zone_effects = {EffectKind.MOVE_CARDS}
-        zone_effects.update({EffectKind.SEARCH_ZONE, EffectKind.SHUFFLE_ZONE})
+        zone_effects.update({EffectKind.SEARCH_ZONE, EffectKind.SHUFFLE_ZONE, EffectKind.REVEAL_UNTIL})
         if self.kind in player_effects and self.target not in {
             TargetMode.SELF,
             TargetMode.CHOSEN_PLAYER,
@@ -201,6 +204,17 @@ class EffectDefinition:
                 raise ValueError("Buscar necesita una zona de destino")
             if self.selection_minimum < 0 or self.selection_maximum < self.selection_minimum:
                 raise ValueError("El intervalo de selección de búsqueda no es válido")
+        if self.kind is EffectKind.REVEAL_UNTIL:
+            if self.search_filter is None:
+                raise ValueError("Revelar hasta necesita un filtro mecánico")
+            if self.destination_zone is None or self.failure_destination_zone is None:
+                raise ValueError("Revelar hasta necesita destinos de acierto y fallo")
+            if self.exhaustion_policy is None:
+                raise ValueError("Revelar hasta necesita una política de agotamiento")
+            if self.destination_zone is Zone.REVEAL or self.failure_destination_zone is Zone.REVEAL:
+                raise ValueError("Revelar hasta necesita destinos finales")
+        elif self.failure_destination_zone is not None or self.exhaustion_policy is not None:
+            raise ValueError("Los campos de revelación sólo pertenecen a REVEAL_UNTIL")
         if (
             self.kind is EffectKind.TRANSFORM_DEFINITION
             and not self.transform_definition_id

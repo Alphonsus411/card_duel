@@ -73,6 +73,13 @@ class EffectKind(Enum):
     COPY_DEFINITION = auto()
     TRANSFORM_DEFINITION = auto()
     MODIFY_TEXT = auto()
+    REVEAL_UNTIL = auto()
+
+
+class RevealExhaustionPolicy(Enum):
+    """Resultado de agotar la zona sin encontrar una coincidencia."""
+
+    COMPLETE = auto()
 
 
 class CostComponent(Enum):

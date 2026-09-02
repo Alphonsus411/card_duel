@@ -8,8 +8,9 @@ rango o colección.
 from __future__ import annotations
 
 from collections import Counter
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
+from types import MappingProxyType
 
 from ..domain.enums import CardRank
 from ..domain.models import CardDefinition
@@ -52,6 +53,48 @@ class DeckValidationResult:
     @property
     def is_valid(self) -> bool:
         return not self.issues
+
+
+@dataclass(frozen=True)
+class DeckGroupValidationResult:
+    """Resultado de grupo reutilizable sin exponer contenido en los errores."""
+
+    decks: Mapping[str, tuple[CardDefinition, ...]]
+    issues: tuple[DeckValidationIssue, ...]
+
+    @property
+    def is_valid(self) -> bool:
+        return not self.issues
+
+
+def validate_deck_group(
+    decks: Mapping[str, Iterable[CardDefinition]],
+    *,
+    require_equal_points: bool = False,
+) -> DeckGroupValidationResult:
+    """Materializa los mazos una vez y valida una relación opcional entre ellos.
+
+    La incidencia deliberadamente no identifica jugadores, cartas ni totales, de
+    modo que el resultado sea estable y seguro al cruzar fronteras de servicio.
+    """
+    if type(require_equal_points) is not bool:
+        raise TypeError("require_equal_points debe ser bool")
+
+    prepared = {
+        player_id: tuple(deck)
+        for player_id, deck in decks.items()
+    }
+    issues: tuple[DeckValidationIssue, ...] = ()
+    if require_equal_points:
+        totals = tuple(deck_points(deck) for deck in prepared.values())
+        if totals and any(total != totals[0] for total in totals[1:]):
+            issues = (
+                DeckValidationIssue(
+                    "decks.points_not_equal",
+                    "Los mazos no tienen la misma cantidad de puntos",
+                ),
+            )
+    return DeckGroupValidationResult(MappingProxyType(prepared), issues)
 
 
 class InvalidDeckConstruction(ValueError):

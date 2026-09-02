@@ -14,8 +14,11 @@ from .domain.errors import InvalidDeckDefinition
 from .domain.models import CardDefinition
 from .engine.commands import EXECUTABLE_COMMAND_TYPE_SET, GameCommand
 from .engine.game import GameEngine
-from .rules.config import RuleSet
-from .rules.deck import DeckConstructionPolicy, InvalidDeckConstruction
+from .rules.deck import (
+    DeckConstructionPolicy,
+    InvalidDeckConstruction,
+    validate_deck_group,
+)
 from .storage.base import StoredMatch, validate_expected_version
 
 
@@ -62,12 +65,16 @@ class MatchService:
         engine_factory: Callable[[], GameEngine] | None = None,
         catalog: CardCatalog | CollectionRegistry | None = None,
         deck_policy: DeckConstructionPolicy | None = None,
+        require_equal_points: bool = False,
     ) -> None:
+        if type(require_equal_points) is not bool:
+            raise TypeError("require_equal_points debe ser bool")
         self.store = store
         if engine_factory is not None and catalog is not None:
             raise ValueError("No se puede combinar engine_factory y catalog")
         self._engine_factory = engine_factory or (lambda: GameEngine(catalog=catalog))
         self._deck_policy = deck_policy
+        self._require_equal_points = require_equal_points
 
     def create_match(
         self,
@@ -77,12 +84,17 @@ class MatchService:
         seed: int = 0,
         auto_start: bool = True,
     ) -> int:
-        prepared_decks: Mapping[str, Iterable[CardDefinition]] = decks
+        group_result = validate_deck_group(
+            decks, require_equal_points=self._require_equal_points
+        )
+        if not group_result.is_valid:
+            raise DeckValidationFailure(group_result.issues[0].code) from None
+        prepared_decks: Mapping[str, Iterable[CardDefinition]] = group_result.decks
         if self._deck_policy is not None:
             try:
                 prepared_decks = {
                     player_id: self._deck_policy.require_valid(deck)
-                    for player_id, deck in decks.items()
+                    for player_id, deck in prepared_decks.items()
                 }
             except InvalidDeckConstruction:
                 raise DeckValidationFailure from None

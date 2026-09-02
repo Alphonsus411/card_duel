@@ -48,6 +48,7 @@ from .engine.game import EngineSemantics, GameEngine
 from .persistence import dump_replay, dump_snapshot, load_snapshot, replay_from_log
 from .rules import (
     DeckConstructionPolicy,
+    DeckGroupValidationResult,
     DeckValidationIssue,
     DeckValidationResult,
     InvalidDeckConstruction,
@@ -55,6 +56,7 @@ from .rules import (
     classic_deck_policy,
     deck_points,
     mythic_deck_policy,
+    validate_deck_group,
 )
 from .service import CommandSource, MatchService, MatchView
 from .storage import InMemoryMatchStore, SQLiteMatchStore, VersionConflict
@@ -102,6 +104,7 @@ __all__ = [
     "MatchView",
     "CommandSource",
     "DeckConstructionPolicy",
+    "DeckGroupValidationResult",
     "DeckValidationIssue",
     "DeckValidationResult",
     "InvalidDeckConstruction",
@@ -109,6 +112,7 @@ __all__ = [
     "classic_deck_policy",
     "deck_points",
     "mythic_deck_policy",
+    "validate_deck_group",
     "SQLiteMatchStore",
     "VersionConflict",
     "dump_replay",

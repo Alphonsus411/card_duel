@@ -1,5 +1,6 @@
 from dataclasses import FrozenInstanceError
 from hashlib import sha256
+import json
 
 import pytest
 
@@ -27,6 +28,30 @@ from card_duel_engine.domain.enums import CardKind, CardRank, Keyword
 from card_duel_engine.domain.models import CardDefinition
 from card_duel_engine.service import DeckValidationFailure
 from card_duel_engine.storage import MatchNotFound
+
+
+EXPECTED_PUBLIC_NAMES = {
+    "base-c001": "Iniciado de la Brasa",
+    "base-c002": "Centinela de la Arboleda",
+    "base-c003": "Duelista del Horizonte",
+    "base-c004": "Guardián de Espalda Pétrea",
+    "base-c005": "Vanguardia de Ceniza",
+    "base-c006": "Coloso Frondoso",
+    "base-c007": "Primer Campeón de la Arena",
+    "base-c008": "Guardián de la Arboleda Ancestral",
+}
+
+# Línea base mecánica y editorial estable anterior al cambio de nombres públicos.
+EXPECTED_STABLE_CARD_DATA = (
+    ("base-c001", "BASE-001", "Ember Initiate", 1, 1, frozenset(), frozenset({"warrior"})),
+    ("base-c002", "BASE-002", "Grove Sentinel", 2, 3, frozenset(), frozenset({"guardian"})),
+    ("base-c003", "BASE-003", "Skyline Duelist", 3, 2, frozenset({Keyword.CAN_CHALLENGE}), frozenset({"warrior"})),
+    ("base-c004", "BASE-004", "Stoneback Warden", 4, 5, frozenset(), frozenset({"guardian"})),
+    ("base-c005", "BASE-005", "Ashen Vanguard", 5, 4, frozenset(), frozenset({"warrior"})),
+    ("base-c006", "BASE-006", "Verdant Colossus", 6, 7, frozenset(), frozenset({"beast"})),
+    ("base-c007", "BASE-007", "First Arena Champion", 7, 6, frozenset({Keyword.CAN_CHALLENGE}), frozenset({"warrior"})),
+    ("base-c008", "BASE-008", "Ancient Grove Keeper", 8, 9, frozenset(), frozenset({"guardian"})),
+)
 
 
 @pytest.fixture
@@ -166,9 +191,27 @@ def test_base_presentations_have_explicit_stable_tokens_and_matching_ids() -> No
         card.card_id for card in BASE_CARD_DEFINITIONS
     )
     assert all(card.art == "" for card in BASE_CARD_PRESENTATIONS)
-    assert tuple(card.name for card in BASE_CARD_PRESENTATIONS) == tuple(
-        card.name for card in BASE_CARD_DEFINITIONS
+    assert {card.card_id: card.name for card in BASE_CARD_PRESENTATIONS} == (
+        EXPECTED_PUBLIC_NAMES
     )
+
+
+def test_public_name_translation_preserves_all_stable_card_data() -> None:
+    presentations = {card.card_id: card for card in BASE_CARD_PRESENTATIONS}
+    actual = tuple(
+        (
+            definition.card_id,
+            presentations[definition.card_id].token,
+            definition.name,
+            definition.cost,
+            definition.base_strength,
+            definition.keywords,
+            definition.subtypes,
+        )
+        for definition in BASE_CARD_DEFINITIONS
+    )
+
+    assert actual == EXPECTED_STABLE_CARD_DATA
 
 
 def test_base_presentation_text_only_describes_declared_challenge_keyword() -> None:
@@ -176,6 +219,9 @@ def test_base_presentation_text_only_describes_declared_challenge_keyword() -> N
     for presentation in BASE_CARD_PRESENTATIONS:
         has_challenge = Keyword.CAN_CHALLENGE in definitions[presentation.card_id].keywords
         assert bool(presentation.rules_text) is has_challenge
+        assert presentation.rules_text == (
+            "Puede desafiar a otras criaturas." if has_challenge else ""
+        )
 
 
 def test_base_catalog_builders_return_complete_validated_corpus() -> None:
@@ -215,6 +261,24 @@ def test_base_public_catalog_joins_independent_sources_by_card_id() -> None:
         definition.card_id for definition in BASE_CARD_DEFINITIONS
     )
     assert len(public.cards) == 8
+    assert {card.card_id: card.name for card in public.cards} == EXPECTED_PUBLIC_NAMES
+    assert tuple(
+        (
+            card.card_id,
+            card.token,
+            card.mechanical_name,
+            card.cost,
+            card.base_strength,
+            frozenset(
+                {Keyword.CAN_CHALLENGE}
+                if "can_challenge" in card.keywords
+                else set()
+            ),
+            frozenset(card.subtypes),
+        )
+        for card in public.cards
+    ) == EXPECTED_STABLE_CARD_DATA
+    assert isinstance(json.dumps(public.to_dict(), ensure_ascii=False), str)
 
 
 def test_failed_batch_keeps_complete_base_registry_snapshot_unchanged() -> None:

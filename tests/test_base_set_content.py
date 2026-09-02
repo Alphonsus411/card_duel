@@ -3,6 +3,14 @@ from hashlib import sha256
 
 import pytest
 
+from card_duel_engine import (
+    DeckConstructionPolicy,
+    InMemoryMatchStore,
+    MatchService,
+    classic_deck_policy,
+    deck_points,
+    validate_deck_group,
+)
 from card_duel_engine.content import (
     BASE_CARD_DEFINITIONS,
     BASE_CARD_PRESENTATIONS,
@@ -15,8 +23,28 @@ from card_duel_engine.content import (
     build_base_public_card_catalog,
 )
 from card_duel_engine.content import CollectionManifest, dump_manifest
-from card_duel_engine.domain.models import CardDefinition
 from card_duel_engine.domain.enums import CardKind, CardRank, Keyword
+from card_duel_engine.domain.models import CardDefinition
+from card_duel_engine.service import DeckValidationFailure
+from card_duel_engine.storage import MatchNotFound
+
+
+@pytest.fixture
+def base_deck() -> tuple[CardDefinition, ...]:
+    """Construye la microcolección como un mazo mediante datos publicados."""
+
+    return tuple(card for card in BASE_SET_MANIFEST.cards for _ in range(5))
+
+
+@pytest.fixture
+def base_deck_policy() -> DeckConstructionPolicy:
+    """Permite recombinar el corpus sin imponer una novena definición."""
+
+    return classic_deck_policy(
+        allowed_set_ids={BASE_SET_ID},
+        max_standard_copies=None,
+        point_budget=180,
+    )
 
 
 def test_base_set_is_a_deterministic_tuple_of_eight_unique_definitions() -> None:
@@ -48,6 +76,78 @@ def test_base_set_covers_supported_creature_mechanics() -> None:
         Keyword.CAN_CHALLENGE in card.keywords and card.subtypes
         for card in BASE_CARD_DEFINITIONS
     )
+
+
+def test_base_deck_uses_five_copies_and_authoritative_costs(
+    base_deck: tuple[CardDefinition, ...],
+) -> None:
+    assert tuple(card.cost for card in BASE_SET_MANIFEST.cards) == tuple(range(1, 9))
+    assert len(base_deck) == 40
+    assert all(base_deck.count(card) == 5 for card in BASE_SET_MANIFEST.cards)
+    assert deck_points(base_deck) == 180
+
+
+def test_equal_base_decks_pass_group_validation_and_create_a_match(
+    base_deck: tuple[CardDefinition, ...], base_deck_policy
+) -> None:
+    decks = {"A": base_deck, "B": tuple(base_deck)}
+    group_result = validate_deck_group(decks, require_equal_points=True)
+    assert group_result.is_valid
+    assert tuple(deck_points(deck) for deck in group_result.decks.values()) == (180, 180)
+
+    store = InMemoryMatchStore()
+    service = MatchService(
+        store,
+        catalog=build_base_collection_registry(),
+        deck_policy=base_deck_policy,
+        require_equal_points=True,
+    )
+    assert service.create_match("base-equal", decks, seed=17) == 1
+    assert store.load("base-equal").engine.state is not None
+
+
+def test_unequal_recombination_is_rejected_without_persisting_match(
+    base_deck: tuple[CardDefinition, ...], base_deck_policy
+) -> None:
+    # Se sustituye una copia por otra definición ya publicada: conserva las 40
+    # cartas y no modifica el corpus, pero reduce el total de 180 a 179.
+    unequal_deck = base_deck[:-1] + (BASE_SET_MANIFEST.cards[-2],)
+    assert deck_points(base_deck) == 180
+    assert deck_points(unequal_deck) == 179
+    assert base_deck_policy.validate(unequal_deck).is_valid
+
+    store = InMemoryMatchStore()
+    service = MatchService(
+        store,
+        catalog=build_base_collection_registry(),
+        deck_policy=base_deck_policy,
+        require_equal_points=True,
+    )
+    with pytest.raises(DeckValidationFailure):
+        service.create_match(
+            "base-unequal", {"A": base_deck, "B": unequal_deck}, seed=17
+        )
+    with pytest.raises(MatchNotFound):
+        store.load("base-unequal")
+
+
+def test_three_equal_base_decks_create_a_match(
+    base_deck: tuple[CardDefinition, ...], base_deck_policy
+) -> None:
+    decks = {player: tuple(base_deck) for player in ("A", "B", "C")}
+    assert all(deck_points(deck) == 180 for deck in decks.values())
+
+    store = InMemoryMatchStore()
+    service = MatchService(
+        store,
+        catalog=build_base_collection_registry(),
+        deck_policy=base_deck_policy,
+        require_equal_points=True,
+    )
+    assert service.create_match("base-three-player", decks, seed=23) == 1
+    state = store.load("base-three-player").engine.state
+    assert state is not None
+    assert state.turn_order == ("A", "B", "C")
 
 
 def test_base_presentations_have_explicit_stable_tokens_and_matching_ids() -> None:

@@ -24,16 +24,32 @@ editorial.
 `—` representa un conjunto vacío. Los nombres de enums y los identificadores de
 keywords y subtipos se reproducen como datos mecánicos canónicos.
 
-| `card_id` | Token | Nombre mecánico | Nombre editorial | Kind | Coste | Rank | Fuerza | Keywords | Subtipos |
+| `card_id` | Token | Nombre mecánico histórico | Nombre público español | Kind | Coste | Rank | Fuerza | Keywords | Subtipos |
 | --- | --- | --- | --- | --- | ---: | --- | ---: | --- | --- |
-| `base-c001` | `BASE-001` | Ember Initiate | Ember Initiate | `CREATURE` | 1 | `STANDARD` | 1 | — | `warrior` |
-| `base-c002` | `BASE-002` | Grove Sentinel | Grove Sentinel | `CREATURE` | 2 | `STANDARD` | 3 | — | `guardian` |
-| `base-c003` | `BASE-003` | Skyline Duelist | Skyline Duelist | `CREATURE` | 3 | `STANDARD` | 2 | `CAN_CHALLENGE` | `warrior` |
-| `base-c004` | `BASE-004` | Stoneback Warden | Stoneback Warden | `CREATURE` | 4 | `STANDARD` | 5 | — | `guardian` |
-| `base-c005` | `BASE-005` | Ashen Vanguard | Ashen Vanguard | `CREATURE` | 5 | `STANDARD` | 4 | — | `warrior` |
-| `base-c006` | `BASE-006` | Verdant Colossus | Verdant Colossus | `CREATURE` | 6 | `STANDARD` | 7 | — | `beast` |
-| `base-c007` | `BASE-007` | First Arena Champion | First Arena Champion | `CREATURE` | 7 | `STANDARD` | 6 | `CAN_CHALLENGE` | `warrior` |
-| `base-c008` | `BASE-008` | Ancient Grove Keeper | Ancient Grove Keeper | `CREATURE` | 8 | `STANDARD` | 9 | — | `guardian` |
+| `base-c001` | `BASE-001` | Ember Initiate | Iniciado de la Brasa | `CREATURE` | 1 | `STANDARD` | 1 | — | `warrior` |
+| `base-c002` | `BASE-002` | Grove Sentinel | Centinela de la Arboleda | `CREATURE` | 2 | `STANDARD` | 3 | — | `guardian` |
+| `base-c003` | `BASE-003` | Skyline Duelist | Duelista del Horizonte | `CREATURE` | 3 | `STANDARD` | 2 | `CAN_CHALLENGE` | `warrior` |
+| `base-c004` | `BASE-004` | Stoneback Warden | Guardián de Espalda Pétrea | `CREATURE` | 4 | `STANDARD` | 5 | — | `guardian` |
+| `base-c005` | `BASE-005` | Ashen Vanguard | Vanguardia de Ceniza | `CREATURE` | 5 | `STANDARD` | 4 | — | `warrior` |
+| `base-c006` | `BASE-006` | Verdant Colossus | Coloso Frondoso | `CREATURE` | 6 | `STANDARD` | 7 | — | `beast` |
+| `base-c007` | `BASE-007` | First Arena Champion | Primer Campeón de la Arena | `CREATURE` | 7 | `STANDARD` | 6 | `CAN_CHALLENGE` | `warrior` |
+| `base-c008` | `BASE-008` | Ancient Grove Keeper | Guardián de la Arboleda Ancestral | `CREATURE` | 8 | `STANDARD` | 9 | — | `guardian` |
+
+## Correspondencia de nombres
+
+La traducción afecta sólo al nombre visible de `CardPresentation`; el nombre
+mecánico histórico de `CardDefinition` permanece estable.
+
+| Inglés (mecánico histórico) | Español (público) |
+| --- | --- |
+| Ember Initiate | Iniciado de la Brasa |
+| Grove Sentinel | Centinela de la Arboleda |
+| Skyline Duelist | Duelista del Horizonte |
+| Stoneback Warden | Guardián de Espalda Pétrea |
+| Ashen Vanguard | Vanguardia de Ceniza |
+| Verdant Colossus | Coloso Frondoso |
+| First Arena Champion | Primer Campeón de la Arena |
+| Ancient Grove Keeper | Guardián de la Arboleda Ancestral |
 
 ## Autoridad mecánica y separación editorial
 

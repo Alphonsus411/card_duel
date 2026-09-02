@@ -1,6 +1,9 @@
 # Gaps mecánicos de la microcolección de fase 2
 
-**Resultado:** **ningún gap requerido por las ocho cartas incluidas**.
+**Resultado anterior de la microcolección `base`:** **ningún gap requerido por
+sus ocho cartas**. La revisión posterior del corpus Mítico aporta por primera
+vez evidencia real adicional; no convierte las posibilidades hipotéticas de
+esta sección en requisitos.
 
 Esta evaluación se limita a las ocho candidatas reales publicadas por la
 microcolección `base`: Ember Initiate, Grove Sentinel, Skyline Duelist,
@@ -85,6 +88,54 @@ abrir un gap sustentado por ese texto y cubrir, como mínimo:
 Ese seguimiento deberá seguir excluyendo condicionales por `card_id`. Esta nota
 no reserva una implementación ni convierte las capacidades deliberadamente
 evitadas en trabajo pendiente.
+
+### Gaps demostrados por el corpus Mítico
+
+La matriz de `PHASE_2C_MYTHIC_CORPUS.md` es la fuente de clasificación. Los
+números siguientes son los tokens originales impresos en el PDF, no IDs de
+catálogo. Ninguna de estas cartas se publica mientras falte parte de su
+semántica.
+
+| Gap general | Evidencia PDF (nº original) | Abstracción mínima a estudiar |
+|---|---|---|
+| Taxonomía mecánica declarativa, separada de identidad editorial | 024, 029, 143, 145 | Etiquetas/tipos mecánicos validados y filtros sobre ellos |
+| Revelar desde la cima hasta coincidencia, procesando fallos | 026 | `REVEAL_UNTIL` con filtro, destinos y agotamiento explícitos |
+| Desafío iniciado por habilidad y por criatura no-Señor | 027 | Permiso de iniciador y acción disparada con ventana/objetivos |
+| Prevención/protección por causa y duración | 028, 140 | Escudo continuo con causa `COMBAT_DAMAGE` y expiración |
+| Keywords de combate ejecutables (Vuelo, Dureza, no girar, doble ataque) | 140–145 (doble ataque: 142; no girar: 140) | Keywords cerradas integradas en acciones, combate y estado |
+| Inmunidad según procedencia mecánica del efecto | 029, 140–145 | Perfil de fuente tipado y filtro de inmunidad, sin leer texto/nombre |
+| Disparo al salir o antes de mover a descarte | 142 | Trigger/reemplazo de movimiento con objetivo y orden definidos |
+
+#### Impacto transversal mínimo
+
+- **Persistencia:** todo permiso, escudo, trigger pendiente, taxonomía y estado
+  de revelación debe serializarse y validarse con versión/migración.
+- **Replay:** las elecciones, revelaciones, movimientos, fuentes de efecto y
+  declaraciones de combate deben quedar registradas; no se vuelven a sortear
+  ni a inferir desde texto editorial.
+- **Acciones legales:** `actions.py` debe enumerar únicamente ventanas y
+  objetivos válidos y ocultar información privada del mazo.
+- **Seguridad/privacidad:** el servidor valida IDs de instancia y permisos; no
+  expone candidatos ocultos ni acepta nombre, token, raza, `rules_text` o
+  `card_id` como autoridad mecánica.
+
+### Ambigüedades editoriales (no son gaps)
+
+Quedan separadas deliberadamente: quién elige el descarte de nº144, el alcance
+gramatical de “o” en la inmunidad de nº145, el máximo de Fuerza al “recuperar”
+en nº029 y la terminación de nº026 si no queda coincidencia necesitan decisión
+de reglas. Una lectura posible del PDF no justifica reabrir el motor. Sólo tras
+resolver editorialmente cada contrato se decidirá si una abstracción general
+ya existente basta.
+
+### Prohibición de identidad como lógica
+
+`rules_text`, nombre, token, raza y `card_id` no pueden participar en la
+resolución mecánica. Son presentación, procedencia o identidad; no capacidades.
+Los gaps anteriores sólo podrán cerrarse mediante enums, filtros, efectos,
+keywords, triggers y costes declarativos generales. Se prohíben comparaciones
+de cadenas, inferencias por raza editorial y condicionales para números o IDs
+concretos.
 
 ## Conformidad de construcción de mazos
 

@@ -401,7 +401,8 @@ class DeckConstructionPolicyTests(unittest.TestCase):
         self.assertTrue(mythic_deck_policy().validate(deck).is_valid)
         configured_result = mythic_deck_policy(point_budget=300).validate(deck)
         self.assertEqual(
-            [issue.code for issue in configured_result.issues], ["points.exceeded"]
+            [issue.code for issue in configured_result.issues],
+            ["deck.points_exceeded"],
         )
 
     def test_explicitly_unbounded_profiles_accept_points_above_unconfigured_figures(self):

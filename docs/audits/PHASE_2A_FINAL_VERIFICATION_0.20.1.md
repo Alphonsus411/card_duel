@@ -65,17 +65,24 @@ se añadió ningún efecto, resolutor, keyword, persistencia o replay nuevo.
 
 ## ENGINE CHANGES
 
-**Ninguno.** La revisión nominal y del diff completo no encuentra cambios en
-`engine`, `rules`, `domain`, `CardDefinition`, `application`, `service`,
-`persistence`, `replay` ni `transport`. El único ajuste a código existente es
-la exportación mínima desde `src/card_duel_engine/content/__init__.py`; el resto
-del código propio de la fase es el nuevo módulo declarativo de contenido.
+**FAIL de alcance.** El diff autoritativo no toca `engine/`, `application.py`,
+`persistence/`, `replay` ni `transport`, pero sí modifica
+`rules/__init__.py`, `rules/deck.py`, `domain/models.py`, `service.py` y la
+exportación raíz `src/card_duel_engine/__init__.py`. En particular modifica la documentación contractual de
+`CardDefinition` para fijar la semántica de puntos y añade políticas/validación
+de puntos de mazo en reglas y servicio. Por tanto no es cierto, para el rango completo
+solicitado, que Fase 2-A sólo añada contenido, tests y documentación con el único
+ajuste permitido en `content/__init__.py`.
 
 ## TEST RESULTS
 
-**PASS.** `uv run python -m pytest -q`: 655 passed, 1 skipped y 785 subtests
-passed en 149,31 s. La ejecución posterior bajo coverage ejecutó 656 pruebas y
-785 subtests sin fallos. `git diff --check` también terminó con código 0.
+**PASS tras una corrección mínima de test.** La primera ejecución descubrió
+una expectativa obsoleta (`points.exceeded`) frente al contrato ya usado
+`deck.points_exceeded`: 1 fallo, 685 aprobadas, 1 omitida y 816 subtests. Se
+corrigió únicamente esa expectativa. La ejecución final de
+`uv run python -m pytest -q` obtuvo **687 passed y 816 subtests passed** en
+107,12 s; coverage repitió las 687 pruebas y 816 subtests sin fallos.
+`git diff --check` terminó con código 0.
 
 ## MYPY RESULT
 
@@ -85,26 +92,25 @@ archivos fuente, que es el path configurado por `tool.mypy.files`.
 ## COVERAGE RESULT
 
 **PASS.** `uv run python -m coverage run --branch -m pytest -q` seguido de
-`uv run python -m coverage report`: **90 %**, por encima del umbral **88 %**.
-El informe incluye los módulos nuevos de contenido; `base_set.py` queda entre
-los 18 archivos omitidos del detalle por tener cobertura completa.
+`uv run python -m coverage report`: **90 %** sobre 4.431 statements y 1.592
+branches, por encima del umbral **88 %**. El informe incluye los módulos nuevos
+de contenido; `base_set.py` queda entre los 18 archivos omitidos del detalle por
+tener cobertura completa.
 
 ## PYTHON 3.11 RESULT
 
-**PASS ejecutado realmente.** Tras `uv sync --python 3.11 --locked --extra dev`,
-el perfil runtime terminó con `OK: perfil runtime completado`. Un primer intento
-con `uv run --python 3.11` sin sincronizar el extra dev falló por ausencia de
-`mypy`; no se considera aprobación y fue corregido reproduciendo el setup de CI.
+**PASS ejecutado realmente.** `uv sync --python 3.11 --locked --extra dev` y
+el perfil runtime terminaron correctamente bajo **CPython 3.11.13**.
 
 ## PYTHON 3.12 RESULT
 
 **PASS ejecutado realmente.** `uv sync --python 3.12 --locked --extra dev` y el
-perfil runtime terminaron con `OK: perfil runtime completado`.
+perfil runtime terminaron correctamente bajo **CPython 3.12.11**.
 
 ## PYTHON 3.13 RESULT
 
 **PASS ejecutado realmente.** `uv sync --python 3.13 --locked --extra dev` y el
-perfil runtime terminaron con `OK: perfil runtime completado`.
+perfil runtime terminaron correctamente bajo **CPython 3.13.5**.
 
 ## FULL CI RESULT
 
@@ -132,8 +138,16 @@ tabla de comportamiento ni despacho mecánico basado en un ID concreto.
 
 El baseline autoritativo contiene cinco archivos **preexistentes**, ajenos a
 Fase 2-A: el informe final de Fase 1 y cuatro JSON de release bajo
-`docs/release-results/0.20.1/`. Los cambios propios de Fase 2-A son contenido,
-tests y documentación, más el ajuste mínimo de exportación indicado.
+`docs/release-results/0.20.1/`. Separados éstos, el rango posterior incluye los
+cambios de contenido y documentación, pero también los cambios de reglas,
+dominio, servicio y exportaciones enumerados en `ENGINE CHANGES`; no se los
+oculta ni se los reclasifica como preexistentes.
+
+La búsqueda de IDs concretos encontró sus declaraciones como datos y una
+aserción de mensaje de error en tests, pero **ninguna comparación ni despacho
+mecánico basado en IDs concretos**. Tampoco aparecieron arte final, frontend,
+Expo, TypeScript, HTTP, autenticación nueva, matchmaking, economía, progresión,
+despliegue, tags, dependencias o cambios de versión.
 
 ## ROADMAP STATUS
 
@@ -143,8 +157,11 @@ deck builder, UI o arte.
 
 ## PHASE 2-A VERDICT
 
-**GO — PHASE 2-A COMPLETE**
+**NO-GO — PHASE 2-A NOT CLOSED.** Los controles técnicos pasan, pero el control
+obligatorio de alcance falla porque el diff contiene cambios de dominio, reglas,
+servicio y exportación raíz fuera de la excepción permitida. En consecuencia no
+se emite la frase de cierre `GO — PHASE 2-A COMPLETE`.
 
 ## PHASE 2 VERDICT
 
-**PHASE 2 — IN PROGRESS**
+**PHASE 2 — IN PROGRESS.**

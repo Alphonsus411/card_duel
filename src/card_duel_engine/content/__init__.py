@@ -1,4 +1,5 @@
 """Contenido canónico y contratos para colecciones extensibles."""
+
 from .base_set import (
     BASE_CARD_DEFINITIONS,
     BASE_CARD_PRESENTATIONS,
@@ -19,13 +20,30 @@ from .manifest import (
     register_manifest,
     save_manifest_file,
 )
+from .mythic_set import (
+    MYTHIC_CARD_DEFINITIONS,
+    MYTHIC_CARD_PRESENTATIONS,
+    MYTHIC_SET_ID,
+    MYTHIC_SET_MANIFEST,
+    MYTHIC_SET_REVISION,
+    build_mythic_card_catalog,
+    build_mythic_card_presentation_catalog,
+    build_mythic_catalogs,
+    build_mythic_collection_registry,
+    build_mythic_public_card_catalog,
+)
 from .registry import (
     CollectionProvenance,
     CollectionRegistry,
     CollectionRegistrySnapshot,
     CollectionTrustPolicy,
 )
-from .registry import PermissiveCollectionTrustPolicy, TrustedKey, TrustedKeyResolver, TrustPolicy
+from .registry import (
+    PermissiveCollectionTrustPolicy,
+    TrustedKey,
+    TrustedKeyResolver,
+    TrustPolicy,
+)
 from .signature import (
     CollectionSignatureEnvelope,
     dump_signature_envelope,
@@ -49,6 +67,16 @@ __all__ = [
     "load_manifest_file",
     "register_manifest",
     "save_manifest_file",
+    "MYTHIC_CARD_DEFINITIONS",
+    "MYTHIC_CARD_PRESENTATIONS",
+    "MYTHIC_SET_ID",
+    "MYTHIC_SET_MANIFEST",
+    "MYTHIC_SET_REVISION",
+    "build_mythic_card_catalog",
+    "build_mythic_card_presentation_catalog",
+    "build_mythic_catalogs",
+    "build_mythic_collection_registry",
+    "build_mythic_public_card_catalog",
     "CollectionProvenance",
     "CollectionRegistry",
     "CollectionRegistrySnapshot",

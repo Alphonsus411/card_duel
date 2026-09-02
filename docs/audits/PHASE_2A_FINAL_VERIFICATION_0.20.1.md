@@ -4,9 +4,16 @@
 
 Fase 2-A incorpora una microcolección declarativa, su presentación editorial,
 manifiesto, registro y catálogo público, junto con pruebas integrales y
-documentación. El rango propio de la fase es
-`a3b164f7735f55f37b53808160a56ad54861c7c9..HEAD`; el rango autoritativo total
-parte de `0c0f405a77204b6fef046c320f1444f5f0795261`.
+documentación. El rango histórico e inmutable propio de la fase es
+`a3b164f7735f55f37b53808160a56ad54861c7c9..82a6b5b433b623590d7c21ad9e6d41a56ab0fc1`;
+el rango autoritativo total parte de
+`0c0f405a77204b6fef046c320f1444f5f0795261`.
+
+Ese rango real de implementación de 2-A contiene `docs/BASE_CARD_SET.md`, la
+documentación de gaps y del baseline, `src/card_duel_engine/content/`, las
+pruebas de contenido y los cambios documentales asociados. El commit
+`82a6b5b433b623590d7c21ad9e6d41a56ab0fc1` fija el baseline de cierre de 2-A;
+ningún cambio posterior se usa para juzgar su alcance histórico.
 
 ## BASE SET SIZE
 
@@ -65,24 +72,43 @@ se añadió ningún efecto, resolutor, keyword, persistencia o replay nuevo.
 
 ## ENGINE CHANGES
 
-**FAIL de alcance.** El diff autoritativo no toca `engine/`, `application.py`,
-`persistence/`, `replay` ni `transport`, pero sí modifica
-`rules/__init__.py`, `rules/deck.py`, `domain/models.py`, `service.py` y la
-exportación raíz `src/card_duel_engine/__init__.py`. En particular modifica la documentación contractual de
-`CardDefinition` para fijar la semántica de puntos y añade políticas/validación
-de puntos de mazo en reglas y servicio. Por tanto no es cierto, para el rango completo
-solicitado, que Fase 2-A sólo añada contenido, tests y documentación con el único
-ajuste permitido en `content/__init__.py`.
+**PASS de alcance para 2-A.** El rango inmutable
+`a3b164f7735f55f37b53808160a56ad54861c7c9..82a6b5b433b623590d7c21ad9e6d41a56ab0fc1`
+no toca `engine/`, `application.py`, `persistence/`, `replay`, `transport`,
+reglas, dominio ni servicio. Sus cambios de código quedan dentro de
+`src/card_duel_engine/content/`; el resto corresponde a pruebas y documentación
+de la microcolección y de sus gaps mecánicos.
+
+## CAMBIOS POSTERIORES DE FASE 2-B
+
+El rango posterior, también inmutable,
+`82a6b5b433b623590d7c21ad9e6d41a56ab0fc1..74389c66f1c51b53ff9a93b819dc360b668d8ac2`
+mantiene visibles cambios de Fase 2-B en `rules/deck.py`, `rules/__init__.py`,
+`domain/models.py`, `service.py`, `src/card_duel_engine/__init__.py` y sus
+pruebas y documentación asociadas. Estos cambios fijan semántica y validación
+de puntos de mazo, pero son posteriores al baseline de 2-A: se registran para
+conservar la trazabilidad y **no se utilizan para evaluar el alcance histórico
+de Fase 2-A**.
 
 ## TEST RESULTS
 
-**PASS tras una corrección mínima de test.** La primera ejecución descubrió
-una expectativa obsoleta (`points.exceeded`) frente al contrato ya usado
-`deck.points_exceeded`: 1 fallo, 685 aprobadas, 1 omitida y 816 subtests. Se
-corrigió únicamente esa expectativa. La ejecución final de
+**PASS registrado en la verificación que culminó en `74389c6`.** La primera
+ejecución descubrió una expectativa obsoleta (`points.exceeded`) frente al
+contrato ya usado `deck.points_exceeded`: 1 fallo, 685 aprobadas, 1 omitida y
+816 subtests. Se corrigió únicamente esa expectativa. La ejecución final de
 `uv run python -m pytest -q` obtuvo **687 passed y 816 subtests passed** en
 107,12 s; coverage repitió las 687 pruebas y 816 subtests sin fallos.
-`git diff --check` terminó con código 0.
+`git diff --check` terminó con código 0. Estas cifras son evidencia histórica
+ya registrada: no se atribuyen al SHA documental creado por esta corrección.
+
+**PASS de la ejecución final de esta corrección documental.** Tras sincronizar
+el extra de desarrollo bloqueado, `uv run python -m pytest -q` obtuvo **686
+passed, 1 skipped y 816 subtests passed** en 108,69 s. Esta es la única cifra de
+pytest atribuida a la ejecución que acompaña al nuevo SHA documental.
+
+Los resultados de mypy, coverage, matrices de Python y CI que siguen son la
+evidencia ya registrada en la verificación de `74389c6`; se conservan por
+trazabilidad y no se presentan como nuevas ejecuciones del SHA documental.
 
 ## MYPY RESULT
 
@@ -138,10 +164,11 @@ tabla de comportamiento ni despacho mecánico basado en un ID concreto.
 
 El baseline autoritativo contiene cinco archivos **preexistentes**, ajenos a
 Fase 2-A: el informe final de Fase 1 y cuatro JSON de release bajo
-`docs/release-results/0.20.1/`. Separados éstos, el rango posterior incluye los
-cambios de contenido y documentación, pero también los cambios de reglas,
-dominio, servicio y exportaciones enumerados en `ENGINE CHANGES`; no se los
-oculta ni se los reclasifica como preexistentes.
+`docs/release-results/0.20.1/`. Separados éstos, el rango propio de 2-A incluye
+los cambios de contenido, pruebas y documentación enumerados en
+`IMPLEMENTATION SUMMARY`. Los cambios posteriores de reglas, dominio, servicio
+y exportaciones permanecen expresamente visibles en `CAMBIOS POSTERIORES DE
+FASE 2-B`; no se ocultan ni se reclasifican como preexistentes o como 2-A.
 
 La búsqueda de IDs concretos encontró sus declaraciones como datos y una
 aserción de mensaje de error en tests, pero **ninguna comparación ni despacho
@@ -157,10 +184,9 @@ deck builder, UI o arte.
 
 ## PHASE 2-A VERDICT
 
-**NO-GO — PHASE 2-A NOT CLOSED.** Los controles técnicos pasan, pero el control
-obligatorio de alcance falla porque el diff contiene cambios de dominio, reglas,
-servicio y exportación raíz fuera de la excepción permitida. En consecuencia no
-se emite la frase de cierre `GO — PHASE 2-A COMPLETE`.
+**GO — PHASE 2-A COMPLETE.** Los controles técnicos pasan y el rango histórico
+inmutable de 2-A respeta su alcance. Los cambios posteriores de 2-B se conservan
+en este informe únicamente como trazabilidad y no alteran este veredicto.
 
 ## PHASE 2 VERDICT
 

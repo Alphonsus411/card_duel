@@ -9,10 +9,12 @@ Desde esa frontera el documento contiene un **corpus de cartas concretas**, no
 evidencia automática de reglas universales. El inventario histórico y su
 clasificación D se conservan en `MYTHIC_RULES_AUDIT.md`.
 
-Esta entrega **no importa ninguna carta Mítica** y las cartas Míticas **no
-pertenecen actualmente al paquete** `card_duel_engine`. El código de producción
-ofrece modelos, motor y registro; no debe incluir instancias, listas o
-definiciones concretas del catálogo del PDF.
+La revisión 1 de la colección explícita `mythic` importa únicamente las cartas
+023 y 025, cuya semántica completa fue clasificada `SUPPORTED`. Las once cartas
+restantes de Elfo y Ángel siguen bloqueadas como `PARTIAL` o `GAP`; no se
+incorporarán hasta que puedan representarse sin degradación. La importación del
+paquete sólo expone constructores y constantes: no rellena registros ni
+catálogos creados por el consumidor.
 
 ## Contrato de una integración futura
 

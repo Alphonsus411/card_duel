@@ -87,18 +87,25 @@ class MythicDocumentationTests(unittest.TestCase):
     def test_each_validation_references_only_its_release_result_directory(self):
         for version in ("0.20.0", "0.20.1"):
             validation = (DOCS / f"VALIDATION_{version}.md").read_text(encoding="utf-8")
-            references = set(re.findall(r"release-results/([0-9]+\.[0-9]+\.[0-9]+)/", validation))
+            references = set(
+                re.findall(r"release-results/([0-9]+\.[0-9]+\.[0-9]+)/", validation)
+            )
             self.assertEqual(references, {version})
             for path in (DOCS / "release-results" / version).glob("*.json"):
                 with self.subTest(version=version, path=path.name):
-                    self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["version"], version)
+                    self.assertEqual(
+                        json.loads(path.read_text(encoding="utf-8"))["version"], version
+                    )
 
     def test_traceability_decision_column_uses_closed_vocabulary(self):
         decisions = traceability_decisions()
         self.assertTrue(decisions)
         self.assertEqual(
-            {identifier: value for identifier, value in decisions.items()
-             if value not in TRACEABILITY_DECISIONS},
+            {
+                identifier: value
+                for identifier, value in decisions.items()
+                if value not in TRACEABILITY_DECISIONS
+            },
             {},
         )
 
@@ -158,14 +165,18 @@ class MythicDocumentationTests(unittest.TestCase):
             tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
             for node in ast.walk(tree):
                 if isinstance(node, ast.Call) and (
-                    isinstance(node.func, ast.Name) and node.func.id == "CardDefinition"
+                    isinstance(node.func, ast.Name)
+                    and node.func.id == "CardDefinition"
                     or isinstance(node.func, ast.Attribute)
                     and node.func.attr == "CardDefinition"
                 ):
                     calls.append(path.relative_to(ROOT).as_posix())
         self.assertEqual(
             set(calls),
-            {"src/card_duel_engine/content/base_set.py"},
+            {
+                "src/card_duel_engine/content/base_set.py",
+                "src/card_duel_engine/content/mythic_set.py",
+            },
             "Las cartas concretas deben permanecer en módulos de contenido",
         )
 

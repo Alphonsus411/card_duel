@@ -114,7 +114,7 @@ nunca sustituye la resolución del backend.
 | Fase 1 | **COMPLETE** |
 | Fase 2-A | **COMPLETE** |
 | Fase 2-B | **COMPLETE** |
-| Fase 2-C | **NEXT** |
+| Fase 2-C | **IN PROGRESS** |
 | Fase 2 | **IN PROGRESS** |
 | Fase 3 | **PENDING** |
 

@@ -2,9 +2,12 @@
 
 ## Estado y límites de esta entrega
 
-**Resultado:** inventario editorial completo; **ninguna definición ejecutable
-creada**. Este documento es una transcripción de trabajo que debe revisarse
-antes de incorporar contenido al motor o a un manifiesto.
+**Estado: PHASE 2-C — IN PROGRESS.** El inventario editorial está completo y
+las cartas 023 y 025, clasificadas `SUPPORTED`, se publican en la revisión 1 de
+la colección `mythic`. Las restantes once cartas de las razas seleccionadas no
+se publican: 024, 028, 029 y 140–145 están bloqueadas como `PARTIAL`; 026 y 027,
+como `GAP`. Su ausencia impide completar Elfo y Ángel, por lo que esta fase no
+puede declararse completa. No se degrada ninguna de esas semánticas.
 
 La revisión parte del commit
 `352269d8bb80d3b0f427c93c11882be5c56093e6`, destinado a `main`, y conserva

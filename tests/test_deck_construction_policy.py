@@ -14,6 +14,7 @@ from card_duel_engine import (
     classic_deck_policy,
     deck_points,
     mythic_deck_policy,
+    validate_deck_group,
 )
 from card_duel_engine.domain.enums import CardKind, CardRank
 from card_duel_engine.domain.models import CardDefinition
@@ -53,6 +54,7 @@ class DeckConstructionPolicyTests(unittest.TestCase):
             yield card("second", cost=3)
 
         self.assertEqual(deck_points(one_shot()), 5)
+
         self.assertEqual(iterations, 1)
 
     def test_deck_points_is_deterministic(self):
@@ -492,6 +494,126 @@ class DeckConstructionPolicyTests(unittest.TestCase):
         self.assertEqual(str(caught.exception), "")
         with self.assertRaises(MatchNotFound):
             store.load("rejected")
+
+
+class DeckGroupValidationTests(unittest.TestCase):
+    def test_two_180_point_decks_are_equivalent(self):
+        decks = {
+            "A": [card(f"a-{index}", cost=5) for index in range(36)],
+            "B": [card(f"b-{index}", cost=10) for index in range(18)],
+        }
+
+        result = validate_deck_group(decks, require_equal_points=True)
+
+        self.assertTrue(result.is_valid)
+        self.assertEqual(tuple(map(deck_points, result.decks.values())), (180, 180))
+
+    def test_four_equivalent_decks_are_supported(self):
+        decks = {
+            player: [card(f"{player}-card", cost=180)]
+            for player in ("A", "B", "C", "D")
+        }
+
+        self.assertTrue(
+            validate_deck_group(decks, require_equal_points=True).is_valid
+        )
+
+    def test_two_different_totals_report_stable_safe_issue(self):
+        result = validate_deck_group(
+            {"A": [card("secret-a", cost=180)], "B": [card("secret-b", cost=179)]},
+            require_equal_points=True,
+        )
+
+        self.assertFalse(result.is_valid)
+        self.assertEqual(len(result.issues), 1)
+        self.assertEqual(result.issues[0].code, "decks.points_not_equal")
+        self.assertIsNone(result.issues[0].card_id)
+        self.assertNotIn("secret", result.issues[0].message)
+        self.assertNotIn("179", result.issues[0].message)
+
+    def test_one_different_deck_among_three_is_rejected(self):
+        result = validate_deck_group(
+            {
+                "A": [card("a", cost=180)],
+                "B": [card("b", cost=181)],
+                "C": [card("c", cost=180)],
+            },
+            require_equal_points=True,
+        )
+
+        self.assertEqual(
+            tuple(issue.code for issue in result.issues),
+            ("decks.points_not_equal",),
+        )
+
+    def test_disabled_rule_does_not_require_equality(self):
+        result = validate_deck_group(
+            {"A": [card("a", cost=1)], "B": [card("b", cost=999)]}
+        )
+
+        self.assertTrue(result.is_valid)
+
+    def test_generators_are_consumed_once_and_prepared_decks_are_reusable(self):
+        iterations = {"A": 0, "B": 0}
+
+        def one_shot(player: str):
+            iterations[player] += 1
+            if iterations[player] > 1:
+                raise AssertionError("segunda iteración")
+            yield card(f"{player}-card", cost=180)
+
+        result = validate_deck_group(
+            {player: one_shot(player) for player in iterations},
+            require_equal_points=True,
+        )
+
+        self.assertTrue(result.is_valid)
+        self.assertEqual(iterations, {"A": 1, "B": 1})
+        self.assertEqual(deck_points(result.decks["A"]), 180)
+        self.assertEqual(deck_points(result.decks["A"]), 180)
+
+    def test_result_is_deterministic_regardless_of_key_order(self):
+        decks = {
+            "A": [card("a", cost=180)],
+            "B": [card("b", cost=179)],
+            "C": [card("c", cost=180)],
+        }
+
+        first = validate_deck_group(decks, require_equal_points=True)
+        reversed_result = validate_deck_group(
+            dict(reversed(tuple(decks.items()))), require_equal_points=True
+        )
+
+        self.assertEqual(first.issues, reversed_result.issues)
+
+    def test_public_boolean_configuration_is_strict(self):
+        for invalid in (None, 0, 1, "true"):
+            with self.subTest(invalid=invalid):
+                with self.assertRaises(TypeError):
+                    validate_deck_group({}, require_equal_points=invalid)  # type: ignore[arg-type]
+                with self.assertRaises(TypeError):
+                    MatchService(
+                        InMemoryMatchStore(), require_equal_points=invalid  # type: ignore[arg-type]
+                    )
+
+    def test_match_service_applies_rule_before_engine_construction(self):
+        engine_factory = patch("card_duel_engine.service.GameEngine").start()
+        self.addCleanup(patch.stopall)
+        service = MatchService(
+            InMemoryMatchStore(),
+            engine_factory=engine_factory,
+            require_equal_points=True,
+        )
+
+        with self.assertRaisesRegex(
+            DeckValidationFailure, "^decks\\.points_not_equal$"
+        ):
+            service.create_match(
+                "unequal",
+                {"A": [card("a", cost=1)], "B": [card("b", cost=2)]},
+            )
+
+        engine_factory.assert_not_called()
 
 
 if __name__ == "__main__":

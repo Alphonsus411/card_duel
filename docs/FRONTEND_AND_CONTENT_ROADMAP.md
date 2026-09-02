@@ -112,14 +112,16 @@ nunca sustituye la resolución del backend.
 | Fase 1-B | **COMPLETE** |
 | Fase 1-C | **COMPLETE** |
 | Fase 1 | **COMPLETE** |
-| Fase 2-A — COMPLETE | Microcolección base documentada y validada |
-| Fase 2 — IN PROGRESS | Colección tokenizada en desarrollo |
-| Fase 2-B — NEXT | Siguiente entrega de contenido |
-| Fase 3 — PENDING | Shell Expo pendiente |
+| Fase 2-A | **COMPLETE** |
+| Fase 2-B | **COMPLETE** |
+| Fase 2-C | **NEXT** |
+| Fase 2 | **IN PROGRESS** |
+| Fase 3 | **PENDING** |
 
 La Fase 1 está completa. La Fase 2 está en progreso: la Fase 2-A ya cerró la
-microcolección base y la Fase 2-B es la siguiente entrega. La Fase 3 permanece
-pendiente. Estos estados no crean frontend ni inicializan Expo.
+microcolección base, la Fase 2-B ya cerró la conformidad de puntos de mazo y la
+Fase 2-C es la siguiente entrega. La Fase 3 permanece pendiente. Estos estados
+no crean frontend ni inicializan Expo.
 
 ### 4.2 Fase 1-A — COMPLETE
 
@@ -178,7 +180,22 @@ confirma que ninguna de las ocho cartas abre un gap mecánico obligatorio.
 Este estado se registró únicamente después de superar la matriz completa: suite
 de pruebas con cobertura de ramas, umbral de cobertura, tipado estático y
 construcción de los artefactos distribuibles. El cierre de Fase 2-A no completa
-la Fase 2: **Fase 2-B — NEXT** y **Fase 2 — IN PROGRESS**.
+la Fase 2: **Fase 2-B — COMPLETE**, **Fase 2-C — NEXT** y **Fase 2 — IN
+PROGRESS**.
+
+### 4.6 Fase 2-B — COMPLETE
+
+La Fase 2-B consolida `deck_points()` como cálculo reusable y mantiene
+`CardDefinition.cost` como única autoridad tanto para el coste en Pasos como
+para los puntos de construcción. Las políticas Clásica y Mítica aplican el
+mínimo base de 50 puntos; `point_budget` sigue siendo un techo opcional,
+configurable por el llamador y sin valor predeterminado normativo.
+
+La igualdad de puntos es una validación relacional para cualquier cantidad de
+mazos. Cada mazo se valida primero de forma individual y después se valida el
+grupo antes de crear o persistir una partida. El Base Set suma 180 puntos. El
+bloqueo normativo `N-POINTS-01` continúa abierto y bloqueado, por lo que este
+cierre no completa la Fase 2 ni anticipa entregables de la Fase 2-C.
 
 ## 5. Modelo de contenido y presentación
 

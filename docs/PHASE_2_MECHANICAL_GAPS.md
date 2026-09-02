@@ -85,3 +85,23 @@ abrir un gap sustentado por ese texto y cubrir, como mínimo:
 Ese seguimiento deberá seguir excluyendo condicionales por `card_id`. Esta nota
 no reserva una implementación ni convierte las capacidades deliberadamente
 evitadas en trabajo pendiente.
+
+## Conformidad de construcción de mazos
+
+La suma de los costes de las cartas para obtener los puntos del mazo ya existía
+de forma embebida en la validación. Fase 2-B la convirtió en la API reusable
+`deck_points()`, manteniendo `CardDefinition.cost` como única fuente del coste
+en Pasos y de los puntos de construcción.
+
+El mínimo base confirmado de 50 necesitaba modelado declarativo: ahora se
+expresa mediante `min_points=50` exactamente en `classic_deck_policy()` y
+`mythic_deck_policy()`, no como límite universal de una política genérica. La
+igualdad multideck necesitaba una validación separada porque relaciona varios
+mazos; `validate_deck_group()` sólo la exige si el formato activa
+`require_equal_points=True`, fuera de `DeckConstructionPolicy`.
+
+El presupuesto Mítico continúa bloqueado por `N-POINTS-01`. La discrepancia
+entre 200, 300 y 400 es una **ambigüedad normativa, no un defecto de software**:
+el código no selecciona esas cifras ni ninguna otra como presupuesto Mítico
+predeterminado. La síntesis, referencias y límites se documentan en
+`PHASE_2_DECK_POINTS_CONFORMANCE.md`.

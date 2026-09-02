@@ -605,15 +605,74 @@ class DeckGroupValidationTests(unittest.TestCase):
             require_equal_points=True,
         )
 
-        with self.assertRaisesRegex(
-            DeckValidationFailure, "^decks\\.points_not_equal$"
-        ):
+        with self.assertRaises(DeckValidationFailure) as caught:
             service.create_match(
                 "unequal",
                 {"A": [card("a", cost=1)], "B": [card("b", cost=2)]},
             )
 
         engine_factory.assert_not_called()
+        self.assertEqual(caught.exception.args, ())
+        self.assertIsNone(caught.exception.__cause__)
+
+    def test_individual_validation_precedes_group_validation_for_every_deck(self):
+        iterations = {"A": 0, "B": 0}
+
+        def one_shot(player: str, size: int):
+            iterations[player] += 1
+            yield from legal_cards(size)
+
+        service = MatchService(
+            InMemoryMatchStore(),
+            engine_factory=lambda: self.fail("no debe construirse el motor"),
+            deck_policy=mythic_deck_policy(),
+            require_equal_points=True,
+        )
+
+        with self.assertRaises(DeckValidationFailure) as caught:
+            service.create_match(
+                "invalid-before-group",
+                {"A": one_shot("A", 39), "B": one_shot("B", 40)},
+            )
+
+        self.assertEqual(iterations, {"A": 1, "B": 1})
+        self.assertEqual(caught.exception.args, ())
+        self.assertIsNone(caught.exception.__cause__)
+
+    def test_group_rejection_preserves_catalog_store_and_previous_match(self):
+        catalog = CardCatalog()
+        store = InMemoryMatchStore()
+        initial_service = MatchService(store, catalog=catalog)
+        initial_service.create_match(
+            "existing",
+            {"A": legal_cards(40), "B": legal_cards(40)},
+            seed=17,
+        )
+        records_before = dict(store._records)
+        catalog_before = catalog.definitions()
+
+        service = MatchService(
+            store,
+            catalog=catalog,
+            require_equal_points=True,
+        )
+        with (
+            patch.object(service, "_engine_factory", wraps=service._engine_factory) as factory,
+            patch.object(store, "create", wraps=store.create) as create,
+            self.assertRaises(DeckValidationFailure),
+        ):
+            service.create_match(
+                "rejected",
+                {"A": [card("a", cost=1)], "B": [card("b", cost=2)]},
+            )
+
+        factory.assert_not_called()
+        create.assert_not_called()
+        self.assertEqual(store._records, records_before)
+        self.assertEqual(catalog.definitions(), catalog_before)
+        self.assertEqual(service.get_match("existing").version, 1)
+        with self.assertRaises(MatchNotFound):
+            service.get_match("rejected")
 
 
 if __name__ == "__main__":

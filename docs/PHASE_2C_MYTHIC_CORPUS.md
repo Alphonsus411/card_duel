@@ -82,6 +82,131 @@ Cósmico.` y `Profeta del Abismo.` pueden sugerir una naturaleza fantástica,
 pero la entrada no imprime un subtipo racial inequívoco: **raza `AMBIGUOUS`**.
 Lo mismo se aplica a cualquier otra criatura no enumerada en la tabla.
 
+## Matriz de revisión mecánica (previa a cualquier cambio del motor)
+
+Esta matriz fue elaborada **antes de modificar `GameEngine`** y esta entrega no
+lo modifica. Se contrastó cada conducta con `domain/enums.py`,
+`domain/models.py` y los resolutores de `engine/effects.py`, `game.py`,
+`stack.py`, `actions.py` y `combat.py`. `SUPPORTED` significa que toda la
+habilidad puede declararse y resolverse hoy; `PARTIAL` obliga a mantener la
+carta completa fuera del catálogo ejecutable; `GAP` señala una capacidad
+general ausente, y `AMBIGUOUS`, una duda editorial que **no** abre trabajo de
+motor.
+
+Regla de frontera: `rules_text`, nombre, token, raza y `card_id` son datos de
+presentación/identidad y **no pueden participar en resolución mecánica**. En
+particular, no se admiten comparaciones de cadenas ni ramas por identidad. Una
+taxonomía requerida por reglas tendrá que ser un atributo declarativo dedicado
+(por ejemplo, un subtipo mecánico confirmado), independiente de esos cinco
+campos.
+
+### 023
+**CARD:** nº023 — `Elfo de los Bosques.`
+**SOURCE TEXT:** “Cuando el Elfo de los Bosques entre en juego, busca una carta de Recurso Rápido de tu mazo de Recursos y ponla en tu mano, baraja tu mazo.”
+**DESIRED BEHAVIOR:** Al entrar, buscar opcionalmente un `QUICK_RESOURCE` en el mazo, moverlo a la mano y barajar.
+**CURRENT ENGINE SUPPORT:** `ON_ENTER_BATTLEFIELD`, `SEARCH_ZONE`, `CardFilter.kinds`, movimiento a mano y `SHUFFLE_ZONE` cubren la secuencia y su elección pendiente.
+**CLASSIFICATION:** `SUPPORTED`.
+
+### 024
+**CARD:** nº024 — `Elfo Explorador.`
+**SOURCE TEXT:** “Cuando esta carta entre en juego, busca una carta de Elfo de tu mazo de Recursos, ponla en tu mano, baraja tu mazo.”
+**DESIRED BEHAVIOR:** Al entrar, buscar una carta perteneciente a la categoría mecánica Elfo, llevarla a la mano y barajar.
+**CURRENT ENGINE SUPPORT:** **Soportado:** disparo, búsqueda, movimiento y barajado. **Ausente:** una taxonomía racial mecánica fiable; no puede sustituirse por nombre, raza editorial, texto, token, `card_id` ni por un subtipo inferido. La carta completa queda fuera del catálogo ejecutable.
+**CLASSIFICATION:** `PARTIAL`.
+
+### 025
+**CARD:** nº025 — `Elfo Montaraz.`
+**SOURCE TEXT:** “Cuando este naipe entre en juego, busca una carta de Evento y ponla en tu mano. Baraja tu mazo de Recursos.”
+**DESIRED BEHAVIOR:** Al entrar, buscar opcionalmente un `EVENT` del mazo, llevarlo a la mano y barajar.
+**CURRENT ENGINE SUPPORT:** El disparo de entrada y la búsqueda filtrada por `CardKind.EVENT`, seguida de movimiento y barajado, existen.
+**CLASSIFICATION:** `SUPPORTED`.
+
+### 026
+**CARD:** nº026 — `Elfo Adivinador.`
+**SOURCE TEXT:** “Cuando esta carta entre en juego, mira la primera carta de tu mazo, si es de Elfo, ponla en tu mano, sino, ponla en la Pila de Descartes. Continua este proceso hasta sacar un naipe de este tipo.”
+**DESIRED BEHAVIOR:** Revelar determinísticamente desde la cima, descartando cada fallo, hasta hallar un Elfo y llevarlo a la mano, con terminación definida si no existe.
+**CURRENT ENGINE SUPPORT:** La búsqueda actual elige entre todas las coincidencias; no expresa inspección ordenada, repetición, descarte de fallos ni el caso de mazo agotado.
+**CLASSIFICATION:** `GAP`.
+
+**IS GENERAL CAPABILITY?:** Sí, revelar/procesar desde la cima hasta cumplir un predicado es reutilizable.
+**WHY?:** Cambia zonas carta por carta y no equivale a buscar.
+**MINIMAL GENERAL ABSTRACTION:** Efecto declarativo `REVEAL_UNTIL` con filtro mecánico, destino de coincidencia, destino de fallos y política explícita de agotamiento.
+**PERSISTENCE IMPACT:** Persistir proceso pendiente, cartas reveladas, orden y política de terminación; requiere versión/migración de snapshot.
+**REPLAY IMPACT:** Registrar cada revelación/movimiento y cualquier decisión; nunca recalcular desde un mazo que pudiera divergir.
+**LEGAL-ACTION IMPACT:** Mientras esté pendiente, exponer sólo la decisión exigida o continuación automática, sin filtrar identidades ocultas.
+**SECURITY / PRIVACY IMPACT:** Revelar al cliente únicamente lo autorizado; los fallos visibles no habilitan consultar el resto del mazo.
+
+### 027
+**CARD:** nº027 — `Elfo Duelista.`
+**SOURCE TEXT:** “Cuando el Elfo Duelista entra en el tablero, puedes designar a cualquier criatura del jugador objetivo para usar la regla de Desafío con ella.”
+**DESIRED BEHAVIOR:** Al entrar, su controlador puede elegir oponente y criatura y declarar inmediatamente Desafío con esta criatura.
+**CURRENT ENGINE SUPPORT:** El motor sólo permite iniciar Desafío a un Señor criatura elegible durante la ventana ordinaria; `CAN_CHALLENGE` no elimina el requisito de Señor ni modela el disparo de entrada.
+**CLASSIFICATION:** `GAP`.
+
+**IS GENERAL CAPABILITY?:** Sí, permisos de combate y desafíos disparados por una habilidad son contratos generales.
+**WHY?:** Codificar una excepción para nº027 o para su nombre sería identidad mecánica prohibida.
+**MINIMAL GENERAL ABSTRACTION:** Permiso declarativo de iniciador no-Señor más una acción/disparo de `CHALLENGE` con ventana y selección de defensor/objetivo explícitas.
+**PERSISTENCE IMPACT:** Persistir la oferta pendiente y, al aceptarla, `CombatState` con origen disparado.
+**REPLAY IMPACT:** Registrar aceptar/rechazar, objetivos y declaración; el replay no debe volver a enumerar candidatos.
+**LEGAL-ACTION IMPACT:** Enumerar rechazo y desafíos legales sólo durante la ventana, respetando estado y prioridad.
+**SECURITY / PRIVACY IMPACT:** Sólo usa permanentes públicos; validar servidoramente controlador y objetivos para impedir IDs forjados.
+
+### 028
+**CARD:** nº028 — `Elfo Cabalista.`
+**SOURCE TEXT:** “Girar el Elfo Cabalista, pagar 5 Pasos: la criatura objetivo previene todo el daño de combate hasta el final del turno.”
+**DESIRED BEHAVIOR:** Coste de girar y cinco Pasos; protección temporal que previene sin límite sólo daño de combate.
+**CURRENT ENGINE SUPPORT:** **Soportado:** coste compuesto, objetivo y prevención numérica. **Ausente:** prevención ilimitada, duración fin de turno y discriminación por procedencia de combate. La carta completa queda fuera del catálogo ejecutable.
+**CLASSIFICATION:** `PARTIAL`.
+
+### 029
+**CARD:** nº029 — `Alberich, el Rey de los Elfos.`
+**SOURCE TEXT:** “Inmunidad a Recursos Rápidos, Eventos y habilidades. Pagar 5 de Fuerza: esta carta se transforma en una criatura. Pagar 10 de Fuerza: los Elfos, Duendes y Pixies reciben +5 a su Fuerza hasta el final del turno. Pagar 5 Heridas: recuperas 5 de Fuerza a este Señor. Usa estas habilidades como un Evento.”
+**DESIRED BEHAVIOR:** Inmunidad por procedencia; tres habilidades con sus costes, transformación, aumento temporal por categorías y recuperación de Fuerza, en ventana de Evento.
+**CURRENT ENGINE SUPPORT:** **Soportado:** costes de Fuerza/Heridas, `BECOME_CREATURE`, modificación de Fuerza y fases permitidas. **Ausente:** inmunidad tipada, categorías raciales declarativas, selección colectiva por tres categorías y una semántica explícita de “recuperar” Fuerza (incluido su máximo). La carta completa queda fuera del catálogo ejecutable.
+**CLASSIFICATION:** `PARTIAL`.
+
+### 140
+**CARD:** nº140 — `Ángel de la Guarda.`
+**SOURCE TEXT:** “Vuelo, inmunidad a Eventos, no se gira al atacar. Pagar cinco Pasos: la criatura objetivo no puede ser destruida por daño de combate.”
+**DESIRED BEHAVIOR:** Vuelo, inmunidad por procedencia, ataque sin girar y protección activada frente a destrucción por daño de combate.
+**CURRENT ENGINE SUPPORT:** **Soportado:** coste, objetivo y una infraestructura de prevención. **Ausente:** semántica ejecutable de Vuelo, inmunidad, no-giro al atacar y protección específica contra destrucción por daño de combate. La carta completa queda fuera.
+**CLASSIFICATION:** `PARTIAL`.
+
+### 141
+**CARD:** nº141 — `Ángel de Piedad.`
+**SOURCE TEXT:** “Vuelo, inmunidad a Recursos Rápidos, Dureza. Pagar cinco Pasos: recupera cinco Heridas a la criatura o jugador objetivo.”
+**DESIRED BEHAVIOR:** Aplicar las tres capacidades y, pagando cinco Pasos, curar cinco Heridas a criatura o jugador.
+**CURRENT ENGINE SUPPORT:** **Soportado:** coste, objetivo entidad y curación. **Ausente:** Vuelo, Dureza e inmunidad por procedencia. La carta completa queda fuera.
+**CLASSIFICATION:** `PARTIAL`.
+
+### 142
+**CARD:** nº142 — `Ángel de la Justicia.`
+**SOURCE TEXT:** “Vuelo, Dureza, ataca dos veces, inmunidad a Recursos Rápidos. Si fuera a ir a la Pila de Descartes, destruye la criatura objetivo. No puede ser transmutado.”
+**DESIRED BEHAVIOR:** Capacidades estáticas; dos ataques; disparo/reemplazo al abandonar hacia descarte que destruye un objetivo; prohibición de transmutar.
+**CURRENT ENGINE SUPPORT:** **Soportado:** `transmutable=False`, destrucción y objetivos. **Ausente:** Vuelo, Dureza, inmunidad, ataque doble y disparo de salida (sólo existen entrada y transmutación). La carta completa queda fuera.
+**CLASSIFICATION:** `PARTIAL`.
+
+### 143
+**CARD:** nº143 — `Ángel de la Verdad.`
+**SOURCE TEXT:** “Vuelo, Dureza, inmunidad a Eventos. Pagar cinco Pasos: busca una carta de Elfo, Duende, Pixie o Ángel y ponla en tu mano, mezcla tu baraja.”
+**DESIRED BEHAVIOR:** Capacidades estáticas y tutor activado de una de cuatro categorías, seguido de barajado.
+**CURRENT ENGINE SUPPORT:** **Soportado:** coste, búsqueda, movimiento y barajado. **Ausente:** Vuelo, Dureza, inmunidad y taxonomía mecánica de las cuatro categorías. La carta completa queda fuera.
+**CLASSIFICATION:** `PARTIAL`.
+
+### 144
+**CARD:** nº144 — `Ángel de la Muerte.`
+**SOURCE TEXT:** “Vuelo, Dureza, inmunidad a Eventos, Recursos Rápidos y Habilidades. Pagar diez Pasos: destruye la criatura objetivo, no puede ser transmutada, el jugador objetivo descarta una carta.”
+**DESIRED BEHAVIOR:** Capacidades estáticas y habilidad que destruye una criatura sin transmutación y hace descartar una carta al jugador objetivo.
+**CURRENT ENGINE SUPPORT:** **Soportado:** coste, destrucción con regeneración desactivable y movimiento de una carta. **Ausente:** Vuelo, Dureza, inmunidades y una operación atómica de descarte con la elección/azar que la fuente no aclara. La carta completa queda fuera.
+**CLASSIFICATION:** `PARTIAL` (además, quién elige la carta descartada es ambigüedad editorial, no gap).
+
+### 145
+**CARD:** nº145 — `Arcángel.`
+**SOURCE TEXT:** “Vuelo, Dureza, inmunidad a Eventos y Recursos Rápidos o Habilidades. Girar el Arcángel: busca una carta con el tipo de criatura Ángel y ponlo en tu mano. Todos los Ángeles tienen +5 a su Fuerza.”
+**DESIRED BEHAVIOR:** Capacidades estáticas, tutor de tipo Ángel pagando giro y bonificación continua global a Ángeles.
+**CURRENT ENGINE SUPPORT:** **Soportado:** giro como coste, búsqueda y aumento continuo por subtipo si existiese una taxonomía confirmada. **Ausente:** Vuelo, Dureza, inmunidades y el tipo mecánico Ángel confirmado sin usar raza/nombre/texto. La carta completa queda fuera.
+**CLASSIFICATION:** `PARTIAL` (el alcance de “o” en la inmunidad es `AMBIGUOUS` editorialmente y no abre por sí solo el motor).
+
 ## Comparación y selección de dos razas completas
 
 | Raza | Tamaño | Contratos generales aprovechables | Gaps o riesgos dominantes |

@@ -16,7 +16,6 @@ from .engine.commands import EXECUTABLE_COMMAND_TYPE_SET, GameCommand
 from .engine.game import GameEngine
 from .rules.deck import (
     DeckConstructionPolicy,
-    InvalidDeckConstruction,
     validate_deck_group,
 )
 from .storage.base import StoredMatch, validate_expected_version
@@ -84,23 +83,35 @@ class MatchService:
         seed: int = 0,
         auto_start: bool = True,
     ) -> int:
+        # La política individual es la primera frontera: además de validar,
+        # materializa cada iterable exactamente una vez antes de comparar los
+        # mazos entre sí. Así la validación relacional nunca observa entradas
+        # sin preparar ni fuerza la construcción prematura del motor.
+        if self._deck_policy is None:
+            prepared_decks = {
+                player_id: tuple(deck) for player_id, deck in decks.items()
+            }
+        else:
+            individual_results = {
+                player_id: self._deck_policy.validate(deck)
+                for player_id, deck in decks.items()
+            }
+            if any(not result.is_valid for result in individual_results.values()):
+                raise DeckValidationFailure from None
+            prepared_decks = {
+                player_id: result.cards
+                for player_id, result in individual_results.items()
+            }
+
         group_result = validate_deck_group(
-            decks, require_equal_points=self._require_equal_points
+            prepared_decks, require_equal_points=self._require_equal_points
         )
         if not group_result.is_valid:
-            raise DeckValidationFailure(group_result.issues[0].code) from None
-        prepared_decks: Mapping[str, Iterable[CardDefinition]] = group_result.decks
-        if self._deck_policy is not None:
-            try:
-                prepared_decks = {
-                    player_id: self._deck_policy.require_valid(deck)
-                    for player_id, deck in prepared_decks.items()
-                }
-            except InvalidDeckConstruction:
-                raise DeckValidationFailure from None
+            raise DeckValidationFailure from None
+
         engine = self._engine_factory()
         try:
-            engine.new_match(prepared_decks, seed=seed, auto_start=auto_start)
+            engine.new_match(group_result.decks, seed=seed, auto_start=auto_start)
         except InvalidDeckDefinition:
             raise DeckValidationFailure from None
         return self.store.create(match_id, engine)

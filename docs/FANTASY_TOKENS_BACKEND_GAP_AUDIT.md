@@ -87,7 +87,7 @@ regla Mítica nueva.
 | `N-TOKEN-01` | Base pp. 2–3, «Tipos y subtipos» | Criatura, Equipo, Evento, Recurso Rápido y Leyenda. | Tipo funcional y rango/subtipo son dimensiones distintas; el texto de carta puede especificar excepciones. | Mítica física 3 / interna 2, «Legendarios»: exige subtipo procedente del tipo original. | `CLARIFIES` |
 | `N-TOKEN-02` | Base p. 3, «Recursos Rápidos» | «pueden jugarse en cualquier fase o momento del turno» | Los Recursos Rápidos admiten las ventanas de respuesta descritas por la Base. | Mítica no revoca esta ventana; añade inmunidades concretas en física 3 / interna 2. | `EXTENDS` |
 | `N-TOKEN-03` | Base p. 7, regla 16 | Si una carta contradice reglas básicas «se aplicará […] el texto». | El texto particular prima en su alcance y la pila sigue determinando resolución. | Mítica física 2 / interna 1 declara cambios a reglas básicas; no altera la prioridad del texto particular. | `SAME` |
-| `N-COST-01` | Base p. 3, «Objetivo/barajas»; p. 5, «Estructura» | «valor fijo en “pasos”»; el número indica Fuerza/Resistencia de criatura o coste de bajada. | El coste impreso es el valor base para pagar la carta y, en criatura, la fuente impresa de Fuerza/Resistencia. | Mítica física 2 / interna 1 conserva el «coste en Pasos» y fija 5–50 para cartas Míticas. | `EXTENDS` |
+| `N-COST-01` | Base p. 3, «Objetivo/barajas»; p. 5, «Estructura» | «valor fijo en “pasos”»; el número indica Fuerza/Resistencia de criatura o coste de bajada. | El coste impreso es el valor base para pagar la carta y, en criatura, la fuente impresa de Fuerza/Resistencia. | Mítica física 2 / interna 1 conserva el «coste en Pasos» y fija 5–50 para las cartas de esa edición. | `EXTENDS` |
 | `N-COST-02` | Base p. 7, regla 17 | Sin Pasos no se juegan tokens, pero se puede transmutar para rellenar la Reserva. | El coste se paga antes de jugar; Transmutación puede generar los Pasos necesarios si no está impedida. | Mítica física 3 / interna 2 añade Drenaje como otra generación de Pasos, sin sustituir Transmutación. | `EXTENDS` |
 | `N-COST-03` | Base p. 7, regla 13 | Equipar exige «un número de “pasos” igual al coste de bajada» salvo texto contrario. | El coste ordinario de equipar es el coste impreso del Equipo; una carta puede modificarlo. | Silencio en Mítica, físicas 2–4. | `AMBIGUOUS` |
 | `N-TRANSMUTATION-01` | Base p. 3, «Transmutación» | Mandar naipes en juego al descarte, «sacando de ellos su valor en “pasos”». | Transmutar mueve un permanente propio del tablero al descarte y añade su coste impreso a la Reserva. | Mítica física 3 / interna 2: Transmutación «seguirá vigente». | `SAME` |
@@ -124,7 +124,7 @@ regla Mítica nueva.
 | `N-COST-04` | Base pp. 3 y 5, «Construcción» / regla 1 | Los puntos se obtienen «sumando […] los valores» / «suma de los costes». | Coste impreso y puntos por copia no son dos atributos: `CardDefinition.cost` continúa siendo la autoridad actual del cálculo de construcción. Esto **no** selecciona presupuesto Mítico. | Mítica física 2 / interna 1: «ajuste […] por puntos o coste en Pasos siguen inalterables». | `SAME` |
 | `N-FORMAT-01` | Base p. 8, regla 21 | Cinco copias comunes, cuatro legendarias. | Límites base de copias. | Mítica física 2 / interna 1 repite cinco no legendarias/cuatro legendarias y añade reglas de coste cero. | `EXTENDS` |
 | `N-FORMAT-02` | Base no fija tamaño de mazo | — | No existe tamaño universal Base. Para los formatos Míticos descritos: 40–60 cartas. | Mítica física 2 / interna 1, «Tamaño y puntos». | `EXTENDS` |
-| `N-FORMAT-03` | Base no define Clásico/Mística | — | Clásico admite ediciones anteriores con límites de coste cero; Mística excluye Alfa/Beta y exige 5–50 Pasos a cartas Míticas. | Mítica física 2 / interna 1, «Formato clásico» y «Formato mística». | `EXTENDS` |
+| `N-FORMAT-03` | Base no define Clásico/Mística | — | Clásico admite ediciones anteriores con límites de coste cero; Mística excluye Alfa/Beta y exige 5–50 Pasos a cartas de la edición. | Mítica física 2 / interna 1, «Formato clásico» y «Formato mística». | `EXTENDS` |
 
 ## 4. Secuencia de turno y contrato de cada fase
 
@@ -268,3 +268,159 @@ El detalle de estado, impacto y condición de desbloqueo se mantiene en
   cambian la relación normativa de ninguna fila.
 - Los IDs de este documento son permanentes: una aclaración futura cambia estado,
   evidencia o relación, no reutiliza ni renumera el ID.
+
+## 10. Matriz maestra de zonas confirmadas
+
+### 10.1 Convenciones
+
+Esta matriz usa **propietario** para la identidad a la que pertenece físicamente
+la carta y **controlador** sólo para quien decide sobre ella mientras está en
+juego. «Acceso» significa quién puede inspeccionar las identidades, no quién
+puede ordenar un movimiento. Cuando los PDF no fijan un extremo se escribe
+literalmente `UNKNOWN`; una práctica del backend no rellena ese silencio. Las
+referencias a cartas concretas acreditan que el lugar o movimiento existe, pero
+no convierten su texto en regla universal.
+
+| Zona canónica | Evidencia PDF | Propietario | Controlador | Visibilidad | Orden | Acceso / búsqueda / selección | Entrada canónica | Salida canónica | Barajado | Persistencia canónica |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Mazo / baraja de Recursos** | Base pp. 3–4 y regla 20, p. 8; cartas de ambas ediciones con «busca», «mira», «encima» y «baraja». | Dueño de la baraja. | `UNKNOWN`; los textos dicen «tu» o «del jugador objetivo», no transfieren control de la zona. | Oculta, boca abajo; sólo un efecto permite verla. | Ordenada: hay cima/«primeras» cartas. Orientación física exacta: `UNKNOWN`. | Dueño u otro jugador sólo según el texto. Buscar puede filtrar/elegir; mirar no autoriza mover. El resto debe seguir oculto. | Construcción/preparación; devolver o barajar desde mano, tablero o Pila cuando lo ordene un texto; reciclaje Base p. 4. | Robar; mirar sin mover; buscar/moler/revelar o poner en juego según texto. | Sí al inicio, al reciclar la Pila y cuando una carta lo ordena. Algoritmo/entropía: `UNKNOWN`. | Las reglas exigen conservar el mazo durante la partida; representación, semilla y serialización: `UNKNOWN`. |
+| **Mano** | Base pp. 4 y 6–8, en especial reglas 4, 9 y 20; numerosas cartas Base/Mítica. | Dueño de las cartas. | `UNKNOWN` fuera del uso ordinario por su dueño. | Oculta al oponente, boca abajo; un efecto puede autorizar mirarla. | Sin orden canónico relevante; colocación física sobre el tablero. | Dueño conoce toda su mano. Oponente sólo mira/busca/elige si una carta lo manda. | Robo, búsqueda/recuperación y devolución; mulligan. | Jugar/poner en juego, descarte, devolución al mazo o movimiento fuera de juego según texto. | No como operación propia; puede mezclarse con el mazo si un texto lo ordena. | Debe durar mientras la partida la contenga; formato técnico: `UNKNOWN`. |
+| **Tablero / en juego / mesa** | Base pp. 3–8 (Transmutación, fases, combate, Equipos); Mítica físicas 3–4 / internas 2–3 (Divinos y Señores). | Dueño original; cambio por estar en juego: no indicado. | Quien lo bajó/controla, salvo efecto expreso de cambio de control. Duración/reversión exacta depende del texto. | Pública por disposición física y por requerir objetivos, combate, Fuerza y estado; orientación girada visible. | Posición relativa sin orden canónico. Anexos sí expresan relación Equipo–portador. | Jugadores pueden seleccionar objetivos legales; control limita atacar, transmutar, sacrificar y costes. | Jugar/bajar, poner directamente, devolver/retornar o transformación que permanezca en juego. | Destruir, sacrificar, transmutar, devolver, retirar o mandar a la Pila/mazo/mano. | No. | Permanece hasta que regla/texto lo mueva; qué estado sobrevive al cruce de zona es `UNKNOWN`. |
+| **Pila de Descartes / Pila** | Base pp. 3–8; Mítica física 3 / interna 2 y corpus de cartas. | Dueño de cada carta. | `UNKNOWN`; estar en Pila no otorga control. | El texto la trata como zona consultable y desde la que se eligen/recuperan cartas; si es íntegramente pública y su orientación: `UNKNOWN`. | Se denomina pila, pero relevancia de cima/fondo y libertad de reordenar: `UNKNOWN`. | Buscar/recuperar o transmutar desde ella sólo cuando la regla o carta lo permita. Selección ordinaria del descarte ajeno: `UNKNOWN`. | Descartar, destrucción, sacrificio, Transmutación, resolución de no permanentes y movimientos expresos. | Recuperar/devolver/retornar/poner en juego; reciclaje completo cuando debe robarse de mazo vacío salvo bloqueo. | Sí al reciclarla; algunas cartas ordenan barajarla en el mazo. | Persiste hasta reciclaje/movimiento; representación técnica: `UNKNOWN`. |
+| **Fuera de juego** | Mítica, física 6 / interna 5, carta nº 033: ordena enviar copias «fuera de juego» y prohíbe recuperarlas. | `UNKNOWN`. | `UNKNOWN`. | La identidad movida debe poder verificarse; visibilidad permanente de toda la zona: `UNKNOWN`. | `UNKNOWN`. | Sólo el texto particular determina qué se retira; acceso, búsqueda y selección posteriores: `UNKNOWN` (algún texto prohíbe recuperar esas cartas concretas). | «Retirar/remover fuera de juego» cuando una carta lo ordena. | Sólo si un texto lo autoriza; regla universal de retorno: `UNKNOWN`. | `UNKNOWN`. | Duración normalmente inferida hasta fin de partida, pero el PDF no formula contrato general: `UNKNOWN`. |
+| **Apartadas / cartas mostradas durante mirar o revelar** | Cartas Base/Mítica dicen «déjalas aparte», «volteadas», mirar las primeras N, elegir y devolver/mandar el resto. | Conservan dueño: el texto no declara transferencia. | `UNKNOWN`. | Visible sólo en el alcance que ordene el texto; diferencia entre elector y todos: `UNKNOWN` salvo formulación concreta. | Conserva el orden original o permite «cualquier orden» únicamente si lo dice la carta; en otro caso `UNKNOWN`. | Sólo el elector indicado puede mirar/elegir; candidatos y no elegidas no se publican más allá del mandato. | Operación temporal de mirar/revelar desde una zona. | Destinos y orden exactos del texto particular. | Sólo si el mismo texto manda mezclar/barajar. | Si es una zona estable o sólo una condición física durante resolución: `UNKNOWN`; por tanto no se generaliza como zona persistente. |
+
+### 10.2 Correspondencia con el backend solicitado
+
+| `Zone` técnica | Correspondencia canónica | Contraste de implementación |
+|---|---|---|
+| `DECK`, `HAND`, `BATTLEFIELD`, `DISCARD`, `EXILE` | Las primeras cuatro corresponden directamente. `EXILE` es la normalización de «fuera de juego». | `domain/models.py:463-469` crea una lista por jugador. `zones.py:249-255` inserta al final y el motor interpreta `[-1]` como cima; esa orientación y la lista de exilio son contratos técnicos, no detalle PDF. |
+| `REVEAL` | Aproxima cartas apartadas/reveladas, sin que el PDF confirme una zona estable universal. | Es lista por jugador, pero `REVEAL_UNTIL` mueve directamente a los destinos de éxito/fallo y no la utiliza (`effects.py:275-305`). No debe presentarse como canon adicional. |
+| `RESOLUTION` | No es una zona nombrada por los PDF; representa la carta anunciada/en resolución. | Lista global en `GameState`; `stack.py:219-226` la saca al destino de resolución. La pila LIFO contiene `StackItem`, no las cartas como zona canónica. |
+| `VOID` | No es sinónimo probado de «fuera de juego». | Lista global auxiliar. No se expone como zona PDF ni debe reemplazar automáticamente `EXILE`. |
+
+El movimiento central de `zones.py:117-275` preserva el mismo `instance_id`,
+pero al abandonar `BATTLEFIELD` restablece controlador al propietario, desanexa,
+limpia daño, Fuerza modificada, prevención, activaciones, transformación,
+regeneración, definición sustituida, orden de reemplazos y cambios de control.
+**No limpia `counters`.** Esta es la semántica técnica actual; en ausencia de un
+mandato de carta, los PDF dejan cada una de esas conservaciones en `UNKNOWN`.
+
+## 11. Inventario separado de transiciones canónicas
+
+### 11.1 Movimiento, causas y disparadores
+
+«Trigger de salida» y «trigger de entrada» describen primero el canon. El motor
+sólo declara `ON_ENTER_BATTLEFIELD` y `ON_TRANSMUTED`; no existe un disparador
+general de abandonar zona. Un evento del log no equivale a una habilidad
+disparada.
+
+| Transición | Origen → destino | Causas confirmadas por PDF | Trigger salida | Trigger entrada | Contraste técnico |
+|---|---|---|---|---|---|
+| **Robar** | Mazo → mano | Preparación (seis), comienzo de turno (una), mulligan y cartas. | `UNKNOWN`. | `UNKNOWN`. | `_draw` toma `DECK[-1]`; si está vacío recicla descarte y emite eventos, sin triggers de zona. |
+| **Mirar** | Sin movimiento, o zona → apartada temporal → zona/destino textual | Efectos que autorizan mano, cima o primeras N. | No hay salida si sólo se mira; si se aparta: `UNKNOWN`. | `UNKNOWN`. | No hay `EffectKind` general `LOOK`; `REVEAL_UNTIL` no modela privacidad de «mirar». Brecha. |
+| **Revelar** | Zona oculta → información pública y, cuando lo dice la carta, otro destino | Texto particular, incluida revelación hasta coincidencia. | `UNKNOWN`. | `UNKNOWN`. | `REVEAL_UNTIL` emite `CARD_REVEALED` y mueve cada carta; `Zone.REVEAL` no interviene. |
+| **Buscar** | Inspección de una zona; normalmente mazo → mano/juego u otro destino textual | Carta/habilidad con zona, filtro y destino; a menudo seguida de barajar. | `UNKNOWN`. | El «cuando entre» del destino sólo está confirmado si el texto de esa carta lo trata como entrar; regla universal: `UNKNOWN`. | `SEARCH_ZONE` pausa en `PendingSearch`, valida IDs elegibles, mueve y opcionalmente baraja; sólo encola `ON_ENTER_BATTLEFIELD` para la fuente resuelta, no para toda búsqueda. |
+| **Seleccionar/elegir** | No implica movimiento | Objetivos, descartes, subconjuntos mirados/buscados, atacantes/bloqueadores y reemplazos. | No aplica salvo movimiento posterior. | No aplica salvo movimiento posterior. | Objetivos se congelan en `StackItem`; búsquedas y reemplazos crean elecciones pendientes. Selección es operación, no zona. |
+| **Descartar** | Mano → Pila de Descartes | Ajuste final a seis, costes y efectos. | `UNKNOWN`. | `UNKNOWN`. | `MoveReason.DISCARD`; no hay trigger tipado de descarte. |
+| **Recuperar** | Pila → mano/juego/mazo según texto; «recuperar» también puede modificar Heridas/Fuerza sin mover | Sólo texto particular. | `UNKNOWN`. | `UNKNOWN`. | `MOVE_CARDS` puede representar el cruce si está declarado; no hay razón `RECOVER` ni verbo inequívoco. Debe distinguirse curación/modificación. |
+| **Devolver** | Tablero/Pila/mano → zona indicada, o cambio de controlador al anterior | Sólo texto particular. | `UNKNOWN`. | `UNKNOWN`. | Movimiento genérico o expiración de `ControlChange`; `MoveReason.RULE`. |
+| **Poner en juego** | Normalmente mano/mazo/Pila → tablero | Pago y resolución ordinarios o carta que evita coste. | `UNKNOWN`. | Cartas particulares usan «cuando entre en juego»; no se generaliza obligatoriedad. | Resolución a `BATTLEFIELD` encola `ON_ENTER_BATTLEFIELD`; movimientos genéricos directos no lo hacen de forma uniforme. Brecha relevante. |
+| **Destruir** | Tablero → Pila de Descartes | Daño letal, efecto «destruye», Fuerza cero para Señores; indestructible/reemplazos pueden impedirlo. | `UNKNOWN`. | `UNKNOWN`. | `_destroy_permanent`, razón `DESTROY` o `STATE_BASED`; admite regeneración y reemplazos. |
+| **Sacrificar** | Permanente propio/controlado → Pila | Coste o efecto particular. | `UNKNOWN`. | `UNKNOWN`. | Coste con `MoveReason.SACRIFICE`; no hay trigger tipado `ON_SACRIFICED`. |
+| **Transmutar** | Permanente propio en tablero → Pila; Reserva + coste impreso | Acción Base, incluida en pasiva; Mítica confirma Divinos. | El PDF permite reacciones textuales a Transmutación; orden universal: `UNKNOWN`. | `UNKNOWN`. | Operación directa, razón `TRANSMUTE`, después encola `ON_TRANSMUTED`; no usa pila para el movimiento. |
+| **Retirar/remover** | Contextualmente tablero → Pila o → fuera de juego | Regla/texto particular; el corpus usa «remover a la Pila» y «fuera de juego», por lo que el verbo solo no fija destino. | `UNKNOWN`. | `UNKNOWN`. | Debe expresarse como destino explícito (`DISCARD`/`EXILE`); no existe `MoveReason.REMOVE`. |
+| **Retornar/regresar** | Pila/mazo/mano → tablero, o cartas miradas → mazo | Texto particular. | `UNKNOWN`. | `UNKNOWN`; algunos textos concretos sí disparan «entrar». | Movimiento genérico; no hay `MoveReason.RETURN`. Aplicar `ON_ENTER_BATTLEFIELD` de forma uniforme requeriría decisión futura. |
+| **Barajar/mezclar** | Misma zona reordenada; o Pila/mano incorporadas al mazo antes de mezclar | Preparación, mulligan, reciclaje y cartas. | No hay cambio de zona por mezclar; al incorporar cartas, trigger: `UNKNOWN`. | `UNKNOWN`. | RNG derivado de semilla/turno/eventos; emite `ZONE_SHUFFLED`. El reciclaje usa otra derivación. |
+| **Colocar arriba o abajo** | Zona → cima/fondo del mazo, o reubicación dentro del mazo | Cartas concretas confirman cima/encima; fondo/abajo aparece sólo donde el texto lo indique. | `UNKNOWN`. | `UNKNOWN`. | `list.append` equivale a cima. No hay primitiva declarativa para fondo ni posición, y `MoveReplacementDefinition` prohíbe destinos técnicos pero no codifica posición. |
+| **Reordenar** | Misma zona ordenada | Cartas permiten poner cartas miradas «en cualquier orden»; también puede ordenar reemplazos, que no son una zona. | No aplica. | No aplica. | Sólo hay barajado aleatorio y `replacement_order`; falta una transición de orden de cartas con elección persistible. |
+
+### 11.2 Conservación de estado por transición
+
+Valores: **Sí/No** sólo cuando la fuente lo determina; `N/A` cuando la magnitud
+no pertenece a una carta; `UNKNOWN` cuando el PDF guarda silencio. «Identidad»
+es la identidad de la **instancia física**, no el nombre/definición impresa.
+
+| Transición | Heridas | Contadores | Fuerza | Girado | Anexos | Control | Transformación | Identidad de instancia | Determinación de la fuente |
+|---|---|---|---|---|---|---|---|---|---|
+| Robar | N/A | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | Sí, es la misma carta física | Sólo origen/destino. |
+| Mirar | N/A | Sí | Sí | Sí | Sí | Sí | Sí | Sí | Mirar por sí solo no cambia la carta; si se mueve después aplica esa transición. |
+| Revelar | N/A | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | Sí | Revelar información no prueba cómo reinicia estado al mover. |
+| Buscar | N/A | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | Sí | El texto fija elegibilidad/destino, normalmente no continuidad de estado. |
+| Seleccionar | N/A | Sí | Sí | Sí | Sí | Sí | Sí | Sí | Elegir no muta por sí mismo. |
+| Descartar | N/A | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | Sí | `UNKNOWN` salvo carta concreta. |
+| Recuperar | N/A si mueve; si sana, el propio texto cambia Heridas | `UNKNOWN` | Puede cambiar Fuerza si lo dice el texto; en otro caso `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | Sí | «Recuperar» es polisémico y exige leer la carta. |
+| Devolver | N/A | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | Puede devolver control si ése es el objeto textual; si mueve, `UNKNOWN` | `UNKNOWN` | Sí | Sólo texto particular. |
+| Poner en juego | N/A | `UNKNOWN` | Coste/Fuerza base cuando corresponda; modificadores previos `UNKNOWN` | Sólo entra girada cuando el texto lo ordena; en otro caso `UNKNOWN` | `UNKNOWN` | Controlador indicado/ordinario; cambios anteriores `UNKNOWN` | `UNKNOWN` | Sí | No hay regla universal de «objeto nuevo». |
+| Destruir | N/A | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | **No permanece anexado al objeto destruido**; el Equipo permanece en tablero (Base regla 13) | `UNKNOWN` fuera del tablero | `UNKNOWN` | Sí | Única conservación transversal expresa aquí: destino del Equipo, no sus otros estados. |
+| Sacrificar | N/A | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | Sí | Sólo texto particular. |
+| Transmutar | N/A | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | Sí | La Base fija movimiento y ganancia de Pasos, no reinicio de instancia. |
+| Retirar | N/A | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | Sí | Incluso la posibilidad de retorno depende del texto. |
+| Retornar | N/A | `UNKNOWN` | `UNKNOWN` | Puede entrar girada si la carta lo ordena; en otro caso `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | Sí | No se presume «instancia nueva». |
+| Barajar | N/A | Sí mientras no haya además cambio de zona: `UNKNOWN` si se incorpora desde otra | Igual | Igual | Igual | Igual | Igual | Sí | Reordenar solo no altera estado; movimientos combinados no están definidos. |
+| Colocar arriba/abajo | N/A | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | `UNKNOWN` | Sí | Fuente fija posición, no estado residual. |
+| Reordenar | N/A | Sí | Sí | Sí | Sí | Sí | Sí | Sí | Reordenar por sí solo sólo cambia orden. |
+
+El backend aplica una única política de limpieza a casi todos los movimientos
+fuera del tablero, con independencia del verbo. Por ello actualmente contradice
+la prudencia documental en un punto (conserva contadores aun cuando el canon es
+`UNKNOWN`) y decide técnicamente los restantes silencios (los limpia). No se
+modifica ese contrato en esta auditoría.
+
+## 12. Auditoría de exposición de información
+
+### 12.1 Superficies revisadas
+
+| Superficie | Datos que contiene/publica | Resultado y rutas de riesgo |
+|---|---|---|
+| `service.py::MatchView` | `PlayerObservation` completo y comandos `GameCommand` completos. | **Interna, sensible.** `observe` incluye IDs de la mano propia, fuentes/IDs de objetos de pila, triggers, candidatos de búsqueda sólo para el elector y candidatos de reemplazo. `legal_actions` contiene parámetros, IDs de cartas y combinaciones. `MatchService.view(match_id, player_id)` no autentica: cualquier adaptador que lo exponga o acepte un `player_id` no autorizado revelaría mano/candidatos. `get_match` revelaría estado, orden de todos los mazos e historial; su docstring prohíbe expresamente usarlo remotamente. |
+| Observación (`controllers/base.py`, construida en `engine/game.py:576-647`) | Mano propia; tamaños de manos rivales; tableros; pila/triggers; búsqueda y reemplazo pendientes condicionados. | No expone mano rival ni mazo directamente. Sí expone `source_card_id` de pila/triggers a todos y fases suprimidas: correcto sólo si esos objetos ya son públicos. Una habilidad disparada desde zona oculta o una fuente que aún no deba revelarse filtraría identidad derivada. El elector recibe todos los `eligible_card_ids`, no sólo los N primeros: correcto para «buscar», incorrecto si se reutiliza para «mirar» o selección limitada. |
+| `application.py::PublicPlayerObservation` / `PublicMatchView` | Sólo mano propia, Pasos/Heridas propios, tamaños rivales, tableros, tamaño de pila y contador de eventos. | **Frontera remota conservadora:** elimina `stack_items`, triggers, fases suprimidas, candidatos y reemplazos. Los IDs propios y de permanentes públicos son deliberados. No publica el log, por lo que eventos con `card_id` privado no salen por esta ruta. |
+| `application.py::PublicLegalAction` | MAC opaco `option_id` y nombre de clase del comando. | Oculta parámetros e IDs y liga opción a partida/jugador/versión. **Canal derivado residual:** cantidad y discriminadores de opciones pueden revelar cuántos candidatos/combinaciones existen. Para una búsqueda sólo llega al elector autenticado; cualquier futura vista espectadora o acción cuya legalidad dependa de mano/mazo rival deberá agrupar/ocultar opciones. |
+| Autorización de `AuthenticatedMatchApplication` | Traduce identidad a jugador autorizado y vuelve a resolver la opción del servidor. | Evita suplantar jugador y fabricar parámetros. Mantener `MatchService` detrás de esta frontera es condición de seguridad; no entregar índices, comandos ni el mapa interno de opciones. Errores se traducen sin mensaje/cadena interna. |
+| `presentation.py` | Presentaciones editoriales estáticas por `card_id`. | No consulta partidas ni instancias. No filtra orden, mano o candidatos. Riesgo sólo de configuración: registrar texto/arte de contenido todavía no publicado. |
+| `public_catalog.py` | Definición mecánica y presentación completas, ordenadas por `card_id`. | Publica IDs **de definición**, reglas, estadísticas y metadatos del conjunto, no IDs de instancia ni presencia en una partida. Es seguro únicamente para un catálogo ya publicable; no debe construirse desde catálogo secreto, mazos de jugadores o definiciones desbloqueadas. El orden alfabético del catálogo no es orden de mazo. |
+| `codec.py`, `snapshot.py`, `replay.py` | Estado completo, catálogo, semilla, `initial_decks`, historial, pendientes y listas ordenadas. | **Secretos de servidor.** Nunca son DTO públicos. Snapshot revela todas las zonas y el orden exacto; replay revela mazos iniciales y comandos/elecciones. Logs, backups, respuestas de error y herramientas de administración deben conservar la misma frontera. |
+
+### 12.2 Hallazgos accionables sin cambio de contrato
+
+1. **Alta severidad si se publica:** `MatchService.get_match`, snapshots y replays
+   contienen orden de mazo, manos rivales, candidatos y semillas. Deben permanecer
+   exclusivamente internos y con control de acceso.
+2. **Alta severidad si se omite autorización:** `MatchService.view` confía en el
+   `player_id`; sólo `AuthenticatedMatchApplication` debe enlazar identidad y
+   jugador antes de invocarlo.
+3. **Media, dependiente de contenido futuro:** `PlayerObservation.stack_items` y
+   `pending_triggers` revelan IDs de fuente. No crear objetos observables desde
+   una zona oculta antes del momento de revelación canónico.
+4. **Media, canal lateral:** el número/tipo de `PublicLegalAction` puede codificar
+   información privada. Las búsquedas actuales lo limitan al elector, pero una
+   futura enumeración basada en mano rival, cima desconocida o candidato secreto
+   debe usar una sola acción opaca o una selección autenticada posterior.
+5. **Media, semántica:** `CARD_DRAWN` y algunos eventos internos llevan `card_id`;
+   hoy sólo se publica el recuento. No exponer `event_log` sin una proyección por
+   audiencia y por momento de revelación.
+6. **Baja/organizativa:** el catálogo público no filtra publicaciones. Su entrada
+   debe ser ya una colección pública; no usarlo como mecanismo de autorización.
+
+No se encontró en `PublicMatchView.to_dict()` una ruta directa para IDs de mazo,
+mano rival, candidatos privados ni orden del mazo. Esa conclusión no convierte
+`MatchView`, `PlayerObservation`, snapshots, replays o catálogo fuente en DTO
+públicos.
+
+## 13. Impacto futuro (sin modificar contratos)
+
+| Área | Impacto de completar zonas/transiciones | Condición de diseño segura |
+|---|---|---|
+| **Snapshot** | Posición cima/fondo, zona temporal revelada, audiencia de revelación y política de conservación tendrían que persistirse; cambiar la limpieza de instancia altera el digest semántico. | Nueva versión/migración explícita; nunca inferir `UNKNOWN` al cargar. Snapshots siguen siendo privados. |
+| **Replay** | Mirar, reordenar, barajar, selección secreta y reemplazos deben reproducir exactamente decisión, orden y RNG, sin recalcular sobre estado divergente. | Registrar decisiones autoritativas y su audiencia; verificar digest antes de continuar; replay no público. |
+| **CAS** | Una elección depende de la versión y del orden/identidad vigentes. Dos movimientos concurrentes pueden invalidar candidatos o cima. | Comprobar versión antes de ejecutar, mantener token ligado a partida/jugador/versión y no devolver detalles al conflicto. |
+| **Selección pendiente** | Buscar, mirar N, ordenar y escoger reemplazo necesitan distintos contratos de visibilidad; no deben compartir automáticamente `eligible_card_ids`. | Guardar elector, audiencia, mínimo/máximo, orden permitido y sólo candidatos autorizados. Publicar una opción opaca; revalidar al resolver. |
+| **Rollback transaccional** | Un fallo tras mover/revelar/barajar podría dejar información conocida aunque el estado se restaure; el conocimiento del jugador no es reversible. | Validar antes de revelar, ejecutar movimiento/trigger/persistencia atómicamente y no emitir respuestas parciales. Si ya se reveló, tratarlo como hecho auditable, no fingir que se deshizo. |
+| **Errores públicos seguros** | Diferenciar «no existe», «no elegible», «zona cambió» o «carta secreta» crea un oráculo sobre contenido oculto. | Código/mensaje estable no revelador (`CommandRejected`, `WriteConflict`); detalles sólo en telemetría interna protegida y sin volcar snapshots. |
+| **Identidad de instancia** | Decidir si un cambio de zona crea «objeto nuevo» afectaría anexos, contadores, triggers, efectos continuos, opciones y hashes. | Resolver normativamente cada estado hoy `UNKNOWN`, versionar semántica y mantener IDs externos opacos; no reutilizar IDs para otra carta. |
+| **Catálogo público** | Nuevas cartas pueden revelar contenido antes de publicación y sus filtros pueden facilitar inferencias sobre búsquedas. | Separar catálogo publicable del catálogo mecánico de servidor; no incluir disponibilidad por partida, copias, propietario ni orden. |
+
+Esta sección es un registro de impacto, no una especificación de migración. En
+particular, **no cambia** snapshot v2, replay v2, CAS, selección pendiente,
+rollback ni el esquema de errores públicos seguros existente.

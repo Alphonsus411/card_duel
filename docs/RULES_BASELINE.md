@@ -3,6 +3,12 @@
 Esta especificación deriva del reglamento base y de las actualizaciones de la
 Edición Mítica. No incluye textos de cartas antiguas.
 
+La auditoría transversal de estados, costes, Transmutación, combate y
+habilidades se mantiene en
+[`UNIVERSAL_MECHANICS_MATRIX.md`](UNIVERSAL_MECHANICS_MATRIX.md). Esa matriz
+separa en cada caso la fuente documental, la semántica confirmada y el soporte
+real del motor; no convierte texto particular de carta en regla universal.
+
 ## Fuentes primarias
 
 1. `Fantasy Tokens.pdf` es la fuente base verificable.

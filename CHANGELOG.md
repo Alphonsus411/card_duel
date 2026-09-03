@@ -2,6 +2,21 @@
 
 ## Sin publicar
 
+- Añadida la colección explícita `mythic`, revisión 1, con las cartas nº023 y
+  nº025, sus presentaciones y constructores aislados; las once cartas restantes
+  de Elfo y Ángel siguen excluidas por `PARTIAL` o `GAP`, de modo que Fase 2-C y
+  Fase 2 permanecen en progreso y el resto del PDF queda fuera del paquete.
+- Normalizada editorialmente la microcolección canónica `base` y aclarado que
+  tanto ésta como `mythic` requieren carga explícita: los catálogos y registros
+  genéricos todavía pueden construirse vacíos y nunca se precargan al importar.
+- Añadidas pruebas de fidelidad mecánica/editorial, manifiesto, aislamiento de
+  carga, catálogo público, búsqueda pausada y flujo integrado con servicio,
+  snapshot y replay para el contenido Mítico publicado.
+- Documentados los gaps generales reales del corpus (taxonomía racial, Desafío
+  disparado, protecciones, keywords de combate, inmunidades y disparos de
+  salida) y cerrada la capacidad general `REVEAL_UNTIL`; la nº026 continúa fuera
+  por la taxonomía Elfo y su ambigüedad de agotamiento. `N-POINTS-01` se conserva
+  **OPEN/BLOCKED**.
 - Añadido el efecto declarativo general `REVEAL_UNTIL`, con filtro mecánico,
   destinos separados para acierto y fallos, agotamiento explícito, resolución
   ordenada/atómica y persistencia determinista. Se mantiene la versión 0.20.1
@@ -38,8 +53,9 @@
 - Verificadas las rutas actuales de Drenaje y Desafío, las reglas terminales
   multijugador sin cambios, los perfiles runtime/full, las simulaciones, los
   roundtrips y la construcción reproducible del wheel en CI.
-- No se incorporan cartas, nombres de cartas ni catálogo Mítico de producción;
-  tampoco se añaden transportes ni dependencias de ejecución.
+- En el alcance cerrado de 0.20.1 no se incorporaron cartas, nombres de cartas
+  ni catálogo Mítico de producción; esa afirmación es histórica y queda
+  superada en «Sin publicar» por la colección explícita `mythic`.
 - Corregida la revalidación de objetivos de habilidades cuya fuente abandona el
   tapiz mediante un perfil de procedencia congelado en la pila y persistido sin
   introducir un esquema nuevo.
@@ -76,7 +92,8 @@
 - Conservada la compatibilidad persistente: esquemas v1/v2 y migración v1 → v2;
   no se introduce v3 ni se alteran condiciones terminales multijugador.
 - Excluidos explícitamente del wheel ambos PDF, las dependencias runtime y todo
-  catálogo de producción; el catálogo distribuido sigue vacío.
+  catálogo de producción en 0.20.0; se trata del estado histórico de esa
+  versión, anterior a las colecciones explícitas descritas en «Sin publicar».
 - Centralizada la versión vigente en `project.version`; paquete, `RuleSet`,
   scripts y workflow la resuelven dinámicamente.
 

@@ -7,7 +7,9 @@
 - `engine`: comandos, validación, movimientos y máquina de fases.
 - `controllers`: contrato común para humano, máquina, red y AGIX.
 - `simulation`: utilidades headless para partidas reproducibles.
-- `content`: futuro punto de entrada para colecciones; inicialmente vacío.
+- `content`: definiciones y constructores explícitos de colecciones. Incluye la
+  microcolección canónica `base` y la revisión parcial `mythic`; no precarga los
+  `CardCatalog` o `CollectionRegistry` genéricos del consumidor.
 
 ## Flujo de una acción
 
@@ -20,8 +22,14 @@
 
 ## Extensibilidad
 
-Las colecciones futuras se cargarán mediante manifiestos versionados. El motor
-no importará módulos de una colección concreta. Las mecánicas nuevas se
+Las colecciones se cargan mediante manifiestos versionados y una operación
+explícita. Tanto `CardCatalog` como `CollectionRegistry` admiten una instancia
+vacía; importar `content` sólo expone datos y constructores, sin mutar esas
+instancias. `base` ofrece ocho cartas canónicas y `mythic` publica por ahora las únicas dos
+entradas `SUPPORTED` halladas en la auditoría conjunta de Elfo y Ángel. El resto
+de ambas
+razas y del corpus de los PDF no está empaquetado como definiciones de carta.
+El motor no importará módulos de una colección concreta. Las mecánicas nuevas se
 registrarán a través de catálogos de efectos y palabras clave.
 
 El nombre visible del juego y de sus recursos se resolverá fuera del dominio,

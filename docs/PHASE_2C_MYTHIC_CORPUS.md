@@ -441,5 +441,5 @@ para completar silencios editoriales.
   tipo no dice `Legendario` o `Divino`, figura `AMBIGUOUS`.
 - La raza no se usa como subtipo impreso. Salvo `Señor de los Reinos`, que sí
   aparece en el tipo compuesto de 029, el subtipo queda `AMBIGUOUS`.
-- No se crean IDs, manifiestos, efectos, keywords ni definiciones de catálogo
-  ejecutables en esta fase.
+- Sólo se crean las definiciones, presentaciones y el manifiesto explícito de
+  023 y 025. Ninguna carta bloqueada recibe ID o definición ejecutable.

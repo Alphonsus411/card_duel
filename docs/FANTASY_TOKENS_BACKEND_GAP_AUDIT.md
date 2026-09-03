@@ -119,7 +119,119 @@ regla Mítica nueva.
 | `N-FORMAT-02` | Base no fija tamaño de mazo | — | No existe tamaño universal Base. Para los formatos Míticos descritos: 40–60 cartas. | Mítica física 2 / interna 1, «Tamaño y puntos». | `EXTENDS` |
 | `N-FORMAT-03` | Base no define Clásico/Mística | — | Clásico admite ediciones anteriores con límites de coste cero; Mística excluye Alfa/Beta y exige 5–50 Pasos a cartas Míticas. | Mítica física 2 / interna 1, «Formato clásico» y «Formato mística». | `EXTENDS` |
 
-## 4. Revisión expresa de brechas solicitadas
+## 4. Secuencia de turno y contrato de cada fase
+
+### 4.1 Criterio de lectura
+
+En las tablas siguientes, **activo** es quien tiene el turno y **pasivos** son
+los demás participantes. «Puede resolver» describe capacidad mecánica del
+backend (un `StackItem` ya creado puede ejecutarse); **no** implica que pueda
+anunciarse en esa fase. «Ventana de anuncio» describe exclusivamente qué
+comandos admite `_timing_allows_play`, la validación de habilidades y los
+comandos especiales. Esta separación evita convertir la capacidad general del
+intérprete de efectos en una ampliación de ventanas.
+
+La Base llama «Fase Activa» al conjunto del turno del activo y enumera por
+separado Robo, Mantenimiento, Efectos, Combate y Descarte (Base pp. 4–7). La
+Mítica ubica Drenaje, habilidades de Señor y Desafío en «Fase Activa», pero no
+identifica inequívocamente esa expresión con una sola fase enumerada. El backend
+la normaliza de forma conservadora como `Phase.EFFECTS` para esas acciones. Esa
+normalización técnica **no resuelve** el silencio normativo: donde el PDF no
+precisa ventana, prioridad o respuesta se marca `AMBIGUOUS`.
+
+### 4.2 Cadena completa y evidencia canónica de transición
+
+| Transición | Condición canónica y evidencia | Implementación contrastada | Brecha |
+|---|---|---|---|
+| inicio de turno → **Robo** | Base p. 4, «Fase de Robo», y regla 5, p. 6: al comienzo del turno el activo roba una carta. | `game.py:399`, `game.py:1771-1781`: el comienzo entra en `DRAW`, entrega prioridad al activo y ejecuta un robo. | El PDF no dice si el robo usa pila, admite respuesta antes/después ni quién recibe prioridad: `AMBIGUOUS`. |
+| **Robo → Mantenimiento** | Base pp. 4–5 enumera Robo inmediatamente antes de Mantenimiento. | `phases.py:24-42` exige activo, pila vacía y ventana cerrada; después recorre `rules.phase_sequence`. | El PDF da orden, pero no formaliza condición de salida ni pases: `AMBIGUOUS`. |
+| **Mantenimiento → Efectos** | Base pp. 4–5 enumera Mantenimiento antes de Efectos; regla 6, p. 6, asigna enderezado y cinco Pasos a Mantenimiento. | `game.py:1781-1790` aplica ambos al entrar; `phases.py:40-42` avanza tras cierre de prioridad. | Orden canónico; cierre y prioridad son normalización backend: `AMBIGUOUS`. |
+| **Efectos → Combate** | Base p. 4 y reglas 7–8, p. 6, colocan bajar Criaturas/Equipos/Eventos antes de declarar atacantes y bloqueadores. | `rules.phase_sequence`, proyectada por `game.py:135-137`, y `phases.py:40-42`; no permite avanzar con pila/prioridad abiertas. | La fuente no define una ventana final de respuestas: `AMBIGUOUS`. |
+| **Combate → Legendaria** | Base regla 15, p. 7: la Legendaria se activa al final de la Fase Activa y antes de Descarte; el listado de pp. 4–5 y regla 8 sitúan Combate antes de ese final. Mítica física 3 / interna 2 conserva Legendarios. | `phases.py:29-31` obliga a resolver un combate declarado; `game.py:1791-1792` encola efectos legendarios al entrar. | «Al final de Fase Activa» no determina si Legendaria es subfase de Combate ni su primera prioridad: `AMBIGUOUS`; el orden implementado es explícito y conservador. |
+| **Legendaria → Descarte** | Base regla 15, p. 7: Legendaria ocurre «antes de […] Descarte»; regla 9, pp. 6–7, define el ajuste de mano al acabar. | Pila y prioridad deben cerrarse (`phases.py:27-28`); la secuencia entra en `DISCARD`. | El PDF no define si cada Legendaria admite respuesta individual o sólo el conjunto: `AMBIGUOUS`. |
+| **Descarte → Robo del siguiente activo** | Base regla 9, pp. 6–7, termina el turno tras ajustar a seis; preparación/turnos y regla 5 hacen comenzar el siguiente con Robo. | `phases.py:32-39` impide salir con exceso, limpia el turno, rota activo y entra o salta `DRAW`. | Prioridad durante el ajuste y posibilidad de responder al descarte no están definidas: `AMBIGUOUS`. |
+
+### 4.3 Matriz por fase
+
+| Fase | Entrada / disparos de comienzo | Activo y pasivos | Acciones permitidas por fuente | Acciones prohibidas por fuente | Salida / disparos de final | Omitir fase |
+|---|---|---|---|---|---|---|
+| **Robo** | Entra al comienzo del turno; el activo roba una (Base p. 4; regla 5, p. 6). Efectos concretos pueden aumentar o impedir el robo. | Activo: roba. Pasivos: permanecen en Fase Pasiva (regla 10, p. 7). Quién tiene prioridad: `AMBIGUOUS`; backend: activo. | Recurso Rápido «en cualquier fase o momento» (Base p. 3) y respuestas de pasivos (regla 10). | Pasivo no roba, baja Criaturas, Eventos ni Equipo y no endereza (regla 10). Para el activo, jugar permanentes/Eventos fuera de Efectos no tiene autorización general. | La fuente sólo fija que Mantenimiento sigue; disparos/respuestas al final: `AMBIGUOUS`. Backend exige pases, pila vacía y prioridad cerrada. | El PDF reconoce efectos que impiden robar, no define «omitir la Fase de Robo» ni sus otros efectos: `AMBIGUOUS`. Backend `suppressed_phases` omite también el robo automático y emite `PHASE_SKIPPED`. |
+| **Mantenimiento** | Al entrar, el activo endereza sus permanentes y suma cinco Pasos (Base p. 4; regla 6, p. 6). Cartas concretas pueden disparar «en cada Mantenimiento», pero no prueban una regla universal de orden. | Activo recibe las operaciones. Pasivos sólo respuestas expresas; prioridad canónica `AMBIGUOUS`, backend: activo. | Recursos Rápidos; respuestas; habilidades sólo si su texto autoriza esa ventana. | Pasivos no enderezan; activo no tiene autorización ordinaria para bajar permanentes/Eventos. | Sigue Efectos. Orden entre enderezar, ganar Pasos y disparos de carta: `AMBIGUOUS`; backend realiza enderezado/Pasos sin pila y después abre prioridad. | La fuente no define si al omitir se pierden enderezado, Pasos y disparos: `AMBIGUOUS`. Backend los pierde todos porque no ejecuta `_enter_phase`. |
+| **Efectos** | Sigue a Mantenimiento (Base pp. 4–6). No hay disparo universal canónico de comienzo. | Activo realiza acciones ordinarias. Pasivos responden, transmutan y pueden usar Recurso Rápido (Base p. 3; regla 10, p. 7). Backend rota prioridad entre todos. | Activo: bajar Criaturas, Equipos y Eventos, equipar y Transmutar (Base pp. 3–4, regla 7); Recursos Rápidos de cualquier jugador; Mítica: Drenaje una vez por turno activo y habilidades de Señor/Desafío en Fase Activa (físicas 3–4 / internas 2–3). | Pasivo: no bajar Criatura, Evento o Equipo ni usar Drenaje. | Sigue Combate tras completar acciones/respuestas. No se define disparo universal final ni número de pases: `AMBIGUOUS`. | Omitir Efectos elimina la única ventana backend para cartas no rápidas, equipar, Drenaje y habilidades restringidas; la consecuencia canónica exacta para «Fase Activa»: `AMBIGUOUS`. |
+| **Combate** | Tras Efectos; el activo elige y gira atacantes y el pasivo elige/gira bloqueadores (Base p. 4; regla 8, p. 6). | Activo declara atacantes; defensor pasivo declara bloqueadores. Con 3+ jugadores, defensor y orden: `AMBIGUOUS` salvo elección explícita backend. | Declarar ataque/bloqueo; Recursos Rápidos y respuestas; habilidades con ventana compatible. | Pasivo no declara ataque; criaturas no aptas/giradas no atacan; Drenaje no pasivo. Jugar permanentes/Eventos ordinarios carece de autorización. | Debe resolverse el combate declarado; daño y destrucción se aplican según regla 8. Ventanas entre declarar, bloquear y dañar: `AMBIGUOUS`; backend modela comandos separados y prioridad. | Cartas concretas prueban que puede no existir Fase de Combate, no una regla universal de consecuencias. Backend salta toda la fase; un combate pendiente bloquea avance. |
+| **Legendaria** | Después de Combate y antes de Descarte (Base regla 15, p. 7). Backend encola al entrar los efectos `legendary_effects` de todos los Legendarios del activo. | Regla 15 dice que el jugador usa efectos legendarios y el contrario puede contrarrestarlos. Activo/controlador exacto y primera prioridad con múltiples efectos: `AMBIGUOUS`; backend entrega al activo y ordena lotes. | Efectos legendarios y respuestas, incluidos Recursos Rápidos. Acciones de Señor, Desafío, Drenaje y cartas ordinarias **no reciben por ello** una ventana nueva. | Pasivo no baja permanentes/Eventos ni usa Drenaje. Backend prohíbe cartas no rápidas y habilidades restringidas a Efectos. | Sale sólo con respuestas/pila concluidas; sigue Descarte. El PDF no define pases, orden simultáneo ni si un efecto sin respuesta resuelve de inmediato: `AMBIGUOUS`. | Fuente no define omisión de Legendaria: `AMBIGUOUS`. Backend no encola sus efectos y pasa a Descarte. |
+| **Descarte** | Tras Legendaria; si el activo tiene más de seis, elige el exceso (Base p. 4; regla 9, pp. 6–7). | Activo ajusta mano. Pasivos siguen en Fase Pasiva. Prioridad antes/después del ajuste: `AMBIGUOUS`; backend abre prioridad al activo antes de permitir `DiscardCards`. | Ajuste exacto de mano; Recursos Rápidos por regla general y respuestas pasivas. | Pasivo no realiza el ajuste del activo; cartas ordinarias no rápidas sin autorización; no puede finalizarse con más de seis. | Con mano ≤6 termina el turno y rota activo; backend limpia daño/modificadores temporales y entra en Robo. Respuesta al descarte y disparos de fin: `AMBIGUOUS`. | No existe permiso canónico general de omitir Descarte: `AMBIGUOUS`. Backend, si se suprime, finaliza turno sin forzar límite de mano. |
+
+## 5. Prioridad, anuncio y pila
+
+### 5.1 Tabla de prioridad completa
+
+La Base sólo establece que el oponente puede responder y que se resuelve en
+orden inverso (regla 11, p. 7). No describe un sistema formal de prioridad. Por
+tanto, los detalles backend siguientes son contrato técnico, y los silencios del
+PDF permanecen `AMBIGUOUS`.
+
+| Paso | Evidencia canónica | Backend actual | ¿Puede resolver el efecto? | ¿Permite anunciarlo exclusivamente en esta ventana? | Estado normativo |
+|---|---|---|---|---|---|
+| **1. Anuncio** | Recursos Rápidos: cualquier fase/momento (Base p. 3); cartas ordinarias y Transmutación: fases correspondientes (Base pp. 3–4); respuestas pasivas (regla 10). | `PlayCard`, `ActivateAbility`, `TransmutePermanent`, `DrainSteps` y acciones de combate son comandos cerrados (`commands.py:8-117`). Sólo actúa `priority_player_id`, salvo comandos de estructura específicos. | Todavía no; sólo se propone una acción. | Sí: `_timing_allows_play` limita no rápidas al activo en `EFFECTS`; las restricciones de habilidad se validan aparte. | Quién obtiene primero prioridad y qué significa «momento»: `AMBIGUOUS`. |
+| **2. Validación** | La carta contradice reglas sólo en su texto particular (regla 16, p. 7); no hay protocolo general. | Se valida identidad/prioridad, zona, ventana, objetivos, coste y restricciones antes de mutar (`game.py:910-943`, `1328-1391`). La enumeración de `actions.py` no sustituye esta validación. | El intérprete soporta los `EffectKind` declarados aunque el anuncio resulte ilegal. | No: capacidad de efecto y legalidad temporal son comprobaciones distintas. | Protocolo/orden de validaciones: `AMBIGUOUS`. |
+| **3. Pago** | Los Pasos pagan bajada/equipar y Transmutación los repone (Base pp. 3, 6–7). Costes compuestos y posibilidad de responder al pago dependen de texto particular. | Valida coste completo y luego paga atómicamente antes de mover a resolución (`game.py:927-967`, `997-1038`); Drenaje y Transmutación son transacciones directas. | Sí, si posteriormente llega a resolución. | No. Pagar no abre por sí mismo una ventana diferente. | Si el pago admite respuesta o puede revertirse canónicamente: `AMBIGUOUS`. |
+| **4. Entrada en pila** | «Última jugada, primera resuelta» (regla 11, p. 7). | Carta pasa a `RESOLUTION`, se crea `StackItem`; permanentes irán a tablero y no permanentes a descarte al resolver (`game.py:953-976`). Disparos y Legendarias también se encolan (`stack.py:42-117`). | Sí; efectos representables quedan pendientes en pila. | No. Entrar en pila presupone que el anuncio ya superó su ventana. | Si Transmutación, Drenaje, equipar o declaraciones usan pila: `AMBIGUOUS`; backend no los apila. |
+| **5. Respuestas** | Recursos Rápidos en cualquier momento; pasivo puede responder con Recursos Rápidos y habilidades (Base p. 3; regla 10, p. 7); Legendaria admite contrarrestar (regla 15). | Tras carta/habilidad se reinician pases y prioridad pasa al siguiente jugador (`game.py:977-979`, `1448-1450`). | Sí, tanto la respuesta como el objeto previo si siguen legales al resolver. | Sólo rápidas y habilidades cuya propia restricción permita la fase; no cartas ordinarias. | Qué acciones «responden», y si Drenaje/Transmutación/equipar/desafío admiten respuesta: `AMBIGUOUS`. |
+| **6. Pases consecutivos** | Sin regla expresa. | Cada pase incrementa contador y rota; se requieren tantos pases consecutivos como jugadores (`stack.py:28-39`). Una acción reinicia el contador. | No por el pase; al completarse provoca resolución o cierre. | Pasar no anuncia efecto. | `AMBIGUOUS`. |
+| **7. Resolución LIFO** | Regla 11, p. 7: la última jugada es la primera resuelta, en retroceso. | `stack.pop()` resuelve el tope (`stack.py:119-143`), ejecuta efectos en orden interno, destino, disparos de entrada y acciones basadas en estado. | Sí. Esta es la separación central: el backend puede resolver cualquier efecto ya apilado compatible. | No. LIFO no amplía el momento en que podía anunciarse. | LIFO: respaldado; objetivos ilegales parciales, orden interno y elecciones durante resolución: `AMBIGUOUS` salvo texto de carta. |
+| **8. Recuperación de prioridad** | Sin regla expresa. | Tras resolver un objeto, la ventana queda abierta; si no hay elección pendiente, prioridad vuelve al activo (`stack.py:40-47`). Búsquedas y disparos pueden suspenderla y asignarla al elector/controlador. | Sí, el siguiente objeto espera otra ronda completa. | Se vuelve a aplicar su ventana real; recuperar prioridad no convierte una carta ordinaria en rápida. | `AMBIGUOUS`. |
+| **9. Cierre y avance** | El orden de fases es canónico, no el mecanismo de cierre. | Con pila vacía y pases de todos marca `phase_priority_complete`; sólo el activo puede `AdvancePhase` (`stack.py:36-47`, `phases.py:24-42`). | No quedan objetos pendientes. | No; es transición estructural. | Número de pases y facultad exclusiva de avanzar: `AMBIGUOUS`. |
+
+### 5.2 Auditoría de familias en ventanas activas y pasivas
+
+| Familia | Ventana activa canónica | Ventana pasiva canónica | Backend: puede resolver | Backend: permite anunciar exclusivamente | Resultado de brecha |
+|---|---|---|---|---|---|
+| **Recurso Rápido** | Cualquier fase o momento (Base p. 3). | Sí; regla 10, p. 7, lo incluye como respuesta. | Sí, mediante `StackItem`, en cualquier fase. | Sí en cualquier fase, pero sólo por quien posee prioridad (`game.py:910-979`, `1040-1043`). | La prioridad no está definida por PDF: `AMBIGUOUS`; la ventana amplia sí está respaldada. |
+| **Evento no permanente** | Efectos (Base p. 4; regla 7, p. 6). | Pasivo no puede jugar Eventos (regla 10). | Sí en cualquier fase si ya está en pila. | Sólo activo en `EFFECTS`; resuelve a descarte. | Cumple conservadoramente; si un Evento concreto dice otra ventana, manda su texto. |
+| **Evento permanente / otros permanentes** | Criatura, Equipo y Evento se bajan en Efectos; equipar paga su coste (Base pp. 3–4, 6–7). | Pasivo no los baja ni equipa. | Sí; la carta entra en tablero al resolver. | Sólo activo en `EFFECTS`; `EquipCard` también exige esa fase (`game.py:1507-1531`). | «Evento permanente» conserva tipo Evento y destino permanente; no obtiene rapidez. |
+| **Habilidad activada** | Según texto; las habilidades de Señor sólo están respaldadas en Fase Activa Mítica (física 3 / interna 2). | Regla 10 permite habilidades como respuesta, pero no define cuáles ni sus ventanas. | Sí: se crea objeto de pila y se resuelve LIFO. | Backend permite prioridad en cualquier fase salvo `active_phase_only`, que exige activo en `EFFECTS` (`game.py:1328-1450`). | La regla universal de ventana y si toda activación responde: `AMBIGUOUS`. No se amplía. |
+| **Habilidad disparada** | Cuando ocurre su disparador declarado; la Base no formaliza pila de disparos. | Puede dispararse por hechos del pasivo, pero prioridad/controlador no se define. | Sí; backend crea lotes, exige objetivos/orden y los apila (`stack.py:69-117`). | No se «anuncia» libremente: el backend la encola por disparador; sólo se eligen objetivos/orden. | Orden simultáneo, primera prioridad y respuesta: `AMBIGUOUS`. |
+| **Drenaje Mítico** | Una vez en turno activo, hasta cinco Pasos; primero gratis y cada adicional cuesta tres Heridas (Mítica física 3 / interna 2). | Expresamente no durante Fase Pasiva. | Es operación directa: el backend puede aplicar ganancia/heridas, no un efecto de pila. | Exclusivamente activo con prioridad en `EFFECTS`, una vez por `turn_serial` (`game.py:1535-1554`). | «Turno activo» frente a fase exacta y si admite respuesta: `AMBIGUOUS`; no se amplía fuera de Efectos. |
+| **Transmutación** | Permanentes propios, «siempre en sus fases correspondientes» (Base p. 3); Mítica permite Divinos (física 3 / interna 2). | Regla 10 permite expresamente Transmutación en pasiva. | Operación directa; mueve a descarte, añade coste y puede crear disparos `ON_TRANSMUTED`. | Cualquier fase para quien tiene prioridad y controla un permanente `transmutable` (`game.py:1897-1924`). | La correspondencia exacta por tipo y si admite respuesta: `AMBIGUOUS`. El backend es más uniforme que la frase Base; se registra brecha, no se cambia. |
+
+## 6. Fase Legendaria: auditoría específica
+
+| Aspecto | Evidencia canónica | Contrato backend observado | Estado / gap |
+|---|---|---|---|
+| **Señores** | Mítica físicas 3–4 / internas 2–3: son permanentes; Abismo, Elíseo y Magia no atacan/bloquean ordinariamente; Reinos puede transformarse. | Se representan como permanentes con dominio; Reinos sólo combate transformado y los demás requieren autorización declarativa para Desafío. | La transformación gratuita no existe; ventana exacta más allá de texto de habilidad: `AMBIGUOUS`. |
+| **Fuerza** | Fuerza inicial del Señor igual a su coste y variable al usar capacidades (Mítica física 3 / interna 2). | Fuerza efectiva se resuelve desde definición/modificadores; no se cambia en esta auditoría. | Momento de actualización y uso como coste: `AMBIGUOUS` si la carta no lo declara. |
+| **Heridas** | A Fuerza cero va al descarte; puede ser atacado y dañado salvo protección (Mítica física 3 / interna 2). | Daño marcado y acciones basadas en estado pueden destruir/mover permanentes; heridas de jugador son magnitud separada. | El PDF alterna Fuerza/daño sin detallar estado: `AMBIGUOUS`. |
+| **Pasos** | Capacidades pueden consumir Pasos; la Fuerza inicial deriva del coste. | Costes de habilidad se validan y pagan antes de apilar. | Si gastar Pasos reduce Fuerza por regla general: no está definido; `AMBIGUOUS`, sólo texto concreto puede hacerlo. |
+| **Recursos Rápidos** | Afectan normalmente a Legendarios salvo inmunidad; Divinos son inmunes (Mítica física 3 / interna 2). | Se anuncian con prioridad durante Legendaria; filtrado de objetivos aplica inmunidad. | Ventana respaldada por «cualquier fase»; primera prioridad: `AMBIGUOUS`. |
+| **Eventos** | Legendarios reciben Eventos salvo inmunidad; Divinos no. | Un Evento ordinario **no puede anunciarse** en `LEGENDARY`, aunque un Evento ya en pila puede resolver allí. | Capacidad ≠ ventana. La fuente no autoriza bajar Evento ordinario en Legendaria. |
+| **Habilidades** | Regla 15 Base permite contrarrestar efectos legendarios; Mítica sitúa habilidades de Señor en Fase Activa «a modo de Eventos». | Habilidades no restringidas pueden anunciarse con prioridad; `active_phase_only` sólo en `EFFECTS`. | Tipo, ventana exacta y condición de respuesta de «a modo de Eventos»: `AMBIGUOUS` (`N-LEGENDARY-06`). |
+| **Desafío** | Una vez por turno en Fase Activa, sustituye combate normal (Mítica física 4 / interna 3). | Sólo se declara en `EFFECTS`, con prioridad/elegibilidad y exclusión mutua con combate normal. No se declara en Legendaria. | Que «Fase Activa» incluya Legendaria no está definido: `AMBIGUOUS`; no se amplía. |
+| **Transmutación** | Continúa vigente y los Divinos pueden transmutarse (Mítica física 3 / interna 2); Base permite al pasivo y exige fases correspondientes. | Puede anunciarse con prioridad también en `LEGENDARY`; se ejecuta directamente y encola disparos derivados. | Tipo de Señor/fase correspondiente y respuesta a la propia Transmutación: `AMBIGUOUS`. |
+| **Prioridad** | La regla 15 permite que el contrario contrarreste; no asigna prioridad ni pases. | Activo recibe prioridad al entrar; efectos legendarios se encolan, objetivos/orden se eligen y todos pasan por rondas de pases. | Mecánica backend, no canon: `AMBIGUOUS`. |
+| **Finalización** | Legendaria está antes de Descarte (Base regla 15). | Sólo activo avanza cuando pila vacía y ventana cerrada; efectos legendarios pendientes bloquean otras acciones. | Condición canónica de «todos resueltos» y disparo final: `AMBIGUOUS`. |
+| **Transición a Descarte** | Expresa en Base regla 15, p. 7. | `PhaseManager` entra en `DISCARD`; después exige mano ≤ límite para cerrar turno. | Orden respaldado; mecanismo de prioridad/cierre: `AMBIGUOUS`. |
+
+## 7. Contraste de fronteras y conclusión técnica
+
+| Archivo solicitado | Papel comprobado | Consecuencia para esta auditoría |
+|---|---|---|
+| `engine/phases.py` | Exige activo, pila vacía, prioridad cerrada, combate resuelto y mano ajustada; aplica saltos y rotación. | Define transición técnica, no evidencia canónica. La omisión salta todos los efectos de entrada. |
+| `engine/stack.py` | Pases por todos, LIFO, lotes disparados, elecciones de búsqueda y recuperación de prioridad. | Puede resolver efectos sin concederles una ventana de anuncio. Sus detalles de prioridad son `AMBIGUOUS` normativamente. |
+| `engine/actions.py` | Enumera únicamente acciones candidatas según pendientes, fase y prioridad. | La UI no debe inferir permisos adicionales; enumerar tampoco reemplaza validar. |
+| `engine/commands.py` | Vocabulario cerrado de comandos ejecutables. | No existe un comando genérico que permita saltarse temporización. |
+| `engine/game.py` | Valida y ejecuta atómicamente anuncio, objetivos, pago, pila, Drenaje, Transmutación y entradas de fase. | Es autoridad técnica actual; mantiene separadas resolución y ventana. |
+| `engine/options.py` | Construye selecciones acotadas de objetivos, zonas, costes y distribuciones para opciones legales. | Expande elecciones de una acción ya autorizada; no crea ventanas. |
+| `application.py` | Publica sólo discriminador e `option_id` ligado a partida/jugador/versión y resuelve la opción vigente. | Evita que un cliente remoto fabrique parámetros o reutilice una ventana antigua. |
+| `service.py` | Consulta `engine.legal_actions`, valida el tipo cerrado, ejecuta y guarda con CAS. | La frontera vuelve a ejecutar validación autoritativa; una vista no garantiza que una opción siga vigente. |
+
+**Conclusión:** el backend implementa una prioridad formal más precisa que los
+PDF y, en algunos puntos (notablemente Transmutación), una ventana uniforme que
+la fuente no termina de definir. Este documento registra esas diferencias sin
+convertirlas en canon. Durante esta tarea **no se ha ampliado ninguna ventana
+del motor** ni se ha modificado código ejecutable.
+
+## 8. Revisión expresa de brechas solicitadas
 
 1. **`N-POINTS-01`: `OPEN/BLOCKED`.** Las cuatro formulaciones se conservan
    separadas: 200 (cómputo), 300–400 (intervalo de máximo), aproximadamente 300
@@ -141,7 +253,7 @@ regla Mítica nueva.
 El detalle de estado, impacto y condición de desbloqueo se mantiene en
 [`NORMATIVE_AMBIGUITIES.md`](NORMATIVE_AMBIGUITIES.md).
 
-## 5. Límites técnicos
+## 9. Límites técnicos
 
 - El catálogo de producción continúa vacío; las 431 entradas inventariadas no
   se convierten aquí en reglas universales ni contenido ejecutable.

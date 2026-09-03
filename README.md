@@ -1,12 +1,13 @@
 # Card Duel Engine (nombre provisional)
 
 Primera estructura del backend headless para el futuro juego de cartas. El
-paquete implementa el armazón de las reglas universales de Fantasy Tokens sin
-incluir ninguna carta, personaje ni colección antigua.
+paquete implementa el armazón de las reglas universales de Fantasy Tokens y
+ofrece contenido canónico pequeño mediante carga explícita; no incorpora el
+corpus completo de ninguno de los reglamentos.
 
 ## Alcance de la versión 0.20.1
 
-- Catálogo de cartas vacío y extensible.
+- Catálogos extensibles, sin precarga implícita de contenido.
 - Contratos pequeños de gestores verificados por `mypy` y dobles mínimos independientes.
 - Resolución mediante un registro cerrado en `EffectManager`, sin estado duplicado.
 - Elecciones de sustitución reproducidas mediante una operación encapsulada de consumo.
@@ -122,14 +123,21 @@ incluir ninguna carta, personaje ni colección antigua.
   autoritativa: el transporte no podrá aceptar `player_id`, exponer `GameEngine`
   o `GameState`, omitir `expected_version`/CAS ni reinterpretar comandos.
 
-Las únicas cartas utilizadas están en `tests/fixtures.py` y sirven para probar
-el motor. El catálogo de producción comienza vacío.
+`CardCatalog` y `CollectionRegistry` pueden construirse vacíos: importar el
+paquete no los rellena ni modifica registros del consumidor. Separadamente,
+`base` es una microcolección canónica de ocho cartas disponible mediante sus
+constructores de carga explícita; no es un catálogo genérico precargado.
 
 Las restricciones propias de Mítica sólo se aplican mediante una clasificación
 de colección explícita (identificadores o predicado); admitir una colección en
-general no la convierte en Mítica. No se distribuye ningún catálogo Mítico.
+general no la convierte en Mítica. Fase 2-C añade la colección explícita
+`mythic`, revisión 1: publica sólo las cartas 023 y 025, las únicas dos entradas
+`SUPPORTED` halladas al auditar conjuntamente las razas Elfo y Ángel. Las otras
+once cartas de esas
+dos razas permanecen fuera por `PARTIAL` o `GAP`, y el resto del corpus del PDF
+continúa fuera del paquete.
 
-Los reglamentos primarios son `Fantasy Tokens.pdf` y `Fantasy Tokens Edicion Mitica.pdf`. Se conservan en el repositorio para trazabilidad, pero **ninguno de los dos PDF se empaqueta en el wheel**. El catálogo distribuido continúa vacío: no se ha incorporado ninguna carta de producción.
+Los reglamentos primarios son `Fantasy Tokens.pdf` y `Fantasy Tokens Edicion Mitica.pdf`. Se conservan en el repositorio para trazabilidad, pero **ninguno de los dos PDF se empaqueta en el wheel**. El wheel contiene los módulos declarativos de `base` y `mythic`; usarlos requiere invocar explícitamente sus constructores y no equivale a importar el resto de las cartas de los PDF.
 
 ## Compatibilidad persistente de 0.20.1
 
@@ -146,7 +154,8 @@ huella histórica que omitía el perfil, pero rechaza desde 0.20.2 cualquier
 intento de usar esa excepción. Una nueva serialización incorpora
 el perfil y produce la huella completa. La evidencia de cada entrega se conserva
 en `docs/release-results/<version>/`; un informe de 0.20.0 no acredita 0.20.1.
-`N-POINTS-01` y `M-LORD-EVENT-01` permanecen bloqueados.
+`N-POINTS-01` permanece **OPEN/BLOCKED** y `M-LORD-EVENT-01` permanece
+bloqueado.
 
 ## Desarrollo reproducible
 

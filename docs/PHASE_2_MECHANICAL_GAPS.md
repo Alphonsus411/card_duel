@@ -89,44 +89,47 @@ Ese seguimiento deberá seguir excluyendo condicionales por `card_id`. Esta nota
 no reserva una implementación ni convierte las capacidades deliberadamente
 evitadas en trabajo pendiente.
 
-### Gaps demostrados por el corpus Mítico
+### Clasificación actual de bloqueos del corpus Mítico
 
-La matriz de `PHASE_2C_MYTHIC_CORPUS.md` es la fuente de clasificación. Los
-números siguientes son los tokens originales impresos en el PDF, no IDs de
-catálogo. Ninguna de estas cartas se publica mientras falte parte de su
-semántica.
+La matriz de `PHASE_2C_MYTHIC_CORPUS.md` es la fuente carta por carta. Los
+números son los tokens impresos en el PDF. Sólo 023 y 025 son `SUPPORTED` y se
+publican; ninguna entrada de esta tabla se incorpora con semántica degradada.
 
-| Gap general | Evidencia PDF (nº original) | Abstracción mínima a estudiar |
+| Estado actual | Cartas | Bloqueo real |
 |---|---|---|
-| Taxonomía mecánica declarativa, separada de identidad editorial | 024, 029, 143, 145 | Etiquetas/tipos mecánicos validados y filtros sobre ellos |
-| Revelar desde la cima hasta coincidencia, procesando fallos | 026 | `REVEAL_UNTIL` con filtro, destinos y agotamiento explícitos |
-| Desafío iniciado por habilidad y por criatura no-Señor | 027 | Permiso de iniciador y acción disparada con ventana/objetivos |
-| Prevención/protección por causa y duración | 028, 140 | Escudo continuo con causa `COMBAT_DAMAGE` y expiración |
-| Keywords de combate ejecutables (Vuelo, Dureza, no girar, doble ataque) | 140–145 (doble ataque: 142; no girar: 140) | Keywords cerradas integradas en acciones, combate y estado |
-| Inmunidad según procedencia mecánica del efecto | 029, 140–145 | Perfil de fuente tipado y filtro de inmunidad, sin leer texto/nombre |
-| Disparo al salir o antes de mover a descarte | 142 | Trigger/reemplazo de movimiento con objetivo y orden definidos |
+| `PARTIAL` | 024 | Falta taxonomía mecánica Elfo; búsqueda y barajado ya existen. |
+| `GAP` | 026 | `REVEAL_UNTIL` ya está cerrado, pero falta taxonomía Elfo y la fuente no define el agotamiento sin coincidencia; la clasificación de revisión se conserva. |
+| `GAP` | 027 | Falta Desafío disparado por habilidad con iniciador no-Señor, ventana y objetivos. |
+| `PARTIAL` | 028 | Falta prevención ilimitada filtrada por daño de combate y duración de turno. |
+| `PARTIAL` | 029 | Faltan taxonomía racial, inmunidad tipada y máximo de recuperación de Fuerza. |
+| `PARTIAL` | 140 | Faltan Vuelo, inmunidad, ataque sin giro y protección contra destrucción por combate. |
+| `PARTIAL` | 141 | Faltan Vuelo, Dureza e inmunidad tipada. |
+| `PARTIAL` | 142 | Faltan Vuelo, Dureza, inmunidad, ataque doble y disparo/reemplazo al salir. |
+| `PARTIAL` | 143 | Faltan Vuelo, Dureza, inmunidad y taxonomía de cuatro categorías. |
+| `PARTIAL` | 144 | Faltan Vuelo, Dureza, inmunidades y decisión sobre quién elige el descarte. |
+| `PARTIAL` | 145 | Faltan Vuelo, Dureza, inmunidades, taxonomía Ángel y resolver el alcance de «o». |
 
-#### Impacto transversal mínimo
+Los gaps generales todavía abiertos son, por tanto, taxonomía mecánica racial,
+Desafío disparado, prevención/protección por causa y duración, keywords de
+combate ejecutables, inmunidad según procedencia y disparos/reemplazos de
+salida. `REVEAL_UNTIL` dejó de ser un gap general: es automático, atómico,
+determinista y reutiliza `CardFilter`; no introduce estado pendiente ni nuevas
+acciones legales. Eso no convierte por sí solo nº026 en `SUPPORTED`.
 
-- **Persistencia:** todo permiso, escudo, trigger pendiente, taxonomía y estado
-  de revelación debe serializarse y validarse con versión/migración.
-- **Replay:** las elecciones, revelaciones, movimientos, fuentes de efecto y
-  declaraciones de combate deben quedar registradas; no se vuelven a sortear
-  ni a inferir desde texto editorial.
-- **Acciones legales:** `actions.py` debe enumerar únicamente ventanas y
-  objetivos válidos y ocultar información privada del mazo.
-- **Seguridad/privacidad:** el servidor valida IDs de instancia y permisos; no
-  expone candidatos ocultos ni acepta nombre, token, raza, `rules_text` o
-  `card_id` como autoridad mecánica.
+#### Impacto transversal al cerrar los gaps restantes
 
-### Ambigüedades editoriales (no son gaps)
+- **Persistencia y replay:** permisos, escudos, triggers, taxonomía y decisiones
+  deberán serializarse y reproducirse sin inferir datos desde texto editorial.
+- **Acciones legales:** se enumerarán sólo ventanas y objetivos válidos, sin
+  revelar información privada del mazo.
+- **Seguridad:** el servidor validará IDs y capacidades declarativas; nombre,
+  token, raza editorial, `rules_text` y `card_id` nunca serán autoridad mecánica.
 
-Quedan separadas deliberadamente: quién elige el descarte de nº144, el alcance
-gramatical de “o” en la inmunidad de nº145, el máximo de Fuerza al “recuperar”
-en nº029 y la terminación de nº026 si no queda coincidencia necesitan decisión
-de reglas. Una lectura posible del PDF no justifica reabrir el motor. Sólo tras
-resolver editorialmente cada contrato se decidirá si una abstracción general
-ya existente basta.
+#### Ambigüedades editoriales separadas
+
+El agotamiento sin coincidencia de nº026, el máximo de recuperación de nº029,
+quién elige el descarte de nº144 y el alcance de «o» en nº145 requieren decisión
+editorial. No se ocultan como defectos del motor ni se resuelven por inferencia.
 
 ### Prohibición de identidad como lógica
 

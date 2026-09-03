@@ -118,10 +118,13 @@ nunca sustituye la resolución del backend.
 | Fase 2 | **IN PROGRESS** |
 | Fase 3 | **PENDING** |
 
-La Fase 1 está completa. La Fase 2 está en progreso: la Fase 2-A ya cerró la
-microcolección base, la Fase 2-B ya cerró la conformidad de puntos de mazo y la
-Fase 2-C es la siguiente entrega. La Fase 3 permanece pendiente. Estos estados
-no crean frontend ni inicializan Expo.
+La Fase 1 está completa. La Fase 2 está en progreso: la Fase 2-A cerró la
+microcolección base, la Fase 2-B cerró la conformidad de puntos de mazo y la
+Fase 2-C ya produjo un resultado comprobable, pero parcial. La colección
+explícita `mythic` revisión 1 publica 023 y 025; las otras once cartas auditadas
+de Elfo y Ángel siguen excluidas por `PARTIAL` o `GAP`. Por ello Fase 2-C y
+Fase 2 permanecen **IN PROGRESS**. La Fase 3 continúa pendiente; este estado no
+crea frontend, no inicializa Expo y no anticipa sus entregables.
 
 ### 4.2 Fase 1-A — COMPLETE
 
@@ -180,7 +183,7 @@ confirma que ninguna de las ocho cartas abre un gap mecánico obligatorio.
 Este estado se registró únicamente después de superar la matriz completa: suite
 de pruebas con cobertura de ramas, umbral de cobertura, tipado estático y
 construcción de los artefactos distribuibles. El cierre de Fase 2-A no completa
-la Fase 2: **Fase 2-B — COMPLETE**, **Fase 2-C — NEXT** y **Fase 2 — IN
+la Fase 2: **Fase 2-B — COMPLETE**, **Fase 2-C — IN PROGRESS** y **Fase 2 — IN
 PROGRESS**.
 
 ### 4.6 Fase 2-B — COMPLETE
@@ -196,6 +199,20 @@ mazos. Cada mazo se valida primero de forma individual y después se valida el
 grupo antes de crear o persistir una partida. El Base Set suma 180 puntos. El
 bloqueo normativo `N-POINTS-01` continúa abierto y bloqueado, por lo que este
 cierre no completa la Fase 2 ni anticipa entregables de la Fase 2-C.
+
+### 4.7 Fase 2-C — IN PROGRESS
+
+La revisión 1 de `mythic` demuestra la ruta explícita de contenido con dos
+cartas fielmente representables: nº023 y nº025. La auditoría cubre completas las
+razas Elfo y Ángel, pero no confunde cobertura editorial con publicación: 024,
+028, 029 y 140–145 siguen `PARTIAL`; 026 y 027 siguen `GAP`. La lista y los
+motivos autoritativos están en
+[`PHASE_2C_MYTHIC_CORPUS.md`](PHASE_2C_MYTHIC_CORPUS.md).
+
+Como no están incorporadas las dos razas completas, el veredicto comprobado es
+**Fase 2-C — IN PROGRESS** y **Fase 2 — IN PROGRESS**. Este resultado no cambia
+el estado de FrontEnd ni autoriza el inicio de Fase 3. `N-POINTS-01` también se
+mantiene **OPEN/BLOCKED**.
 
 ## 5. Modelo de contenido y presentación
 

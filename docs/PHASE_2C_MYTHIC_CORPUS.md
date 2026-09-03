@@ -443,3 +443,29 @@ para completar silencios editoriales.
   aparece en el tipo compuesto de 029, el subtipo queda `AMBIGUOUS`.
 - Sólo se crean las definiciones, presentaciones y el manifiesto explícito de
   023 y 025. Ninguna carta bloqueada recibe ID o definición ejecutable.
+
+## Verificación final de la entrega (2026-09-03)
+
+La validación local completa de Fase 2-C se ejecutó desde la raíz, con el
+lockfile y el extra de desarrollo intactos. El perfil completo informó 44
+archivos comprobados por `mypy`, 480 pruebas superadas, cobertura de ramas del
+88 %, 300 simulaciones / 54 000 comandos / 84 000 eventos, 30 roundtrips de
+persistencia y dos wheels binariamente idénticos. La auditoría del wheel
+confirmó además cero dependencias runtime y la ausencia de PDFs, fixtures y
+cartas de producción en el artefacto.
+
+| Control | Resultado local |
+|---|---|
+| `uv sync --locked --extra dev` | PASS |
+| `uv run python -m mypy` | PASS (44 archivos) |
+| `uv run python -m compileall -q src tests` | PASS |
+| `uv run python -m unittest discover -s tests -v` | PASS (480 pruebas) |
+| Cobertura configurada en `pyproject.toml`, incluidas ramas | PASS (88 %) |
+| `verify_release.py --profile runtime` | PASS |
+| `verify_release.py --profile full` | PASS |
+| `verify_reproducible_wheel.py` | PASS (2/2 idénticos) |
+
+El workflow oficial conserva la matriz runtime de Python 3.11, 3.12 y 3.13 y
+el perfil completo en Python 3.13. Esta evidencia local no sustituye GitHub
+Actions: el CI oficial del SHA final debe estar verde antes de emitir `GO`.
+Hasta entonces, el veredicto de la entrega es **IN PROGRESS**, no `COMPLETE`.

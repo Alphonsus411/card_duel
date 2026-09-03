@@ -13,6 +13,13 @@ Edicion Mitica.pdf` (**Mítica**); sus hashes y paginación están fijados en
 [`RULES_SOURCES.json`](RULES_SOURCES.json). Los extractos siguientes son breves:
 la ubicación indicada, no esta transcripción, es la autoridad.
 
+Dos anexos separan el inventario transversal que no debe confundirse con las
+reglas particulares de una carta: la
+[`matriz canónica de todos los tipos de Token`](TOKEN_TYPES_MATRIX.md) cubre los
+431 rótulos impresos y sus contratos universales, y la
+[`taxonomía canónica`](CANONICAL_TAXONOMY.md) registra dimensiones, selecciones,
+controlador, zona, visibilidad y su correspondencia con el dominio del backend.
+
 Se aplicó este procedimiento:
 
 1. separar cada enunciado normativo del material editorial y de las cartas;

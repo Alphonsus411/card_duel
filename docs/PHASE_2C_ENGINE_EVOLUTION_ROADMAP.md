@@ -29,6 +29,63 @@ El campo **Gate** es vinculante:
 
 Por tanto, ninguna puntuación de frecuencia puede adelantar un nodo `WAIT-PREREQ`, ni una valoración `HIGH` autoriza un nodo `NORM-BLOCKED`. Al cambiar un prerequisite o una fuente normativa se debe reevaluar la fila y sus descendientes, no conservar mecánicamente su orden anterior.
 
+## Fichas de contención por ambigüedad normativa activa
+
+Las fichas siguientes cubren **cada fila** del registro activo de
+`NORMATIVE_AMBIGUITIES.md`. Una interfaz preparada o un fixture técnico sólo
+preserva opciones de diseño: no constituye evidencia, no cambia el gate y no
+puede convertirse en una prueba del canon. `N-TRANSMUTATION-02` se explicita
+además porque alimenta directamente `CAP-TRANSMUTE-002` y el carril normativo,
+aunque el registro resumido la mantenga trazada desde el documento maestro.
+
+### `N-POINTS-01`
+
+| Capability bloqueada | Capability parcial permitida | Interfaz preparada | Default prohibido | Test normativo pendiente |
+|---|---|---|---|---|
+| Fijar un presupuesto Mítico canónico o interpretar como tal 200, 300 o 400. | Sumar `CardDefinition.cost`, conservar el mínimo Base y comparar presupuestos entre participantes; validar un límite sólo cuando la configuración lo proporcione expresamente. | Política de construcción con `point_budget: int \| None` y fábricas con `point_budget=None`; el consumidor puede inyectar un límite explícito sin elevarlo a canon. | Cualquier presupuesto implícito, especialmente 200, 300 o 400. | Queda pendiente toda prueba que proclame un presupuesto Mítico canónico; sólo son admisibles pruebas de `None`, suma, comparación e inyección explícita. |
+
+### `N-LEGENDARY-06` / `M-LORD-EVENT-01`
+
+| Capability bloqueada | Capability parcial permitida | Interfaz preparada | Default prohibido | Test normativo pendiente |
+|---|---|---|---|---|
+| Reclasificar una propiedad de Señor como Evento o derivar por ello inmunidades, targets especiales, interacción con Divinos, pila o semántica de respuesta. | Representar perfiles de fuente y ventanas tipadas; conservar únicamente la Fase Activa expresamente respaldada. | Perfil de fuente parametrizable y política de ventana inyectable, sin activar consecuencias por identidad o por el texto «a modo de Eventos». | `source_type=EVENT`, inmunidad, selector, target o ventana de respuesta inferidos automáticamente. | Quedan pendientes las pruebas canónicas de clasificación, inmunidad, targeting, apilado y respuesta; los tests de perfiles sólo pueden verificar parametrización neutral. |
+
+### `N-COMBAT-03`
+
+| Capability bloqueada | Capability parcial permitida | Interfaz preparada | Default prohibido | Test normativo pendiente |
+|---|---|---|---|---|
+| Proclamar un orden de bloqueadores como regla canónica o implementar un algoritmo normativo de reparto de daño entre múltiples bloqueadores. | Estructuras deterministas para capturar, serializar y reproducir orden y asignación suministrados explícitamente. | Secuencia ordenada y asignaciones tipadas, versionables y validadas, sin atribuir autoridad normativa al orden de normalización. | Orden por inserción, ID, fuerza o elección del atacante y reparto automático presentados como canon. | Pruebas canónicas de orden, simultaneidad, reparto y sobrante pendientes; fixtures técnicos de codec/replay se mantienen separados y rotulados como no normativos. |
+
+### `N-COMBAT-06`
+
+| Capability bloqueada | Capability parcial permitida | Interfaz preparada | Default prohibido | Test normativo pendiente |
+|---|---|---|---|---|
+| Determinar para 3+ ganador automático, empate, eliminación, continuidad o terminación global. | Modelos extensibles de resultado y eliminación, capaces de expresar `BLOCKED` y decisiones futuras sin perder participantes ni orden. | Resultado multijugador tipado con política explícita de terminación/eliminación y estado no resuelto. | Extrapolar a 3+ cualquier ganador, empate o fin global derivado de la lógica de exactamente dos jugadores. | Pruebas normativas de eliminación, supervivientes, concesión, empate, ganadores y fin global para 3+ pendientes; sólo se prueba por ahora la conservación determinista de un resultado no resuelto. |
+
+### `N-PHASE-01`–`02`, `N-PHASE-04`–`05`, `N-PHASE-07`, `N-PHASE-09`–`10` — `BASE VIGENTE / MITICA SILENTE`
+
+| Capability bloqueada | Capability parcial permitida | Interfaz preparada | Default prohibido | Test normativo pendiente |
+|---|---|---|---|---|
+| Añadir por silencio Mítico excepciones a preparación, mulligan, robo, mantenimiento, descarte, pila o enderezado. | Aplicar y probar la regla Base vigente, manteniendo separada su procedencia. | Políticas tipadas por formato/fuente para incorporar una futura extensión Mítica expresa. | Una variante Mítica implícita, tanto más permisiva como más restrictiva que Base. | Pendiente cualquier prueba que afirme una extensión Mítica; las pruebas Base continúan siendo canónicas sólo para la regla Base vigente. |
+
+### `N-ZONE-01`–`03`, `N-COST-03`, `N-COMBAT-04` — `BASE VIGENTE / MITICA SILENTE`
+
+| Capability bloqueada | Capability parcial permitida | Interfaz preparada | Default prohibido | Test normativo pendiente |
+|---|---|---|---|---|
+| Inventar extensiones Míticas de reciclaje, zonas ocultas, Equipo, coste de equipar o aptitud de combate tras giro. | Mantener sin ampliación ni restricción las reglas Base vigentes y su trazabilidad. | Políticas de zona, coste y elegibilidad parametrizadas por fuente/formato, inicialmente alimentadas sólo con Base. | Sobrescribir Base o añadir una excepción Mítica a partir de ausencia textual. | Pendiente cualquier prueba de diferencia Mítica; fixtures técnicos pueden ejercitar parámetros no canónicos sin etiquetarlos como reglas Míticas. |
+
+### `N-PHASE-03`, `N-COMBAT-05`
+
+| Capability bloqueada | Capability parcial permitida | Interfaz preparada | Default prohibido | Test normativo pendiente |
+|---|---|---|---|---|
+| Inferir del silencio una secuencia Mítica distinta o condiciones terminales/alcance total para multijugador. | Conservar la secuencia Base y preparar partidas de 2+ con selección explícita de participantes/defensor, sin decidir su final global. | Secuencia y alcance parametrizados; resultado multijugador delega la terminación no resuelta a una política explícita. | Alteración automática de fases o terminación de 3+ por analogía con dos jugadores. | Pendientes las pruebas canónicas de una secuencia Mítica distinta y del alcance/fin 3+; siguen válidas las pruebas Base y los fixtures técnicos no normativos. |
+
+### `N-TRANSMUTATION-02`
+
+| Capability bloqueada | Capability parcial permitida | Interfaz preparada | Default prohibido | Test normativo pendiente |
+|---|---|---|---|---|
+| Publicar una tabla normativa de ventanas de Transmutación por tipo o rol mientras «fases correspondientes» carezca de definición suficiente. | Preservar la operación atómica común y aceptar una política explícita de timing por tipo para experimentación o futura configuración autorizada. | `TransmutationTimingPolicy` (o contrato equivalente) parametrizado por tipo, actor y ventana, sin tabla canónica incorporada. | Una ventana uniforme o una matriz criatura/Equipo/Evento presentada como interpretación normativa predeterminada. | Pruebas normativas por tipo y rol pendientes hasta disponer de evidencia; sólo se prueban neutralidad, inyección, rechazo seguro, codec y replay de la política explícita. |
+
 ## Valoración de las 62 capabilities
 
 Las columnas `Central.`, `Desbloq.`, `Riesgo`, `Claridad` y `Migración` corresponden, en ese orden, a las cinco dimensiones anteriores. La explicación concreta de cada valoración queda trazable en la última columna: estado, prerequisites y dependientes declarados.

@@ -428,3 +428,386 @@ públicos.
 Esta sección es un registro de impacto, no una especificación de migración. En
 particular, **no cambia** snapshot v2, replay v2, CAS, selección pendiente,
 rollback ni el esquema de errores públicos seguros existente.
+
+## 14. Fichas maestras de gaps y bloqueos
+
+### 14.1 Cobertura, vocabulario y separación de responsabilidades
+
+Esta sección es la capa de planificación del registro maestro. Cubre **toda**
+fila `PARTIAL` o `MISSING` de la matriz de 431 entradas y todo bloqueo
+`AMBIGUOUS` o `CONFLICT` de este documento, sin convertir una carta en una
+solución ad hoc:
+
+* una fila `PARTIAL` cuyo lenguaje es `REPRESENTABLE` pertenece a
+  `CAP-CATALOG-INGESTION`; si además declara un extremo incompleto, pertenece
+  también a la capacidad general correspondiente;
+* una fila `MISSING` pertenece a una o más fichas `CAP-*` según sus
+  `intrínsecas`, `triggers`, `efectos`, selección, duración y movimientos en
+  `CARD_CORPUS_CONFORMANCE.md`; una combinación no crea otra capacidad;
+* las filas `AMBIGUOUS` de cartas y las reglas `N-*` ambiguas pertenecen a
+  `BLOCK-EDITORIAL`; `N-POINTS-01` pertenece a `BLOCK-POINTS-CONFLICT`;
+* `ENGINE_STATUS` usa sólo `ENGINE_DEFECT`, `CAPABILITY_NOT_IMPLEMENTED` o
+  `EDITORIAL_BLOCKED`. Un mismo caso puede enlazar varias fichas, pero esas
+  responsabilidades nunca se fusionan.
+
+La columna **Cartas afectadas** de cada ficha es un selector exhaustivo sobre la
+matriz carta por carta, no una lista manual susceptible de quedar obsoleta. Por
+ejemplo, `intrínsecas contiene VUELO` significa *todas* las filas que satisfacen
+esa expresión. Los IDs citados después son muestras trazables, no límites. La
+coordenada de fuente completa de cada afectada permanece en su fila. Cuando la
+fuente no resuelve un dato se escribe `UNKNOWN` o `AMBIGUOUS`; cuando un campo
+no pertenece al concepto se escribe `NOT APPLICABLE`.
+
+Cada ficha usa consistentemente los campos solicitados. **Impactos** siempre
+informa arquitectura, persistencia, snapshot, replay, atomicidad/rollback,
+determinismo/CAS, acciones legales y privacidad.
+
+### 14.2 Capacidad transversal: incorporación declarativa
+
+| Campo | Valor |
+|---|---|
+| **ID** | `CAP-CATALOG-INGESTION` |
+| **CATEGORY** | Catálogo/contenido declarativo compartido |
+| **SOURCE_PDF** | `Fantasy Tokens.pdf`; `Fantasy Tokens Edicion Mitica.pdf` |
+| **SOURCE_PAGE** | Las coordenadas física/interna de cada fila `PARTIAL` en la matriz |
+| **SOURCE_CARD/TOKEN** | Todas las filas `PARTIAL`; por ejemplo `ALPHA-006` El Primigenio y `MITICA-163` Iluminación |
+| **SOURCE_TEXT** | El extracto conservado en la fila de cada carta; no se sustituye por una paráfrasis global |
+| **NORMALIZED_RULE** | Una definición representable debe incorporarse como datos de contenido, sin ramas por identidad y sin ampliar el significado de sus primitivas |
+| **APPLIES_TO** | Toda fila con `Estado=PARTIAL`; las primitivas compartidas se reutilizan entre identidades/reimpresiones |
+| **PHASE/WINDOW** | La ventana de la fila; `UNKNOWN` cuando la fila la marca ordinaria/no indicada |
+| **ZONES** | Las zonas de la fila; `NOT APPLICABLE` si no hay movimiento |
+| **VISIBILITY** | La de la fila: `PÚBLICA` u `OCULTA+REVELADO_NECESARIO` |
+| **COST** | Coste impreso y costes adicionales conservados por fila; `UNKNOWN` si el PDF no los completa |
+| **TARGET/SELECTION** | Selector declarado por fila; nunca se completa por el nombre o el arte |
+| **DURATION** | La de la fila; `UNKNOWN` para `PERMANENTE/NO_INDICADA` cuando ambas lecturas no son equivalentes |
+| **INTERACTIONS** | Catálogo, `EffectDefinition`, targeting, timing, presentación y política de mazo |
+| **ENGINE_STATUS** | `CAPABILITY_NOT_IMPLEMENTED` (contenido); no es por sí mismo defecto del intérprete |
+| **CURRENT_SUPPORT** | Lenguaje `REPRESENTABLE`; sólo 2 entradas están completamente soportadas y el resto del corpus no está incorporado |
+| **EXACT_GAP** | Faltan definiciones, validación de datos y pruebas por combinación; una fila que también dependa de una primitiva ausente sigue enlazada a su `CAP-*` |
+| **GENERAL_CAPABILITY_REQUIRED** | Pipeline validado de ingestión y registro; no factorías por carta |
+| **Impactos** | **Arquitectura:** contenido aislado del motor. **Persistencia/snapshot:** definición y versión del catálogo deben ser resolubles. **Replay:** fijar catálogo/semántica. **Atomicidad/rollback:** alta completa o rechazo sin registro parcial. **Determinismo/CAS:** orden e IDs estables; CAS antes de jugar. **Acciones legales:** sólo cartas realmente registradas y autorizadas. **Privacidad:** no publicar cartas no lanzadas ni datos de mazos. |
+| **Cartas afectadas** | Selector: `Estado=PARTIAL` (245 entradas; 212 identidades agregadas al corte) |
+| **Dependencias** | Validadores de contenido, taxonomía canónica, versión de catálogo y todas las `CAP-*` adicionales enlazadas por fila |
+| **Prioridad** | `P1`, después de las capacidades `P0` necesarias para cada carta |
+
+### 14.3 Capacidades generales aún no implementadas
+
+#### `CAP-RACE-TAXONOMY` — taxonomía racial tipada
+
+| Campo | Valor |
+|---|---|
+| **ID** | `CAP-RACE-TAXONOMY` |
+| **CATEGORY** | Selección/taxonomía |
+| **SOURCE_PDF** | Ambos PDF |
+| **SOURCE_PAGE** | Múltiples; coordenada por fila |
+| **SOURCE_CARD/TOKEN** | Selector: `tax` no vacío usado mecánicamente; muestras `ALPHA-007`, `MITICA-143`, `MITICA-180` |
+| **SOURCE_TEXT** | Bonificaciones, búsquedas o restricciones por Primigenio, Goblin, Elfo, Ángel y demás familias |
+| **NORMALIZED_RULE** | La pertenencia racial es una dimensión tipada y multivalor, distinta de tipo funcional, rango, nombre y menciones en efectos |
+| **APPLIES_TO** | Definiciones, filtros de objetivo/búsqueda, efectos continuos y construcción |
+| **PHASE/WINDOW** | `NOT APPLICABLE` a la pertenencia; la acción consumidora conserva su ventana |
+| **ZONES** | Cualquier zona consultada por el efecto; no se presume sólo tablero |
+| **VISIBILITY** | Pública en permanentes; en mazo/mano sólo resultado autorizado |
+| **COST** | `NOT APPLICABLE`; conserva el coste de la acción consumidora |
+| **TARGET/SELECTION** | Predicados por una o varias razas, inclusión/exclusión y controlador |
+| **DURATION** | `NOT APPLICABLE` para la identidad; la modificación que la cambie necesita duración explícita |
+| **INTERACTIONS** | Búsqueda, lord effects, cambio de tipo, copias, transformación y reimpresiones |
+| **ENGINE_STATUS** | `CAPABILITY_NOT_IMPLEMENTED` |
+| **CURRENT_SUPPORT** | Existen strings/filtros parciales; no hay contrato racial canónico completo y uniforme |
+| **EXACT_GAP** | No se puede distinguir de forma autoritativa pertenencia, mención, alias y combinación racial en todos los filtros |
+| **GENERAL_CAPABILITY_REQUIRED** | `CreatureTaxon` normalizado + predicado reusable de audiencia/zona/controlador |
+| **Impactos** | **Arquitectura:** valor tipado, no condicional por carta. **Persistencia/snapshot:** serializar vocabulario/versionado. **Replay:** resolver con la taxonomía fijada. **Atomicidad/rollback:** cambios de raza con el efecto completo. **Determinismo/CAS:** ordenar coincidencias por ID estable y revalidar versión. **Acciones legales:** filtrar targets/candidatos en servidor. **Privacidad:** no revelar razas de cartas ocultas no elegidas. |
+| **Cartas afectadas** | Selector exhaustivo: filas `PARTIAL`/`MISSING` cuyo efecto depende de `tax`, aunque la mención no atribuya esa raza a la propia fuente |
+| **Dependencias** | `CANONICAL_TAXONOMY.md`, targeting y búsqueda |
+| **Prioridad** | `P0` |
+
+#### `CAP-CHALLENGE-TRIGGER` — Desafío disparado
+
+| Campo | Valor |
+|---|---|
+| **ID** | `CAP-CHALLENGE-TRIGGER` |
+| **CATEGORY** | Combate/trigger especial |
+| **SOURCE_PDF** | `Fantasy Tokens Edicion Mitica.pdf` |
+| **SOURCE_PAGE** | Física 4 / interna 3 y cartas enlazadas en la matriz |
+| **SOURCE_CARD/TOKEN** | Regla Desafío y filas con conducta al declarar/resolver Desafío |
+| **SOURCE_TEXT** | Desafío se usa una vez por turno en Fase Activa y sustituye el combate normal |
+| **NORMALIZED_RULE** | Evento tipado de declaración/resolución de Desafío capaz de disparar efectos, sin restringirlo por analogía a Reinos |
+| **APPLIES_TO** | Señores y criaturas expresamente elegibles; habilidades que observan Desafío |
+| **PHASE/WINDOW** | Fase Activa; normalización técnica actual `EFFECTS`; alcance exacto `AMBIGUOUS` |
+| **ZONES** | Tablero; pila si los disparos usan la pila |
+| **VISIBILITY** | PÚBLICA |
+| **COST** | Una utilización por turno; otros costes `UNKNOWN` salvo carta |
+| **TARGET/SELECTION** | Desafiador, defensor y elecciones de orden; restricciones exactas por texto |
+| **DURATION** | Una resolución; uso consumido hasta el siguiente turno |
+| **INTERACTIONS** | Combate normal, prioridad, daño letal, transformación de Señor y triggers |
+| **ENGINE_STATUS** | `CAPABILITY_NOT_IMPLEMENTED` para el trigger; el comando básico de Desafío sí existe |
+| **CURRENT_SUPPORT** | Declaración/resolución básica y exclusión mutua; no evento declarativo general para cartas observadoras |
+| **EXACT_GAP** | Falta un evento disparable con payload estable y orden respecto de daño/salida |
+| **GENERAL_CAPABILITY_REQUIRED** | Event bus tipado de Challenge con batch de triggers |
+| **Impactos** | **Arquitectura:** evento de dominio reusable. **Persistencia/snapshot:** uso por turno, challenge pendiente y triggers. **Replay:** registrar participantes/orden. **Atomicidad/rollback:** declarar, consumir uso y encolar como unidad. **Determinismo/CAS:** orden canónico y versión previa. **Acciones legales:** sólo ofrecer con elegibilidad y prioridad vigentes. **Privacidad:** no incluir información oculta en payload/opciones. |
+| **Cartas afectadas** | Selector: filas `PARTIAL`/`MISSING` con ventana, texto o trigger de Desafío; IDs exactos en la matriz |
+| **Dependencias** | Pila, prioridad, combate, `BLOCK-EDITORIAL` para el alcance de Fase Activa |
+| **Prioridad** | `P0` |
+
+#### `CAP-DAMAGE-PREVENTION` — prevención por causa y duración
+
+| Campo | Valor |
+|---|---|
+| **ID** | `CAP-DAMAGE-PREVENTION` |
+| **CATEGORY** | Daño/reemplazo/duración |
+| **SOURCE_PDF** | Ambos PDF |
+| **SOURCE_PAGE** | Por fila; muestra Base 9/9 |
+| **SOURCE_CARD/TOKEN** | Selector: `efectos` contiene `PREVENT` o texto impide daño/destrucción por una causa; muestra `ALPHA-013` Amuleto de Huesos |
+| **SOURCE_TEXT** | «prevén todo el daño de combate recibido este turno»; otros textos limitan fuente, receptor o siguiente ocurrencia |
+| **NORMALIZED_RULE** | Un escudo filtra causa/tipo/fuente/receptor, cantidad o totalidad y expiración; impedir destrucción no equivale siempre a prevenir daño |
+| **APPLIES_TO** | Jugador, criatura o conjunto expresamente indicado |
+| **PHASE/WINDOW** | Ventana de la carta y punto de reemplazo antes de aplicar daño |
+| **ZONES** | Tablero/estado del jugador; fuente puede estar en resolución |
+| **VISIBILITY** | PÚBLICA tras crear el escudo; condiciones ocultas `UNKNOWN` salvo texto |
+| **COST** | El de la carta/habilidad; `NOT APPLICABLE` al consumo del escudo salvo texto |
+| **TARGET/SELECTION** | Receptor y predicado de causa; objetivos exactos por fila |
+| **DURATION** | Fin de turno, siguiente ocurrencia, mientras la fuente permanezca o la indicada; nunca `permanente` por defecto |
+| **INTERACTIONS** | Daño de combate/no combate, heridas, letalidad, reemplazos, Dureza e inmunidad |
+| **ENGINE_STATUS** | `CAPABILITY_NOT_IMPLEMENTED` |
+| **CURRENT_SUPPORT** | Hay prevención cuantitativa temporal limitada, no matriz completa por causa/duración |
+| **EXACT_GAP** | El escudo actual no expresa todas las procedencias, alcance total, expiraciones ni orden de reemplazo |
+| **GENERAL_CAPABILITY_REQUIRED** | `DamagePreventionRule` tipada y orden de reemplazos determinista |
+| **Impactos** | **Arquitectura:** pipeline previo a daño. **Persistencia/snapshot:** saldo, filtros, expiración y orden. **Replay:** registrar elección de reemplazo, no recalcularla. **Atomicidad/rollback:** consumir escudo y aplicar remanente juntos. **Determinismo/CAS:** orden estable y revalidación. **Acciones legales:** ofrecer elecciones sólo al elector. **Privacidad:** no revelar fuente oculta antes de causar daño. |
+| **Cartas afectadas** | Selector exhaustivo anterior sobre filas `PARTIAL`/`MISSING` |
+| **Dependencias** | Daño tipado, duraciones, reemplazos y `CAP-TYPED-IMMUNITY` |
+| **Prioridad** | `P0` |
+
+#### `CAP-COMBAT-KEYWORDS` — Vuelo, Dureza, ataque sin giro y ataque doble
+
+| Campo | Valor |
+|---|---|
+| **ID** | `CAP-COMBAT-KEYWORDS` |
+| **CATEGORY** | Combate/propiedades intrínsecas |
+| **SOURCE_PDF** | Ambos PDF |
+| **SOURCE_PAGE** | Por fila; muestras Base física/interna 9/9, 10/10 y 12/12; Mítica física 15 / interna 14 |
+| **SOURCE_CARD/TOKEN** | `ALPHA-005` Hada Primigenia (Vuelo), `ALPHA-050` Reno Nórdico (Dureza/no giro), `MITICA-142` Ángel de la Justicia (ataque doble) |
+| **SOURCE_TEXT** | Vuelo impide bloqueo por terrestres sin la habilidad; Dureza da +2 al bloquear o ser bloqueada; otras cartas no se giran al atacar o atacan dos veces |
+| **NORMALIZED_RULE** | Cuatro capacidades independientes: restricción de bloqueo, modificador condicionado, exención del coste de giro y multiplicidad de ataques/daño |
+| **APPLIES_TO** | Criatura portadora o criatura equipada mientras conserve la capacidad |
+| **PHASE/WINDOW** | Declaración de atacantes/bloqueadores y resolución de cada ataque |
+| **ZONES** | Tablero |
+| **VISIBILITY** | PÚBLICA |
+| **COST** | No giro modifica sólo el giro de atacar; los demás costes son `NOT APPLICABLE` salvo texto |
+| **TARGET/SELECTION** | Atacante/bloqueador; ataque doble conserva defensor, salvo que la fuente indique nueva selección (`UNKNOWN`) |
+| **DURATION** | Mientras se posea la capacidad; bonificación de Dureza durante la condición de combate |
+| **INTERACTIONS** | Aptitud, girado previo, múltiples bloqueadores, pérdida de habilidades, equipos y prevención |
+| **ENGINE_STATUS** | `CAPABILITY_NOT_IMPLEMENTED` |
+| **CURRENT_SUPPORT** | Los nombres pueden almacenarse; no hay semántica universal completa en enumeración/validación/resolución |
+| **EXACT_GAP** | Legal actions y combate no ejecutan uniformemente los cuatro contratos ni su concesión/pérdida dinámica |
+| **GENERAL_CAPABILITY_REQUIRED** | Conjunto tipado de capacidades de combate consultado por enumerador y validador autoritativo |
+| **Impactos** | **Arquitectura:** predicados compartidos, no flags por identidad. **Persistencia/snapshot:** capacidades concedidas y expiración. **Replay:** registrar declaraciones, no opciones descartadas. **Atomicidad/rollback:** declarar/girar/consumir ataque juntos. **Determinismo/CAS:** validar estado y versión; ordenar ataques. **Acciones legales:** enumerador y ejecutor deben coincidir. **Privacidad:** no filtrar mejoras ocultas antes de revelarse. |
+| **Cartas afectadas** | Selector: filas `PARTIAL`/`MISSING` con `VUELO`, `DUREZA`, `NO_GIRO` o texto «ataca dos veces»; incluye capacidades concedidas por Equipos/Eventos |
+| **Dependencias** | Combate, efectos continuos, duraciones y targeting |
+| **Prioridad** | `P0` |
+
+#### `CAP-TYPED-IMMUNITY` — inmunidades por tipo de fuente/efecto
+
+| Campo | Valor |
+|---|---|
+| **ID** | `CAP-TYPED-IMMUNITY` |
+| **CATEGORY** | Interacción/targeting/resolución |
+| **SOURCE_PDF** | Ambos PDF |
+| **SOURCE_PAGE** | Por fila; regla Mítica física 3 / interna 2 |
+| **SOURCE_CARD/TOKEN** | Selector: `intrínsecas=INMUNIDAD` o `efectos` contiene `IMMUNITY`; muestras `MITICA-166`, `MITICA-169`, `MITICA-179` |
+| **SOURCE_TEXT** | Inmunidad a Eventos, Recursos Rápidos, Habilidades y/o Tokens Legendarios, en combinaciones expresas |
+| **NORMALIZED_RULE** | La inmunidad es un predicado sobre tipo de fuente, rango y/o clase de efecto; no es invulnerabilidad global ni se infiere por semejanza |
+| **APPLIES_TO** | Objeto protegido y sólo categorías enumeradas |
+| **PHASE/WINDOW** | Selección de objetivos y revalidación al resolver; `NOT APPLICABLE` como ventana propia |
+| **ZONES** | Normalmente tablero; otras zonas `UNKNOWN` salvo texto |
+| **VISIBILITY** | PÚBLICA cuando la fuente protegida es pública |
+| **COST** | `NOT APPLICABLE` |
+| **TARGET/SELECTION** | Excluye targets ilegales y define qué ocurre al resolver si adquiere inmunidad |
+| **DURATION** | Mientras se posea o durante la duración concedida |
+| **INTERACTIONS** | Divinos, Señores «a modo de Eventos» (`AMBIGUOUS`), habilidades, legendarios, copia y pérdida de habilidades |
+| **ENGINE_STATUS** | `CAPABILITY_NOT_IMPLEMENTED` para la matriz general; hay filtros concretos parciales |
+| **CURRENT_SUPPORT** | Filtros limitados de targeting; no clasificación completa y uniforme de fuente/efecto |
+| **EXACT_GAP** | Falta tipar procedencia y aplicar la misma regla en enumeración, validación y resolución |
+| **GENERAL_CAPABILITY_REQUIRED** | `SourceDescriptor` + `ImmunityPredicate` declarativos |
+| **Impactos** | **Arquitectura:** clasificación transversal. **Persistencia/snapshot:** inmunidades concedidas y fuente. **Replay:** fijar versión de clasificación. **Atomicidad/rollback:** validar antes de pagar; rollback total si falla. **Determinismo/CAS:** revalidar target/version. **Acciones legales:** paridad enumerador-ejecutor. **Privacidad:** error uniforme; no confirmar una inmunidad oculta. |
+| **Cartas afectadas** | Selector exhaustivo anterior sobre filas `PARTIAL`/`MISSING` |
+| **Dependencias** | Tipos funcionales/rangos, targeting, pila y `BLOCK-EDITORIAL` (`N-LEGENDARY-06`) |
+| **Prioridad** | `P0` |
+
+#### `CAP-ZONE-EXIT` — triggers y reemplazos de salida
+
+| Campo | Valor |
+|---|---|
+| **ID** | `CAP-ZONE-EXIT` |
+| **CATEGORY** | Zonas/triggers/reemplazos |
+| **SOURCE_PDF** | Ambos PDF |
+| **SOURCE_PAGE** | Por fila |
+| **SOURCE_CARD/TOKEN** | Selector: triggers `ON_DESTROYED`, `ON/MOVE_DISCARD`, Transmutación o texto «si fuera a ir/salir»; muestras `ALPHA-035`, `MITICA-134`, `MITICA-142` |
+| **SOURCE_TEXT** | Efectos al ser destruida, removida, transmutada o antes de ir a la Pila |
+| **NORMALIZED_RULE** | Distinguir evento posterior de salida y reemplazo previo, con origen, destino, causa, instancia y controlador capturados |
+| **APPLIES_TO** | Instancia que cambia de zona y observadores expresamente autorizados |
+| **PHASE/WINDOW** | Inmediatamente antes (reemplazo) o después (trigger) del movimiento; prioridad exacta `UNKNOWN` salvo texto |
+| **ZONES** | Origen/destino tipados; «remover» sin destino es `AMBIGUOUS` |
+| **VISIBILITY** | Según origen y momento de revelación; audiencia debe persistirse |
+| **COST** | Sacrificio/Transmutación si corresponde; en otro caso `NOT APPLICABLE` |
+| **TARGET/SELECTION** | Reemplazo y targets del efecto derivado; elector/orden explícitos |
+| **DURATION** | Una transición; efectos derivados según carta |
+| **INTERACTIONS** | Destruir, sacrificar, Transmutar, indestructible, regeneración, anexos y limpieza de estado |
+| **ENGINE_STATUS** | `CAPABILITY_NOT_IMPLEMENTED` |
+| **CURRENT_SUPPORT** | `ON_TRANSMUTED` y reemplazos de movimiento parciales; no trigger universal de salida ni entrada uniforme |
+| **EXACT_GAP** | No existe payload causal completo ni orden/batch general; movimientos directos divergen |
+| **GENERAL_CAPABILITY_REQUIRED** | `ZoneChangeEvent`/`ZoneChangeReplacement` autoritativos |
+| **Impactos** | **Arquitectura:** toda mutación pasa por una puerta de zona. **Persistencia/snapshot:** pendientes, causa, audiencia y last-known-info. **Replay:** registrar reemplazo/orden. **Atomicidad/rollback:** movimiento, limpieza y encolado indivisibles. **Determinismo/CAS:** orden estable y versión previa. **Acciones legales:** elecciones de reemplazo sólo al elector. **Privacidad:** last-known-info proyectada por audiencia. |
+| **Cartas afectadas** | Selector exhaustivo anterior sobre filas `PARTIAL`/`MISSING` |
+| **Dependencias** | Gestor de zonas, pila, duraciones, snapshots y `CAP-SECRET-CHOICE` |
+| **Prioridad** | `P0` |
+
+#### `CAP-SECRET-CHOICE` — elecciones compuestas, ambiguas y ocultas
+
+| Campo | Valor |
+|---|---|
+| **ID** | `CAP-SECRET-CHOICE` |
+| **CATEGORY** | Selección/orden/privacidad |
+| **SOURCE_PDF** | Ambos PDF |
+| **SOURCE_PAGE** | Por fila |
+| **SOURCE_CARD/TOKEN** | Selector: selección desde mano/mazo, top-N, «elige», alternativas o reordenación; muestras `ALPHA-025`, `ALPHA-034`, `MITICA-157`, `MITICA-162` |
+| **SOURCE_TEXT** | Elegir subconjuntos, uno entre modos, cartas de menor coste, primeras N y orden de las restantes |
+| **NORMALIZED_RULE** | Elección tipada con elector, audiencia, candidatos, cardinalidad, modo, orden y momento; si el texto admite varias lecturas, queda `AMBIGUOUS` y no se ejecuta una preferida |
+| **APPLIES_TO** | Jugador autorizado y objetos elegibles en la zona indicada |
+| **PHASE/WINDOW** | Durante anuncio o resolución según texto; si no se determina: `AMBIGUOUS` |
+| **ZONES** | Mano, mazo, descarte, tablero y zona temporal; exactamente las indicadas |
+| **VISIBILITY** | Privada al elector salvo revelación expresa; resultado/audiencia separados |
+| **COST** | Elecciones de coste antes del pago; otras `NOT APPLICABLE` |
+| **TARGET/SELECTION** | Mínimo/máximo/exacto, repetición, orden y modos persistibles |
+| **DURATION** | Hasta completar/cancelar la elección; efecto resultante según fuente |
+| **INTERACTIONS** | Búsqueda, mirar/revelar, replacements, targeting, prioridad y errores públicos |
+| **ENGINE_STATUS** | `CAPABILITY_NOT_IMPLEMENTED` para selecciones compuestas; `EDITORIAL_BLOCKED` sólo en cada lectura realmente ambigua |
+| **CURRENT_SUPPORT** | Targets congelados, `PendingSearch` y elección de reemplazo; no contrato general de modo/top-N/reordenación/audiencia |
+| **EXACT_GAP** | Candidatos y orden se modelan de forma desigual; algunas frases no fijan quién/cómo/cuándo elige |
+| **GENERAL_CAPABILITY_REQUIRED** | `PendingChoice` discriminada, opaca y versionada |
+| **Impactos** | **Arquitectura:** máquina de estados de elección. **Persistencia/snapshot:** elector, audiencia, candidatos y orden. **Replay:** registrar elección autoritativa. **Atomicidad/rollback:** no revelar antes de validar; conocimiento no se revierte. **Determinismo/CAS:** option token ligado a versión. **Acciones legales:** una opción opaca, revalidada. **Privacidad:** no publicar candidatos/cantidad si crean canal lateral. |
+| **Cartas afectadas** | Selector exhaustivo anterior sobre filas `PARTIAL`/`MISSING`; filas `AMBIGUOUS` se enlazan además a `BLOCK-EDITORIAL` |
+| **Dependencias** | Zonas, autenticación, opciones, CAS y proyección por audiencia |
+| **Prioridad** | `P0` |
+
+#### `CAP-EFFECT-COMPOSITION` — cobertura residual de operaciones y secuencias
+
+| Campo | Valor |
+|---|---|
+| **ID** | `CAP-EFFECT-COMPOSITION` |
+| **CATEGORY** | Intérprete declarativo/composición |
+| **SOURCE_PDF** | Ambos PDF |
+| **SOURCE_PAGE** | Coordenada individual de cada fila `MISSING` no satisfecha completamente por las fichas anteriores |
+| **SOURCE_CARD/TOKEN** | Selector residual: toda fila `Estado=MISSING`; muestras adicionales `ALPHA-004`, `ALPHA-019`, `MITICA-176 (Tambor Chamánico)`, `MITICA-188` |
+| **SOURCE_TEXT** | Secuencias, costes compuestos, cantidades variables, restricciones, cambios de control/tipo, creación de fichas, zonas o condiciones terminales conservados por fila |
+| **NORMALIZED_RULE** | Componer primitivas generales en orden, con valores capturados y condiciones, sin handlers por `card_id`; una ficha especializada prevalece para su dominio |
+| **APPLIES_TO** | Toda operación declarada en una fila `MISSING` que no sea ejecutable con semántica completa |
+| **PHASE/WINDOW** | La de cada fila; `UNKNOWN`/`AMBIGUOUS` si la fuente no la fija |
+| **ZONES** | Las de cada fila; `NOT APPLICABLE` sin movimiento |
+| **VISIBILITY** | La de cada fila y por paso; nunca heredar publicidad entre pasos |
+| **COST** | Costes impresos/adicionales de cada fila; orden entre coste y efecto sólo cuando esté determinado |
+| **TARGET/SELECTION** | Targets, modos, cantidades y valores X declarados; `AMBIGUOUS` si faltan extremos |
+| **DURATION** | La individual; `UNKNOWN` cuando no indicada |
+| **INTERACTIONS** | Todas las `CAP-*`, pila, prioridad, zonas, control, copia, fases y fin de partida |
+| **ENGINE_STATUS** | `CAPABILITY_NOT_IMPLEMENTED` |
+| **CURRENT_SUPPORT** | Existen primitivas atómicas, pero su presencia en la matriz no acredita secuencia, repetición, trigger, duración, selección ni visibilidad completas |
+| **EXACT_GAP** | Residuo exacto = campos de la fila que no pueden expresarse tras aplicar las fichas especializadas; debe registrarse al implementar, nunca aproximarse |
+| **GENERAL_CAPABILITY_REQUIRED** | AST declarativo de secuencia/condición/valor capturado y registro extensible de operaciones |
+| **Impactos** | **Arquitectura:** composición y handlers por operación. **Persistencia/snapshot:** continuación, valores capturados y versión del AST. **Replay:** decisiones/resultados no deterministas registrados. **Atomicidad/rollback:** transacción completa o continuación persistida, sin estado medio invisible. **Determinismo/CAS:** orden estable, RNG derivado y CAS antes de cada continuación. **Acciones legales:** preflight de costes/targets y revalidación. **Privacidad:** proyección por paso/audiencia y errores no-oráculo. |
+| **Cartas afectadas** | Selector exhaustivo: `Estado=MISSING` (143 entradas; 132 identidades agregadas al corte), además de las fichas especializadas que correspondan |
+| **Dependencias** | Todas las capacidades especializadas, efectos, opciones, codec y transacciones |
+| **Prioridad** | `P0` para primitivas compartidas por varias cartas; `P1` para combinaciones ya expresables tras esas primitivas |
+
+### 14.4 Defecto de engine separado
+
+| Campo | Valor |
+|---|---|
+| **ID** | `DEF-ZONE-COUNTERS-RESET` |
+| **CATEGORY** | Defecto de estado/transición |
+| **SOURCE_PDF** | Ambos PDF |
+| **SOURCE_PAGE** | `UNKNOWN` como regla universal; fuentes por carta cuando ordenan conservar/eliminar |
+| **SOURCE_CARD/TOKEN** | Toda carta con contadores que cambie de zona |
+| **SOURCE_TEXT** | No existe regla universal localizada que autorice conservar contadores al abandonar tablero |
+| **NORMALIZED_RULE** | `UNKNOWN`; no afirmar conservación canónica |
+| **APPLIES_TO** | Instancias con contadores en transición fuera de tablero |
+| **PHASE/WINDOW** | Durante movimiento |
+| **ZONES** | Tablero → cualquier otra |
+| **VISIBILITY** | Según destino |
+| **COST** | `NOT APPLICABLE` |
+| **TARGET/SELECTION** | `NOT APPLICABLE` |
+| **DURATION** | `UNKNOWN` |
+| **INTERACTIONS** | Limpieza de instancia, retorno, copia y transformación |
+| **ENGINE_STATUS** | `ENGINE_DEFECT` (divergencia interna: se limpian otros estados, pero no `counters`); la conducta normativa final sigue bloqueada por `UNKNOWN` |
+| **CURRENT_SUPPORT** | `zones.py` conserva contadores fuera del tablero |
+| **EXACT_GAP** | Política técnica inconsistente y no respaldada; corregir requiere primero decisión normativa/versionado |
+| **GENERAL_CAPABILITY_REQUIRED** | Política única y versionada de identidad/limpieza por transición |
+| **Impactos** | **Arquitectura:** centralizar reset. **Persistencia/snapshot:** migración semántica. **Replay:** perfil legado. **Atomicidad/rollback:** reset con movimiento. **Determinismo/CAS:** misma política por versión y CAS previo. **Acciones legales:** recalcular tras mover. **Privacidad:** no exponer contadores de zona oculta. |
+| **Cartas afectadas** | Selector anterior; cantidad exacta `UNKNOWN` hasta inventariar textos de contadores |
+| **Dependencias** | Decisión editorial de conservación y `CAP-ZONE-EXIT` |
+| **Prioridad** | `P1`, bloqueada para cambio normativo; `P0` para impedir nuevas dependencias |
+
+### 14.5 Decisiones editoriales bloqueadas
+
+#### `BLOCK-EDITORIAL` — lecturas `AMBIGUOUS`
+
+| Campo | Valor |
+|---|---|
+| **ID** | `BLOCK-EDITORIAL` |
+| **CATEGORY** | Decisión normativa, no implementación |
+| **SOURCE_PDF** | Ambos PDF según cada regla/fila |
+| **SOURCE_PAGE** | La coordenada de cada `N-*`/fila `AMBIGUOUS` |
+| **SOURCE_CARD/TOKEN** | Todas las reglas `AMBIGUOUS` de §3 y todas las filas `Estado=AMBIGUOUS` (41 entradas al corte) |
+| **SOURCE_TEXT** | El texto conservado individualmente; no existe resumen que resuelva todas las dudas |
+| **NORMALIZED_RULE** | `AMBIGUOUS`; conservar lecturas y no escoger mediante código |
+| **APPLIES_TO** | El alcance individual de cada regla/carta |
+| **PHASE/WINDOW** | `AMBIGUOUS` cuando sea el extremo disputado; en otro caso la ventana individual |
+| **ZONES** | Las individuales; `UNKNOWN` si «remover» u otro verbo no fija destino |
+| **VISIBILITY** | La individual; `UNKNOWN` si no se determina audiencia |
+| **COST** | El individual; `UNKNOWN` si incompleto |
+| **TARGET/SELECTION** | La individual; `AMBIGUOUS` si falta elector, cardinalidad, orden o modo |
+| **DURATION** | La individual; `UNKNOWN` si no indicada |
+| **INTERACTIONS** | Precedencia, fases, pila, reparto de combate, multijugador, Señores y elecciones |
+| **ENGINE_STATUS** | `EDITORIAL_BLOCKED` |
+| **CURRENT_SUPPORT** | Algunas normalizaciones conservadoras existen, pero no son canon |
+| **EXACT_GAP** | Falta aclaración oficial para cada extremo marcado; no es evidencia de defecto |
+| **GENERAL_CAPABILITY_REQUIRED** | Registro de decisiones versionado; después se enlaza a la `CAP-*` general que corresponda |
+| **Impactos** | **Arquitectura:** no codificar una lectura prematura. **Persistencia/snapshot:** versionar la decisión futura. **Replay:** preservar perfil anterior. **Atomicidad/rollback:** especificar punto de compromiso. **Determinismo/CAS:** fijar orden/elector y revalidar. **Acciones legales:** no ofrecer la conducta bloqueada como canónica. **Privacidad:** decidir audiencia antes de proyectar. |
+| **Cartas afectadas** | Selector: `Estado=AMBIGUOUS`; reglas: todos los IDs con relación `AMBIGUOUS` en §3, incluidos los grupos remitidos a `NORMATIVE_AMBIGUITIES.md` |
+| **Dependencias** | Aclaración normativa oficial por ID |
+| **Prioridad** | `BLOCKED`; triaje `P0` para elecciones/zonas que puedan filtrar información |
+
+#### `BLOCK-POINTS-CONFLICT` — presupuesto Mítico
+
+| Campo | Valor |
+|---|---|
+| **ID** | `BLOCK-POINTS-CONFLICT` (`N-POINTS-01`) |
+| **CATEGORY** | Construcción/decisión normativa conflictiva |
+| **SOURCE_PDF** | Ambos PDF |
+| **SOURCE_PAGE** | Base pp. 3 y 5; Mítica física 2 / interna 1 |
+| **SOURCE_CARD/TOKEN** | Reglas de construcción; `NOT APPLICABLE` a una carta individual |
+| **SOURCE_TEXT** | Base: mínimo 50/equivalencia; Mítica: 200, máximo 300–400, aproximadamente 300 y 300 |
+| **NORMALIZED_RULE** | `CONFLICT`; no elegir presupuesto Mítico |
+| **APPLIES_TO** | Formatos/barajas Míticas cuyo presupuesto dependa de esa cifra |
+| **PHASE/WINDOW** | Construcción prepartida |
+| **ZONES** | `NOT APPLICABLE` |
+| **VISIBILITY** | PÚBLICA como regla de formato; listas de mazo siguen privadas según producto |
+| **COST** | Suma de `CardDefinition.cost`; techo/presupuesto `AMBIGUOUS` por conflicto |
+| **TARGET/SELECTION** | Selección de formato/política, no target de partida |
+| **DURATION** | Toda la validación de esa baraja/formato |
+| **INTERACTIONS** | Límites de copias, tamaño, emparejamiento y formatos Clásico/Mística |
+| **ENGINE_STATUS** | `EDITORIAL_BLOCKED` |
+| **CURRENT_SUPPORT** | Cálculo de puntos y políticas opcionales; por defecto `point_budget=None` |
+| **EXACT_GAP** | Fuente ofrece cifras/funciones incompatibles sin precedencia suficiente |
+| **GENERAL_CAPABILITY_REQUIRED** | Política declarativa por formato una vez exista resolución oficial |
+| **Impactos** | **Arquitectura:** configuración, no constante global. **Persistencia/snapshot:** guardar policy ID/versión. **Replay:** incluir política inicial. **Atomicidad/rollback:** validar mazo completo. **Determinismo/CAS:** misma política para ambos rivales y alta versionada. **Acciones legales:** rechazar inicio, no acciones durante partida. **Privacidad:** comunicar totales/errores sin revelar lista rival. |
+| **Cartas afectadas** | `NOT APPLICABLE`; afecta barajas/formato, no semántica individual |
+| **Dependencias** | Aclaración oficial de cifra, naturaleza y formato |
+| **Prioridad** | `BLOCKED` |
+
+### 14.6 Criterio de cierre y control de regresión
+
+Una ficha sólo puede cerrarse cuando (1) todas sus filas afectadas dejan de
+depender del gap, (2) enumerador y ejecutor de acciones legales son equivalentes,
+(3) snapshot/replay versionados reproducen las decisiones, (4) CAS y rollback
+han sido probados en el punto de compromiso y (5) las proyecciones públicas no
+revelan candidatos, orden ni identidad ocultos. Resolver una carta de muestra no
+cierra la capacidad. Un bloqueo editorial sólo se cierra con evidencia normativa
+nueva; una prueba que cristaliza una lectura no cuenta como evidencia.

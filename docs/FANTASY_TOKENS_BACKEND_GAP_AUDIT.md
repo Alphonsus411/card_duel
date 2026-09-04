@@ -811,3 +811,177 @@ han sido probados en el punto de compromiso y (5) las proyecciones públicas no
 revelan candidatos, orden ni identidad ocultos. Resolver una carta de muestra no
 cierra la capacidad. Un bloqueo editorial sólo se cierra con evidencia normativa
 nueva; una prueba que cristaliza una lectura no cuenta como evidencia.
+
+## 15. Fuentes auxiliares y política de fusión
+
+Este registro es el **documento maestro**; los detalles exhaustivos se mantienen
+en auxiliares y aquí sólo se publican sus resultados y dependencias, sin copiar
+sus tablas completas:
+
+* [inventario verificable de fuentes](FANTASY_TOKENS_SOURCE_INVENTORY.csv) y
+  [metadatos/hash de las fuentes](RULES_SOURCES.json);
+* [matriz de tipos de Token](TOKEN_TYPES_MATRIX.md) y
+  [taxonomía canónica](CANONICAL_TAXONOMY.md);
+* [matriz de mecánicas universales](UNIVERSAL_MECHANICS_MATRIX.md),
+  [conformidad de las 431 cartas](CARD_CORPUS_CONFORMANCE.md) y
+  [auditoría estática de las reglas](audits/STATIC_RULE_COVERAGE_AUDIT_2026-09-03.md);
+* [ambigüedades y conflictos](NORMATIVE_AMBIGUITIES.md).
+
+La fusión es por referencia: el ID `N-*` enlaza regla y evidencia; la entrada
+`ALPHA-*`, `BETA-*` o `MITICA-*` enlaza carta y capacidades. Ante discrepancia
+se conserva el peor estado y se aplica la precedencia de §2. Ningún resumen de
+este documento sustituye la fila fuente.
+
+## 16. Denominadores auditables
+
+| Universo | Denominador y unidad de conteo |
+|---|---|
+| Reglas | **39** reglas `N-*` distintas de §3; una regla cuenta una vez, aunque cite varias páginas o contratos. |
+| Tokens | **431** entradas impresas: 103 Alpha + 147 Beta + 181 Mítica; una reimpresión sigue contando como entrada. |
+| Cartas | **431** entradas para cobertura y **386** identidades nominales sólo para la vista deduplicada; nunca se mezclan ambas sumas. |
+| Habilidades | No se inventa un total independiente: la unidad trazable es cada cláusula mecánica descompuesta dentro de las **431** filas; una carta puede tener cero, una o varias. Los patrones compartidos se agrupan sólo para planificar capacidades. |
+| Taxonomías | Las dimensiones admitidas son las **6** filas de §2 de la taxonomía auxiliar (tipo, rango, dominio, subtipo, identidad y keyword); sus valores no se suman como cartas y un objeto puede pertenecer a varias dimensiones. |
+| Zonas | La unidad es cada zona canónica/técnica de §10.2; no cada aparición de una zona en una carta. |
+| Transiciones | La unidad es cada verbo/fila canónica de §11.1; causas, reemplazos y disparadores no crean movimientos duplicados. |
+
+Así, los estados de reglas usan 39; la representabilidad del corpus usa 431.
+Los censos de Tokens y cartas comparten filas físicas, pero responden preguntas
+distintas y no deben sumarse entre sí.
+
+## 17. Cobertura exacta de reglas
+
+Resultado de la auditoría estática enlazada:
+
+| Estado | Reglas | Comprobación |
+|---|---:|---|
+| `SUPPORTED` | 21 | |
+| `PARTIAL` | 11 | |
+| `MISSING` | 1 | |
+| `AMBIGUOUS` | 5 | |
+| `CONFLICT` | 1 | |
+| **Total** | **39** | **21 + 11 + 1 + 5 + 1 = 39** |
+
+`AMBIGUOUS` y `CONFLICT` describen autoridad normativa, no déficit técnico.
+El único `CONFLICT` es `N-POINTS-01`; la única regla `MISSING` es el mulligan
+decreciente (`N-PHASE-02`).
+
+## 18. Cobertura exacta del corpus
+
+| Medida por entrada impresa | Cartas | Comprobación |
+|---|---:|---|
+| Auditadas | **431** | **103 + 147 + 181 = 431** |
+| Completamente representables | **247** | 2 `SUPPORTED` + 245 `PARTIAL` cuyo lenguaje es `REPRESENTABLE` |
+| Parcialmente representables | **41** | lenguaje `AMBIGUA`; requieren decisión antes de afirmar representación completa |
+| No representables | **143** | lenguaje `NO_REPRESENTABLE` |
+| **Total de representabilidad** | **431** | **247 + 41 + 143 = 431** |
+
+La clasificación de incorporación, que es otra partición sobre el mismo
+denominador, también cierra: **2 `SUPPORTED` + 245 `PARTIAL` + 143 `MISSING` +
+41 `AMBIGUOUS` + 0 `CONFLICT` = 431**. En identidades deduplicadas la
+verificación separada es **2 + 212 + 132 + 40 + 0 = 386**; no se usa 386 para
+calcular cobertura de entradas.
+
+## 19. Dominio, Tokens y propiedades
+
+El dominio separa definición e instancia, tipo funcional, rango, subtipo y
+dominio de Señor. Las propiedades universales pertenecen al tipo sólo cuando
+una regla general lo demuestra; Fuerza, giro, daño, controlador y zona son
+estado de instancia. Una habilidad repetida no se vuelve propiedad universal.
+El censo exacto de los 431 rótulos y sus propiedades permanece en los dos
+auxiliares de Tokens/taxonomía enlazados en §15.
+
+## 20. Fases, activo/pasivo, Legendaria y prioridad
+
+La dependencia es: secuencia de fases → identidad del activo/pasivo → ventanas
+de anuncio → prioridad/pases → pila → resolución. Legendaria se conserva entre
+Combate y Descarte, pero sus extremos canónicos de prioridad siguen ambiguos.
+Por ello una wave no debe mezclar correcciones de fase con cartas individuales.
+
+## 21. Zonas, privacidad y transiciones
+
+La dependencia es: zona tipada → audiencia/visibilidad → movimiento único →
+reemplazo → disparador → proyección pública. Primero debe cerrarse la puerta
+autoritaria de movimiento y la audiencia; después pueden añadirse búsquedas,
+elecciones secretas o triggers de salida sin crear filtraciones ni rutas
+divergentes.
+
+## 22. Giro, estados y costes
+
+Girar como coste se valida y paga antes de apilar; girar por efecto ocurre al
+resolver. Pasos, Heridas, descarte, sacrificio, Fuerza y giro necesitan un
+preflight común, compromiso atómico y rollback. Daño, prevención, Fuerza,
+anexos y contadores se limpian o conservan mediante políticas de transición,
+no mediante excepciones por carta.
+
+## 23. Pasos y Transmutación
+
+Los Pasos son reserva de partida y coste, mientras que los puntos de mazo son
+la suma prepartida de `cost`; compartir número impreso no fusiona ambos estados.
+Transmutación mueve un permanente propio al descarte y acredita su coste
+impreso. Sus ventanas por tipo siguen ambiguas (`N-TRANSMUTATION-02`) y no deben
+resolverse eligiendo una lectura ad hoc.
+
+## 24. Combate, Desafío y habilidades
+
+Combate depende de fases/prioridad, aptitud/giro y estados; después puede
+generalizarse prevención y keywords. Desafío reutiliza esos fundamentos, pero
+su trigger desde no-Señor sigue siendo una capacidad aparte. Las habilidades
+se cuentan como cláusulas del corpus, no como 431 unidades exclusivas, y se
+implementarán mediante coste, ventana, selección, fuente tipada, duración y
+efecto componible.
+
+## 25. Conflictos y comparación con el backend
+
+El backend se compara por el recorrido completo modelo → comando → validación →
+resolución → acciones legales → persistencia/replay → proyección → prueba. Que
+exista un enum o handler no basta. Los vacíos técnicos son `PARTIAL`/`MISSING`;
+los silencios son `AMBIGUOUS`; mandatos incompatibles son `CONFLICT`. Sólo
+`N-POINTS-01` está en conflicto y continúa **`OPEN/BLOCKED`**.
+
+## 26. Gaps y dependencias
+
+Los gaps se agrupan por capacidades generales: fase/prioridad, zona/audiencia,
+acción/coste, combate/estado y habilidad/composición. Taxonomía racial,
+selecciones secretas, eventos de cambio de zona, keywords, inmunidad tipada y
+composición dependen de esos fundamentos. No se acepta un resolutor por
+`card_id` ni se cierra una capacidad implementando sólo una carta de muestra.
+
+## 27. Riesgos
+
+Orden de riesgo: (1) fuga de información oculta; (2) pago o movimiento parcial
+sin rollback; (3) divergencia entre opciones y ejecutor; (4) replay/snapshot no
+versionado; (5) orden no determinista; (6) cristalizar una ambigüedad editorial;
+(7) publicar contenido aproximado. Cada wave debe probar CAS, atomicidad,
+determinismo y audiencia antes de ampliar corpus.
+
+## 28. Waves futuras por capacidad
+
+| Wave | Capacidad general | Dependencias que deja listas |
+|---|---|---|
+| **W1** | Fases y prioridad: mulligan persistible, ventanas y protocolo de pases | Base temporal para acciones, triggers, Legendaria y Desafío. |
+| **W2** | Zonas y privacidad: movimiento único, audiencia, elección secreta y last-known-information | Búsqueda, reemplazos y triggers sin fugas. |
+| **W3** | Costes y acciones: preflight común, pago/rollback y paridad enumerador-ejecutor | Habilidades y secuencias compuestas seguras. |
+| **W4** | Combate y estados: keywords, prevención causal, limpieza y política de contadores | Combate/Desafío ampliables y deterministas. |
+| **W5** | Habilidades: fuente/inmunidad tipada, triggers, taxonomía y AST de composición | Incorporación posterior de familias completas del corpus. |
+
+El orden maximiza reglas desbloqueadas con menor riesgo: no está ordenado por
+cartas, razas ni colecciones. W2 sigue a W1 porque toda elección necesita una
+ventana; W3 sigue a ambas porque no debe pagar antes de validar audiencia y
+momento; W4 consume esas acciones; W5 compone todos los contratos anteriores.
+
+## 29. Siguiente bloque recomendado (sin implementación)
+
+El siguiente bloque recomendado es **W1 — fundamentos de fases y prioridad**,
+empezando por un contrato persistible de mulligan y un protocolo explícito de
+ventanas/pases que preserve las ambigüedades normativas. Es el único
+`MISSING` del denominador de reglas y desbloquea más validaciones posteriores
+sin tocar contenido. Esta auditoría **no lo implementa**, no cambia contratos
+ejecutables y no selecciona una interpretación canónica ausente.
+
+## 30. Estado y conclusión
+
+La cobertura documental queda aritméticamente cerrada, pero no equivale a
+finalización del producto: **Phase 2 sigue `IN PROGRESS`; Phase 2-C sigue `IN
+PROGRESS`; Phase 3 sigue `PENDING`; y `N-POINTS-01` sigue `OPEN/BLOCKED`**.
+No se incorpora ninguna carta, no se implementa la wave recomendada y la
+versión permanece **`0.20.1`**.

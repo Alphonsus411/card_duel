@@ -98,6 +98,57 @@ Las columnas `Central.`, `Desbloq.`, `Riesgo`, `Claridad` y `Migración` corresp
 | `CAP-NORM-001` — Resolución de ambigüedades editoriales | `BLOCKED` | `NORM-BLOCKED` | HIGH | HIGH | HIGH | LOW | MEDIUM | Prerequisites: ninguno; dependientes: CAP-TIME-003, CAP-TIME-004, CAP-COMBAT-002, CAP-COMBAT-006, CAP-TRANSMUTE-002. |
 | `CAP-NORM-002` — Presupuesto de puntos Mítico | `BLOCKED` | `NORM-BLOCKED` | MEDIUM | MEDIUM | HIGH | LOW | MEDIUM | Prerequisites: ninguno; dependientes: CAP-CATALOG-001. |
 
+## Catálogo estable de invariantes del motor
+
+Los identificadores `INV-2C-NNN` son referencias contractuales estables: no se
+renumeran, reutilizan ni cambian de significado cuando se inserten o retiren
+entradas. Un invariante retirado conserva su identificador con estado
+`DEPRECATED` y remite a su sustituto. La columna **Pruebas obligatorias** indica
+las superficies mínimas que deben aportar evidencia; no limita pruebas
+adicionales. Las abreviaturas son: **U** (unitarias), **P** (paridad
+enumerador/ejecutor), **C** (codec round-trip), **S** (snapshots heredados),
+**R** (replay heredado), **A** (autorización), **CAS** (concurrencia y comandos
+obsoletos) e **I** (integración).
+
+| ID estable | Invariante normativo | Pruebas obligatorias |
+|---|---|---|
+| `INV-2C-001` | El mismo estado inicial, comando, versión semántica y estado/semilla de RNG producen exactamente los mismos eventos, en el mismo orden, y el mismo estado final. | U, C, S, R, CAS, I |
+| `INV-2C-002` | Toda fuente de nondeterminismo se captura mediante una semilla reproducible o una decisión persistida; reloj, iteración de colecciones, proceso y cliente no deciden implícitamente el resultado. | U, C, R, CAS, I |
+| `INV-2C-003` | Replay reproduce eventos, elecciones, orden y digests compatibles con la versión semántica declarada. | C, S, R, I |
+| `INV-2C-004` | Cada snapshot identifica schema y semántica; una versión anterior se migra de forma determinista o se rechaza explícitamente, nunca se interpreta por aproximación. | U, C, S, R, I |
+| `INV-2C-005` | La definición inmutable de una carta y su instancia de partida permanecen separadas y poseen identidades distintas. | U, C, S, R, I |
+| `INV-2C-006` | `owner_id` y `controller_id` representan relaciones distintas y nunca se fusionan, ni siquiera cuando sus valores coinciden. | U, C, S, R, A, I |
+| `INV-2C-007` | Toda transición hacia una zona del propietario resuelve explícitamente el propietario de destino y el controlador resultante; ninguno se infiere del otro. | U, C, S, R, A, I |
+| `INV-2C-008` | El estado efectivo se deriva de fuentes canónicas y no se persiste como segunda verdad cuando pueda recalcularse; snapshots y replay almacenan causas, no cachés autoritativas. | U, C, S, R, I |
+| `INV-2C-009` | Heridas del jugador, daño marcado en permanentes, Fuerza base/efectiva y modificadores son magnitudes distintas, con tipos, ciclo de vida y limpieza propios. | U, C, S, R, I |
+| `INV-2C-010` | La validación de legalidad y la determinación/congelación del coste preceden cualquier mutación de estado. | U, P, R, A, CAS, I |
+| `INV-2C-011` | El pago de un coste es atómico: o se aplica completo una sola vez o no cambia el estado; no existe pago parcial ni rollback ambiguo. | U, P, C, R, CAS, I |
+| `INV-2C-012` | Pago, activación o apilado y resolución son etapas distintas, observables y ordenadas; completar una no implica haber completado las siguientes. | U, P, C, R, CAS, I |
+| `INV-2C-013` | Toda instancia de carta está en exactamente una ubicación coherente, incluida una única zona/contenedor o la ubicación transitoria tipada que corresponda. | U, C, S, R, CAS, I |
+| `INV-2C-014` | Todo movimiento atraviesa una única autoridad de transición y aplica allí las políticas declaradas de limpieza y conservación, sin mutaciones laterales de zonas. | U, C, S, R, CAS, I |
+| `INV-2C-015` | Observaciones, DTO, errores y opciones se proyectan por audiencia y no filtran identidad, contenido, candidatos ni metadatos ocultos. | U, P, C, S, R, A, I |
+| `INV-2C-016` | Ningún comando confía en IDs, targets, elecciones u option tokens enviados por el cliente sin revalidar pertenencia, audiencia, vigencia, cardinalidad y legalidad. | U, P, A, CAS, I |
+| `INV-2C-017` | El enumerador y el ejecutor aceptan el mismo conjunto semántico de acciones para el mismo estado, actor y versión; toda opción emitida es ejecutable mientras siga vigente y toda ejecución aceptada era enumerable. | U, P, A, CAS, I |
+| `INV-2C-018` | El orden de targets, triggers, reemplazos y efectos es determinista y forma parte del contrato persistido cuando una elección normativa pueda alterarlo. | U, P, C, S, R, I |
+| `INV-2C-019` | Ninguna regla se resuelve por nombre de carta, texto editorial o `card_id` concreto; la ejecución despacha únicamente primitivas, capacidades y datos mecánicos tipados. | U, P, C, S, R, I |
+| `INV-2C-020` | Transmutación es una acción universal distinta del sacrificio y determina su pago a partir del `CardDefinition.cost` efectivo aplicable, sin duplicarlo en la instancia ni inferirlo del texto. | U, P, C, S, R, A, CAS, I |
+| `INV-2C-021` | Implementar una capability no equivale a incorporar, promover ni publicar una carta; cada carta exige trazabilidad y conformidad propias. | U, C, S, R, A, I |
+| `INV-2C-022` | Todo fallo de versionado, decodificación o migración es explícito, tipado y atómico: no entrega ni persiste un estado parcialmente cargado. | U, C, S, R, CAS, I |
+
+### Regla de trazabilidad y aceptación
+
+Cada cambio de W0–W7 debe citar los IDs afectados en su diseño, migración y
+plan de pruebas. Para cada ID citado se ejecutan todas sus superficies
+obligatorias o se documenta un bloqueo de entorno; una prueba en una superficie
+no sustituye otra. Los fixtures heredados son inmutables y versionados: **S**
+parte del snapshot anterior y verifica migración o rechazo, mientras **R** parte
+del log anterior y verifica eventos, decisiones, orden, digest y estado final.
+Las pruebas **CAS** deben demostrar tanto rechazo sin mutación del comando
+obsoleto como éxito único del comando ganador. Las pruebas **A** se ejercitan
+con audiencias autorizadas y no autorizadas. Una capability no puede pasar a
+`SUPPORTED` si incumple un invariante aplicable, aunque sus escenarios felices
+de integración sean correctos.
+
 ## Orden de ejecución por gates
 
 ### 1. Fundaciones antes que volumen superficial

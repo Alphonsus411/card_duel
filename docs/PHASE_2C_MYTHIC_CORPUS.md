@@ -96,6 +96,12 @@ carta completa fuera del catálogo ejecutable; `GAP` señala una capacidad
 general ausente, y `AMBIGUOUS`, una duda editorial que **no** abre trabajo de
 motor.
 
+**Aclaración posterior (2026-09-04):** la ausencia de cambios del motor describe
+exclusivamente esa primera entrega. Después se implementó la capacidad general
+`REVEAL_UNTIL`; este avance no cambia las clasificaciones históricas de la
+matriz ni basta para publicar la nº026, que continúa bloqueada por la taxonomía
+Elfo y por la política de agotamiento que la fuente no define.
+
 Regla de frontera: `rules_text`, nombre, token, raza y `card_id` son datos de
 presentación/identidad y **no pueden participar en resolución mecánica**. En
 particular, no se admiten comparaciones de cadenas ni ramas por identidad. Una
@@ -128,8 +134,14 @@ campos.
 **CARD:** nº026 — `Elfo Adivinador.`
 **SOURCE TEXT:** “Cuando esta carta entre en juego, mira la primera carta de tu mazo, si es de Elfo, ponla en tu mano, sino, ponla en la Pila de Descartes. Continua este proceso hasta sacar un naipe de este tipo.”
 **DESIRED BEHAVIOR:** Revelar determinísticamente desde la cima, descartando cada fallo, hasta hallar un Elfo y llevarlo a la mano, con terminación definida si no existe.
-**CURRENT ENGINE SUPPORT:** La búsqueda actual elige entre todas las coincidencias; no expresa inspección ordenada, repetición, descarte de fallos ni el caso de mazo agotado.
+**ENGINE SUPPORT EN LA PRIMERA ENTREGA:** La búsqueda disponible entonces elegía entre todas las coincidencias; no expresaba inspección ordenada, repetición, descarte de fallos ni el caso de mazo agotado.
 **CLASSIFICATION:** `GAP`.
+
+**ACLARACIÓN POSTERIOR (2026-09-04):** `REVEAL_UNTIL` ya expresa la inspección
+ordenada, la repetición, los destinos separados del acierto y los fallos y una
+política explícita de agotamiento. La nº026 conserva `GAP` porque falta una
+taxonomía mecánica Elfo y el texto fuente no determina qué hacer si el mazo se
+agota sin coincidencia.
 
 **IS GENERAL CAPABILITY?:** Sí, revelar/procesar desde la cima hasta cumplir un predicado es reutilizable.
 **WHY?:** Cambia zonas carta por carta y no equivale a buscar.

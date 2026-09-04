@@ -114,6 +114,311 @@ Búsqueda top-N, desafío por efecto, creación de fichas, descarte forzado y ot
 
 `CAP-NORM-001` y `CAP-NORM-002` no son tareas de programación: producen decisiones autoritativas y trazables. `CAP-TAXONOMY-002`, `CAP-TRANSMUTE-002`, `CAP-COMBAT-002` y `CAP-COMBAT-006`, además de cualquier tramo abierto de inmunidades o multijugador, permanecen `NORM-BLOCKED`. Una aclaración puede abrir el gate, pero nunca cuenta como implementación ni como soporte de corpus.
 
+## Waves propuestas, sujetas a validación del grafo
+
+Las waves son **fronteras de integración**, no sprints, fechas ni permiso para
+ignorar un gate. Antes de iniciar cada capability se reconstruirá el grafo desde
+`ENGINE_CAPABILITY_DEPENDENCIES.md`: todos sus prerequisites deberán estar
+`CLOSED`, o bien capability y prerequisite deberán entrar juntos en un mismo
+componente fuertemente conexo (SCC) con contrato y pruebas de integración
+comunes. Un nodo `NORM-BLOCKED` permanece fuera aunque figure en una wave.
+
+La tabla declarativa contiene referencias cruzadas que forman al menos el SCC
+`CAP-TIME-003 ↔ CAP-TIME-004 ↔ CAP-STACK-001`: la pila ya existente se
+reutiliza como baseline, pero no se usa su estado `SUPPORTED` para fingir que el
+canon de fases y prioridad está resuelto. También existen dependencias cuya
+implementación actual precede a un prerequisite parcial (por ejemplo,
+Transmutación frente a reemplazos de zona). Son deuda a revalidar, no una razón
+para invertir aristas. El orden W0–W7 se ajustará topológicamente dentro de cada
+wave y, si una arista cruza hacia una wave posterior, el nodo dependiente se
+aplazará; **nunca se adelantará el prerequisite sólo para conservar el número de
+wave**.
+
+### W0 — Contractos, versionado e invariantes
+
+- **Objetivo:** congelar un baseline compatible y verificable antes de cambiar
+  semántica observable.
+- **Capabilities:** infraestructura transversal de schema version, comandos y
+  eventos; snapshots, replay, serialización, CAS, migraciones y los invariantes
+  ya cerrados de `CAP-ACTION-001/003`. W0 no reclasifica por sí sola ninguna
+  capability mecánica.
+- **Dependencias de entrada:** baseline 0.20.1 reproducible; inventario de todos
+  los discriminadores y payloads persistidos; fixtures legacy y autoridad sobre
+  la política de compatibilidad.
+- **Exclusiones:** nuevas reglas, nuevas cartas, cambios editoriales y una
+  migración destructiva sin decoder legado.
+- **Normativa relacionada:** versionado de reglas y de fuentes, estabilidad de
+  identificadores y las ambigüedades registradas; W0 registra la duda, no la
+  decide.
+- **Desbloqueo directo/indirecto del corpus:** directo, ninguno; indirecto,
+  permite evolucionar todas las familias sin invalidar partidas guardadas ni
+  atribuir soporte falso.
+- **Superficies técnicas:** `domain/models.py`, `engine/commands.py`,
+  `persistence/`, `storage/`, `application.py`, `service.py`, artefactos golden y
+  metadatos de release.
+- **Riesgos:** versión parcial, eventos reordenados, migración no idempotente,
+  ABA/CAS, divergencia snapshot–replay o exposición de campos privados.
+- **Criterios de salida:** matriz de versiones escrita; lectura del baseline y
+  rechazo determinista de versiones desconocidas; migraciones idempotentes;
+  IDs y orden estables; round-trip y replay equivalentes; conflictos CAS sin
+  mutación parcial.
+- **Categorías de tests:** contract/schema, golden y legacy replay, snapshot y
+  codec round-trip, property/migration, determinismo, concurrencia CAS,
+  compatibilidad de API y redacción de privacidad.
+
+### W1 — Acciones y costes atómicos
+
+- **Objetivo:** convertir toda intención en una acción legal cuyo coste se
+  determina, congela y paga atómicamente antes de activarla/apilarla, para luego
+  resolverla y producir efectos derivados.
+- **Capabilities:** `CAP-ACTION-001/002/003`, `CAP-COST-001`–`006`, el tramo
+  basal de `CAP-EFFECT-001` y la frontera de entrada de `CAP-STACK-001`.
+- **Dependencias de entrada:** contratos W0 cerrados y RNG/rollback
+  deterministas.
+- **Exclusiones:** nuevas ventanas de prioridad, elecciones ocultas generales,
+  selectores editoriales completos y handlers por `card_id`.
+- **Normativa relacionada:** diferencia entre validar, determinar, pagar,
+  activar/apilar y resolver; costes adicionales, alternativos, dinámicos y X;
+  qué pagos son reversibles ante ilegalidad.
+- **Desbloqueo directo/indirecto del corpus:** directo, familias expresables con
+  acciones y costes ya tipados; indirecto, recursos activables, composición de
+  efectos y ventanas futuras sin pagos parciales.
+- **Superficies técnicas:** `engine/actions.py`, `engine/options.py`,
+  `engine/commands.py`, `engine/game.py`, `engine/stack.py`,
+  `engine/effects.py`, modelos y persistencia.
+- **Riesgos:** opciones obsoletas aceptadas, coste pagado dos veces, respuesta
+  antes del pago, rollback incompleto o distinto resultado tras replay.
+- **Criterios de salida:** enumeración y ejecución tienen paridad; toda acción
+  hace preflight y revalidación; un fallo no cambia estado; coste y valores
+  congelados sobreviven snapshot/replay; efectos derivados conservan causa.
+- **Categorías de tests:** unitarios por coste, legal-action parity, option-token
+  authorization, stale command/CAS, transacción y rollback, stack integration,
+  replay determinista y fuzz/property de combinaciones de costes.
+
+### W2 — Tiempo de juego
+
+- **Objetivo:** hacer explícitos mulligan decreciente, fases, ventanas, prioridad
+  y protocolo de pases, reutilizando la pila LIFO existente.
+- **Capabilities:** `CAP-TIME-001`–`004`, `CAP-STACK-001` y
+  `CAP-TRIGGER-001` en el SCC validado; sólo los tramos liberados por
+  `CAP-NORM-001`.
+- **Dependencias de entrada:** W1 cerrada; elección persistible/autorizada de W3
+  disponible para el mulligan o, por la arista real, aplazamiento de
+  `CAP-TIME-002`; resoluciones normativas de primera prioridad, ventanas y pases.
+- **Exclusiones:** inventar timing para textos ambiguos, reescribir la pila desde
+  cero, multibloqueo y Desafío ampliado.
+- **Normativa relacionada:** preparación y jugador inicial, tamaño decreciente de
+  mano, secuencia/omisión de fases, Recursos Rápidos, primera prioridad,
+  cantidad de pases y orden de triggers simultáneos.
+- **Desbloqueo directo/indirecto del corpus:** directo, cartas cuya legalidad
+  depende sólo de una ventana inequívoca; indirecto, triggers, respuestas,
+  combate y Transmutación por ventana.
+- **Superficies técnicas:** `engine/phases.py`, `engine/stack.py`,
+  `engine/actions.py`, `engine/game.py`, enums/modelos, replay, servicio y
+  observación.
+- **Riesgos:** el ciclo tiempo–pila, prioridad muerta, pases insuficientes,
+  resolución fuera de ventana, diferencias tras reconexión y codificar una
+  respuesta a una ambigüedad.
+- **Criterios de salida:** SCC integrado sin aristas pendientes; tabla normativa
+  fase×acción ejecutable; mulligan decreciente privado y reproducible; pases
+  terminan/resuelven exactamente una vez; reconexión conserva turno, ventana,
+  prioridad y pila.
+- **Categorías de tests:** tablas de fases/ventanas, state-machine/property,
+  mulligan y privacidad, protocolos de pase, triggers simultáneos, snapshot en
+  cada frontera, reconexión y replay end-to-end.
+
+### W3 — Zonas, movimientos y privacidad
+
+- **Objetivo:** hacer que cada transición cruce una puerta autoritativa y lleve
+  causa, audiencia y LKI sin filtrar información.
+- **Capabilities:** `CAP-ZONE-001`–`006`, `CAP-PRIVACY-001`,
+  `CAP-SECRET-001/002` y las bases de `CAP-SEARCH-001/003`.
+- **Dependencias de entrada:** W0–W1; acciones autorizadas; stack/trigger de W2
+  para `CAP-ZONE-005`; cuando W2 necesite secretos para mulligan, ambos tramos
+  forman un paquete de integración, no una excepción al grafo.
+- **Exclusiones:** filtros taxonómicos completos, reglas particulares por carta,
+  efectos compuestos que sólo simulen movimientos y revelar información como
+  atajo de implementación.
+- **Normativa relacionada:** owner frente a controller, destinos, mirar/revelar,
+  barajar, reemplazos, triggers de entrada/salida, orden de eventos y elector de
+  decisiones ocultas.
+- **Desbloqueo directo/indirecto del corpus:** directo, mover, buscar o elegir en
+  zonas con filtros ya representables; indirecto, anexos, retorno, exilio,
+  descarte, sacrificio, fichas y composición segura.
+- **Superficies técnicas:** `engine/zones.py`, `engine/game.py`,
+  `engine/stack.py`, modelos, `observe`, aplicación/servicio y todos los codecs.
+- **Riesgos:** rutas laterales, doble trigger, LKI mutable, reemplazo no atómico,
+  confundir owner/controller y fuga por payload, error, opciones o replay.
+- **Criterios de salida:** ninguna ruta muta zona fuera de la puerta; cada evento
+  incluye causa/origen/destino/lote/audiencia/LKI definidos; reemplazos y
+  triggers se ordenan una vez; matrices por audiencia no filtran secretos;
+  elecciones sobreviven reconexión.
+- **Categorías de tests:** transition matrix, invariantes owner/controller,
+  reemplazo/trigger ordering, LKI, batch atomicity, non-interference y redacción
+  por audiencia, elecciones ocultas, persistencia y replay.
+
+### W4 — Taxonomía, targeting y selectores
+
+- **Objetivo:** separar identidad mecánica, vocabulario editorial y selección
+  autorizada mediante dimensiones tipadas y componibles.
+- **Capabilities:** `CAP-TAXONOMY-001/003` (y `002` sólo si se desbloquea),
+  `CAP-TARGET-001/002`, elector/cardinalidad/autorización de
+  `CAP-SECRET-002`, y `CAP-SEARCH-001` sobre esos selectores.
+- **Dependencias de entrada:** W0 para versionar discriminadores; W1 para
+  legalidad/revalidación; W3 para zona, visibilidad y elector.
+- **Exclusiones:** inferir raza/subtipo desde nombre o ilustración, usar
+  `definition_id` como dispatch mecánico, resolver aliases por heurística y
+  declarar soporte sólo porque una carta pueda seleccionarse.
+- **Normativa relacionada:** tipo, rango, dominio, raza/subtipo, Leyenda, tipos
+  impresos múltiples, grafía/alias/procedencia, naturaleza de fuente, quién
+  elige y cardinalidad exacta.
+- **Desbloqueo directo/indirecto del corpus:** directo, efectos de raza/subtipo,
+  fuente, zona o controlador con cardinalidad inequívoca; indirecto, efectos
+  continuos, keywords, inmunidades, búsquedas y composición general.
+- **Superficies técnicas:** `domain/enums.py`, `domain/models.py`,
+  `engine/options.py`, `engine/actions.py`, `engine/game.py`, presentación,
+  catálogo y codecs.
+- **Riesgos:** mezclar taxonomía editorial con predicados de runtime, targets
+  que cambian tras apilar, selección visible pero no autorizada, aliases
+  incompatibles y migraciones ambiguas.
+- **Criterios de salida:** registro canónico versionado; selector AND/OR tipado
+  para todas las dimensiones autorizadas; targets congelados y revalidados;
+  elector y cardinalidad en dominio; ningún handler por identidad; bloqueos
+  editoriales permanecen sin interpretación.
+- **Categorías de tests:** matriz de taxonomía, schema/migration, algebra de
+  selectores, cardinalidades y elector, autorización/visibilidad, target freeze
+  y revalidation, mutation/property y pruebas negativas de `card_id` dispatch.
+
+### W5 — Estado derivado y permanentes
+
+- **Objetivo:** disponer de una sola evaluación reproducible de Fuerza efectiva,
+  condición de criatura y demás estado derivado de permanentes.
+- **Capabilities:** `CAP-STATE-001/002`, `CAP-EFFECT-002`,
+  `CAP-ATTACH-001`, `CAP-TRANSFORM-001/002` y el daño marcado/limpieza de
+  `CAP-DAMAGE-001`.
+- **Dependencias de entrada:** W3 para movimientos/limpieza y W4 para selectores
+  y taxonomía; composición basal de W1.
+- **Exclusiones:** persistir la Fuerza efectiva como segunda verdad, semántica
+  completa de keywords, reparto avanzado de combate y excepciones por carta.
+- **Normativa relacionada:** base frente a modificadores, orden/layers,
+  duraciones, anexar/desanexar, transformación/copia, elegibilidad, Heridas,
+  daño marcado y momentos de limpieza.
+- **Desbloqueo directo/indirecto del corpus:** directo, buffs/debuffs,
+  transformaciones y anexos expresables; indirecto, letalidad, keywords
+  concedidas/retiradas, inmunidad y combate avanzado coherente.
+- **Superficies técnicas:** modelos, `engine/effects.py`, `engine/zones.py`,
+  `engine/game.py`, `engine/combat.py`, presentación de observación y
+  persistencia de fuentes, no de caché derivada.
+- **Riesgos:** caché obsoleta, ciclos de efectos continuos, orden no
+  determinista, anexos huérfanos, transformación que pierde identidad y limpieza
+  anticipada o tardía.
+- **Criterios de salida:** algoritmo de layers/precedencia documentado; recálculo
+  puro y determinista; invalidación completa; duraciones y limpieza exactas;
+  anexos/transformaciones respetan transiciones; snapshot guarda causas y
+  reconstruye el mismo derivado.
+- **Categorías de tests:** unitarios de layers, metamórficos de orden, ciclos y
+  terminación, duraciones/cleanup, anexos y transformación, daño marcado,
+  snapshot/replay y escenarios combinatorios.
+
+### W6 — Combate y habilidades universales
+
+- **Objetivo:** componer combate y habilidades repetibles sobre estado derivado,
+  timing, targeting y transiciones ya cerrados.
+- **Capabilities:** `CAP-DAMAGE-002`–`005`, `CAP-COMBAT-001`–`006`,
+  `CAP-KEYWORD-001/002`, `CAP-IMMUNITY-001`, Desafío ampliado
+  (`CAP-COMBAT-004`) y `CAP-EFFECT-003`; cada nodo bloqueado conserva su gate.
+- **Dependencias de entrada:** W2–W5 cerradas y decisiones normativas para
+  multibloqueo, inmunidad, Desafío por efecto y multijugador cuando apliquen.
+- **Exclusiones:** keywords nominales sin conducta, inmunidad como ocultación de
+  target, prevención sin causa/duración, reglas ad hoc por combatiente o carta y
+  asumir reglas de 3+ jugadores.
+- **Normativa relacionada:** causa/fuente/duración de prevención, destrucción,
+  regeneración, indestructibilidad, keywords, inmunidad, asignación de daño,
+  Desafío y terminación multijugador.
+- **Desbloqueo directo/indirecto del corpus:** directo, familias de combate y
+  keywords completamente parametrizables; indirecto, efectos compuestos que
+  crean combate, conceden capacidades o reaccionan a su resultado.
+- **Superficies técnicas:** `engine/combat.py`, `engine/effects.py`,
+  `engine/stack.py`, `engine/actions.py`, `engine/game.py`, enums/modelos,
+  opciones, observación y persistencia.
+- **Riesgos:** orden incorrecto prevenir–destruir–regenerar, doble aplicación,
+  inmunidad divergente entre legalidad y resolución, keywords no componibles y
+  resultado distinto por orden de colección.
+- **Criterios de salida:** pipeline causal único; legalidad y resolución comparten
+  predicados; cada keyword tiene semántica tipada y composición; Desafío usa el
+  combate común; casos normativamente bloqueados siguen rechazados; replay
+  reproduce asignación, prevención y resultado.
+- **Categorías de tests:** tablas de combate, causal prevention, destrucción/
+  regeneración/indestructibilidad, keywords e inmunidad, composición y
+  conmutatividad, Desafío, multijugador autorizado, fuzz/property y replay.
+
+### W7 — Conformidad masiva del corpus
+
+- **Objetivo:** incorporar por familias sólo cartas cuya semántica completa sea
+  representable mediante capacidades generales cerradas.
+- **Capabilities:** `CAP-CATALOG-001`, `CAP-EFFECT-004/005` cuando sus
+  prerequisites estén cerrados, y paquetes declarativos de contenido; W7 no
+  inventa capacidades para completar una familia.
+- **Dependencias de entrada:** W0–W6 según el subgrafo de cada familia,
+  `CAP-EFFECT-003` y `CAP-TAXONOMY-001` cerradas, procedencia normativa completa
+  y `CAP-NORM-002` resuelta cuando el formato requiera presupuesto Mítico.
+- **Exclusiones:** lógica específica por carta, clasificar `PARTIAL` como
+  soportada, rellenar ambigüedades, contabilizar variantes como identidades y
+  publicar automáticamente definiciones.
+- **Normativa relacionada:** fuente y revisión de cada texto, procedencia de
+  taxonomía, presupuesto/formato, ambigüedades y criterio `SUPPORTED` por carta
+  completa.
+- **Desbloqueo directo/indirecto del corpus:** directo, promociones individuales
+  auditadas dentro de familias enteramente representables; indirecto, evidencia
+  de huecos generales para volver al grafo, sin convertir frecuencia en
+  prioridad.
+- **Superficies técnicas:** catálogos mecánico y de presentación, manifiestos,
+  validadores, corpus/conformance, fixtures, codecs, servicio y tooling de
+  auditoría.
+- **Riesgos:** soporte por parecido, semántica oculta en datos, handler por ID,
+  deriva mecánica/presentación, totales inflados y confundir incorporación
+  interna con disponibilidad pública.
+- **Criterios de salida:** cada familia tiene trazabilidad carta→norma→capability
+  y pruebas end-to-end; cero dispatch por identidad; toda promoción se reaudita;
+  los totales siguen sumando 431 entradas/386 identidades/45 variantes; el gate
+  de publicación continúa separado.
+- **Categorías de tests:** conformance parametrizada, schema/catalog, unicidad y
+  join presentación–mecánica, golden card scenarios, corpus totals, replay,
+  regresión por familia y pruebas arquitectónicas contra handlers por ID.
+
+**Límite de fase y publicación.** W7 pertenece a la **Fase 2-C**: no abre la
+Fase 3, no es un release gate y no autoriza publicar cartas. La publicación
+requiere una decisión separada, sus controles de release, procedencia,
+presentación y seguridad, incluso cuando una carta ya sea mecánicamente
+`SUPPORTED`.
+
+## Diferencias justificadas respecto a la hipótesis inicial
+
+1. **W0 reduce el riesgo de migraciones improvisadas.** El schema, replay,
+   snapshots, eventos, serialización y CAS son observables duraderos; fijar antes
+   su estrategia evita crear un decoder distinto por wave y permite revertir
+   fallos sin corromper partidas.
+2. **Acciones y costes preceden al crecimiento de ventanas activables.** Una
+   ventana adicional multiplica las oportunidades de ejecutar una acción; sin
+   preflight, pago atómico y rollback también multiplica estados parciales y
+   respuestas a acciones ilegales.
+3. **La privacidad acompaña a toda transición.** No es una capa de UI posterior:
+   origen, destino, candidatos, LKI, eventos y errores necesitan audiencia en el
+   momento en que nacen. Redactarlos después no deshace una fuga en replay o API.
+4. **Targeting se separa de taxonomía editorial.** La taxonomía define qué es
+   un objeto y conserva vocabulario/procedencia; targeting decide qué objetos
+   puede elegir un elector autorizado y con qué cardinalidad. Comparten tipos,
+   pero ni una errata editorial debe cambiar autorización ni un selector debe
+   convertirse en fuente editorial.
+5. **El estado derivado precede a keywords y combate avanzado.** Fuerza efectiva,
+   criatura efectiva, duraciones, anexos, transformación y limpieza determinan
+   elegibilidad, letalidad y conducta; implementar keywords antes duplicaría
+   cálculos y produciría resultados obsoletos.
+6. **El contenido masivo queda después de cerrar capacidades generales.** Así el
+   corpus valida primitivas comunes en lugar de convertir similitudes de texto
+   en excepciones por carta. Una capability cerrada habilita reauditoría, no una
+   promoción ni una publicación automáticas.
+
 ## Quick wins sin ruptura de contratos
 
 Son candidatos pequeños y reversibles, siempre acompañados por tests y sin modificar discriminadores serializados ni semántica pública:

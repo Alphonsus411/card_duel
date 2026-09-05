@@ -57,3 +57,50 @@ def test_roadmap_keeps_graph_gates_and_release_outside_w7() -> None:
     normalized = " ".join(content.split())
     assert "no abre la Fase 3" in normalized
     assert "no autoriza publicar cartas" in normalized
+
+
+def test_w0_defines_impact_matrix_and_versioned_compatibility_gates() -> None:
+    content = ROADMAP.read_text(encoding="utf-8")
+    w0 = content.split("### W0 — Contractos, versionado e invariantes", 1)[1].split(
+        "### W1 — Acciones y costes atómicos", 1
+    )[0]
+
+    for surface in (
+        "`MatchState` / `GameState`",
+        "`PlayerState`",
+        "`CardDefinition`",
+        "`CardInstance`",
+        "Comandos",
+        "Eventos",
+        "Reducers / managers",
+        "Stores",
+        "SQLite",
+        "Snapshots",
+        "Replay logs",
+        "JSON público",
+        "Fronteras de aplicación",
+    ):
+        assert surface in w0
+
+    for classification in (
+        "Adición compatible mediante campo opcional y default exclusivamente técnico",
+        "Cambio que requiere nueva versión de snapshot/replay/manifest",
+        "Migración explícita de SQLite",
+        "Ruptura deliberada y documentada",
+        "Detalle interno que no debe entrar en el JSON público",
+    ):
+        assert classification in w0
+
+    for gate in (
+        "tests/artifacts/0.19.0/",
+        "tests/artifacts/0.20.x-pre-source-profile/",
+        "la semántica histórica de replay no se reinterpreta con reglas",
+        "golden files",
+        "migración SQLite idempotente",
+        "rechazo controlado de versiones",
+        "ningún campo interno nuevo aparece en JSON",
+        "No diseña todavía",
+        "`src/card_duel_engine/persistence/` o",
+        "`src/card_duel_engine/storage/`",
+    ):
+        assert gate in w0

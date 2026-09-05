@@ -3,6 +3,12 @@
 Fecha de la auditoría: 2026-09-03. Estado: **registro documental; no cambia el
 motor ni incorpora cartas**.
 
+Esta es la **auditoría canónica** de Phase 2C. La
+[`roadmap de evolución del motor`](PHASE_2C_ENGINE_EVOLUTION_ROADMAP.md), su
+[`matriz de capabilities`](ENGINE_CAPABILITY_MATRIX.csv) y el
+[`mapa de dependencias`](ENGINE_CAPABILITY_DEPENDENCIES.md) son planificación
+derivada: no acreditan implementación, incorporación de cartas ni release.
+
 ## 1. Alcance, fuentes y método
 
 Este documento es el registro maestro de reglas normalizadas. Su denominador de

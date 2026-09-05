@@ -274,6 +274,101 @@ wave**.
   codec round-trip, property/migration, determinismo, concurrencia CAS,
   compatibilidad de API y redacción de privacidad.
 
+#### Matriz de impacto y compatibilidad de W0
+
+Esta matriz es obligatoria antes de aprobar cualquier cambio de W1–W7. Cada
+fila describe una unidad de cambio prevista y le asigna **una clasificación
+principal**. Si una propuesta mezcla filas o clasificaciones, se divide antes
+de implementarla; no se rebaja un cambio semántico a «campo opcional». En
+particular, un *default exclusivamente técnico* sólo puede reconstruir una
+representación cuya semántica anterior sea inequívoca: nunca elige reglas,
+targets, orden de combate, audiencia ni decisiones de un jugador.
+
+| Superficie | Cambio previsto | Clasificación principal | Condición y frontera exigidas |
+|---|---|---|---|
+| `MatchState` / `GameState` | Añadir metadatos no semánticos de procedencia o diagnóstico que puedan reconstruirse inequívocamente. | **Adición compatible mediante campo opcional y default exclusivamente técnico.** | El default no altera legalidad, orden, RNG, resultado ni observación; si afecta a replay pasa a la fila versionada. |
+| `MatchState` / `GameState` | Añadir estado autoritativo que cambie fases, prioridad, combate, zonas, elecciones o resolución. | **Cambio que requiere nueva versión de snapshot/replay/manifest.** | El nuevo schema congela su semántica y conserva decoder del formato soportado anterior; no se infiere desde el estado actual. |
+| `PlayerState` | Añadir contadores o marcas persistentes con efecto reglamentario. | **Cambio que requiere nueva versión de snapshot/replay/manifest.** | Se serializan de forma determinista y se proyectan por audiencia; ausencia sólo admite default si reproduce exactamente la regla histórica. |
+| `PlayerState` | Añadir cachés, índices o marcas transitorias recalculables. | **Detalle interno que no debe entrar en el JSON público.** | No forman identidad persistente ni observable; deben invalidarse o reconstruirse sin modificar el resultado. |
+| `CardDefinition` | Añadir metadatos editoriales no normativos y opcionales. | **Adición compatible mediante campo opcional y default exclusivamente técnico.** | El default significa «metadato ausente», no activa una capability ni inventa taxonomía o reglas. |
+| `CardDefinition` | Cambiar significado, discriminadores, taxonomía o estructura ejecutable de una definición ya publicada. | **Ruptura deliberada y documentada.** | Nueva versión de manifiesto, nota de ruptura y migrador/diagnóstico cuando proceda; nunca reinterpretación silenciosa por el catálogo nuevo. |
+| `CardInstance` | Incorporar identidad o estado por instancia que sobreviva movimientos, snapshot o replay. | **Cambio que requiere nueva versión de snapshot/replay/manifest.** | Se fijan identidad, ciclo de vida y orden; no se reconstruye a partir de una `CardDefinition` mutable. |
+| `CardInstance` | Incorporar memoización o valores derivados recalculables. | **Detalle interno que no debe entrar en el JSON público.** | No entra en snapshot/replay salvo que se demuestre que es autoritativo; tampoco aparece en observaciones. |
+| Comandos | Añadir un parámetro opcional puramente protocolario. | **Adición compatible mediante campo opcional y default exclusivamente técnico.** | El comando omitido conserva exactamente validación y efecto anteriores; una nueva elección reglamentaria exige comando/schema versionado. |
+| Comandos | Cambiar el significado, orden, autorización o precondiciones de un comando existente. | **Ruptura deliberada y documentada.** | Se introduce discriminador/versionado explícito; el decoder antiguo conserva la interpretación antigua y CAS sigue siendo obligatorio. |
+| Eventos | Añadir contexto opcional que no cambia causalidad, orden ni consumidores existentes. | **Adición compatible mediante campo opcional y default exclusivamente técnico.** | El payload antiguo sigue siendo suficiente; si el dato gobierna reproducción o proyección, se versiona. |
+| Eventos | Cambiar tipo, causalidad, orden o payload necesario para reconstruir la partida. | **Cambio que requiere nueva versión de snapshot/replay/manifest.** | Los eventos históricos se decodifican con su tabla de tipos y semántica, sin normalizarlos al modelo vigente. |
+| Reducers / managers | Extraer, cachear o reorganizar código manteniendo la misma transición autoritativa. | **Detalle interno que no debe entrar en el JSON público.** | Paridad diferencial de estado, eventos, errores, contadores, RNG y rollback; no se filtran nombres o estructuras internas. |
+| Reducers / managers | Sustituir dos semánticas de combate por una única interpretación nueva. | **Ruptura deliberada y documentada.** | Sólo es aceptable al retirar de forma versionada un formato; mientras ambos sean soportados, se seleccionan por versión y nunca se mezclan. |
+| Stores | Añadir metadatos internos de indexación, locking u observabilidad. | **Detalle interno que no debe entrar en el JSON público.** | No cambia CAS, DTO ni bytes canónicos; cualquier dato persistido se revisa además contra la fila SQLite. |
+| SQLite | Añadir o transformar tablas, columnas, constraints, índices con efecto en los datos almacenados o en su versión. | **Migración explícita de SQLite.** | Migración identificada, transaccional, idempotente y probada desde cada versión soportada; W0 no diseña todavía el SQL. |
+| Snapshots | Alterar campos autoritativos, discriminadores, canonicalización o digest. | **Cambio que requiere nueva versión de snapshot/replay/manifest.** | Golden por versión, decoder seleccionado por `schema_version`, round-trip estable y rechazo explícito de versiones desconocidas. |
+| Replay logs | Alterar comandos/eventos registrados o cualquier regla necesaria para reproducirlos. | **Cambio que requiere nueva versión de snapshot/replay/manifest.** | El perfil semántico queda fijado en el documento y la reproducción histórica no se reinterpreta con reglas nuevas. |
+| JSON público | Añadir un dato público no sensible que no cambia el significado de los existentes. | **Adición compatible mediante campo opcional y default exclusivamente técnico.** | Respuesta aditiva, documentada y con golden por audiencia; la ausencia mantiene el contrato anterior. |
+| JSON público | Renombrar, eliminar o cambiar tipo/semántica de un campo o error publicado. | **Ruptura deliberada y documentada.** | Requiere versión de API/contrato, ventana de retirada y error explícito; nunca se expone el modelo interno como compatibilidad. |
+| Fronteras de aplicación | Añadir una operación o DTO seguro sin debilitar identidad, capacidades o CAS. | **Adición compatible mediante campo opcional y default exclusivamente técnico.** | Sigue pasando por `AuthenticatedMatchApplication`; ningún default selecciona jugador, audiencia o autoridad. |
+| Fronteras de aplicación | Exponer engine/state, aceptar identidad declarada por cliente, omitir CAS o devolver detalles internos. | **Ruptura deliberada y documentada.** | No es una evolución compatible y queda prohibida por defecto; cualquier sustitución futura exige decisión arquitectónica y versión pública. |
+
+#### Política de decodificación y replay histórico
+
+El discriminador `schema_version` se lee antes de decodificar el cuerpo y
+selecciona un decoder registrado para esa versión. No se prueba sucesivamente
+el decoder actual hasta que «funcione», no se completa una versión desconocida
+con defaults y no se confunde `engine_version`, versión de reglas o versión de
+manifiesto con la versión estructural. Toda versión desconocida o retirada falla
+de forma controlada, estable y sin mutación parcial.
+
+Decodificar estructura y ejecutar semántica son decisiones separadas. Cada
+replay soportado selecciona también el perfil de reglas que quedó fijado al
+crearlo: **la semántica histórica de replay no se reinterpreta con reglas
+nuevas**, aunque el modelo actual pueda representar sus datos. Una migración
+estructural conserva ese perfil; cambiarlo exige una conversión deliberada,
+versionada y verificable, nunca una normalización implícita.
+
+Los corpus inmutables bajo `tests/artifacts/0.19.0/` y
+`tests/artifacts/0.20.x-pre-source-profile/` se conservan como **gates de
+compatibilidad**: no se regeneran con el motor actual para hacerlos pasar. Su
+lectura, replay, observables, digest y round-trip deben permanecer cubiertos
+mientras sus versiones figuren como soportadas. Retirar ese soporte requiere
+una ruptura deliberada, documentada y probada mediante rechazo controlado.
+
+#### Presupuesto de compatibilidad
+
+La compatibilidad razonable y exigida comprende: leer todos los formatos que la
+política declare soportados; mantener respuestas públicas aditivas; conservar
+identificadores y orden cuando sean contractuales; y devolver errores explícitos
+para versiones, migraciones o comandos no admitidos, sin datos inventados ni
+mutación parcial.
+
+No se asume, en cambio, el coste indefinido de sostener estados internos
+experimentales, caches o prototipos nunca publicados. Tampoco se mantienen dos
+semánticas de combate dentro de un mismo schema/perfil, ni se simula
+compatibilidad reinterpretando replays antiguos con reglas nuevas. Cuando el
+coste de un puente deje de ser razonable se retira en una versión anunciada, con
+diagnóstico o migración cuando sea posible y rechazo controlado en los demás
+casos.
+
+#### Gates de prueba para cualquier cambio de contrato
+
+Antes de cerrar W0 y en cada evolución posterior afectada son obligatorios:
+
+1. *golden files* independientes para snapshot, replay y JSON público, incluido
+   un golden por audiencia cuando exista información privada;
+2. round-trips `decode(encode(x))` y `encode(decode(golden))` acordes con la
+   canonicalización declarada, más replay repetido con observables y digest
+   deterministas;
+3. migración SQLite idempotente, transaccional y ejercitada dos veces desde cada
+   versión soportada, sin diseñar aquí tablas ni sentencias SQL;
+4. rechazo controlado de versiones de schema, replay y manifiesto desconocidas,
+   sin fallback, traceback interno ni mutación parcial; y
+5. comparación por lista permitida de las observaciones/errores públicos para
+   demostrar que ningún campo interno nuevo aparece en JSON, logs o DTO.
+
+Este apartado es exclusivamente de roadmap y contrato. **No diseña todavía
+SQL ni autoriza modificar `src/card_duel_engine/persistence/` o
+`src/card_duel_engine/storage/`.** Esas implementaciones sólo se abrirán en una
+entrega posterior con schema, migración y rollback aprobados.
+
 ### W1 — Acciones y costes atómicos
 
 - **Objetivo:** convertir toda intención en una acción legal cuyo coste se

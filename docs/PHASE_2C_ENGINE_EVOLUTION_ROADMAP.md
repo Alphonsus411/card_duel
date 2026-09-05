@@ -369,6 +369,112 @@ SQL ni autoriza modificar `src/card_duel_engine/persistence/` o
 `src/card_duel_engine/storage/`.** Esas implementaciones sólo se abrirán en una
 entrega posterior con schema, migración y rollback aprobados.
 
+### Primer slice posterior a la aprobación — `N-PHASE-02` — mulligan decreciente persistible
+
+Una vez aprobado este roadmap, el primer slice de implementación será
+**`N-PHASE-02` — mulligan decreciente persistible**, acotado a cerrar
+`CAP-TIME-002` sin arrastrar el resto de W2. La autorización procede
+exclusivamente de la regla Base vigente descrita en la ficha de contención
+`N-PHASE-01`–`02`, `N-PHASE-04`–`05`, `N-PHASE-07`, `N-PHASE-09`–`10`: el slice
+no interpreta el silencio Mítico ni convierte una decisión de arquitectura en
+canon.
+
+#### Alcance vinculante
+
+1. El setup representa explícitamente el estado autoritativo del mulligan,
+   incluidos participante habilitado, ronda o cantidad de repeticiones,
+   tamaño de la próxima mano, elecciones pendientes y condición de cierre.
+2. Existe un comando universal —no ligado a una carta ni a un formato por
+   nombre— para que cada participante conserve su mano o solicite reemplazarla.
+   La elección aceptada es persistible y queda disponible para snapshot,
+   reconexión y replay sin pedirla de nuevo al cliente.
+3. Cada repetición reduce de forma determinista el tamaño de la nueva mano
+   conforme a la evidencia normativa vigente. El tamaño se deriva del estado
+   persistido y de la regla versionada, nunca de un contador del proceso, del
+   reloj ni de un default implícito.
+4. Actor, estado de setup, turno de decisión cuando corresponda, versión CAS,
+   cardinalidad y vigencia de la elección se validan **antes de cualquier
+   movimiento o barajado**. Un rechazo deja idénticos estado, zonas, RNG,
+   versión y log de eventos.
+5. Devolver la mano, barajar y robar la nueva mano atraviesa la autoridad única
+   de movimientos de zona y la fuente de RNG reproducible. No se permiten
+   mutaciones laterales de mazo o mano desde el handler del comando.
+6. El protocolo será alternado o simultáneo **únicamente según la evidencia
+   normativa existente**. La implementación no elegirá uno como default para
+   rellenar un vacío; si la evidencia no determina un tramo, ese tramo queda
+   bloqueado y no se infiere por conveniencia técnica.
+7. Las observaciones públicas y por oponente muestran sólo progreso, tamaños y
+   decisiones que sean observables según la fuente vigente; nunca identidades,
+   orden ni contenido de las cartas de otra mano o mazo. Cada jugador recibe
+   únicamente su proyección privada autorizada.
+8. El setup termina una sola vez y de forma determinista cuando todas las
+   elecciones exigidas han concluido. La transición resultante conserva el
+   mismo jugador inicial y el mismo estado posterior al setup que determine la
+   regla ya vigente, sin introducir prioridad, ventanas o pasos adicionales.
+
+#### Superficies probablemente afectadas
+
+El diseño y el diff deberán revisar, aunque sólo modificar cuando sea
+necesario, `domain/models.py`, `engine/commands.py`, `engine/game.py` **o un
+manager de setup dedicado**, `engine/actions.py`, `engine/zones.py`,
+`persistence/codec.py`, `persistence/snapshot.py`, `persistence/replay.py`,
+`application.py`, `service.py` y pruebas específicas de dominio, motor,
+persistencia, aplicación y servicio. Cualquier nueva representación
+autoritativa del setup seguirá la matriz W0: tendrá schema/perfil semántico
+versionado y decoder explícito, en lugar de aparecer como campo opcional con
+significado reglamentario.
+
+#### Exclusiones explícitas
+
+Quedan fuera del slice la prioridad general, Recursos Rápidos, cartas nuevas,
+combate, keywords, taxonomías, frontend y cambios de presupuesto. También se
+excluye resolver, asumir o anticipar cualquier ambigüedad sobre Legendaria o
+multijugador. El slice no modifica otras reglas, no amplía el corpus y no usa
+defaults normativos para hacer ejecutable una fuente incompleta.
+
+#### Pruebas obligatorias y compatibilidad
+
+La promoción requiere evidencia automatizada de todos estos casos:
+
+- tamaños de mano decrecientes en repeticiones sucesivas, incluidos límites y
+  terminación, con secuencia de eventos estable;
+- rechazo de conservar o reemplazar fuera del turno o estado de setup que
+  corresponda, y demostración de **no mutación** de estado, zonas, RNG, versión
+  y eventos después de cada validación fallida;
+- mismo resultado, movimientos, barajado, eventos y digest al repetir con la
+  misma semilla, y divergencia únicamente donde la semilla forme parte del
+  contrato;
+- privacidad por jugador y no interferencia de observaciones, opciones,
+  errores y DTO, sin revelar cartas ni orden oculto;
+- paridad entre las acciones legales enumeradas y el ejecutor para conservar y
+  reemplazar, incluidas autorización, vigencia y comandos obsoletos;
+- snapshot tomado en mitad del mulligan, restauración y continuación idéntica
+  sin repetir ni perder una elección;
+- replay completo desde el inicio hasta la finalización del setup, con las
+  mismas decisiones, eventos, observaciones autorizadas, digest y estado final;
+- round-trip del codec para comando, elección, estado y eventos del mulligan,
+  además de golden/versiones soportadas y rechazo controlado de versiones
+  desconocidas;
+- CAS con rechazo sin mutación del perdedor y aplicación exactamente una vez
+  del comando ganador; y
+- compatibilidad con partidas y artefactos históricos que ya comenzaron
+  **después del setup**: se cargan y continúan con su semántica anterior sin
+  fabricar estado de mulligan, reabrir el setup ni reinterpretar su replay.
+
+Estas pruebas cubren como mínimo `INV-2C-001`–`004`, `INV-2C-010`,
+`INV-2C-013`–`018` y `INV-2C-022`, con todas las superficies obligatorias que
+les asigna el catálogo. Los fixtures históricos permanecen inmutables.
+
+#### Criterio de aceptación del slice
+
+`N-PHASE-02` se acepta sólo cuando `CAP-TIME-002` pueda pasar de `MISSING` a
+`SUPPORTED` en **todo el recorrido técnico** —modelo, comando, enumeración,
+validación, transición autoritativa, observación, codec, snapshot, replay,
+aplicación, servicio y CAS— y todas las pruebas anteriores estén verdes. La
+promoción no es válida si exige modificar otra regla, resolver una exclusión o
+introducir un default normativo; en cualquiera de esos casos el slice permanece
+incompleto o bloqueado en el punto exacto para el que falte evidencia.
+
 ### W1 — Acciones y costes atómicos
 
 - **Objetivo:** convertir toda intención en una acción legal cuyo coste se

@@ -8,6 +8,14 @@ Este documento deriva las 62 filas de `ENGINE_CAPABILITY_MATRIX.csv` y las contr
 
 ## Registro completo de dependencias
 
+Las columnas `prerequisites` y `dependents` de la matriz son dos vistas
+recíprocas de la misma arista: si `A` figura como prerequisite de `B`, `B` debe
+figurar como dependent de `A`, y viceversa. La validación documental impide IDs
+huérfanos y divergencias entre ambas vistas. La única excepción a la aciclicidad
+es el SCC `CAP-TIME-003` ↔ `CAP-TIME-004` ↔ `CAP-STACK-001`, explicado y
+tratado como contrato integrado en la roadmap maestra; no es una licencia para
+introducir otros ciclos.
+
 | Capability | Estado | Prerequisites | Dependientes | Severidad fuera de orden | Superficies afectadas |
 |---|---|---|---|---|---|
 | `CAP-ACTION-001` — Modelo tipado de acciones y comandos | SUPPORTED | — | CAP-ACTION-002; CAP-TIME-003; CAP-EFFECT-001 | **MEDIUM** — contrato local incoherente o UX/replay divergente | `domain/models.py`, `engine/commands.py`, `engine/actions.py`, `engine/game.py`, `application.py`, `service.py`, `persistence/`, `storage/` |

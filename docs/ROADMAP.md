@@ -7,6 +7,15 @@ La fuente base es `Fantasy Tokens.pdf`; la actualización de 2018-06-13
 `MYTHIC_RULES_AUDIT.md`, `RULES_BASELINE.md` y `RULES_TRACEABILITY.md` son
 materiales derivados, no prueba normativa.
 
+Para **Phase 2C**, el
+[`registro base–Mítica`](FANTASY_TOKENS_BACKEND_GAP_AUDIT.md) es la auditoría
+canónica y la [`roadmap de evolución del motor`](PHASE_2C_ENGINE_EVOLUTION_ROADMAP.md)
+es planificación derivada, apoyada por su
+[`matriz de capabilities`](ENGINE_CAPABILITY_MATRIX.csv) y su
+[`mapa de dependencias`](ENGINE_CAPABILITY_DEPENDENCIES.md). Estos enlaces no
+representan implementación ni release: **Phase 2C: `IN PROGRESS`; Phase 3:
+`PENDING`**.
+
 ## Entregas completadas
 
 ### R-07 — Separar la coordinación de disparos de pila

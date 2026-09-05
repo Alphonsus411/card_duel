@@ -1,12 +1,16 @@
 # Fase 2-C: roadmap maestro de evolución del motor
 
-## Propósito, baseline y límites
+## Executive summary
 
 Este documento prioriza las 62 capabilities de `ENGINE_CAPABILITY_MATRIX.csv` sin convertir frecuencia textual en una falsa medida de valor. El baseline permanece explícitamente congelado: **431/431 entradas auditadas** —Alpha **103**, Beta **147** y Mítica **181**—, correspondientes a **386 identidades** y **45 reimpresiones/variantes**. Sus estados son **2 `SUPPORTED`**, **245 `PARTIAL`**, **143 `MISSING`**, **41 `AMBIGUOUS`** y **0 `CONFLICT`**. Las variantes no se vuelven a contar como identidades ni un desbloqueo transversal se atribuye íntegramente a una sola capability.
 
-La tabla es una herramienta de ordenación arquitectónica, no una promesa de que una capability cierre por sí sola todas las cartas que la mencionan. La evidencia canónica de prerequisites y estados sigue siendo `ENGINE_CAPABILITY_DEPENDENCIES.md`; la evidencia de corpus sigue siendo `CARD_CORPUS_CONFORMANCE.md`; y una duda abierta sigue bajo `NORMATIVE_AMBIGUITIES.md`.
+La tabla es una herramienta de ordenación arquitectónica, no una promesa de que una capability cierre por sí sola todas las cartas que la mencionan. La auditoría canónica es [`FANTASY_TOKENS_BACKEND_GAP_AUDIT.md`](FANTASY_TOKENS_BACKEND_GAP_AUDIT.md); esta roadmap es exclusivamente **planificación derivada**, no implementación ni release. La evidencia declarativa de prerequisites y estados se distribuye entre `ENGINE_CAPABILITY_MATRIX.csv` y `ENGINE_CAPABILITY_DEPENDENCIES.md`; la evidencia de corpus sigue siendo `CARD_CORPUS_CONFORMANCE.md`; y una duda abierta sigue bajo `NORMATIVE_AMBIGUITIES.md`.
 
-## Modelo ordinal explicable
+## estado actual
+
+**Phase 2C: `IN PROGRESS`. Phase 3: `PENDING`.** La creación o aprobación de esta roadmap no altera esos estados.
+
+### Modelo ordinal explicable
 
 No se suman columnas ni se calculan medias. Cada dimensión usa exclusivamente `LOW < MEDIUM < HIGH`:
 
@@ -18,7 +22,9 @@ No se suman columnas ni se calculan medias. Cada dimensión usa exclusivamente `
 
 Los ordinales expresan clases argumentables, no precisión matemática. Ante empate se ordena por gate, después por centralidad, riesgo de hacerlo fuera de orden, desbloqueo y por último coste. La frecuencia sólo puede desempatar capabilities con el mismo gate y prerequisites cerrados.
 
-## Gates arquitectónicos y normativos
+## principios arquitectónicos
+
+### Gates arquitectónicos y normativos
 
 El campo **Gate** es vinculante:
 
@@ -29,64 +35,9 @@ El campo **Gate** es vinculante:
 
 Por tanto, ninguna puntuación de frecuencia puede adelantar un nodo `WAIT-PREREQ`, ni una valoración `HIGH` autoriza un nodo `NORM-BLOCKED`. Al cambiar un prerequisite o una fuente normativa se debe reevaluar la fila y sus descendientes, no conservar mecánicamente su orden anterior.
 
-## Fichas de contención por ambigüedad normativa activa
+## capabilities
 
-Las fichas siguientes cubren **cada fila** del registro activo de
-`NORMATIVE_AMBIGUITIES.md`. Una interfaz preparada o un fixture técnico sólo
-preserva opciones de diseño: no constituye evidencia, no cambia el gate y no
-puede convertirse en una prueba del canon. `N-TRANSMUTATION-02` se explicita
-además porque alimenta directamente `CAP-TRANSMUTE-002` y el carril normativo,
-aunque el registro resumido la mantenga trazada desde el documento maestro.
-
-### `N-POINTS-01`
-
-| Capability bloqueada | Capability parcial permitida | Interfaz preparada | Default prohibido | Test normativo pendiente |
-|---|---|---|---|---|
-| Fijar un presupuesto Mítico canónico o interpretar como tal 200, 300 o 400. | Sumar `CardDefinition.cost`, conservar el mínimo Base y comparar presupuestos entre participantes; validar un límite sólo cuando la configuración lo proporcione expresamente. | Política de construcción con `point_budget: int \| None` y fábricas con `point_budget=None`; el consumidor puede inyectar un límite explícito sin elevarlo a canon. | Cualquier presupuesto implícito, especialmente 200, 300 o 400. | Queda pendiente toda prueba que proclame un presupuesto Mítico canónico; sólo son admisibles pruebas de `None`, suma, comparación e inyección explícita. |
-
-### `N-LEGENDARY-06` / `M-LORD-EVENT-01`
-
-| Capability bloqueada | Capability parcial permitida | Interfaz preparada | Default prohibido | Test normativo pendiente |
-|---|---|---|---|---|
-| Reclasificar una propiedad de Señor como Evento o derivar por ello inmunidades, targets especiales, interacción con Divinos, pila o semántica de respuesta. | Representar perfiles de fuente y ventanas tipadas; conservar únicamente la Fase Activa expresamente respaldada. | Perfil de fuente parametrizable y política de ventana inyectable, sin activar consecuencias por identidad o por el texto «a modo de Eventos». | `source_type=EVENT`, inmunidad, selector, target o ventana de respuesta inferidos automáticamente. | Quedan pendientes las pruebas canónicas de clasificación, inmunidad, targeting, apilado y respuesta; los tests de perfiles sólo pueden verificar parametrización neutral. |
-
-### `N-COMBAT-03`
-
-| Capability bloqueada | Capability parcial permitida | Interfaz preparada | Default prohibido | Test normativo pendiente |
-|---|---|---|---|---|
-| Proclamar un orden de bloqueadores como regla canónica o implementar un algoritmo normativo de reparto de daño entre múltiples bloqueadores. | Estructuras deterministas para capturar, serializar y reproducir orden y asignación suministrados explícitamente. | Secuencia ordenada y asignaciones tipadas, versionables y validadas, sin atribuir autoridad normativa al orden de normalización. | Orden por inserción, ID, fuerza o elección del atacante y reparto automático presentados como canon. | Pruebas canónicas de orden, simultaneidad, reparto y sobrante pendientes; fixtures técnicos de codec/replay se mantienen separados y rotulados como no normativos. |
-
-### `N-COMBAT-06`
-
-| Capability bloqueada | Capability parcial permitida | Interfaz preparada | Default prohibido | Test normativo pendiente |
-|---|---|---|---|---|
-| Determinar para 3+ ganador automático, empate, eliminación, continuidad o terminación global. | Modelos extensibles de resultado y eliminación, capaces de expresar `BLOCKED` y decisiones futuras sin perder participantes ni orden. | Resultado multijugador tipado con política explícita de terminación/eliminación y estado no resuelto. | Extrapolar a 3+ cualquier ganador, empate o fin global derivado de la lógica de exactamente dos jugadores. | Pruebas normativas de eliminación, supervivientes, concesión, empate, ganadores y fin global para 3+ pendientes; sólo se prueba por ahora la conservación determinista de un resultado no resuelto. |
-
-### `N-PHASE-01`–`02`, `N-PHASE-04`–`05`, `N-PHASE-07`, `N-PHASE-09`–`10` — `BASE VIGENTE / MITICA SILENTE`
-
-| Capability bloqueada | Capability parcial permitida | Interfaz preparada | Default prohibido | Test normativo pendiente |
-|---|---|---|---|---|
-| Añadir por silencio Mítico excepciones a preparación, mulligan, robo, mantenimiento, descarte, pila o enderezado. | Aplicar y probar la regla Base vigente, manteniendo separada su procedencia. | Políticas tipadas por formato/fuente para incorporar una futura extensión Mítica expresa. | Una variante Mítica implícita, tanto más permisiva como más restrictiva que Base. | Pendiente cualquier prueba que afirme una extensión Mítica; las pruebas Base continúan siendo canónicas sólo para la regla Base vigente. |
-
-### `N-ZONE-01`–`03`, `N-COST-03`, `N-COMBAT-04` — `BASE VIGENTE / MITICA SILENTE`
-
-| Capability bloqueada | Capability parcial permitida | Interfaz preparada | Default prohibido | Test normativo pendiente |
-|---|---|---|---|---|
-| Inventar extensiones Míticas de reciclaje, zonas ocultas, Equipo, coste de equipar o aptitud de combate tras giro. | Mantener sin ampliación ni restricción las reglas Base vigentes y su trazabilidad. | Políticas de zona, coste y elegibilidad parametrizadas por fuente/formato, inicialmente alimentadas sólo con Base. | Sobrescribir Base o añadir una excepción Mítica a partir de ausencia textual. | Pendiente cualquier prueba de diferencia Mítica; fixtures técnicos pueden ejercitar parámetros no canónicos sin etiquetarlos como reglas Míticas. |
-
-### `N-PHASE-03`, `N-COMBAT-05`
-
-| Capability bloqueada | Capability parcial permitida | Interfaz preparada | Default prohibido | Test normativo pendiente |
-|---|---|---|---|---|
-| Inferir del silencio una secuencia Mítica distinta o condiciones terminales/alcance total para multijugador. | Conservar la secuencia Base y preparar partidas de 2+ con selección explícita de participantes/defensor, sin decidir su final global. | Secuencia y alcance parametrizados; resultado multijugador delega la terminación no resuelta a una política explícita. | Alteración automática de fases o terminación de 3+ por analogía con dos jugadores. | Pendientes las pruebas canónicas de una secuencia Mítica distinta y del alcance/fin 3+; siguen válidas las pruebas Base y los fixtures técnicos no normativos. |
-
-### `N-TRANSMUTATION-02`
-
-| Capability bloqueada | Capability parcial permitida | Interfaz preparada | Default prohibido | Test normativo pendiente |
-|---|---|---|---|---|
-| Publicar una tabla normativa de ventanas de Transmutación por tipo o rol mientras «fases correspondientes» carezca de definición suficiente. | Preservar la operación atómica común y aceptar una política explícita de timing por tipo para experimentación o futura configuración autorizada. | `TransmutationTimingPolicy` (o contrato equivalente) parametrizado por tipo, actor y ventana, sin tabla canónica incorporada. | Una ventana uniforme o una matriz criatura/Equipo/Evento presentada como interpretación normativa predeterminada. | Pruebas normativas por tipo y rol pendientes hasta disponer de evidencia; sólo se prueban neutralidad, inyección, rechazo seguro, codec y replay de la política explícita. |
-
-## Valoración de las 62 capabilities
+### Valoración de las 62 capabilities
 
 Las columnas `Central.`, `Desbloq.`, `Riesgo`, `Claridad` y `Migración` corresponden, en ese orden, a las cinco dimensiones anteriores. La explicación concreta de cada valoración queda trazable en la última columna: estado, prerequisites y dependientes declarados.
 
@@ -155,58 +106,9 @@ Las columnas `Central.`, `Desbloq.`, `Riesgo`, `Claridad` y `Migración` corresp
 | `CAP-NORM-001` — Resolución de ambigüedades editoriales | `BLOCKED` | `NORM-BLOCKED` | HIGH | HIGH | HIGH | LOW | MEDIUM | Prerequisites: ninguno; dependientes: CAP-TIME-003, CAP-TIME-004, CAP-COMBAT-002, CAP-COMBAT-006, CAP-TRANSMUTE-002. |
 | `CAP-NORM-002` — Presupuesto de puntos Mítico | `BLOCKED` | `NORM-BLOCKED` | MEDIUM | MEDIUM | HIGH | LOW | MEDIUM | Prerequisites: ninguno; dependientes: CAP-CATALOG-001. |
 
-## Catálogo estable de invariantes del motor
+## dependency graph
 
-Los identificadores `INV-2C-NNN` son referencias contractuales estables: no se
-renumeran, reutilizan ni cambian de significado cuando se inserten o retiren
-entradas. Un invariante retirado conserva su identificador con estado
-`DEPRECATED` y remite a su sustituto. La columna **Pruebas obligatorias** indica
-las superficies mínimas que deben aportar evidencia; no limita pruebas
-adicionales. Las abreviaturas son: **U** (unitarias), **P** (paridad
-enumerador/ejecutor), **C** (codec round-trip), **S** (snapshots heredados),
-**R** (replay heredado), **A** (autorización), **CAS** (concurrencia y comandos
-obsoletos) e **I** (integración).
-
-| ID estable | Invariante normativo | Pruebas obligatorias |
-|---|---|---|
-| `INV-2C-001` | El mismo estado inicial, comando, versión semántica y estado/semilla de RNG producen exactamente los mismos eventos, en el mismo orden, y el mismo estado final. | U, C, S, R, CAS, I |
-| `INV-2C-002` | Toda fuente de nondeterminismo se captura mediante una semilla reproducible o una decisión persistida; reloj, iteración de colecciones, proceso y cliente no deciden implícitamente el resultado. | U, C, R, CAS, I |
-| `INV-2C-003` | Replay reproduce eventos, elecciones, orden y digests compatibles con la versión semántica declarada. | C, S, R, I |
-| `INV-2C-004` | Cada snapshot identifica schema y semántica; una versión anterior se migra de forma determinista o se rechaza explícitamente, nunca se interpreta por aproximación. | U, C, S, R, I |
-| `INV-2C-005` | La definición inmutable de una carta y su instancia de partida permanecen separadas y poseen identidades distintas. | U, C, S, R, I |
-| `INV-2C-006` | `owner_id` y `controller_id` representan relaciones distintas y nunca se fusionan, ni siquiera cuando sus valores coinciden. | U, C, S, R, A, I |
-| `INV-2C-007` | Toda transición hacia una zona del propietario resuelve explícitamente el propietario de destino y el controlador resultante; ninguno se infiere del otro. | U, C, S, R, A, I |
-| `INV-2C-008` | El estado efectivo se deriva de fuentes canónicas y no se persiste como segunda verdad cuando pueda recalcularse; snapshots y replay almacenan causas, no cachés autoritativas. | U, C, S, R, I |
-| `INV-2C-009` | Heridas del jugador, daño marcado en permanentes, Fuerza base/efectiva y modificadores son magnitudes distintas, con tipos, ciclo de vida y limpieza propios. | U, C, S, R, I |
-| `INV-2C-010` | La validación de legalidad y la determinación/congelación del coste preceden cualquier mutación de estado. | U, P, R, A, CAS, I |
-| `INV-2C-011` | El pago de un coste es atómico: o se aplica completo una sola vez o no cambia el estado; no existe pago parcial ni rollback ambiguo. | U, P, C, R, CAS, I |
-| `INV-2C-012` | Pago, activación o apilado y resolución son etapas distintas, observables y ordenadas; completar una no implica haber completado las siguientes. | U, P, C, R, CAS, I |
-| `INV-2C-013` | Toda instancia de carta está en exactamente una ubicación coherente, incluida una única zona/contenedor o la ubicación transitoria tipada que corresponda. | U, C, S, R, CAS, I |
-| `INV-2C-014` | Todo movimiento atraviesa una única autoridad de transición y aplica allí las políticas declaradas de limpieza y conservación, sin mutaciones laterales de zonas. | U, C, S, R, CAS, I |
-| `INV-2C-015` | Observaciones, DTO, errores y opciones se proyectan por audiencia y no filtran identidad, contenido, candidatos ni metadatos ocultos. | U, P, C, S, R, A, I |
-| `INV-2C-016` | Ningún comando confía en IDs, targets, elecciones u option tokens enviados por el cliente sin revalidar pertenencia, audiencia, vigencia, cardinalidad y legalidad. | U, P, A, CAS, I |
-| `INV-2C-017` | El enumerador y el ejecutor aceptan el mismo conjunto semántico de acciones para el mismo estado, actor y versión; toda opción emitida es ejecutable mientras siga vigente y toda ejecución aceptada era enumerable. | U, P, A, CAS, I |
-| `INV-2C-018` | El orden de targets, triggers, reemplazos y efectos es determinista y forma parte del contrato persistido cuando una elección normativa pueda alterarlo. | U, P, C, S, R, I |
-| `INV-2C-019` | Ninguna regla se resuelve por nombre de carta, texto editorial o `card_id` concreto; la ejecución despacha únicamente primitivas, capacidades y datos mecánicos tipados. | U, P, C, S, R, I |
-| `INV-2C-020` | Transmutación es una acción universal distinta del sacrificio y determina su pago a partir del `CardDefinition.cost` efectivo aplicable, sin duplicarlo en la instancia ni inferirlo del texto. | U, P, C, S, R, A, CAS, I |
-| `INV-2C-021` | Implementar una capability no equivale a incorporar, promover ni publicar una carta; cada carta exige trazabilidad y conformidad propias. | U, C, S, R, A, I |
-| `INV-2C-022` | Todo fallo de versionado, decodificación o migración es explícito, tipado y atómico: no entrega ni persiste un estado parcialmente cargado. | U, C, S, R, CAS, I |
-
-### Regla de trazabilidad y aceptación
-
-Cada cambio de W0–W7 debe citar los IDs afectados en su diseño, migración y
-plan de pruebas. Para cada ID citado se ejecutan todas sus superficies
-obligatorias o se documenta un bloqueo de entorno; una prueba en una superficie
-no sustituye otra. Los fixtures heredados son inmutables y versionados: **S**
-parte del snapshot anterior y verifica migración o rechazo, mientras **R** parte
-del log anterior y verifica eventos, decisiones, orden, digest y estado final.
-Las pruebas **CAS** deben demostrar tanto rechazo sin mutación del comando
-obsoleto como éxito único del comando ganador. Las pruebas **A** se ejercitan
-con audiencias autorizadas y no autorizadas. Una capability no puede pasar a
-`SUPPORTED` si incumple un invariante aplicable, aunque sus escenarios felices
-de integración sean correctos.
-
-## Orden de ejecución por gates
+### Orden de ejecución por gates
 
 ### 1. Fundaciones antes que volumen superficial
 
@@ -222,7 +124,9 @@ Búsqueda top-N, desafío por efecto, creación de fichas, descarte forzado y ot
 
 `CAP-NORM-001` y `CAP-NORM-002` no son tareas de programación: producen decisiones autoritativas y trazables. `CAP-TAXONOMY-002`, `CAP-TRANSMUTE-002`, `CAP-COMBAT-002` y `CAP-COMBAT-006`, además de cualquier tramo abierto de inmunidades o multijugador, permanecen `NORM-BLOCKED`. Una aclaración puede abrir el gate, pero nunca cuenta como implementación ni como soporte de corpus.
 
-## Waves propuestas, sujetas a validación del grafo
+## priorización
+
+### Waves propuestas, sujetas a validación del grafo
 
 Las waves son **fronteras de integración**, no sprints, fechas ni permiso para
 ignorar un gate. Antes de iniciar cada capability se reconstruirá el grafo desde
@@ -241,6 +145,59 @@ para invertir aristas. El orden W0–W7 se ajustará topológicamente dentro de 
 wave y, si una arista cruza hacia una wave posterior, el nodo dependiente se
 aplazará; **nunca se adelantará el prerequisite sólo para conservar el número de
 wave**.
+
+### Diferencias justificadas respecto a la hipótesis inicial
+
+1. **W0 reduce el riesgo de migraciones improvisadas.** El schema, replay,
+   snapshots, eventos, serialización y CAS son observables duraderos; fijar antes
+   su estrategia evita crear un decoder distinto por wave y permite revertir
+   fallos sin corromper partidas.
+2. **Acciones y costes preceden al crecimiento de ventanas activables.** Una
+   ventana adicional multiplica las oportunidades de ejecutar una acción; sin
+   preflight, pago atómico y rollback también multiplica estados parciales y
+   respuestas a acciones ilegales.
+3. **La privacidad acompaña a toda transición.** No es una capa de UI posterior:
+   origen, destino, candidatos, LKI, eventos y errores necesitan audiencia en el
+   momento en que nacen. Redactarlos después no deshace una fuga en replay o API.
+4. **Targeting se separa de taxonomía editorial.** La taxonomía define qué es
+   un objeto y conserva vocabulario/procedencia; targeting decide qué objetos
+   puede elegir un elector autorizado y con qué cardinalidad. Comparten tipos,
+   pero ni una errata editorial debe cambiar autorización ni un selector debe
+   convertirse en fuente editorial.
+5. **El estado derivado precede a keywords y combate avanzado.** Fuerza efectiva,
+   criatura efectiva, duraciones, anexos, transformación y limpieza determinan
+   elegibilidad, letalidad y conducta; implementar keywords antes duplicaría
+   cálculos y produciría resultados obsoletos.
+6. **El contenido masivo queda después de cerrar capacidades generales.** Así el
+   corpus valida primitivas comunes en lugar de convertir similitudes de texto
+   en excepciones por carta. Una capability cerrada habilita reauditoría, no una
+   promoción ni una publicación automáticas.
+
+### Quick wins sin ruptura de contratos
+
+Son candidatos pequeños y reversibles, siempre acompañados por tests y sin modificar discriminadores serializados ni semántica pública:
+
+- completar casos tipados de `CAP-DAMAGE-002`, actualmente `READY`, que estén inequívocamente cubiertos por causa y duración actuales;
+- ampliar tests y fixtures de vocabulario/procedencia para `CAP-TAXONOMY-003`, sin alterar el modelo ni promover la capability hasta que `CAP-TAXONOMY-001` cierre su gate;
+- reforzar pruebas, trazabilidad y métricas de las capabilities `CLOSED`, incluida la paridad de acciones y round-trips, sin reclasificar cartas automáticamente;
+- preparar migradores, golden replays y notas de versión de las fundaciones sin activar todavía su nuevo contrato.
+
+Un quick win deja intactos schema version, comandos, eventos, snapshots y respuestas del servicio. Si durante el diseño exige cambiar cualquiera de ellos, sale de este carril y pasa a cambio fundacional versionado.
+
+### Foundational changes que exigen versionado
+
+Requieren versión explícita del schema/evento/API afectado, decoder de legado o migración, golden replays de antes y después y nota de compatibilidad:
+
+- `CAP-ZONE-003` y `CAP-ZONE-006`: identidad y evento uniforme de transición, incluida last-known information;
+- `CAP-SECRET-002`: elecciones persistibles y proyección por audiencia;
+- `CAP-TAXONOMY-001`, `CAP-TARGET-002`, `CAP-KEYWORD-001` y `CAP-IMMUNITY-001`: discriminadores tipados y selectores canónicos;
+- `CAP-TIME-003`, `CAP-TIME-004` y `CAP-TRIGGER-001`: orden observable de fases, prioridad y triggers;
+- `CAP-EFFECT-001`–`003`: AST/composición, captura de valores, atomicidad y visibilidad por paso;
+- `CAP-CATALOG-001`: publicación final de definiciones y procedencia, únicamente tras cerrar sus gates.
+
+El versionado no permite saltarse prerequisites: sólo hace compatible una modificación ya autorizada. Cada cambio debe definir versión escrita, lectura de legado, comportamiento ante versión desconocida, estabilidad de IDs y orden de eventos, y equivalencia de replay/persistencia/API.
+
+## waves definitivas
 
 ### W0 — Contractos, versionado e invariantes
 
@@ -273,207 +230,6 @@ wave**.
 - **Categorías de tests:** contract/schema, golden y legacy replay, snapshot y
   codec round-trip, property/migration, determinismo, concurrencia CAS,
   compatibilidad de API y redacción de privacidad.
-
-#### Matriz de impacto y compatibilidad de W0
-
-Esta matriz es obligatoria antes de aprobar cualquier cambio de W1–W7. Cada
-fila describe una unidad de cambio prevista y le asigna **una clasificación
-principal**. Si una propuesta mezcla filas o clasificaciones, se divide antes
-de implementarla; no se rebaja un cambio semántico a «campo opcional». En
-particular, un *default exclusivamente técnico* sólo puede reconstruir una
-representación cuya semántica anterior sea inequívoca: nunca elige reglas,
-targets, orden de combate, audiencia ni decisiones de un jugador.
-
-| Superficie | Cambio previsto | Clasificación principal | Condición y frontera exigidas |
-|---|---|---|---|
-| `MatchState` / `GameState` | Añadir metadatos no semánticos de procedencia o diagnóstico que puedan reconstruirse inequívocamente. | **Adición compatible mediante campo opcional y default exclusivamente técnico.** | El default no altera legalidad, orden, RNG, resultado ni observación; si afecta a replay pasa a la fila versionada. |
-| `MatchState` / `GameState` | Añadir estado autoritativo que cambie fases, prioridad, combate, zonas, elecciones o resolución. | **Cambio que requiere nueva versión de snapshot/replay/manifest.** | El nuevo schema congela su semántica y conserva decoder del formato soportado anterior; no se infiere desde el estado actual. |
-| `PlayerState` | Añadir contadores o marcas persistentes con efecto reglamentario. | **Cambio que requiere nueva versión de snapshot/replay/manifest.** | Se serializan de forma determinista y se proyectan por audiencia; ausencia sólo admite default si reproduce exactamente la regla histórica. |
-| `PlayerState` | Añadir cachés, índices o marcas transitorias recalculables. | **Detalle interno que no debe entrar en el JSON público.** | No forman identidad persistente ni observable; deben invalidarse o reconstruirse sin modificar el resultado. |
-| `CardDefinition` | Añadir metadatos editoriales no normativos y opcionales. | **Adición compatible mediante campo opcional y default exclusivamente técnico.** | El default significa «metadato ausente», no activa una capability ni inventa taxonomía o reglas. |
-| `CardDefinition` | Cambiar significado, discriminadores, taxonomía o estructura ejecutable de una definición ya publicada. | **Ruptura deliberada y documentada.** | Nueva versión de manifiesto, nota de ruptura y migrador/diagnóstico cuando proceda; nunca reinterpretación silenciosa por el catálogo nuevo. |
-| `CardInstance` | Incorporar identidad o estado por instancia que sobreviva movimientos, snapshot o replay. | **Cambio que requiere nueva versión de snapshot/replay/manifest.** | Se fijan identidad, ciclo de vida y orden; no se reconstruye a partir de una `CardDefinition` mutable. |
-| `CardInstance` | Incorporar memoización o valores derivados recalculables. | **Detalle interno que no debe entrar en el JSON público.** | No entra en snapshot/replay salvo que se demuestre que es autoritativo; tampoco aparece en observaciones. |
-| Comandos | Añadir un parámetro opcional puramente protocolario. | **Adición compatible mediante campo opcional y default exclusivamente técnico.** | El comando omitido conserva exactamente validación y efecto anteriores; una nueva elección reglamentaria exige comando/schema versionado. |
-| Comandos | Cambiar el significado, orden, autorización o precondiciones de un comando existente. | **Ruptura deliberada y documentada.** | Se introduce discriminador/versionado explícito; el decoder antiguo conserva la interpretación antigua y CAS sigue siendo obligatorio. |
-| Eventos | Añadir contexto opcional que no cambia causalidad, orden ni consumidores existentes. | **Adición compatible mediante campo opcional y default exclusivamente técnico.** | El payload antiguo sigue siendo suficiente; si el dato gobierna reproducción o proyección, se versiona. |
-| Eventos | Cambiar tipo, causalidad, orden o payload necesario para reconstruir la partida. | **Cambio que requiere nueva versión de snapshot/replay/manifest.** | Los eventos históricos se decodifican con su tabla de tipos y semántica, sin normalizarlos al modelo vigente. |
-| Reducers / managers | Extraer, cachear o reorganizar código manteniendo la misma transición autoritativa. | **Detalle interno que no debe entrar en el JSON público.** | Paridad diferencial de estado, eventos, errores, contadores, RNG y rollback; no se filtran nombres o estructuras internas. |
-| Reducers / managers | Sustituir dos semánticas de combate por una única interpretación nueva. | **Ruptura deliberada y documentada.** | Sólo es aceptable al retirar de forma versionada un formato; mientras ambos sean soportados, se seleccionan por versión y nunca se mezclan. |
-| Stores | Añadir metadatos internos de indexación, locking u observabilidad. | **Detalle interno que no debe entrar en el JSON público.** | No cambia CAS, DTO ni bytes canónicos; cualquier dato persistido se revisa además contra la fila SQLite. |
-| SQLite | Añadir o transformar tablas, columnas, constraints, índices con efecto en los datos almacenados o en su versión. | **Migración explícita de SQLite.** | Migración identificada, transaccional, idempotente y probada desde cada versión soportada; W0 no diseña todavía el SQL. |
-| Snapshots | Alterar campos autoritativos, discriminadores, canonicalización o digest. | **Cambio que requiere nueva versión de snapshot/replay/manifest.** | Golden por versión, decoder seleccionado por `schema_version`, round-trip estable y rechazo explícito de versiones desconocidas. |
-| Replay logs | Alterar comandos/eventos registrados o cualquier regla necesaria para reproducirlos. | **Cambio que requiere nueva versión de snapshot/replay/manifest.** | El perfil semántico queda fijado en el documento y la reproducción histórica no se reinterpreta con reglas nuevas. |
-| JSON público | Añadir un dato público no sensible que no cambia el significado de los existentes. | **Adición compatible mediante campo opcional y default exclusivamente técnico.** | Respuesta aditiva, documentada y con golden por audiencia; la ausencia mantiene el contrato anterior. |
-| JSON público | Renombrar, eliminar o cambiar tipo/semántica de un campo o error publicado. | **Ruptura deliberada y documentada.** | Requiere versión de API/contrato, ventana de retirada y error explícito; nunca se expone el modelo interno como compatibilidad. |
-| Fronteras de aplicación | Añadir una operación o DTO seguro sin debilitar identidad, capacidades o CAS. | **Adición compatible mediante campo opcional y default exclusivamente técnico.** | Sigue pasando por `AuthenticatedMatchApplication`; ningún default selecciona jugador, audiencia o autoridad. |
-| Fronteras de aplicación | Exponer engine/state, aceptar identidad declarada por cliente, omitir CAS o devolver detalles internos. | **Ruptura deliberada y documentada.** | No es una evolución compatible y queda prohibida por defecto; cualquier sustitución futura exige decisión arquitectónica y versión pública. |
-
-#### Política de decodificación y replay histórico
-
-El discriminador `schema_version` se lee antes de decodificar el cuerpo y
-selecciona un decoder registrado para esa versión. No se prueba sucesivamente
-el decoder actual hasta que «funcione», no se completa una versión desconocida
-con defaults y no se confunde `engine_version`, versión de reglas o versión de
-manifiesto con la versión estructural. Toda versión desconocida o retirada falla
-de forma controlada, estable y sin mutación parcial.
-
-Decodificar estructura y ejecutar semántica son decisiones separadas. Cada
-replay soportado selecciona también el perfil de reglas que quedó fijado al
-crearlo: **la semántica histórica de replay no se reinterpreta con reglas
-nuevas**, aunque el modelo actual pueda representar sus datos. Una migración
-estructural conserva ese perfil; cambiarlo exige una conversión deliberada,
-versionada y verificable, nunca una normalización implícita.
-
-Los corpus inmutables bajo `tests/artifacts/0.19.0/` y
-`tests/artifacts/0.20.x-pre-source-profile/` se conservan como **gates de
-compatibilidad**: no se regeneran con el motor actual para hacerlos pasar. Su
-lectura, replay, observables, digest y round-trip deben permanecer cubiertos
-mientras sus versiones figuren como soportadas. Retirar ese soporte requiere
-una ruptura deliberada, documentada y probada mediante rechazo controlado.
-
-#### Presupuesto de compatibilidad
-
-La compatibilidad razonable y exigida comprende: leer todos los formatos que la
-política declare soportados; mantener respuestas públicas aditivas; conservar
-identificadores y orden cuando sean contractuales; y devolver errores explícitos
-para versiones, migraciones o comandos no admitidos, sin datos inventados ni
-mutación parcial.
-
-No se asume, en cambio, el coste indefinido de sostener estados internos
-experimentales, caches o prototipos nunca publicados. Tampoco se mantienen dos
-semánticas de combate dentro de un mismo schema/perfil, ni se simula
-compatibilidad reinterpretando replays antiguos con reglas nuevas. Cuando el
-coste de un puente deje de ser razonable se retira en una versión anunciada, con
-diagnóstico o migración cuando sea posible y rechazo controlado en los demás
-casos.
-
-#### Gates de prueba para cualquier cambio de contrato
-
-Antes de cerrar W0 y en cada evolución posterior afectada son obligatorios:
-
-1. *golden files* independientes para snapshot, replay y JSON público, incluido
-   un golden por audiencia cuando exista información privada;
-2. round-trips `decode(encode(x))` y `encode(decode(golden))` acordes con la
-   canonicalización declarada, más replay repetido con observables y digest
-   deterministas;
-3. migración SQLite idempotente, transaccional y ejercitada dos veces desde cada
-   versión soportada, sin diseñar aquí tablas ni sentencias SQL;
-4. rechazo controlado de versiones de schema, replay y manifiesto desconocidas,
-   sin fallback, traceback interno ni mutación parcial; y
-5. comparación por lista permitida de las observaciones/errores públicos para
-   demostrar que ningún campo interno nuevo aparece en JSON, logs o DTO.
-
-Este apartado es exclusivamente de roadmap y contrato. **No diseña todavía
-SQL ni autoriza modificar `src/card_duel_engine/persistence/` o
-`src/card_duel_engine/storage/`.** Esas implementaciones sólo se abrirán en una
-entrega posterior con schema, migración y rollback aprobados.
-
-### Primer slice posterior a la aprobación — `N-PHASE-02` — mulligan decreciente persistible
-
-Una vez aprobado este roadmap, el primer slice de implementación será
-**`N-PHASE-02` — mulligan decreciente persistible**, acotado a cerrar
-`CAP-TIME-002` sin arrastrar el resto de W2. La autorización procede
-exclusivamente de la regla Base vigente descrita en la ficha de contención
-`N-PHASE-01`–`02`, `N-PHASE-04`–`05`, `N-PHASE-07`, `N-PHASE-09`–`10`: el slice
-no interpreta el silencio Mítico ni convierte una decisión de arquitectura en
-canon.
-
-#### Alcance vinculante
-
-1. El setup representa explícitamente el estado autoritativo del mulligan,
-   incluidos participante habilitado, ronda o cantidad de repeticiones,
-   tamaño de la próxima mano, elecciones pendientes y condición de cierre.
-2. Existe un comando universal —no ligado a una carta ni a un formato por
-   nombre— para que cada participante conserve su mano o solicite reemplazarla.
-   La elección aceptada es persistible y queda disponible para snapshot,
-   reconexión y replay sin pedirla de nuevo al cliente.
-3. Cada repetición reduce de forma determinista el tamaño de la nueva mano
-   conforme a la evidencia normativa vigente. El tamaño se deriva del estado
-   persistido y de la regla versionada, nunca de un contador del proceso, del
-   reloj ni de un default implícito.
-4. Actor, estado de setup, turno de decisión cuando corresponda, versión CAS,
-   cardinalidad y vigencia de la elección se validan **antes de cualquier
-   movimiento o barajado**. Un rechazo deja idénticos estado, zonas, RNG,
-   versión y log de eventos.
-5. Devolver la mano, barajar y robar la nueva mano atraviesa la autoridad única
-   de movimientos de zona y la fuente de RNG reproducible. No se permiten
-   mutaciones laterales de mazo o mano desde el handler del comando.
-6. El protocolo será alternado o simultáneo **únicamente según la evidencia
-   normativa existente**. La implementación no elegirá uno como default para
-   rellenar un vacío; si la evidencia no determina un tramo, ese tramo queda
-   bloqueado y no se infiere por conveniencia técnica.
-7. Las observaciones públicas y por oponente muestran sólo progreso, tamaños y
-   decisiones que sean observables según la fuente vigente; nunca identidades,
-   orden ni contenido de las cartas de otra mano o mazo. Cada jugador recibe
-   únicamente su proyección privada autorizada.
-8. El setup termina una sola vez y de forma determinista cuando todas las
-   elecciones exigidas han concluido. La transición resultante conserva el
-   mismo jugador inicial y el mismo estado posterior al setup que determine la
-   regla ya vigente, sin introducir prioridad, ventanas o pasos adicionales.
-
-#### Superficies probablemente afectadas
-
-El diseño y el diff deberán revisar, aunque sólo modificar cuando sea
-necesario, `domain/models.py`, `engine/commands.py`, `engine/game.py` **o un
-manager de setup dedicado**, `engine/actions.py`, `engine/zones.py`,
-`persistence/codec.py`, `persistence/snapshot.py`, `persistence/replay.py`,
-`application.py`, `service.py` y pruebas específicas de dominio, motor,
-persistencia, aplicación y servicio. Cualquier nueva representación
-autoritativa del setup seguirá la matriz W0: tendrá schema/perfil semántico
-versionado y decoder explícito, en lugar de aparecer como campo opcional con
-significado reglamentario.
-
-#### Exclusiones explícitas
-
-Quedan fuera del slice la prioridad general, Recursos Rápidos, cartas nuevas,
-combate, keywords, taxonomías, frontend y cambios de presupuesto. También se
-excluye resolver, asumir o anticipar cualquier ambigüedad sobre Legendaria o
-multijugador. El slice no modifica otras reglas, no amplía el corpus y no usa
-defaults normativos para hacer ejecutable una fuente incompleta.
-
-#### Pruebas obligatorias y compatibilidad
-
-La promoción requiere evidencia automatizada de todos estos casos:
-
-- tamaños de mano decrecientes en repeticiones sucesivas, incluidos límites y
-  terminación, con secuencia de eventos estable;
-- rechazo de conservar o reemplazar fuera del turno o estado de setup que
-  corresponda, y demostración de **no mutación** de estado, zonas, RNG, versión
-  y eventos después de cada validación fallida;
-- mismo resultado, movimientos, barajado, eventos y digest al repetir con la
-  misma semilla, y divergencia únicamente donde la semilla forme parte del
-  contrato;
-- privacidad por jugador y no interferencia de observaciones, opciones,
-  errores y DTO, sin revelar cartas ni orden oculto;
-- paridad entre las acciones legales enumeradas y el ejecutor para conservar y
-  reemplazar, incluidas autorización, vigencia y comandos obsoletos;
-- snapshot tomado en mitad del mulligan, restauración y continuación idéntica
-  sin repetir ni perder una elección;
-- replay completo desde el inicio hasta la finalización del setup, con las
-  mismas decisiones, eventos, observaciones autorizadas, digest y estado final;
-- round-trip del codec para comando, elección, estado y eventos del mulligan,
-  además de golden/versiones soportadas y rechazo controlado de versiones
-  desconocidas;
-- CAS con rechazo sin mutación del perdedor y aplicación exactamente una vez
-  del comando ganador; y
-- compatibilidad con partidas y artefactos históricos que ya comenzaron
-  **después del setup**: se cargan y continúan con su semántica anterior sin
-  fabricar estado de mulligan, reabrir el setup ni reinterpretar su replay.
-
-Estas pruebas cubren como mínimo `INV-2C-001`–`004`, `INV-2C-010`,
-`INV-2C-013`–`018` y `INV-2C-022`, con todas las superficies obligatorias que
-les asigna el catálogo. Los fixtures históricos permanecen inmutables.
-
-#### Criterio de aceptación del slice
-
-`N-PHASE-02` se acepta sólo cuando `CAP-TIME-002` pueda pasar de `MISSING` a
-`SUPPORTED` en **todo el recorrido técnico** —modelo, comando, enumeración,
-validación, transición autoritativa, observación, codec, snapshot, replay,
-aplicación, servicio y CAS— y todas las pruebas anteriores estén verdes. La
-promoción no es válida si exige modificar otra regla, resolver una exclusión o
-introducir un default normativo; en cualquiera de esos casos el slice permanece
-incompleto o bloqueado en el punto exacto para el que falte evidencia.
 
 ### W1 — Acciones y costes atómicos
 
@@ -701,59 +457,331 @@ requiere una decisión separada, sus controles de release, procedencia,
 presentación y seguridad, incluso cuando una carta ya sea mecánicamente
 `SUPPORTED`.
 
-## Diferencias justificadas respecto a la hipótesis inicial
+## invariantes
 
-1. **W0 reduce el riesgo de migraciones improvisadas.** El schema, replay,
-   snapshots, eventos, serialización y CAS son observables duraderos; fijar antes
-   su estrategia evita crear un decoder distinto por wave y permite revertir
-   fallos sin corromper partidas.
-2. **Acciones y costes preceden al crecimiento de ventanas activables.** Una
-   ventana adicional multiplica las oportunidades de ejecutar una acción; sin
-   preflight, pago atómico y rollback también multiplica estados parciales y
-   respuestas a acciones ilegales.
-3. **La privacidad acompaña a toda transición.** No es una capa de UI posterior:
-   origen, destino, candidatos, LKI, eventos y errores necesitan audiencia en el
-   momento en que nacen. Redactarlos después no deshace una fuga en replay o API.
-4. **Targeting se separa de taxonomía editorial.** La taxonomía define qué es
-   un objeto y conserva vocabulario/procedencia; targeting decide qué objetos
-   puede elegir un elector autorizado y con qué cardinalidad. Comparten tipos,
-   pero ni una errata editorial debe cambiar autorización ni un selector debe
-   convertirse en fuente editorial.
-5. **El estado derivado precede a keywords y combate avanzado.** Fuerza efectiva,
-   criatura efectiva, duraciones, anexos, transformación y limpieza determinan
-   elegibilidad, letalidad y conducta; implementar keywords antes duplicaría
-   cálculos y produciría resultados obsoletos.
-6. **El contenido masivo queda después de cerrar capacidades generales.** Así el
-   corpus valida primitivas comunes en lugar de convertir similitudes de texto
-   en excepciones por carta. Una capability cerrada habilita reauditoría, no una
-   promoción ni una publicación automáticas.
+### Catálogo estable de invariantes del motor
 
-## Quick wins sin ruptura de contratos
+Los identificadores `INV-2C-NNN` son referencias contractuales estables: no se
+renumeran, reutilizan ni cambian de significado cuando se inserten o retiren
+entradas. Un invariante retirado conserva su identificador con estado
+`DEPRECATED` y remite a su sustituto. La columna **Pruebas obligatorias** indica
+las superficies mínimas que deben aportar evidencia; no limita pruebas
+adicionales. Las abreviaturas son: **U** (unitarias), **P** (paridad
+enumerador/ejecutor), **C** (codec round-trip), **S** (snapshots heredados),
+**R** (replay heredado), **A** (autorización), **CAS** (concurrencia y comandos
+obsoletos) e **I** (integración).
 
-Son candidatos pequeños y reversibles, siempre acompañados por tests y sin modificar discriminadores serializados ni semántica pública:
+| ID estable | Invariante normativo | Pruebas obligatorias |
+|---|---|---|
+| `INV-2C-001` | El mismo estado inicial, comando, versión semántica y estado/semilla de RNG producen exactamente los mismos eventos, en el mismo orden, y el mismo estado final. | U, C, S, R, CAS, I |
+| `INV-2C-002` | Toda fuente de nondeterminismo se captura mediante una semilla reproducible o una decisión persistida; reloj, iteración de colecciones, proceso y cliente no deciden implícitamente el resultado. | U, C, R, CAS, I |
+| `INV-2C-003` | Replay reproduce eventos, elecciones, orden y digests compatibles con la versión semántica declarada. | C, S, R, I |
+| `INV-2C-004` | Cada snapshot identifica schema y semántica; una versión anterior se migra de forma determinista o se rechaza explícitamente, nunca se interpreta por aproximación. | U, C, S, R, I |
+| `INV-2C-005` | La definición inmutable de una carta y su instancia de partida permanecen separadas y poseen identidades distintas. | U, C, S, R, I |
+| `INV-2C-006` | `owner_id` y `controller_id` representan relaciones distintas y nunca se fusionan, ni siquiera cuando sus valores coinciden. | U, C, S, R, A, I |
+| `INV-2C-007` | Toda transición hacia una zona del propietario resuelve explícitamente el propietario de destino y el controlador resultante; ninguno se infiere del otro. | U, C, S, R, A, I |
+| `INV-2C-008` | El estado efectivo se deriva de fuentes canónicas y no se persiste como segunda verdad cuando pueda recalcularse; snapshots y replay almacenan causas, no cachés autoritativas. | U, C, S, R, I |
+| `INV-2C-009` | Heridas del jugador, daño marcado en permanentes, Fuerza base/efectiva y modificadores son magnitudes distintas, con tipos, ciclo de vida y limpieza propios. | U, C, S, R, I |
+| `INV-2C-010` | La validación de legalidad y la determinación/congelación del coste preceden cualquier mutación de estado. | U, P, R, A, CAS, I |
+| `INV-2C-011` | El pago de un coste es atómico: o se aplica completo una sola vez o no cambia el estado; no existe pago parcial ni rollback ambiguo. | U, P, C, R, CAS, I |
+| `INV-2C-012` | Pago, activación o apilado y resolución son etapas distintas, observables y ordenadas; completar una no implica haber completado las siguientes. | U, P, C, R, CAS, I |
+| `INV-2C-013` | Toda instancia de carta está en exactamente una ubicación coherente, incluida una única zona/contenedor o la ubicación transitoria tipada que corresponda. | U, C, S, R, CAS, I |
+| `INV-2C-014` | Todo movimiento atraviesa una única autoridad de transición y aplica allí las políticas declaradas de limpieza y conservación, sin mutaciones laterales de zonas. | U, C, S, R, CAS, I |
+| `INV-2C-015` | Observaciones, DTO, errores y opciones se proyectan por audiencia y no filtran identidad, contenido, candidatos ni metadatos ocultos. | U, P, C, S, R, A, I |
+| `INV-2C-016` | Ningún comando confía en IDs, targets, elecciones u option tokens enviados por el cliente sin revalidar pertenencia, audiencia, vigencia, cardinalidad y legalidad. | U, P, A, CAS, I |
+| `INV-2C-017` | El enumerador y el ejecutor aceptan el mismo conjunto semántico de acciones para el mismo estado, actor y versión; toda opción emitida es ejecutable mientras siga vigente y toda ejecución aceptada era enumerable. | U, P, A, CAS, I |
+| `INV-2C-018` | El orden de targets, triggers, reemplazos y efectos es determinista y forma parte del contrato persistido cuando una elección normativa pueda alterarlo. | U, P, C, S, R, I |
+| `INV-2C-019` | Ninguna regla se resuelve por nombre de carta, texto editorial o `card_id` concreto; la ejecución despacha únicamente primitivas, capacidades y datos mecánicos tipados. | U, P, C, S, R, I |
+| `INV-2C-020` | Transmutación es una acción universal distinta del sacrificio y determina su pago a partir del `CardDefinition.cost` efectivo aplicable, sin duplicarlo en la instancia ni inferirlo del texto. | U, P, C, S, R, A, CAS, I |
+| `INV-2C-021` | Implementar una capability no equivale a incorporar, promover ni publicar una carta; cada carta exige trazabilidad y conformidad propias. | U, C, S, R, A, I |
+| `INV-2C-022` | Todo fallo de versionado, decodificación o migración es explícito, tipado y atómico: no entrega ni persiste un estado parcialmente cargado. | U, C, S, R, CAS, I |
 
-- completar casos tipados de `CAP-DAMAGE-002`, actualmente `READY`, que estén inequívocamente cubiertos por causa y duración actuales;
-- ampliar tests y fixtures de vocabulario/procedencia para `CAP-TAXONOMY-003`, sin alterar el modelo ni promover la capability hasta que `CAP-TAXONOMY-001` cierre su gate;
-- reforzar pruebas, trazabilidad y métricas de las capabilities `CLOSED`, incluida la paridad de acciones y round-trips, sin reclasificar cartas automáticamente;
-- preparar migradores, golden replays y notas de versión de las fundaciones sin activar todavía su nuevo contrato.
+### Regla de trazabilidad y aceptación
 
-Un quick win deja intactos schema version, comandos, eventos, snapshots y respuestas del servicio. Si durante el diseño exige cambiar cualquiera de ellos, sale de este carril y pasa a cambio fundacional versionado.
+Cada cambio de W0–W7 debe citar los IDs afectados en su diseño, migración y
+plan de pruebas. Para cada ID citado se ejecutan todas sus superficies
+obligatorias o se documenta un bloqueo de entorno; una prueba en una superficie
+no sustituye otra. Los fixtures heredados son inmutables y versionados: **S**
+parte del snapshot anterior y verifica migración o rechazo, mientras **R** parte
+del log anterior y verifica eventos, decisiones, orden, digest y estado final.
+Las pruebas **CAS** deben demostrar tanto rechazo sin mutación del comando
+obsoleto como éxito único del comando ganador. Las pruebas **A** se ejercitan
+con audiencias autorizadas y no autorizadas. Una capability no puede pasar a
+`SUPPORTED` si incumple un invariante aplicable, aunque sus escenarios felices
+de integración sean correctos.
 
-## Foundational changes que exigen versionado
+## ambigüedades/bloqueos
 
-Requieren versión explícita del schema/evento/API afectado, decoder de legado o migración, golden replays de antes y después y nota de compatibilidad:
+### Fichas de contención por ambigüedad normativa activa
 
-- `CAP-ZONE-003` y `CAP-ZONE-006`: identidad y evento uniforme de transición, incluida last-known information;
-- `CAP-SECRET-002`: elecciones persistibles y proyección por audiencia;
-- `CAP-TAXONOMY-001`, `CAP-TARGET-002`, `CAP-KEYWORD-001` y `CAP-IMMUNITY-001`: discriminadores tipados y selectores canónicos;
-- `CAP-TIME-003`, `CAP-TIME-004` y `CAP-TRIGGER-001`: orden observable de fases, prioridad y triggers;
-- `CAP-EFFECT-001`–`003`: AST/composición, captura de valores, atomicidad y visibilidad por paso;
-- `CAP-CATALOG-001`: publicación final de definiciones y procedencia, únicamente tras cerrar sus gates.
+Las fichas siguientes cubren **cada fila** del registro activo de
+`NORMATIVE_AMBIGUITIES.md`. Una interfaz preparada o un fixture técnico sólo
+preserva opciones de diseño: no constituye evidencia, no cambia el gate y no
+puede convertirse en una prueba del canon. `N-TRANSMUTATION-02` se explicita
+además porque alimenta directamente `CAP-TRANSMUTE-002` y el carril normativo,
+aunque el registro resumido la mantenga trazada desde el documento maestro.
 
-El versionado no permite saltarse prerequisites: sólo hace compatible una modificación ya autorizada. Cada cambio debe definir versión escrita, lectura de legado, comportamiento ante versión desconocida, estabilidad de IDs y orden de eventos, y equivalencia de replay/persistencia/API.
+### `N-POINTS-01`
 
-## Criterio de salida y re-priorización
+| Capability bloqueada | Capability parcial permitida | Interfaz preparada | Default prohibido | Test normativo pendiente |
+|---|---|---|---|---|
+| Fijar un presupuesto Mítico canónico o interpretar como tal 200, 300 o 400. | Sumar `CardDefinition.cost`, conservar el mínimo Base y comparar presupuestos entre participantes; validar un límite sólo cuando la configuración lo proporcione expresamente. | Política de construcción con `point_budget: int \| None` y fábricas con `point_budget=None`; el consumidor puede inyectar un límite explícito sin elevarlo a canon. | Cualquier presupuesto implícito, especialmente 200, 300 o 400. | Queda pendiente toda prueba que proclame un presupuesto Mítico canónico; sólo son admisibles pruebas de `None`, suma, comparación e inyección explícita. |
+
+### `N-LEGENDARY-06` / `M-LORD-EVENT-01`
+
+| Capability bloqueada | Capability parcial permitida | Interfaz preparada | Default prohibido | Test normativo pendiente |
+|---|---|---|---|---|
+| Reclasificar una propiedad de Señor como Evento o derivar por ello inmunidades, targets especiales, interacción con Divinos, pila o semántica de respuesta. | Representar perfiles de fuente y ventanas tipadas; conservar únicamente la Fase Activa expresamente respaldada. | Perfil de fuente parametrizable y política de ventana inyectable, sin activar consecuencias por identidad o por el texto «a modo de Eventos». | `source_type=EVENT`, inmunidad, selector, target o ventana de respuesta inferidos automáticamente. | Quedan pendientes las pruebas canónicas de clasificación, inmunidad, targeting, apilado y respuesta; los tests de perfiles sólo pueden verificar parametrización neutral. |
+
+### `N-COMBAT-03`
+
+| Capability bloqueada | Capability parcial permitida | Interfaz preparada | Default prohibido | Test normativo pendiente |
+|---|---|---|---|---|
+| Proclamar un orden de bloqueadores como regla canónica o implementar un algoritmo normativo de reparto de daño entre múltiples bloqueadores. | Estructuras deterministas para capturar, serializar y reproducir orden y asignación suministrados explícitamente. | Secuencia ordenada y asignaciones tipadas, versionables y validadas, sin atribuir autoridad normativa al orden de normalización. | Orden por inserción, ID, fuerza o elección del atacante y reparto automático presentados como canon. | Pruebas canónicas de orden, simultaneidad, reparto y sobrante pendientes; fixtures técnicos de codec/replay se mantienen separados y rotulados como no normativos. |
+
+### `N-COMBAT-06`
+
+| Capability bloqueada | Capability parcial permitida | Interfaz preparada | Default prohibido | Test normativo pendiente |
+|---|---|---|---|---|
+| Determinar para 3+ ganador automático, empate, eliminación, continuidad o terminación global. | Modelos extensibles de resultado y eliminación, capaces de expresar `BLOCKED` y decisiones futuras sin perder participantes ni orden. | Resultado multijugador tipado con política explícita de terminación/eliminación y estado no resuelto. | Extrapolar a 3+ cualquier ganador, empate o fin global derivado de la lógica de exactamente dos jugadores. | Pruebas normativas de eliminación, supervivientes, concesión, empate, ganadores y fin global para 3+ pendientes; sólo se prueba por ahora la conservación determinista de un resultado no resuelto. |
+
+### `N-PHASE-01`–`02`, `N-PHASE-04`–`05`, `N-PHASE-07`, `N-PHASE-09`–`10` — `BASE VIGENTE / MITICA SILENTE`
+
+| Capability bloqueada | Capability parcial permitida | Interfaz preparada | Default prohibido | Test normativo pendiente |
+|---|---|---|---|---|
+| Añadir por silencio Mítico excepciones a preparación, mulligan, robo, mantenimiento, descarte, pila o enderezado. | Aplicar y probar la regla Base vigente, manteniendo separada su procedencia. | Políticas tipadas por formato/fuente para incorporar una futura extensión Mítica expresa. | Una variante Mítica implícita, tanto más permisiva como más restrictiva que Base. | Pendiente cualquier prueba que afirme una extensión Mítica; las pruebas Base continúan siendo canónicas sólo para la regla Base vigente. |
+
+### `N-ZONE-01`–`03`, `N-COST-03`, `N-COMBAT-04` — `BASE VIGENTE / MITICA SILENTE`
+
+| Capability bloqueada | Capability parcial permitida | Interfaz preparada | Default prohibido | Test normativo pendiente |
+|---|---|---|---|---|
+| Inventar extensiones Míticas de reciclaje, zonas ocultas, Equipo, coste de equipar o aptitud de combate tras giro. | Mantener sin ampliación ni restricción las reglas Base vigentes y su trazabilidad. | Políticas de zona, coste y elegibilidad parametrizadas por fuente/formato, inicialmente alimentadas sólo con Base. | Sobrescribir Base o añadir una excepción Mítica a partir de ausencia textual. | Pendiente cualquier prueba de diferencia Mítica; fixtures técnicos pueden ejercitar parámetros no canónicos sin etiquetarlos como reglas Míticas. |
+
+### `N-PHASE-03`, `N-COMBAT-05`
+
+| Capability bloqueada | Capability parcial permitida | Interfaz preparada | Default prohibido | Test normativo pendiente |
+|---|---|---|---|---|
+| Inferir del silencio una secuencia Mítica distinta o condiciones terminales/alcance total para multijugador. | Conservar la secuencia Base y preparar partidas de 2+ con selección explícita de participantes/defensor, sin decidir su final global. | Secuencia y alcance parametrizados; resultado multijugador delega la terminación no resuelta a una política explícita. | Alteración automática de fases o terminación de 3+ por analogía con dos jugadores. | Pendientes las pruebas canónicas de una secuencia Mítica distinta y del alcance/fin 3+; siguen válidas las pruebas Base y los fixtures técnicos no normativos. |
+
+### `N-TRANSMUTATION-02`
+
+| Capability bloqueada | Capability parcial permitida | Interfaz preparada | Default prohibido | Test normativo pendiente |
+|---|---|---|---|---|
+| Publicar una tabla normativa de ventanas de Transmutación por tipo o rol mientras «fases correspondientes» carezca de definición suficiente. | Preservar la operación atómica común y aceptar una política explícita de timing por tipo para experimentación o futura configuración autorizada. | `TransmutationTimingPolicy` (o contrato equivalente) parametrizado por tipo, actor y ventana, sin tabla canónica incorporada. | Una ventana uniforme o una matriz criatura/Equipo/Evento presentada como interpretación normativa predeterminada. | Pruebas normativas por tipo y rol pendientes hasta disponer de evidencia; sólo se prueban neutralidad, inyección, rechazo seguro, codec y replay de la política explícita. |
+
+## compatibilidad/migración
+
+#### Matriz de impacto y compatibilidad de W0
+
+Esta matriz es obligatoria antes de aprobar cualquier cambio de W1–W7. Cada
+fila describe una unidad de cambio prevista y le asigna **una clasificación
+principal**. Si una propuesta mezcla filas o clasificaciones, se divide antes
+de implementarla; no se rebaja un cambio semántico a «campo opcional». En
+particular, un *default exclusivamente técnico* sólo puede reconstruir una
+representación cuya semántica anterior sea inequívoca: nunca elige reglas,
+targets, orden de combate, audiencia ni decisiones de un jugador.
+
+| Superficie | Cambio previsto | Clasificación principal | Condición y frontera exigidas |
+|---|---|---|---|
+| `MatchState` / `GameState` | Añadir metadatos no semánticos de procedencia o diagnóstico que puedan reconstruirse inequívocamente. | **Adición compatible mediante campo opcional y default exclusivamente técnico.** | El default no altera legalidad, orden, RNG, resultado ni observación; si afecta a replay pasa a la fila versionada. |
+| `MatchState` / `GameState` | Añadir estado autoritativo que cambie fases, prioridad, combate, zonas, elecciones o resolución. | **Cambio que requiere nueva versión de snapshot/replay/manifest.** | El nuevo schema congela su semántica y conserva decoder del formato soportado anterior; no se infiere desde el estado actual. |
+| `PlayerState` | Añadir contadores o marcas persistentes con efecto reglamentario. | **Cambio que requiere nueva versión de snapshot/replay/manifest.** | Se serializan de forma determinista y se proyectan por audiencia; ausencia sólo admite default si reproduce exactamente la regla histórica. |
+| `PlayerState` | Añadir cachés, índices o marcas transitorias recalculables. | **Detalle interno que no debe entrar en el JSON público.** | No forman identidad persistente ni observable; deben invalidarse o reconstruirse sin modificar el resultado. |
+| `CardDefinition` | Añadir metadatos editoriales no normativos y opcionales. | **Adición compatible mediante campo opcional y default exclusivamente técnico.** | El default significa «metadato ausente», no activa una capability ni inventa taxonomía o reglas. |
+| `CardDefinition` | Cambiar significado, discriminadores, taxonomía o estructura ejecutable de una definición ya publicada. | **Ruptura deliberada y documentada.** | Nueva versión de manifiesto, nota de ruptura y migrador/diagnóstico cuando proceda; nunca reinterpretación silenciosa por el catálogo nuevo. |
+| `CardInstance` | Incorporar identidad o estado por instancia que sobreviva movimientos, snapshot o replay. | **Cambio que requiere nueva versión de snapshot/replay/manifest.** | Se fijan identidad, ciclo de vida y orden; no se reconstruye a partir de una `CardDefinition` mutable. |
+| `CardInstance` | Incorporar memoización o valores derivados recalculables. | **Detalle interno que no debe entrar en el JSON público.** | No entra en snapshot/replay salvo que se demuestre que es autoritativo; tampoco aparece en observaciones. |
+| Comandos | Añadir un parámetro opcional puramente protocolario. | **Adición compatible mediante campo opcional y default exclusivamente técnico.** | El comando omitido conserva exactamente validación y efecto anteriores; una nueva elección reglamentaria exige comando/schema versionado. |
+| Comandos | Cambiar el significado, orden, autorización o precondiciones de un comando existente. | **Ruptura deliberada y documentada.** | Se introduce discriminador/versionado explícito; el decoder antiguo conserva la interpretación antigua y CAS sigue siendo obligatorio. |
+| Eventos | Añadir contexto opcional que no cambia causalidad, orden ni consumidores existentes. | **Adición compatible mediante campo opcional y default exclusivamente técnico.** | El payload antiguo sigue siendo suficiente; si el dato gobierna reproducción o proyección, se versiona. |
+| Eventos | Cambiar tipo, causalidad, orden o payload necesario para reconstruir la partida. | **Cambio que requiere nueva versión de snapshot/replay/manifest.** | Los eventos históricos se decodifican con su tabla de tipos y semántica, sin normalizarlos al modelo vigente. |
+| Reducers / managers | Extraer, cachear o reorganizar código manteniendo la misma transición autoritativa. | **Detalle interno que no debe entrar en el JSON público.** | Paridad diferencial de estado, eventos, errores, contadores, RNG y rollback; no se filtran nombres o estructuras internas. |
+| Reducers / managers | Sustituir dos semánticas de combate por una única interpretación nueva. | **Ruptura deliberada y documentada.** | Sólo es aceptable al retirar de forma versionada un formato; mientras ambos sean soportados, se seleccionan por versión y nunca se mezclan. |
+| Stores | Añadir metadatos internos de indexación, locking u observabilidad. | **Detalle interno que no debe entrar en el JSON público.** | No cambia CAS, DTO ni bytes canónicos; cualquier dato persistido se revisa además contra la fila SQLite. |
+| SQLite | Añadir o transformar tablas, columnas, constraints, índices con efecto en los datos almacenados o en su versión. | **Migración explícita de SQLite.** | Migración identificada, transaccional, idempotente y probada desde cada versión soportada; W0 no diseña todavía el SQL. |
+| Snapshots | Alterar campos autoritativos, discriminadores, canonicalización o digest. | **Cambio que requiere nueva versión de snapshot/replay/manifest.** | Golden por versión, decoder seleccionado por `schema_version`, round-trip estable y rechazo explícito de versiones desconocidas. |
+| Replay logs | Alterar comandos/eventos registrados o cualquier regla necesaria para reproducirlos. | **Cambio que requiere nueva versión de snapshot/replay/manifest.** | El perfil semántico queda fijado en el documento y la reproducción histórica no se reinterpreta con reglas nuevas. |
+| JSON público | Añadir un dato público no sensible que no cambia el significado de los existentes. | **Adición compatible mediante campo opcional y default exclusivamente técnico.** | Respuesta aditiva, documentada y con golden por audiencia; la ausencia mantiene el contrato anterior. |
+| JSON público | Renombrar, eliminar o cambiar tipo/semántica de un campo o error publicado. | **Ruptura deliberada y documentada.** | Requiere versión de API/contrato, ventana de retirada y error explícito; nunca se expone el modelo interno como compatibilidad. |
+| Fronteras de aplicación | Añadir una operación o DTO seguro sin debilitar identidad, capacidades o CAS. | **Adición compatible mediante campo opcional y default exclusivamente técnico.** | Sigue pasando por `AuthenticatedMatchApplication`; ningún default selecciona jugador, audiencia o autoridad. |
+| Fronteras de aplicación | Exponer engine/state, aceptar identidad declarada por cliente, omitir CAS o devolver detalles internos. | **Ruptura deliberada y documentada.** | No es una evolución compatible y queda prohibida por defecto; cualquier sustitución futura exige decisión arquitectónica y versión pública. |
+
+#### Política de decodificación y replay histórico
+
+El discriminador `schema_version` se lee antes de decodificar el cuerpo y
+selecciona un decoder registrado para esa versión. No se prueba sucesivamente
+el decoder actual hasta que «funcione», no se completa una versión desconocida
+con defaults y no se confunde `engine_version`, versión de reglas o versión de
+manifiesto con la versión estructural. Toda versión desconocida o retirada falla
+de forma controlada, estable y sin mutación parcial.
+
+Decodificar estructura y ejecutar semántica son decisiones separadas. Cada
+replay soportado selecciona también el perfil de reglas que quedó fijado al
+crearlo: **la semántica histórica de replay no se reinterpreta con reglas
+nuevas**, aunque el modelo actual pueda representar sus datos. Una migración
+estructural conserva ese perfil; cambiarlo exige una conversión deliberada,
+versionada y verificable, nunca una normalización implícita.
+
+Los corpus inmutables bajo `tests/artifacts/0.19.0/` y
+`tests/artifacts/0.20.x-pre-source-profile/` se conservan como **gates de
+compatibilidad**: no se regeneran con el motor actual para hacerlos pasar. Su
+lectura, replay, observables, digest y round-trip deben permanecer cubiertos
+mientras sus versiones figuren como soportadas. Retirar ese soporte requiere
+una ruptura deliberada, documentada y probada mediante rechazo controlado.
+
+#### Presupuesto de compatibilidad
+
+La compatibilidad razonable y exigida comprende: leer todos los formatos que la
+política declare soportados; mantener respuestas públicas aditivas; conservar
+identificadores y orden cuando sean contractuales; y devolver errores explícitos
+para versiones, migraciones o comandos no admitidos, sin datos inventados ni
+mutación parcial.
+
+No se asume, en cambio, el coste indefinido de sostener estados internos
+experimentales, caches o prototipos nunca publicados. Tampoco se mantienen dos
+semánticas de combate dentro de un mismo schema/perfil, ni se simula
+compatibilidad reinterpretando replays antiguos con reglas nuevas. Cuando el
+coste de un puente deje de ser razonable se retira en una versión anunciada, con
+diagnóstico o migración cuando sea posible y rechazo controlado en los demás
+casos.
+
+#### Gates de prueba para cualquier cambio de contrato
+
+Antes de cerrar W0 y en cada evolución posterior afectada son obligatorios:
+
+1. *golden files* independientes para snapshot, replay y JSON público, incluido
+   un golden por audiencia cuando exista información privada;
+2. round-trips `decode(encode(x))` y `encode(decode(golden))` acordes con la
+   canonicalización declarada, más replay repetido con observables y digest
+   deterministas;
+3. migración SQLite idempotente, transaccional y ejercitada dos veces desde cada
+   versión soportada, sin diseñar aquí tablas ni sentencias SQL;
+4. rechazo controlado de versiones de schema, replay y manifiesto desconocidas,
+   sin fallback, traceback interno ni mutación parcial; y
+5. comparación por lista permitida de las observaciones/errores públicos para
+   demostrar que ningún campo interno nuevo aparece en JSON, logs o DTO.
+
+Este apartado es exclusivamente de roadmap y contrato. **No diseña todavía
+SQL ni autoriza modificar `src/card_duel_engine/persistence/` o
+`src/card_duel_engine/storage/`.** Esas implementaciones sólo se abrirán en una
+entrega posterior con schema, migración y rollback aprobados.
+
+## primer slice
+
+### Primer slice posterior a la aprobación — `N-PHASE-02` — mulligan decreciente persistible
+
+Una vez aprobado este roadmap, el primer slice de implementación será
+**`N-PHASE-02` — mulligan decreciente persistible**, acotado a cerrar
+`CAP-TIME-002` sin arrastrar el resto de W2. La autorización procede
+exclusivamente de la regla Base vigente descrita en la ficha de contención
+`N-PHASE-01`–`02`, `N-PHASE-04`–`05`, `N-PHASE-07`, `N-PHASE-09`–`10`: el slice
+no interpreta el silencio Mítico ni convierte una decisión de arquitectura en
+canon.
+
+#### Alcance vinculante
+
+1. El setup representa explícitamente el estado autoritativo del mulligan,
+   incluidos participante habilitado, ronda o cantidad de repeticiones,
+   tamaño de la próxima mano, elecciones pendientes y condición de cierre.
+2. Existe un comando universal —no ligado a una carta ni a un formato por
+   nombre— para que cada participante conserve su mano o solicite reemplazarla.
+   La elección aceptada es persistible y queda disponible para snapshot,
+   reconexión y replay sin pedirla de nuevo al cliente.
+3. Cada repetición reduce de forma determinista el tamaño de la nueva mano
+   conforme a la evidencia normativa vigente. El tamaño se deriva del estado
+   persistido y de la regla versionada, nunca de un contador del proceso, del
+   reloj ni de un default implícito.
+4. Actor, estado de setup, turno de decisión cuando corresponda, versión CAS,
+   cardinalidad y vigencia de la elección se validan **antes de cualquier
+   movimiento o barajado**. Un rechazo deja idénticos estado, zonas, RNG,
+   versión y log de eventos.
+5. Devolver la mano, barajar y robar la nueva mano atraviesa la autoridad única
+   de movimientos de zona y la fuente de RNG reproducible. No se permiten
+   mutaciones laterales de mazo o mano desde el handler del comando.
+6. El protocolo será alternado o simultáneo **únicamente según la evidencia
+   normativa existente**. La implementación no elegirá uno como default para
+   rellenar un vacío; si la evidencia no determina un tramo, ese tramo queda
+   bloqueado y no se infiere por conveniencia técnica.
+7. Las observaciones públicas y por oponente muestran sólo progreso, tamaños y
+   decisiones que sean observables según la fuente vigente; nunca identidades,
+   orden ni contenido de las cartas de otra mano o mazo. Cada jugador recibe
+   únicamente su proyección privada autorizada.
+8. El setup termina una sola vez y de forma determinista cuando todas las
+   elecciones exigidas han concluido. La transición resultante conserva el
+   mismo jugador inicial y el mismo estado posterior al setup que determine la
+   regla ya vigente, sin introducir prioridad, ventanas o pasos adicionales.
+
+#### Superficies probablemente afectadas
+
+El diseño y el diff deberán revisar, aunque sólo modificar cuando sea
+necesario, `domain/models.py`, `engine/commands.py`, `engine/game.py` **o un
+manager de setup dedicado**, `engine/actions.py`, `engine/zones.py`,
+`persistence/codec.py`, `persistence/snapshot.py`, `persistence/replay.py`,
+`application.py`, `service.py` y pruebas específicas de dominio, motor,
+persistencia, aplicación y servicio. Cualquier nueva representación
+autoritativa del setup seguirá la matriz W0: tendrá schema/perfil semántico
+versionado y decoder explícito, en lugar de aparecer como campo opcional con
+significado reglamentario.
+
+#### Exclusiones explícitas
+
+Quedan fuera del slice la prioridad general, Recursos Rápidos, cartas nuevas,
+combate, keywords, taxonomías, frontend y cambios de presupuesto. También se
+excluye resolver, asumir o anticipar cualquier ambigüedad sobre Legendaria o
+multijugador. El slice no modifica otras reglas, no amplía el corpus y no usa
+defaults normativos para hacer ejecutable una fuente incompleta.
+
+#### Pruebas obligatorias y compatibilidad
+
+La promoción requiere evidencia automatizada de todos estos casos:
+
+- tamaños de mano decrecientes en repeticiones sucesivas, incluidos límites y
+  terminación, con secuencia de eventos estable;
+- rechazo de conservar o reemplazar fuera del turno o estado de setup que
+  corresponda, y demostración de **no mutación** de estado, zonas, RNG, versión
+  y eventos después de cada validación fallida;
+- mismo resultado, movimientos, barajado, eventos y digest al repetir con la
+  misma semilla, y divergencia únicamente donde la semilla forme parte del
+  contrato;
+- privacidad por jugador y no interferencia de observaciones, opciones,
+  errores y DTO, sin revelar cartas ni orden oculto;
+- paridad entre las acciones legales enumeradas y el ejecutor para conservar y
+  reemplazar, incluidas autorización, vigencia y comandos obsoletos;
+- snapshot tomado en mitad del mulligan, restauración y continuación idéntica
+  sin repetir ni perder una elección;
+- replay completo desde el inicio hasta la finalización del setup, con las
+  mismas decisiones, eventos, observaciones autorizadas, digest y estado final;
+- round-trip del codec para comando, elección, estado y eventos del mulligan,
+  además de golden/versiones soportadas y rechazo controlado de versiones
+  desconocidas;
+- CAS con rechazo sin mutación del perdedor y aplicación exactamente una vez
+  del comando ganador; y
+- compatibilidad con partidas y artefactos históricos que ya comenzaron
+  **después del setup**: se cargan y continúan con su semántica anterior sin
+  fabricar estado de mulligan, reabrir el setup ni reinterpretar su replay.
+
+Estas pruebas cubren como mínimo `INV-2C-001`–`004`, `INV-2C-010`,
+`INV-2C-013`–`018` y `INV-2C-022`, con todas las superficies obligatorias que
+les asigna el catálogo. Los fixtures históricos permanecen inmutables.
+
+#### Criterio de aceptación del slice
+
+`N-PHASE-02` se acepta sólo cuando `CAP-TIME-002` pueda pasar de `MISSING` a
+`SUPPORTED` en **todo el recorrido técnico** —modelo, comando, enumeración,
+validación, transición autoritativa, observación, codec, snapshot, replay,
+aplicación, servicio y CAS— y todas las pruebas anteriores estén verdes. La
+promoción no es válida si exige modificar otra regla, resolver una exclusión o
+introducir un default normativo; en cualquiera de esos casos el slice permanece
+incompleto o bloqueado en el punto exacto para el que falte evidencia.
+
+## Definition of Done de Phase 2C
+
+### Criterio de salida y re-priorización
 
 Una capability sólo cambia a `SUPPORTED` cuando: (1) todos sus prerequisites están `CLOSED`; (2) no existe interpretación normativa abierta; (3) los contratos de dominio, ejecución, persistencia/replay y servicio están probados; (4) las filas del corpus se reauditan individualmente; y (5) los totales globales vuelven a sumar exactamente 431 sin mezclar las 386 identidades con las 45 variantes. Cerrar infraestructura no promueve cartas de forma masiva: habilita su reevaluación.
+
+## condiciones para abrir Phase 3
+
+Phase 3 sólo puede abrirse mediante una decisión documental posterior cuando se cumpla íntegramente la Definition of Done anterior, la auditoría canónica mantenga trazabilidad 39/39 y 431/431, no queden gates técnicos de Phase 2C abiertos y cada bloqueo normativo pendiente esté resuelto por autoridad o expresamente excluido del alcance. Hasta entonces, **Phase 2C permanece `IN PROGRESS` y Phase 3 permanece `PENDING`**; ninguna wave, capability o primer slice de este plan constituye implementación, incorporación de cartas ni release.
 
 La priorización se revisa cuando se cierre un gate, cambie una fuente normativa o aparezca evidencia reproducible del corpus. No se revisa sólo porque una palabra sea frecuente. El registro debe conservar el valor anterior, la evidencia nueva y la razón ordinal del cambio.

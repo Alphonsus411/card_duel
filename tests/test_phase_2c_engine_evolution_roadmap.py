@@ -9,6 +9,9 @@ MATRIX = ROOT / "docs" / "ENGINE_CAPABILITY_MATRIX.csv"
 DEPENDENCIES = ROOT / "docs" / "ENGINE_CAPABILITY_DEPENDENCIES.md"
 CANONICAL_AUDIT = ROOT / "docs" / "FANTASY_TOKENS_BACKEND_GAP_AUDIT.md"
 SOURCE_INVENTORY = ROOT / "docs" / "FANTASY_TOKENS_SOURCE_INVENTORY.csv"
+READINESS_AUDIT = ROOT / "docs" / "audits" / "PHASE_2C_FIRST_SLICE_READINESS_AUDIT_2026-09-07.md"
+TRACEABILITY_AUDIT = ROOT / "docs" / "audits" / "PHASE_2C_FIRST_SLICE_TRACEABILITY_2026-09-07.md"
+EXPECTED_SLICE_VERDICT = "N-PHASE-02 IMPLEMENTATION BLOCKED"
 
 
 def _matrix_rows() -> list[dict[str, str]]:
@@ -19,6 +22,50 @@ def _matrix_rows() -> list[dict[str, str]]:
     assert all(None not in row for row in rows), "fila CSV con columnas sobrantes"
     assert all(all(value is not None for value in row.values()) for row in rows)
     return rows
+
+
+def _first_slice_section(content: str) -> str:
+    return content.split("## primer slice", 1)[1].split(
+        "## Definition of Done de Phase 2C", 1
+    )[0]
+
+
+def _parse_first_slice(content: str) -> dict[str, str | list[dict[str, str]]]:
+    """Parse the deliberately small, machine-readable YAML subset in the roadmap."""
+    match = re.search(r"```yaml\n(?P<body>.*?)\n```", content, flags=re.DOTALL)
+    assert match, "falta el bloque YAML del primer slice"
+    result: dict[str, str | list[dict[str, str]]] = {}
+    current_list: list[dict[str, str]] | None = None
+    current_item: dict[str, str] | None = None
+    for line in match.group("body").splitlines():
+        scalar = re.fullmatch(r"([a-z_]+):\s*(\S.*)", line)
+        list_start = re.fullmatch(r"([a-z_]+):", line)
+        item_start = re.fullmatch(r"  - ([a-z_]+):\s*(\S.*)", line)
+        item_field = re.fullmatch(r"    ([a-z_]+):\s*(\S.*)", line)
+        if scalar:
+            result[scalar.group(1)] = scalar.group(2)
+            current_list = None
+        elif list_start:
+            current_list = []
+            result[list_start.group(1)] = current_list
+        elif item_start and current_list is not None:
+            current_item = {item_start.group(1): item_start.group(2)}
+            current_list.append(current_item)
+        elif item_field and current_item is not None:
+            current_item[item_field.group(1)] = item_field.group(2)
+        else:
+            raise AssertionError(f"línea YAML no parseable: {line!r}")
+    return result
+
+
+def _capability_gates(content: str) -> dict[str, str]:
+    return dict(
+        re.findall(
+            r"^\| `(CAP-[A-Z]+-\d{3})`[^|]*\| `(?:SUPPORTED|PARTIAL|MISSING|BLOCKED)` \| `(CLOSED|READY|WAIT-PREREQ|NORM-BLOCKED)` \|",
+            content,
+            flags=re.MULTILINE,
+        )
+    )
 
 
 def _strongly_connected_components(graph: dict[str, set[str]]) -> list[set[str]]:
@@ -131,6 +178,92 @@ def test_capability_dependencies_are_existing_reciprocal_and_cycles_explained() 
     assert "`CAP-TIME-003 ↔ CAP-TIME-004 ↔ CAP-STACK-001`" in explanation
 
 
+def test_first_slice_contract_matches_matrix_and_enforces_authorization_gate() -> None:
+    content = ROADMAP.read_text(encoding="utf-8")
+    contract = _parse_first_slice(content)
+    required = {
+        "slice_id", "capability_id", "normative_rule_id", "authorization",
+        "status", "gate", "prerequisites", "blockers", "verdict",
+    }
+    assert required <= contract.keys()
+
+    rows = {row["capability_id"]: row for row in _matrix_rows()}
+    gates = _capability_gates(content)
+    capability_id = str(contract["capability_id"])
+    capability = rows[capability_id]
+    assert contract["slice_id"] == contract["normative_rule_id"] == "N-PHASE-02"
+    assert contract["normative_rule_id"] in capability["normative_refs"].split(";")
+    assert contract["status"] == capability["status"]
+    assert contract["gate"] == capability["gate"] == gates[capability_id]
+    assert contract["verdict"] == EXPECTED_SLICE_VERDICT
+
+    prerequisites = contract["prerequisites"]
+    blockers = contract["blockers"]
+    assert isinstance(prerequisites, list) and isinstance(blockers, list)
+    expected_prerequisites = capability["prerequisites"].split(";")
+    assert [item["capability_id"] for item in prerequisites] == expected_prerequisites
+    for prerequisite in prerequisites:
+        matrix_row = rows[prerequisite["capability_id"]]
+        assert prerequisite["status"] == matrix_row["status"]
+        assert prerequisite["gate"] == matrix_row["gate"]
+        if prerequisite["capability_id"] in gates:
+            assert prerequisite["gate"] == gates[prerequisite["capability_id"]]
+
+    open_prerequisites = {
+        item["capability_id"] for item in prerequisites
+        if item["status"] != "SUPPORTED" or item["gate"] != "CLOSED"
+    }
+    technical_blockers = {
+        item["blocker_id"] for item in blockers if item["kind"] == "technical"
+    }
+    normative_blockers = [item for item in blockers if item["kind"] == "normative"]
+    assert technical_blockers == open_prerequisites
+    assert all(item["status"] == "OPEN" and item["gate"] == "NORM-BLOCKED" for item in normative_blockers)
+
+    authorization = contract["authorization"]
+    if authorization == "READY":
+        assert not open_prerequisites
+        assert not normative_blockers
+        assert contract["gate"] == "READY"
+    elif authorization == "BLOCKED":
+        assert open_prerequisites or normative_blockers
+        assert not re.search(
+            r"(?im)^\s*(?:se|queda)\s+autoriza(?:do|da)?\s+(?:a\s+)?(?:implementar|modificar\s+el\s+runtime)",
+            _first_slice_section(content),
+        )
+    else:
+        raise AssertionError(f"authorization desconocida: {authorization}")
+
+
+def test_first_slice_supported_transition_cannot_cross_an_open_prerequisite() -> None:
+    content = ROADMAP.read_text(encoding="utf-8")
+    contract = _parse_first_slice(content)
+    prerequisites = contract["prerequisites"]
+    assert isinstance(prerequisites, list)
+    assert contract["status"] in {"MISSING", "PARTIAL"}
+    assert "de `PARTIAL` a\n`SUPPORTED`" in _first_slice_section(content)
+    assert "todos sus prerequisites están `CLOSED`" in content
+
+    # A promotion candidate is valid only after every direct edge has reached
+    # both the matrix support state and the roadmap's closed gate.
+    can_promote = all(
+        item["status"] == "SUPPORTED" and item["gate"] == "CLOSED"
+        for item in prerequisites
+    )
+    assert can_promote is (contract["authorization"] == "READY")
+
+
+def test_dated_first_slice_reports_exist_and_have_the_exact_verdict() -> None:
+    contract = _parse_first_slice(ROADMAP.read_text(encoding="utf-8"))
+    for report in (READINESS_AUDIT, TRACEABILITY_AUDIT):
+        assert report.is_file()
+        content = report.read_text(encoding="utf-8")
+        verdicts = re.findall(r"^\*\*([^*]+ IMPLEMENTATION (?:READY|BLOCKED))\*\*$", content, re.MULTILINE)
+        assert verdicts == [EXPECTED_SLICE_VERDICT]
+        assert f"verdict: {EXPECTED_SLICE_VERDICT}" in content
+        assert _parse_first_slice(content) == contract
+
+
 def test_pending_decision_capability_has_minimal_boundary_and_reciprocal_edges() -> None:
     by_id = {row["capability_id"]: row for row in _matrix_rows()}
     decision = by_id["CAP-ACTION-004"]
@@ -210,10 +343,22 @@ def test_documented_totals_defaults_and_generic_capability_boundary() -> None:
         if re.search(r"\b(?:200|300|400)\b", " ".join(row.values())):
             assert row["capability_id"] == "CAP-NORM-002"
             assert row["status"] == "BLOCKED" and row["blocked_by_normative"].startswith("YES")
-    assert not any(
-        re.search(r"(?:implementar|handler|dispatch).{0,40}(?:card_id|definition_id)", row["description"], re.I)
-        for row in _matrix_rows()
+    generic_contracts = "\n".join(" ".join(row.values()) for row in _matrix_rows())
+    assert not re.search(
+        r"(?:implementar|handler|dispatch)\s+(?:por|de)?\s*"
+        r"(?:card_id|definition_id|identidad)",
+        generic_contracts,
+        re.I,
     )
+
+    first_slice = _first_slice_section(roadmap)
+    assert "no usa defaults normativos" in first_slice
+    for forbidden_default in (
+        r"prioridad\s+(?:por defecto|default)",
+        r"(?:simultaneidad|simultáneo|simultánea)\s+(?:por defecto|default)",
+        r"orden\s+multijugador\s+(?:por defecto|default)",
+    ):
+        assert not re.search(forbidden_default, first_slice, re.I)
 
 
 def test_roadmap_defines_every_wave_and_required_review_dimension() -> None:

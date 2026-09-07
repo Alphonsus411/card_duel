@@ -48,7 +48,7 @@ Las columnas `Central.`, `Desbloq.`, `Riesgo`, `Claridad` y `Migración` corresp
 | `CAP-ACTION-001` — Modelo tipado de acciones y comandos | `SUPPORTED` | `CLOSED` | HIGH | MEDIUM | MEDIUM | HIGH | LOW | Prerequisites: ninguno; dependientes: CAP-ACTION-002, CAP-TIME-003, CAP-EFFECT-001. |
 | `CAP-ACTION-002` — Enumeración y revalidación de acciones legales | `SUPPORTED` | `CLOSED` | MEDIUM | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-ACTION-001; dependientes: CAP-TARGET-001, CAP-ACTION-004. |
 | `CAP-ACTION-003` — Transacción, rollback y determinismo | `SUPPORTED` | `CLOSED` | HIGH | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-ACTION-001; dependientes: CAP-COST-002, CAP-ZONE-003, CAP-EFFECT-003. |
-| `CAP-ACTION-004` — Decisión pendiente autorizada | `MISSING` | `READY` | HIGH | HIGH | HIGH | HIGH | HIGH | Prerequisites `SUPPORTED`: CAP-ACTION-002, CAP-PRIVACY-001; dependientes: CAP-SECRET-002, CAP-TIME-002; prioridad P0, riesgo CRITICAL, wave W1. |
+| `CAP-ACTION-004` — Decisión pendiente autorizada | `MISSING` | `READY` (sólo contrato) | HIGH | HIGH | HIGH | HIGH | HIGH | El contrato está listo, pero no existe implementación: la capability permanece `MISSING`. Prerequisites `SUPPORTED`: CAP-ACTION-002, CAP-PRIVACY-001; dependientes: CAP-SECRET-002, CAP-TIME-002; prioridad P0, riesgo CRITICAL, wave W1. |
 | `CAP-COST-001` — Modelo declarativo de costes | `SUPPORTED` | `CLOSED` | HIGH | MEDIUM | MEDIUM | HIGH | LOW | Prerequisites: CAP-ACTION-001; dependientes: CAP-COST-002, CAP-COST-003, CAP-COST-004. |
 | `CAP-COST-002` — Preflight, determinación y pago atómico | `SUPPORTED` | `CLOSED` | MEDIUM | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-COST-001, CAP-ACTION-003; dependientes: CAP-COST-003, CAP-STACK-001. |
 | `CAP-COST-003` — Costes adicionales y compuestos | `SUPPORTED` | `CLOSED` | MEDIUM | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-COST-001, CAP-COST-002; dependientes: CAP-EFFECT-003. |
@@ -203,9 +203,118 @@ El versionado no permite saltarse prerequisites: sólo hace compatible una modif
 
 ### Contrato de planificación de `CAP-ACTION-004`
 
-El alcance se congela en `decision_id`, elector, audiencia, conjunto de opciones opacas, estado pendiente/resuelto, autorización, expiración o invalidación por versión, resolución exactamente una vez, persistencia, snapshot, replay y CAS. Quedan fuera candidatos de cartas, cardinalidad, ordenación, selección compuesta, *simultaneous reveal* y semántica de búsquedas, que continúan en `CAP-SECRET-002` u otras capabilities.
+#### Estado y alcance contractual
 
-Se asigna riesgo **CRITICAL**, prioridad **P0** y wave **W1**. Sus superficies futuras son modelos, comandos, enumeración/ejecución, aplicación, servicio, persistencia/storage, snapshot y replay; esta reconciliación no crea nada bajo `src/`. Su *corpus impact basis* es 0 entradas directas y 431 entradas potencialmente afectadas de forma indirecta (386 identidades y 45 variantes), sin promoción automática. El análisis de reciprocidad confirma las aristas `CAP-ACTION-002/CAP-PRIVACY-001 → CAP-ACTION-004 → CAP-SECRET-002/CAP-TIME-002` y ningún ciclo nuevo.
+**Estado de la capability: `MISSING`. Estado exclusivo de este contrato:
+`READY`.** `READY` declara que el núcleo siguiente ya tiene autoridad suficiente
+para guiar una implementación futura; no afirma que exista modelo, comando,
+persistencia, endpoint ni recorrido ejecutable, y no promueve la capability a
+`PARTIAL` o `SUPPORTED`.
+
+Se asigna riesgo **CRITICAL**, prioridad **P0** y wave **W1**. Sus superficies
+futuras son modelos, comandos, enumeración/ejecución, aplicación, servicio,
+persistencia/storage, snapshot y replay; esta reconciliación no crea nada bajo
+`src/`. Su *corpus impact basis* es 0 entradas directas y 431 entradas
+potencialmente afectadas de forma indirecta (386 identidades y 45 variantes),
+sin promoción automática. El análisis de reciprocidad confirma las aristas
+`CAP-ACTION-002/CAP-PRIVACY-001 → CAP-ACTION-004 →
+CAP-SECRET-002/CAP-TIME-002` y ningún ciclo nuevo.
+
+#### Registro autoritativo mínimo
+
+Cada decisión pendiente **DEBE** tener una única representación autoritativa
+persistida. Ninguna vista de servicio, caché, proyección por audiencia, snapshot
+o entrada reconstruida de replay puede competir como segunda fuente de verdad.
+El registro contiene exclusivamente estos campos autoritativos:
+
+| Campo autoritativo | Contrato normativo |
+|---|---|
+| `decision_id` | Identificador globalmente estable e inmutable, creado de forma determinista a partir del origen autoritativo y su secuencia de creación. Identifica la misma decisión en comandos, eventos, snapshots y replay. |
+| `semantic_family` | Discriminador versionado de la familia semántica que originó la decisión; despacha una abstracción de decisión, nunca una carta concreta. |
+| `authorized_elector` | Único actor que **PUEDE** cerrar la decisión en este núcleo. El actor universal queda expresamente limitado a un elector autorizado. |
+| `audience` | Política autoritativa que determina quién puede conocer la existencia de la decisión y qué campos u opciones puede observar. |
+| `authorized_opaque_options` | Conjunto congelado de tokens opacos, únicos dentro de la decisión. Sólo esos tokens son entradas válidas; no contienen ni revelan candidatos de cartas o mecánicas de dominio. |
+| `state_version` | Versión exacta del estado autoritativo sobre la cual se creó y validó la decisión; constituye el vínculo determinista con ese estado y la precondición CAS de cierre. |
+| `origin` | Referencia estable al hecho/comando/evento autoritativo que solicitó la decisión. Se persiste porque no puede reconstruirse en todos los snapshots ni tras compactación sin consultar historia que quizá ya no esté disponible. |
+| `status` | Sólo `pending` o `closed`; `closed` es terminal. |
+| `selected_option` | Ausente mientras está `pending`; al cierre contiene exactamente uno de los tokens opacos autorizados. |
+
+La **secuencia de creación no se almacena como campo independiente**: se deriva
+sin ambigüedad de la posición canónica de `origin`, incorporada también en la
+derivación determinista de `decision_id`. Persistir a la vez `origin` y una
+secuencia duplicada introduciría dos autoridades susceptibles de divergir. Si
+una futura estrategia de compactación dejase de garantizar una posición
+canónica para el origen, eso exigiría una nueva versión contractual y una
+migración explícita, no completar silenciosamente el registro con el duplicado.
+
+Son **derivados** y se recalculan desde el registro autoritativo y el estado
+autoritativo: si la decisión sigue siendo válida; las acciones legales
+proyectadas para el elector; las vistas redactadas para cada audiencia; la
+representación de `pending`/`closed` en API; y cualquier índice de decisiones
+abiertas. Son **transitorios** y nunca se persisten como verdad de partida:
+tokens de idempotencia de transporte, request/trace IDs, locks y leases, cachés,
+reintentos, conexiones/sesiones y timestamps o deadlines de wall-clock.
+
+#### Autoridad, lifecycle y cierre atómico
+
+El lifecycle mínimo es `pending → closed`. No existen estados `expired` ni
+`cancelled`: no se añadirán sin un caso real demostrado, su regla normativa y
+su efecto reproducible. Una solicitud de cierre **DEBE** presentar
+`decision_id`, `authorized_elector`, un token de `authorized_opaque_options` y
+la `state_version` conocida. Dentro de una única transacción/CAS, el motor
+**DEBE** revalidar origen, autorización, opción, versión, ausencia de fin de
+partida y estado todavía `pending`; sólo entonces escribe conjuntamente
+`status = closed` y `selected_option`. El cierre confirma la elección, pero
+**NO DEBE** ejecutar por sí mismo mecánicas de la familia que la solicitó.
+
+Una decisión inválida se trata como **rechazo sin mutación**, no como una
+transición adicional. Esto incluye origen ya no válido, actor u opción no
+autorizados, versión desconocida o distinta, partida terminada, decisión ya
+cerrada y CAS perdido. Un reintento posterior al éxito puede recibir el
+resultado terminal ya registrado, pero no vuelve a cerrar ni produce un segundo
+efecto: la mutación ocurre *exactly once*.
+
+El wall-clock **NUNCA DEBE** cambiar la semántica de partida. Una hora, timeout,
+deadline, desconexión o expiración de lease puede afectar transporte u
+operación, pero no cerrar, invalidar, escoger ni alterar una decisión. Toda
+invalidación semántica depende exclusivamente del estado autoritativo: de su
+versión, del origen, de la autorización, del fin de partida o de un cierre
+previo.
+
+Este núcleo soporta **exactamente un `authorized_elector`**. Múltiples
+electores, resolución simultánea y cualquier relación entre owner/controller y
+elector quedan reservados para especializaciones futuras; ni ownership ni
+control conceden autoridad implícita en este contrato.
+
+#### Invariantes contractuales estables
+
+Los IDs siguientes son permanentes: **NO DEBEN** reutilizarse ni renumerarse.
+
+| ID | Regla normativa | Superficie futura | Riesgo protegido |
+|---|---|---|---|
+| `CAP-ACTION-004-INV-01` | Debe existir una sola fuente autoritativa persistida por decisión; snapshots, replay, cachés y proyecciones no son autoridades alternativas. | Modelo, persistencia, snapshot, replay | Split-brain y divergencia entre representaciones. |
+| `CAP-ACTION-004-INV-02` | `decision_id` debe permanecer estable e identificar la misma decisión en todas las superficies y reconstrucciones. | Modelo, comandos, eventos, API, replay | Duplicación, ABA y pérdida de correlación. |
+| `CAP-ACTION-004-INV-03` | Sólo `authorized_elector` puede solicitar el cierre. | Enumeración, comandos, servicio | Suplantación o autoridad implícita por owner/controller. |
+| `CAP-ACTION-004-INV-04` | Sólo un token presente en `authorized_opaque_options` puede seleccionarse. | Validación, aplicación, API | Inyección de opciones o bypass de legalidad. |
+| `CAP-ACTION-004-INV-05` | La transición `pending → closed` debe ocurrir exactamente una vez. | Transacción, persistencia, replay | Doble cierre y efectos duplicados. |
+| `CAP-ACTION-004-INV-06` | Todo rechazo debe dejar sin mutación el estado de partida y el registro de decisión. | Aplicación, servicio, storage | Escrituras parciales ante entradas inválidas. |
+| `CAP-ACTION-004-INV-07` | El perdedor de CAS debe rechazarse sin mutación. | Persistencia, storage, concurrencia | Carreras, lost update y doble resolución. |
+| `CAP-ACTION-004-INV-08` | Cada proyección debe respetar `audience` y no revelar campos u opciones fuera de ella. | API, snapshot, eventos, observabilidad | Fuga de información privada. |
+| `CAP-ACTION-004-INV-09` | Un snapshot debe representar fielmente todos y sólo los datos autoritativos necesarios para restaurar la decisión. | Snapshot, codec, migración | Restauración incompleta o creación de otra autoridad. |
+| `CAP-ACTION-004-INV-10` | El replay debe reconstruir una decisión semánticamente fiel, con igual identidad, autoridad, audiencia, opciones, vínculo de versión y cierre. | Eventos, replay, golden fixtures | Divergencia histórica o resultado no determinista. |
+| `CAP-ACTION-004-INV-11` | Toda versión de estado desconocida debe rechazarse sin fallback ni mutación. | Codec, comandos, servicio, replay | Interpretación accidental de semántica futura. |
+| `CAP-ACTION-004-INV-12` | Ningún dato o evento de wall-clock puede autorizar, invalidar o cerrar una decisión. | Servicio, jobs, storage, replay | Partidas irreproducibles por tiempo externo. |
+| `CAP-ACTION-004-INV-13` | `semantic_family` debe despachar sólo familias versionadas; queda prohibido el dispatch por `card_id` o carta concreta. | Registro de handlers, aplicación, catálogo | Excepciones por carta y API accidental. |
+| `CAP-ACTION-004-INV-14` | Cerrar una decisión sólo registra la opción; no ejecuta mecánicas ajenas a este contrato. | Aplicación, eventos, composición de efectos | Acoplamiento, efectos ocultos y atomicidad de dominio falsa. |
+
+#### Exclusiones normativas
+
+`CAP-ACTION-004` **NO DEBE** representar ni resolver *card candidates*;
+**NO DEBE** definir cardinalidad compleja; **NO DEBE** ordenar candidatos u
+opciones; **NO DEBE** modelar selección compuesta; **NO DEBE** implementar
+*simultaneous reveal*; y **NO DEBE** incorporar *search semantics*. Estas seis
+exclusiones son normativas, no ejemplos: permanecen en `CAP-SECRET-002`, en las
+capabilities de búsqueda o en futuras especializaciones con contratos propios.
 
 ## waves definitivas
 
@@ -723,7 +832,7 @@ verdict: N-PHASE-02 IMPLEMENTATION BLOCKED
 
 Los dos primeros elementos de `blockers` son la lista exacta de prerequisites
 no cerrados declarada para `CAP-TIME-002`: `CAP-ACTION-004` (decisión pendiente
-autorizada, `MISSING` y `READY`) y `CAP-TIME-005` (lifecycle autoritativo de
+autorizada, capability `MISSING` con sólo su contrato `READY`) y `CAP-TIME-005` (lifecycle autoritativo de
 setup, `MISSING` y `WAIT-PREREQ`). Los cuatro elementos
 `N-MULLIGAN-01.OPEN-*` son blockers normativos granulares del protocolo, no
 prerequisites técnicos. La dependencia directa de `CAP-SECRET-002` queda eliminada:

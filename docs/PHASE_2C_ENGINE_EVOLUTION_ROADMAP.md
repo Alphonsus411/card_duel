@@ -688,12 +688,18 @@ gate: WAIT-PREREQ
 blockers:
   - CAP-ACTION-004
   - CAP-TIME-005
+  - N-MULLIGAN-01.OPEN-ORDER
+  - N-MULLIGAN-01.OPEN-MODE
+  - N-MULLIGAN-01.OPEN-REVEAL
+  - N-MULLIGAN-01.OPEN-STARTER
 ```
 
-La lista `blockers` es la lista exacta de prerequisites no cerrados declarada
-para `CAP-TIME-002`: `CAP-ACTION-004` (decisión pendiente autorizada, `MISSING`
-y `READY`) y `CAP-TIME-005` (lifecycle autoritativo de setup, `MISSING` y
-`WAIT-PREREQ`). La dependencia directa de `CAP-SECRET-002` queda eliminada:
+Los dos primeros elementos de `blockers` son la lista exacta de prerequisites
+no cerrados declarada para `CAP-TIME-002`: `CAP-ACTION-004` (decisión pendiente
+autorizada, `MISSING` y `READY`) y `CAP-TIME-005` (lifecycle autoritativo de
+setup, `MISSING` y `WAIT-PREREQ`). Los cuatro elementos
+`N-MULLIGAN-01.OPEN-*` son blockers normativos granulares del protocolo, no
+prerequisites técnicos. La dependencia directa de `CAP-SECRET-002` queda eliminada:
 el mulligan sólo necesita opciones opacas y lifecycle universal, no candidatos
 de cartas, cardinalidad, ordenación, selección compuesta, *simultaneous reveal*
 ni semántica de búsquedas. Por ello, el resultado vigente de readiness es **`N-PHASE-02
@@ -711,14 +717,17 @@ en este orden antes de volver a evaluar `N-PHASE-02`:
 
 El alcance que sigue es una especificación condicionada para una futura
 reevaluación. Sólo podrá convertirse en trabajo de runtime mediante una nueva
-decisión documental que registre ambos blockers como `CLOSED`, cambie el gate a
-`READY` y cambie expresamente `authorization` a `AUTHORIZED`.
+decisión documental que registre los dos prerequisites técnicos y los cuatro
+blockers normativos como `CLOSED`, cambie el gate a `READY` y cambie
+expresamente `authorization` a `AUTHORIZED`.
 
 #### Alcance vinculante
 
 1. El setup representa explícitamente el estado autoritativo del mulligan,
-   incluidos participante habilitado, ronda o cantidad de repeticiones,
-   tamaño de la próxima mano, elecciones pendientes y condición de cierre.
+   incluidos los tamaños autorizados, cantidad de repeticiones, elecciones
+   pendientes y condición de cierre. No representará un participante
+   habilitado, orden o ronda de decisión hasta cerrar
+   `N-MULLIGAN-01.OPEN-ORDER` y `N-MULLIGAN-01.OPEN-MODE`.
 2. Existe un comando universal —no ligado a una carta ni a un formato por
    nombre— para que cada participante conserve su mano o solicite reemplazarla.
    La elección aceptada es persistible y queda disponible para snapshot,
@@ -727,25 +736,25 @@ decisión documental que registre ambos blockers como `CLOSED`, cambie el gate a
    conforme a la evidencia normativa vigente. El tamaño se deriva del estado
    persistido y de la regla versionada, nunca de un contador del proceso, del
    reloj ni de un default implícito.
-4. Actor, estado de setup, turno de decisión cuando corresponda, versión CAS,
-   cardinalidad y vigencia de la elección se validan **antes de cualquier
-   movimiento o barajado**. Un rechazo deja idénticos estado, zonas, RNG,
-   versión y log de eventos.
+4. Actor, estado de setup, orden de decisión sólo cuando quede autorizado,
+   versión CAS, cardinalidad y vigencia de la elección se validan **antes de
+   cualquier movimiento o barajado**. Un rechazo deja idénticos estado, zonas,
+   RNG, versión y log de eventos.
 5. Devolver la mano, barajar y robar la nueva mano atraviesa la autoridad única
    de movimientos de zona y la fuente de RNG reproducible. No se permiten
    mutaciones laterales de mazo o mano desde el handler del comando.
-6. El protocolo será alternado o simultáneo **únicamente según la evidencia
-   normativa existente**. La implementación no elegirá uno como default para
-   rellenar un vacío; si la evidencia no determina un tramo, ese tramo queda
-   bloqueado y no se infiere por conveniencia técnica.
-7. Las observaciones públicas y por oponente muestran sólo progreso, tamaños y
-   decisiones que sean observables según la fuente vigente; nunca identidades,
+6. `N-MULLIGAN-01.OPEN-ORDER` y `N-MULLIGAN-01.OPEN-MODE` bloquean el tramo que
+   necesite ordenar o coordinar decisiones. La implementación no elegirá orden,
+   alternancia ni simultaneidad como default para rellenar esos vacíos.
+7. `N-MULLIGAN-01.OPEN-REVEAL` bloquea cualquier publicación de una decisión.
+   Una futura observación pública o por oponente mostrará sólo progreso,
+   tamaños y decisiones cuya visibilidad haya sido autorizada; nunca identidades,
    orden ni contenido de las cartas de otra mano o mazo. Cada jugador recibe
    únicamente su proyección privada autorizada.
 8. El setup termina una sola vez y de forma determinista cuando todas las
-   elecciones exigidas han concluido. La transición resultante conserva el
-   mismo jugador inicial y el mismo estado posterior al setup que determine la
-   regla ya vigente, sin introducir prioridad, ventanas o pasos adicionales.
+   elecciones exigidas han concluido. `N-MULLIGAN-01.OPEN-STARTER` bloquea toda
+   conducta que conserve, cambie o vuelva a determinar el jugador inicial: no
+   se escogerá ninguna como default técnico.
 
 #### Superficies probablemente afectadas
 
@@ -761,11 +770,18 @@ significado reglamentario.
 
 #### Exclusiones explícitas
 
-Quedan fuera del slice la prioridad general, Recursos Rápidos, cartas nuevas,
+Quedan fuera del slice `N-MULLIGAN-01.OPEN-3PLUS`: el slice se limita a dos
+participantes sin establecer que esa limitación sea una regla del juego ni
+definir conducta alguna para tres o más. También quedan fuera la prioridad
+general —incluida la primera prioridad—, la entrada en `DRAW`, el protocolo de
+pases y cualquier transición a `RUNNING` si el slice termina antes de ese
+estado, además de Recursos Rápidos, cartas nuevas,
 combate, keywords, taxonomías, frontend y cambios de presupuesto. También se
 excluye resolver, asumir o anticipar cualquier ambigüedad sobre Legendaria o
-multijugador. El slice no modifica otras reglas, no amplía el corpus y no usa
-defaults normativos para hacer ejecutable una fuente incompleta.
+el resto del multijugador. Cada cuestión abierta de `N-MULLIGAN-01` queda así
+registrada como blocker o exclusión explícita. El slice no modifica otras
+reglas, no amplía el corpus y no usa defaults normativos para hacer ejecutable
+una fuente incompleta.
 
 #### Pruebas obligatorias y compatibilidad
 
@@ -773,8 +789,9 @@ La promoción requiere evidencia automatizada de todos estos casos:
 
 - tamaños de mano decrecientes en repeticiones sucesivas, incluidos límites y
   terminación, con secuencia de eventos estable;
-- rechazo de conservar o reemplazar fuera del turno o estado de setup que
-  corresponda, y demostración de **no mutación** de estado, zonas, RNG, versión
+- rechazo de conservar o reemplazar fuera del estado de setup y, sólo después
+  de cerrar los blockers protocolarios, fuera del orden que resulte autorizado;
+  demostración de **no mutación** de estado, zonas, RNG, versión
   y eventos después de cada validación fallida;
 - mismo resultado, movimientos, barajado, eventos y digest al repetir con la
   misma semilla, y divergencia únicamente donde la semilla forme parte del

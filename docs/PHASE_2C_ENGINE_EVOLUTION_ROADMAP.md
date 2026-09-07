@@ -6,6 +6,8 @@ Este documento prioriza las 62 capabilities de `ENGINE_CAPABILITY_MATRIX.csv` si
 
 La tabla es una herramienta de ordenación arquitectónica, no una promesa de que una capability cierre por sí sola todas las cartas que la mencionan. La auditoría canónica es [`FANTASY_TOKENS_BACKEND_GAP_AUDIT.md`](FANTASY_TOKENS_BACKEND_GAP_AUDIT.md); esta roadmap es exclusivamente **planificación derivada**, no implementación ni release. La evidencia declarativa de prerequisites y estados se distribuye entre `ENGINE_CAPABILITY_MATRIX.csv` y `ENGINE_CAPABILITY_DEPENDENCIES.md`; la evidencia de corpus sigue siendo `CARD_CORPUS_CONFORMANCE.md`; y una duda abierta sigue bajo `NORMATIVE_AMBIGUITIES.md`.
 
+**Regla uniforme de estado técnico.** `MISSING` significa que no existe ningún subconjunto ejecutable demostrable; `PARTIAL`, que existe un subconjunto real pero todavía no el contrato completo; `SUPPORTED` exige el recorrido público, persistente, replayable y de servicio completo. Esta clasificación de capabilities no modifica los estados ni los totales de las 431 entradas auditadas.
+
 ## estado actual
 
 **Phase 2C: `IN PROGRESS`. Phase 3: `PENDING`.** La creación o aprobación de esta roadmap no altera esos estados.
@@ -67,7 +69,7 @@ Las columnas `Central.`, `Desbloq.`, `Riesgo`, `Claridad` y `Migración` corresp
 | `CAP-TAXONOMY-002` — Leyenda y tipos impresos múltiples | `BLOCKED` | `NORM-BLOCKED` | MEDIUM | MEDIUM | HIGH | LOW | MEDIUM | Prerequisites: CAP-TAXONOMY-001; dependientes: CAP-TARGET-002. |
 | `CAP-TAXONOMY-003` — Vocabulario, aliases y procedencia de subtipos | `PARTIAL` | `WAIT-PREREQ` | MEDIUM | MEDIUM | MEDIUM | HIGH | LOW | Prerequisites: CAP-TAXONOMY-001; dependientes: CAP-TARGET-002. |
 | `CAP-TIME-001` — Preparación inicial | `PARTIAL` | `NORM-BLOCKED` | MEDIUM | MEDIUM | MEDIUM | LOW | LOW | Prerequisites: CAP-ZONE-002, CAP-PRIVACY-001; dependientes: CAP-TIME-002. |
-| `CAP-TIME-002` — Mulligan decreciente | `MISSING` | `WAIT-PREREQ` | MEDIUM | MEDIUM | HIGH | HIGH | MEDIUM | Prerequisites: CAP-TIME-001, CAP-SECRET-002; dependientes: CAP-TIME-003. |
+| `CAP-TIME-002` — Mulligan decreciente | `PARTIAL` | `WAIT-PREREQ` | MEDIUM | MEDIUM | HIGH | HIGH | MEDIUM | Prerequisites: CAP-TIME-001, CAP-SECRET-002; dependientes: CAP-TIME-003. |
 | `CAP-TIME-003` — Secuencia y transición de fases | `PARTIAL` | `NORM-BLOCKED` | MEDIUM | MEDIUM | HIGH | LOW | HIGH | Prerequisites: CAP-ACTION-002, CAP-STACK-001; dependientes: CAP-TIME-004, CAP-COMBAT-001. |
 | `CAP-TIME-004` — Prioridad y ventanas de respuesta | `PARTIAL` | `NORM-BLOCKED` | MEDIUM | HIGH | HIGH | LOW | HIGH | Prerequisites: CAP-TIME-003, CAP-ACTION-002; dependientes: CAP-STACK-001, CAP-COMBAT-001. |
 | `CAP-STACK-001` — Pila LIFO | `SUPPORTED` | `CLOSED` | MEDIUM | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-ACTION-003, CAP-TIME-004; dependientes: CAP-EFFECT-001, CAP-TRIGGER-001. |
@@ -674,7 +676,7 @@ entrega posterior con schema, migración y rollback aprobados.
 slice_id: N-PHASE-02
 capability_id: CAP-TIME-002
 authorization: BLOCKED
-capability_status: MISSING
+capability_status: PARTIAL
 gate: WAIT-PREREQ
 blockers:
   - CAP-TIME-001
@@ -795,7 +797,7 @@ les asigna el catálogo. Los fixtures históricos permanecen inmutables.
 
 #### Criterio de aceptación del slice
 
-`N-PHASE-02` se acepta sólo cuando `CAP-TIME-002` pueda pasar de `MISSING` a
+`N-PHASE-02` se acepta sólo cuando `CAP-TIME-002` pueda pasar de `PARTIAL` a
 `SUPPORTED` en **todo el recorrido técnico** —modelo, comando, enumeración,
 validación, transición autoritativa, observación, codec, snapshot, replay,
 aplicación, servicio y CAS— y todas las pruebas anteriores estén verdes. La

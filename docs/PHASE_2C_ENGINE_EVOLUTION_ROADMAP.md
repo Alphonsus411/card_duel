@@ -668,15 +668,44 @@ entrega posterior con schema, migración y rollback aprobados.
 
 ## primer slice
 
-### Primer slice posterior a la aprobación — `N-PHASE-02` — mulligan decreciente persistible
+### Readiness del primer slice candidato — `N-PHASE-02`
 
-Una vez aprobado este roadmap, el primer slice de implementación será
-**`N-PHASE-02` — mulligan decreciente persistible**, acotado a cerrar
-`CAP-TIME-002` sin arrastrar el resto de W2. La autorización procede
-exclusivamente de la regla Base vigente descrita en la ficha de contención
-`N-PHASE-01`–`02`, `N-PHASE-04`–`05`, `N-PHASE-07`, `N-PHASE-09`–`10`: el slice
-no interpreta el silencio Mítico ni convierte una decisión de arquitectura en
-canon.
+```yaml
+slice_id: N-PHASE-02
+capability_id: CAP-TIME-002
+authorization: BLOCKED
+capability_status: MISSING
+gate: WAIT-PREREQ
+blockers:
+  - CAP-TIME-001
+  - CAP-SECRET-002
+```
+
+La lista `blockers` es la lista exacta de prerequisites no cerrados declarada
+para `CAP-TIME-002`: `CAP-TIME-001` (preparación inicial, `PARTIAL` y
+`NORM-BLOCKED`) y `CAP-SECRET-002` (elección secreta y compuesta, `PARTIAL` y
+`READY`). Por ello, el resultado vigente de readiness es **`N-PHASE-02
+IMPLEMENTATION BLOCKED`**. Mientras `authorization` sea `BLOCKED`, **no existe
+autorización para modificar el runtime**, incluidos dominio, motor,
+persistencia, aplicación, servicio o tests de implementación del mulligan. La
+aprobación de esta roadmap o de estos informes documentales no cambia ese
+resultado.
+
+Los siguientes slices son exclusivamente de planificación y deben ejecutarse
+en este orden antes de volver a evaluar `N-PHASE-02`:
+
+1. **Reconciliación/segmentación de preparación inicial (`CAP-TIME-001`):**
+   separar qué parte del setup vigente está soportada, qué parte necesita
+   reconciliación normativa y cuál es el contrato mínimo que puede cerrarse sin
+   anticipar el mulligan.
+2. **Diseño del contrato universal de decisión pendiente (`CAP-SECRET-002`):**
+   especificar una decisión persistible, revalidable y proyectable por
+   audiencia, sin ligarla a `N-PHASE-02` ni autorizar todavía su implementación.
+
+El alcance que sigue es una especificación condicionada para una futura
+reevaluación. Sólo podrá convertirse en trabajo de runtime mediante una nueva
+decisión documental que registre ambos blockers como `CLOSED`, cambie el gate a
+`READY` y cambie expresamente `authorization` a `AUTHORIZED`.
 
 #### Alcance vinculante
 

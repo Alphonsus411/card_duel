@@ -172,7 +172,37 @@ flowchart LR
 
 `CAP-ACTION-004` se limita a la infraestructura universal de una decisión pendiente autorizada: `decision_id`, elector, audiencia, conjunto de opciones opacas, estado pendiente/resuelto, autorización, expiración o invalidación por versión, resolución exactamente una vez, persistencia, snapshot, replay y CAS. **Excluye expresamente** candidatos de cartas, cardinalidad, ordenación, selección compuesta, *simultaneous reveal* y semántica de búsquedas; esos contratos permanecen en `CAP-SECRET-002` u otras capabilities especializadas.
 
-La reciprocidad se comprobó en ambas direcciones: `CAP-ACTION-002` y `CAP-PRIVACY-001` declaran a `CAP-ACTION-004` como dependiente; `CAP-ACTION-004` declara a ambas como prerequisites `SUPPORTED`; y sus dependientes `CAP-SECRET-002` y `CAP-TIME-002` declaran la arista inversa. El análisis topológico conserva como único ciclo el SCC de tiempo/pila ya documentado: las aristas nuevas avanzan desde bases soportadas hacia la abstracción y después hacia especializaciones, por lo que **no introducen un ciclo nuevo**.
+### Clasificación específica de relaciones
+
+La categoría indica la relación arquitectónica con `CAP-ACTION-004`, no una nueva
+arista por semejanza de implementación. En particular, compartir rollback,
+comandos, privacidad o invariantes de resolución no convierte automáticamente
+una capability en prerequisite.
+
+| Categoría | Capabilities o mecanismo | Evidencia concreta y decisión de arista |
+|---|---|---|
+| `prerequisite` | `CAP-ACTION-002` | La decisión tiene que enumerarse como acción legal y revalidarse autoritativamente al resolverse. Se conserva la arista directa `CAP-ACTION-002 → CAP-ACTION-004`. |
+| `prerequisite` | `CAP-PRIVACY-001` | La proyección por audiencia debe ocultar opciones y estado privado antes de exponer la decisión. Se conserva la arista directa `CAP-PRIVACY-001 → CAP-ACTION-004`. |
+| `dependent` | `CAP-SECRET-002` | La elección secreta/compuesta añade candidatos de cartas, cardinalidad, modo, orden y revelación a la espera universal. Se conserva `CAP-ACTION-004 → CAP-SECRET-002`. |
+| `dependent` | `CAP-TIME-002` | KEEP/REPLACE necesita una decisión pendiente autorizada, persistible y resoluble exactamente una vez. Se conserva `CAP-ACTION-004 → CAP-TIME-002`. |
+| `specialization` | Elecciones compuestas (`CAP-SECRET-002`) y búsquedas (`CAP-SEARCH-001`, `CAP-SEARCH-002`, `CAP-SEARCH-003`) | Añaden filtros/candidatos, cardinalidad, destinos, orden, revelación, barajado o continuación. La elección compuesta es además dependent directa; las búsquedas se conectan mediante sus capabilities de secreto/zona y no reciben una arista directa redundante desde `CAP-ACTION-004`. |
+| `specialization` | Reemplazos (`CAP-ZONE-004`) y ordenación de triggers (`CAP-TRIGGER-001`) | Conservan contratos propios —causa/destino y reejecución para reemplazos; lote, controlador y política de orden para triggers— aunque compartan autorización, persistencia, exactamente-una-vez u otras invariantes con la decisión universal. Siguen especializados y sus aristas existentes pasan por `CAP-SECRET-002`; no se añaden aristas directas. |
+| `shared infrastructure` | `CAP-ACTION-001` | Sus modelos tipados, comandos, codecs y fronteras application/service son superficies reutilizadas, pero la necesidad concreta de acciones legales ya está mediada por `CAP-ACTION-002`. No se añade `CAP-ACTION-001 → CAP-ACTION-004`. |
+| `shared infrastructure` | `CAP-ACTION-003` | La transacción, rollback y determinismo son garantías transversales aprovechables por resoluciones, pero la frontera mínima de la decisión exige CAS y resolución exactamente una vez, no que `CAP-ACTION-003` sea prerequisite directa. No se crea esa arista. |
+| `shared infrastructure` | `CAP-SECRET-001` | Es infraestructura compartida de privacidad/secretos para mirar sin revelar. La garantía de audiencia requerida por la abstracción ya entra por `CAP-PRIVACY-001`; se evita duplicar una arista `CAP-SECRET-001 → CAP-ACTION-004`. |
+| `unrelated` | Selección ordinaria de targets (`CAP-TARGET-001`/`CAP-TARGET-002`) | Congela estructuras heterogéneas al construir una acción y aplica su propia legalidad; no constituye una decisión pendiente universal ni requiere una arista con `CAP-ACTION-004`. |
+| `unrelated` | `CAP-TIME-005` respecto de una arista directa | Se relaciona con `CAP-ACTION-004` sólo por composición del setup: ambas son prerequisites **independientes** de `CAP-TIME-002`. El grafo no necesita ni declara una dependencia directa entre ellas. |
+
+La reciprocidad se comprobó en ambas direcciones en `ENGINE_CAPABILITY_MATRIX.csv`:
+`CAP-ACTION-002` y `CAP-PRIVACY-001` declaran a `CAP-ACTION-004` como dependent;
+`CAP-ACTION-004` declara a ambas como prerequisites `SUPPORTED`; y
+`CAP-SECRET-002` y `CAP-TIME-002` declaran la arista inversa de los dos
+*dependents* de `CAP-ACTION-004`. Asimismo, `CAP-TIME-005` declara como dependent
+a `CAP-TIME-002`, que lo declara como prerequisite independiente de
+`CAP-ACTION-004`. El análisis SCC ejecutado sobre todas las aristas recíprocas
+conserva un único componente no trivial permitido:
+`CAP-TIME-003 ↔ CAP-TIME-004 ↔ CAP-STACK-001`. Las relaciones clasificadas no
+introducen ningún ciclo ni ninguna arista adicional.
 
 El riesgo es **CRITICAL** y la prioridad **P0/W1** porque duplicar esta infraestructura permitiría divergencias de autorización, expiración, CAS o resolución. Las superficies aquí enumeradas son futuras y no autorizan implementación: `domain/models.py`, `engine/commands.py`, `engine/actions.py`, `engine/game.py`, `application.py`, `service.py`, `persistence/` y `storage/`. El *corpus impact basis* es arquitectónico: impacto directo de **0 entradas** e impacto indirecto potencial sobre las 431 entradas (386 identidades y 45 variantes), sin promoción ni suma automática; el mulligan es una regla universal y `CAP-SECRET-002` mantiene el desglose de cartas especializado.
 

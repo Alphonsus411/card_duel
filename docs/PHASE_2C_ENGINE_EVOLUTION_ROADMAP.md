@@ -682,16 +682,43 @@ entrega posterior con schema, migración y rollback aprobados.
 ```yaml
 slice_id: N-PHASE-02
 capability_id: CAP-TIME-002
+normative_rule_id: N-PHASE-02
 authorization: BLOCKED
-capability_status: PARTIAL
+status: PARTIAL
 gate: WAIT-PREREQ
+prerequisites:
+  - capability_id: CAP-ACTION-004
+    status: MISSING
+    gate: READY
+  - capability_id: CAP-TIME-005
+    status: MISSING
+    gate: WAIT-PREREQ
 blockers:
-  - CAP-ACTION-004
-  - CAP-TIME-005
-  - N-MULLIGAN-01.OPEN-ORDER
-  - N-MULLIGAN-01.OPEN-MODE
-  - N-MULLIGAN-01.OPEN-REVEAL
-  - N-MULLIGAN-01.OPEN-STARTER
+  - blocker_id: CAP-ACTION-004
+    kind: technical
+    status: OPEN
+    gate: READY
+  - blocker_id: CAP-TIME-005
+    kind: technical
+    status: OPEN
+    gate: WAIT-PREREQ
+  - blocker_id: N-MULLIGAN-01.OPEN-ORDER
+    kind: normative
+    status: OPEN
+    gate: NORM-BLOCKED
+  - blocker_id: N-MULLIGAN-01.OPEN-MODE
+    kind: normative
+    status: OPEN
+    gate: NORM-BLOCKED
+  - blocker_id: N-MULLIGAN-01.OPEN-REVEAL
+    kind: normative
+    status: OPEN
+    gate: NORM-BLOCKED
+  - blocker_id: N-MULLIGAN-01.OPEN-STARTER
+    kind: normative
+    status: OPEN
+    gate: NORM-BLOCKED
+verdict: N-PHASE-02 IMPLEMENTATION BLOCKED
 ```
 
 Los dos primeros elementos de `blockers` son la lista exacta de prerequisites

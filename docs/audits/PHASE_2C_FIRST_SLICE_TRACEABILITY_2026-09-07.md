@@ -9,10 +9,11 @@
 | Elemento | Evidencia vigente | Resultado |
 |---|---|---|
 | Regla candidata | `N-PHASE-02` documenta el mulligan decreciente Base y el silencio Mítico. | No equivale a autorización técnica. |
-| Capability | `CAP-TIME-002` figura como `MISSING`. | No existe recorrido técnico completo. |
+| Capability | `CAP-TIME-002` figura como `PARTIAL`. | No existe recorrido técnico completo. |
 | Gate | `CAP-TIME-002` figura como `WAIT-PREREQ`. | No puede comenzar implementación. |
-| Prerequisite 1 | `CAP-TIME-001` figura como `PARTIAL` / `NORM-BLOCKED`. | Blocker no cerrado. |
-| Prerequisite 2 | `CAP-SECRET-002` figura como `PARTIAL` / `READY`. | Blocker no cerrado. |
+| Prerequisite 1 | `CAP-ACTION-004` figura como `MISSING` / `READY`. | Blocker técnico no cerrado. |
+| Prerequisite 2 | `CAP-TIME-005` figura como `MISSING` / `WAIT-PREREQ`. | Blocker técnico no cerrado. |
+| Blockers normativos | Los cuatro `N-MULLIGAN-01.OPEN-*` incluidos figuran `OPEN` / `NORM-BLOCKED`. | El protocolo no permite defaults normativos. |
 | Autorización | El bloque de readiness declara `authorization: BLOCKED`. | No se autoriza modificar el runtime. |
 
 ## Correspondencia machine-readable
@@ -20,12 +21,42 @@
 ```yaml
 slice_id: N-PHASE-02
 capability_id: CAP-TIME-002
+normative_rule_id: N-PHASE-02
 authorization: BLOCKED
-capability_status: MISSING
+status: PARTIAL
 gate: WAIT-PREREQ
+prerequisites:
+  - capability_id: CAP-ACTION-004
+    status: MISSING
+    gate: READY
+  - capability_id: CAP-TIME-005
+    status: MISSING
+    gate: WAIT-PREREQ
 blockers:
-  - CAP-TIME-001
-  - CAP-SECRET-002
+  - blocker_id: CAP-ACTION-004
+    kind: technical
+    status: OPEN
+    gate: READY
+  - blocker_id: CAP-TIME-005
+    kind: technical
+    status: OPEN
+    gate: WAIT-PREREQ
+  - blocker_id: N-MULLIGAN-01.OPEN-ORDER
+    kind: normative
+    status: OPEN
+    gate: NORM-BLOCKED
+  - blocker_id: N-MULLIGAN-01.OPEN-MODE
+    kind: normative
+    status: OPEN
+    gate: NORM-BLOCKED
+  - blocker_id: N-MULLIGAN-01.OPEN-REVEAL
+    kind: normative
+    status: OPEN
+    gate: NORM-BLOCKED
+  - blocker_id: N-MULLIGAN-01.OPEN-STARTER
+    kind: normative
+    status: OPEN
+    gate: NORM-BLOCKED
 verdict: N-PHASE-02 IMPLEMENTATION BLOCKED
 ```
 
@@ -37,8 +68,8 @@ afectadas ni las pruebas futuras: son alcance condicionado, no prerequisites.
 
 | Orden | Slice de planificación | Capability | Salida esperada | Efecto sobre autorización |
 |---|---|---|---|---|
-| 1 | Reconciliación/segmentación de preparación inicial | `CAP-TIME-001` | Delimitar setup soportado, segmento normativo y contrato cerrable. | Ninguna autorización de runtime para `N-PHASE-02`. |
-| 2 | Diseño del contrato universal de decisión pendiente | `CAP-SECRET-002` | Contrato persistible, revalidable y proyectable sin acoplarlo al mulligan. | Ninguna autorización de runtime para `N-PHASE-02`. |
+| 1 | Diseño del contrato universal de decisión pendiente | `CAP-ACTION-004` | Cerrar un contrato persistible, revalidable y proyectable. | Ninguna autorización de runtime para `N-PHASE-02`. |
+| 2 | Lifecycle autoritativo de setup | `CAP-TIME-005` | Demostrar creación, seguimiento y cierre de decisiones en `SETUP`. | Ninguna autorización de runtime para `N-PHASE-02`. |
 | 3 | Nueva auditoría de readiness | `CAP-TIME-002` | Verificar blockers `CLOSED`, gate `READY` y decisión expresa. | Sólo una decisión futura puede autorizar. |
 
 ## Límites y estados conservados

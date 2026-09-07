@@ -131,6 +131,63 @@ def test_capability_dependencies_are_existing_reciprocal_and_cycles_explained() 
     assert "`CAP-TIME-003 ↔ CAP-TIME-004 ↔ CAP-STACK-001`" in explanation
 
 
+def test_pending_decision_capability_has_minimal_boundary_and_reciprocal_edges() -> None:
+    by_id = {row["capability_id"]: row for row in _matrix_rows()}
+    decision = by_id["CAP-ACTION-004"]
+
+    assert decision["capability"] == "Decisión pendiente autorizada"
+    assert decision["prerequisites"].split(";") == [
+        "CAP-ACTION-002",
+        "CAP-PRIVACY-001",
+    ]
+    assert set(decision["dependents"].split(";")) == {
+        "CAP-SECRET-002",
+        "CAP-TIME-002",
+    }
+    assert by_id["CAP-TIME-002"]["prerequisites"].split(";") == [
+        "CAP-ACTION-004",
+        "CAP-TIME-005",
+    ]
+    assert "CAP-SECRET-002" not in by_id["CAP-TIME-002"]["prerequisites"]
+    assert "CAP-ACTION-004" in by_id["CAP-SECRET-002"]["prerequisites"].split(";")
+
+    contract = " ".join((decision["description"], decision["notes"])).lower()
+    for required in (
+        "decision_id",
+        "elector",
+        "audiencia",
+        "opciones opacas",
+        "pendiente/resuelto",
+        "autorización",
+        "expiración",
+        "invalidación por versión",
+        "exactamente una vez",
+        "persistencia",
+        "snapshot",
+        "replay",
+        "cas",
+    ):
+        assert required in contract
+    for excluded in (
+        "candidatos de cartas",
+        "cardinalidad",
+        "ordenación",
+        "selección compuesta",
+        "simultaneous reveal",
+        "semántica de búsquedas",
+    ):
+        assert excluded in contract
+
+    roadmap = ROADMAP.read_text(encoding="utf-8")
+    dependencies = DEPENDENCIES.read_text(encoding="utf-8")
+    for document in (roadmap, dependencies):
+        assert "CAP-ACTION-004" in document
+        assert "domain/models.py" in document
+        assert "persistence/" in document
+        assert "application.py" in document
+        assert "service.py" in document
+
+
 def test_documented_totals_defaults_and_generic_capability_boundary() -> None:
     with SOURCE_INVENTORY.open(encoding="utf-8", newline="") as stream:
         inventory = list(csv.DictReader(stream, strict=True))

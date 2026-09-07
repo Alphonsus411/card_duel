@@ -2,7 +2,7 @@
 
 ## Propósito y método
 
-Este documento deriva las 63 filas de `ENGINE_CAPABILITY_MATRIX.csv` y las contrasta **estáticamente** con las superficies solicitadas. No afirma cobertura dinámica ni eleva el estado de ninguna fila: `SUPPORTED`, `PARTIAL`, `MISSING` y `BLOCKED` conservan exactamente el sentido de la matriz. La revisión siguió, en orden: (1) modelos/enums, (2) comandos y gestores, (3) coordinador `GameEngine`, (4) codec/snapshot/replay y stores, y (5) autorización, servicio y proyección.
+Este documento deriva las 64 filas de `ENGINE_CAPABILITY_MATRIX.csv` y las contrasta **estáticamente** con las superficies solicitadas. No afirma cobertura dinámica ni eleva el estado de ninguna fila: `SUPPORTED`, `PARTIAL`, `MISSING` y `BLOCKED` conservan exactamente el sentido de la matriz. La revisión siguió, en orden: (1) modelos/enums, (2) comandos y gestores, (3) coordinador `GameEngine`, (4) codec/snapshot/replay y stores, y (5) autorización, servicio y proyección.
 
 **Lectura de severidad.** Es la severidad de implementar la capacidad antes de sus prerrequisitos, no su prioridad de producto: **CRITICAL** puede producir estado no atómico, información privada o replay falso; **HIGH**, decisiones/legalidad incompletas; **MEDIUM**, contratos locales divergentes. `—` significa que la matriz no declara un extremo. Los nombres de fichero son relativos a `src/card_duel_engine/`.
 
@@ -19,8 +19,9 @@ introducir otros ciclos.
 | Capability | Estado | Prerequisites | Dependientes | Severidad fuera de orden | Superficies afectadas |
 |---|---|---|---|---|---|
 | `CAP-ACTION-001` — Modelo tipado de acciones y comandos | SUPPORTED | — | CAP-ACTION-002; CAP-TIME-003; CAP-EFFECT-001 | **MEDIUM** — contrato local incoherente o UX/replay divergente | `domain/models.py`, `engine/commands.py`, `engine/actions.py`, `engine/game.py`, `application.py`, `service.py`, `persistence/`, `storage/` |
-| `CAP-ACTION-002` — Enumeración y revalidación de acciones legales | SUPPORTED | CAP-ACTION-001 | CAP-TARGET-001; CAP-SECRET-002 | **HIGH** — legalidad/resultado incorrecto que contamina capacidades posteriores | `domain/models.py`, `engine/commands.py`, `engine/actions.py`, `engine/game.py`, `application.py`, `service.py`, `persistence/`, `storage/` |
+| `CAP-ACTION-002` — Enumeración y revalidación de acciones legales | SUPPORTED | CAP-ACTION-001 | CAP-TARGET-001; CAP-ACTION-004 | **HIGH** — legalidad/resultado incorrecto que contamina capacidades posteriores | `domain/models.py`, `engine/commands.py`, `engine/actions.py`, `engine/game.py`, `application.py`, `service.py`, `persistence/`, `storage/` |
 | `CAP-ACTION-003` — Transacción, rollback y determinismo | SUPPORTED | CAP-ACTION-001 | CAP-COST-002; CAP-ZONE-003; CAP-EFFECT-003 | **CRITICAL** — corrupción de estado, fuga de información o resolución no reproducible | `domain/models.py`, `engine/commands.py`, `engine/actions.py`, `engine/game.py`, `application.py`, `service.py`, `persistence/`, `storage/` |
+| `CAP-ACTION-004` — Decisión pendiente autorizada | MISSING | CAP-ACTION-002, CAP-PRIVACY-001 | CAP-SECRET-002; CAP-TIME-002 | **CRITICAL** — doble resolución, autorización obsoleta, fuga de audiencia o replay divergente | Futuras: `domain/models.py`, `engine/commands.py`, `engine/actions.py`, `engine/game.py`, `application.py`, `service.py`, `persistence/`, `storage/`; ninguna se modifica en esta reconciliación |
 | `CAP-COST-001` — Modelo declarativo de costes | SUPPORTED | CAP-ACTION-001 | CAP-COST-002; CAP-COST-003; CAP-COST-004 | **MEDIUM** — contrato local incoherente o UX/replay divergente | `domain/models.py`, `engine/options.py`, `engine/game.py`, `engine/stack.py`, `persistence/` |
 | `CAP-COST-002` — Preflight, determinación y pago atómico | SUPPORTED | CAP-COST-001, CAP-ACTION-003 | CAP-COST-003; CAP-STACK-001 | **CRITICAL** — corrupción de estado, fuga de información o resolución no reproducible | `domain/models.py`, `engine/options.py`, `engine/game.py`, `engine/stack.py`, `persistence/` |
 | `CAP-COST-003` — Costes adicionales y compuestos | SUPPORTED | CAP-COST-001, CAP-COST-002 | CAP-EFFECT-003 | **HIGH** — legalidad/resultado incorrecto que contamina capacidades posteriores | `domain/models.py`, `engine/options.py`, `engine/game.py`, `engine/stack.py`, `persistence/` |
@@ -33,16 +34,16 @@ introducir otros ciclos.
 | `CAP-ZONE-004` — Reemplazos de transición | PARTIAL | CAP-ZONE-003, CAP-SECRET-002 | CAP-ZONE-005; CAP-TRANSMUTE-001 | **HIGH** — legalidad/resultado incorrecto que contamina capacidades posteriores | `domain/enums.py`, `domain/models.py`, `engine/zones.py`, `engine/game.py`, `engine/stack.py`, `persistence/` |
 | `CAP-ZONE-005` — Triggers generales de salida | MISSING | CAP-ZONE-003, CAP-STACK-001 | CAP-EFFECT-003 | **CRITICAL** — corrupción de estado, fuga de información o resolución no reproducible | `domain/enums.py`, `domain/models.py`, `engine/zones.py`, `engine/game.py`, `engine/stack.py`, `persistence/` |
 | `CAP-ZONE-006` — Last-known information | MISSING | CAP-ZONE-003, CAP-PRIVACY-001 | CAP-ZONE-005; CAP-EFFECT-003 | **CRITICAL** — corrupción de estado, fuga de información o resolución no reproducible | `domain/enums.py`, `domain/models.py`, `engine/zones.py`, `engine/game.py`, `engine/stack.py`, `persistence/` |
-| `CAP-PRIVACY-001` — Proyección pública por audiencia | SUPPORTED | CAP-ZONE-002 | CAP-SECRET-001; CAP-TIME-001; CAP-TIME-005; CAP-SEARCH-001 | **CRITICAL** — corrupción de estado, fuga de información o resolución no reproducible | `domain/models.py`, `engine/game.py::observe`, `application.py`, `service.py` |
+| `CAP-PRIVACY-001` — Proyección pública por audiencia | SUPPORTED | CAP-ZONE-002 | CAP-SECRET-001; CAP-TIME-001; CAP-TIME-005; CAP-SEARCH-001; CAP-ACTION-004 | **CRITICAL** — corrupción de estado, fuga de información o resolución no reproducible | `domain/models.py`, `engine/game.py::observe`, `application.py`, `service.py` |
 | `CAP-SECRET-001` — Mirar sin revelar | MISSING | CAP-PRIVACY-001, CAP-ZONE-002 | CAP-SECRET-002; CAP-SEARCH-002 | **HIGH** — legalidad/resultado incorrecto que contamina capacidades posteriores | `domain/models.py`, `engine/game.py::observe`, `application.py`, `service.py` |
-| `CAP-SECRET-002` — Elección secreta y compuesta | PARTIAL | CAP-ACTION-002, CAP-PRIVACY-001 | CAP-SEARCH-002; CAP-ZONE-004; CAP-TIME-002; CAP-EFFECT-003 | **CRITICAL** — corrupción de estado, fuga de información o resolución no reproducible | `domain/models.py`, `engine/game.py::observe`, `application.py`, `service.py` |
+| `CAP-SECRET-002` — Elección secreta y compuesta | PARTIAL | CAP-ACTION-004, CAP-COST-004, CAP-SECRET-001 | CAP-SEARCH-002; CAP-ZONE-004; CAP-EFFECT-003 | **CRITICAL** — corrupción de estado, fuga de información o resolución no reproducible | `domain/models.py`, `engine/game.py::observe`, `application.py`, `service.py` |
 | `CAP-TARGET-001` — Targets tipados y congelados | SUPPORTED | CAP-ACTION-002 | CAP-TARGET-002; CAP-IMMUNITY-001 | **HIGH** — legalidad/resultado incorrecto que contamina capacidades posteriores | `domain/models.py`, `engine/options.py`, `engine/game.py`, `engine/actions.py` |
 | `CAP-TARGET-002` — Selectores multidimensionales | PARTIAL | CAP-TARGET-001, CAP-TAXONOMY-001 | CAP-SEARCH-001; CAP-EFFECT-002 | **HIGH** — legalidad/resultado incorrecto que contamina capacidades posteriores | `domain/models.py`, `engine/options.py`, `engine/game.py`, `engine/actions.py` |
 | `CAP-TAXONOMY-001` — Dimensiones canónicas separadas | PARTIAL | — | CAP-TARGET-002; CAP-KEYWORD-001 | **HIGH** — legalidad/resultado incorrecto que contamina capacidades posteriores | `domain/enums.py`, `domain/models.py`, `engine/game.py`, `presentation.py` |
 | `CAP-TAXONOMY-002` — Leyenda y tipos impresos múltiples | BLOCKED | CAP-TAXONOMY-001 | CAP-TARGET-002 | **HIGH** — legalidad/resultado incorrecto que contamina capacidades posteriores | `domain/enums.py`, `domain/models.py`, `engine/game.py`, `presentation.py` |
 | `CAP-TAXONOMY-003` — Vocabulario, aliases y procedencia de subtipos | PARTIAL | CAP-TAXONOMY-001 | CAP-TARGET-002 | **MEDIUM** — contrato local incoherente o UX/replay divergente | `domain/enums.py`, `domain/models.py`, `engine/game.py`, `presentation.py` |
 | `CAP-TIME-001` — Selección y concesión de prioridad inicial | PARTIAL | CAP-ZONE-002, CAP-PRIVACY-001 | — | **CRITICAL** — corrupción de estado, fuga de información o resolución no reproducible | `domain/enums.py`, `domain/models.py`, `engine/phases.py`, `engine/stack.py`, `engine/actions.py` |
-| `CAP-TIME-002` — Mulligan decreciente | PARTIAL | CAP-TIME-005, CAP-SECRET-002 | CAP-TIME-003 | **HIGH** — legalidad/resultado incorrecto que contamina capacidades posteriores | `domain/enums.py`, `domain/models.py`, `engine/phases.py`, `engine/stack.py`, `engine/actions.py` |
+| `CAP-TIME-002` — Mulligan decreciente | PARTIAL | CAP-ACTION-004, CAP-TIME-005 | CAP-TIME-003 | **HIGH** — legalidad/resultado incorrecto que contamina capacidades posteriores | `domain/enums.py`, `domain/models.py`, `engine/phases.py`, `engine/stack.py`, `engine/actions.py` |
 | `CAP-TIME-003` — Secuencia y transición de fases | PARTIAL | CAP-ACTION-002, CAP-STACK-001 | CAP-TIME-004; CAP-COMBAT-001 | **HIGH** — legalidad/resultado incorrecto que contamina capacidades posteriores | `domain/enums.py`, `domain/models.py`, `engine/phases.py`, `engine/stack.py`, `engine/actions.py` |
 | `CAP-TIME-004` — Prioridad y ventanas de respuesta | PARTIAL | CAP-TIME-003, CAP-ACTION-002 | CAP-STACK-001; CAP-COMBAT-001 | **CRITICAL** — corrupción de estado, fuga de información o resolución no reproducible | `domain/enums.py`, `domain/models.py`, `engine/phases.py`, `engine/stack.py`, `engine/actions.py` |
 | `CAP-TIME-005` — Lifecycle autoritativo de setup | MISSING | CAP-ZONE-002, CAP-PRIVACY-001 | CAP-TIME-002 | **CRITICAL** — corrupción de estado, fuga de información o resolución no reproducible | `domain/enums.py`, `domain/models.py`, `engine/commands.py`, `engine/game.py`, `engine/phases.py`, `application.py`, `service.py`, `persistence/`, `storage/` |
@@ -124,7 +125,9 @@ flowchart LR
   subgraph L2[Layer 2 — semántica compuesta]
     OWN[destino por propietario]
     ZR[CAP-ZONE-004/005/006<br/>reemplazos / LKI / triggers]
-    SEC[CAP-SECRET-001/002<br/>elecciones ocultas]
+    DEC[CAP-ACTION-004<br/>decisión pendiente autorizada]
+    SEC[CAP-SECRET-001/002<br/>elecciones ocultas / compuestas]
+    MUL[CAP-TIME-002<br/>mulligan]
     ST[CAP-STACK-001<br/>pila / resolución]
     RT[CAP-TRIGGER-001<br/>rápidos / triggers]
     RACE[CAP-EFFECT-002<br/>efectos por raza/subtipo]
@@ -141,8 +144,10 @@ flowchart LR
 
   E4 --> Z1 --> E6 --> OWN
   Z1 --> Z2 --> ZR --> SEARCH
-  P1 --> O --> SEC
-  A1 --> O --> CO --> ST
+  P1 --> DEC
+  A1 --> O --> DEC --> SEC
+  DEC --> MUL
+  O --> CO --> ST
   T3 --> W --> ST --> RT
   TX --> SEL --> RACE
   SEL --> COMP
@@ -162,6 +167,14 @@ flowchart LR
 * **Taxonomía/selectores/composición.** Codificar efectos de raza por nombre o por identidad evita el vocabulario canónico y no compone con continuos.
 * **Estado/daño/combate.** Persistir Fuerza “efectiva” como otra verdad vuelve obsoletas letalidad, anexos, transformaciones y elegibilidad; keywords sobre un reparto multibloqueo indefinido amplifican esa divergencia.
 * **Multijugador.** Resolver eliminación de un jugador antes de una política 3+ puede dejar ownership, turn order, pila y ganador sin definición.
+
+## Frontera de `CAP-ACTION-004` y análisis de reciprocidad
+
+`CAP-ACTION-004` se limita a la infraestructura universal de una decisión pendiente autorizada: `decision_id`, elector, audiencia, conjunto de opciones opacas, estado pendiente/resuelto, autorización, expiración o invalidación por versión, resolución exactamente una vez, persistencia, snapshot, replay y CAS. **Excluye expresamente** candidatos de cartas, cardinalidad, ordenación, selección compuesta, *simultaneous reveal* y semántica de búsquedas; esos contratos permanecen en `CAP-SECRET-002` u otras capabilities especializadas.
+
+La reciprocidad se comprobó en ambas direcciones: `CAP-ACTION-002` y `CAP-PRIVACY-001` declaran a `CAP-ACTION-004` como dependiente; `CAP-ACTION-004` declara a ambas como prerequisites `SUPPORTED`; y sus dependientes `CAP-SECRET-002` y `CAP-TIME-002` declaran la arista inversa. El análisis topológico conserva como único ciclo el SCC de tiempo/pila ya documentado: las aristas nuevas avanzan desde bases soportadas hacia la abstracción y después hacia especializaciones, por lo que **no introducen un ciclo nuevo**.
+
+El riesgo es **CRITICAL** y la prioridad **P0/W1** porque duplicar esta infraestructura permitiría divergencias de autorización, expiración, CAS o resolución. Las superficies aquí enumeradas son futuras y no autorizan implementación: `domain/models.py`, `engine/commands.py`, `engine/actions.py`, `engine/game.py`, `application.py`, `service.py`, `persistence/` y `storage/`. El *corpus impact basis* es arquitectónico: impacto directo de **0 entradas** e impacto indirecto potencial sobre las 431 entradas (386 identidades y 45 variantes), sin promoción ni suma automática; el mulligan es una regla universal y `CAP-SECRET-002` mantiene el desglose de cartas especializado.
 
 ## Contratos parciales: reutilización exacta y tramo ausente
 

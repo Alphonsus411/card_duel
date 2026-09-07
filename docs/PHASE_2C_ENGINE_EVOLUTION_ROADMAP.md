@@ -39,15 +39,16 @@ Por tanto, ninguna puntuación de frecuencia puede adelantar un nodo `WAIT-PRERE
 
 ## capabilities
 
-### Valoración de las 62 capabilities
+### Valoración de las 64 capabilities
 
 Las columnas `Central.`, `Desbloq.`, `Riesgo`, `Claridad` y `Migración` corresponden, en ese orden, a las cinco dimensiones anteriores. La explicación concreta de cada valoración queda trazable en la última columna: estado, prerequisites y dependientes declarados.
 
 | Capability | Estado | Gate | Central. | Desbloq. | Riesgo | Claridad | Migración | Explicación verificable |
 |---|---|---|---|---|---|---|---|---|
 | `CAP-ACTION-001` — Modelo tipado de acciones y comandos | `SUPPORTED` | `CLOSED` | HIGH | MEDIUM | MEDIUM | HIGH | LOW | Prerequisites: ninguno; dependientes: CAP-ACTION-002, CAP-TIME-003, CAP-EFFECT-001. |
-| `CAP-ACTION-002` — Enumeración y revalidación de acciones legales | `SUPPORTED` | `CLOSED` | MEDIUM | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-ACTION-001; dependientes: CAP-TARGET-001, CAP-SECRET-002. |
+| `CAP-ACTION-002` — Enumeración y revalidación de acciones legales | `SUPPORTED` | `CLOSED` | MEDIUM | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-ACTION-001; dependientes: CAP-TARGET-001, CAP-ACTION-004. |
 | `CAP-ACTION-003` — Transacción, rollback y determinismo | `SUPPORTED` | `CLOSED` | HIGH | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-ACTION-001; dependientes: CAP-COST-002, CAP-ZONE-003, CAP-EFFECT-003. |
+| `CAP-ACTION-004` — Decisión pendiente autorizada | `MISSING` | `READY` | HIGH | HIGH | HIGH | HIGH | HIGH | Prerequisites `SUPPORTED`: CAP-ACTION-002, CAP-PRIVACY-001; dependientes: CAP-SECRET-002, CAP-TIME-002; prioridad P0, riesgo CRITICAL, wave W1. |
 | `CAP-COST-001` — Modelo declarativo de costes | `SUPPORTED` | `CLOSED` | HIGH | MEDIUM | MEDIUM | HIGH | LOW | Prerequisites: CAP-ACTION-001; dependientes: CAP-COST-002, CAP-COST-003, CAP-COST-004. |
 | `CAP-COST-002` — Preflight, determinación y pago atómico | `SUPPORTED` | `CLOSED` | MEDIUM | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-COST-001, CAP-ACTION-003; dependientes: CAP-COST-003, CAP-STACK-001. |
 | `CAP-COST-003` — Costes adicionales y compuestos | `SUPPORTED` | `CLOSED` | MEDIUM | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-COST-001, CAP-COST-002; dependientes: CAP-EFFECT-003. |
@@ -60,16 +61,16 @@ Las columnas `Central.`, `Desbloq.`, `Riesgo`, `Claridad` y `Migración` corresp
 | `CAP-ZONE-004` — Reemplazos de transición | `PARTIAL` | `WAIT-PREREQ` | MEDIUM | MEDIUM | HIGH | HIGH | MEDIUM | Prerequisites: CAP-ZONE-003, CAP-SECRET-002; dependientes: CAP-ZONE-005, CAP-TRANSMUTE-001. |
 | `CAP-ZONE-005` — Triggers generales de salida | `MISSING` | `WAIT-PREREQ` | MEDIUM | MEDIUM | HIGH | HIGH | MEDIUM | Prerequisites: CAP-ZONE-003, CAP-STACK-001; dependientes: CAP-EFFECT-003. |
 | `CAP-ZONE-006` — Last-known information | `MISSING` | `WAIT-PREREQ` | MEDIUM | MEDIUM | HIGH | HIGH | MEDIUM | Prerequisites: CAP-ZONE-003, CAP-PRIVACY-001; dependientes: CAP-ZONE-005, CAP-EFFECT-003. |
-| `CAP-PRIVACY-001` — Proyección pública por audiencia | `SUPPORTED` | `CLOSED` | MEDIUM | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-ZONE-002; dependientes: CAP-SECRET-001, CAP-SEARCH-001. |
+| `CAP-PRIVACY-001` — Proyección pública por audiencia | `SUPPORTED` | `CLOSED` | MEDIUM | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-ZONE-002; dependientes: CAP-SECRET-001, CAP-SEARCH-001, CAP-ACTION-004. |
 | `CAP-SECRET-001` — Mirar sin revelar | `MISSING` | `READY` | MEDIUM | MEDIUM | HIGH | HIGH | MEDIUM | Prerequisites: CAP-PRIVACY-001, CAP-ZONE-002; dependientes: CAP-SECRET-002, CAP-SEARCH-002. |
-| `CAP-SECRET-002` — Elección secreta y compuesta | `PARTIAL` | `READY` | HIGH | HIGH | HIGH | HIGH | HIGH | Prerequisites: CAP-ACTION-002, CAP-PRIVACY-001; dependientes: CAP-SEARCH-002, CAP-ZONE-004, CAP-EFFECT-003. |
+| `CAP-SECRET-002` — Elección secreta y compuesta | `PARTIAL` | `READY` | HIGH | HIGH | HIGH | HIGH | HIGH | Prerequisites: CAP-ACTION-004, CAP-COST-004, CAP-SECRET-001; dependientes: CAP-SEARCH-002, CAP-ZONE-004, CAP-EFFECT-003. |
 | `CAP-TARGET-001` — Targets tipados y congelados | `SUPPORTED` | `CLOSED` | MEDIUM | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-ACTION-002; dependientes: CAP-TARGET-002, CAP-IMMUNITY-001. |
 | `CAP-TARGET-002` — Selectores multidimensionales | `PARTIAL` | `WAIT-PREREQ` | MEDIUM | MEDIUM | HIGH | HIGH | HIGH | Prerequisites: CAP-TARGET-001, CAP-TAXONOMY-001; dependientes: CAP-SEARCH-001, CAP-EFFECT-002. |
 | `CAP-TAXONOMY-001` — Dimensiones canónicas separadas | `PARTIAL` | `READY` | MEDIUM | HIGH | HIGH | HIGH | HIGH | Prerequisites: ninguno; dependientes: CAP-TARGET-002, CAP-KEYWORD-001. |
 | `CAP-TAXONOMY-002` — Leyenda y tipos impresos múltiples | `BLOCKED` | `NORM-BLOCKED` | MEDIUM | MEDIUM | HIGH | LOW | MEDIUM | Prerequisites: CAP-TAXONOMY-001; dependientes: CAP-TARGET-002. |
 | `CAP-TAXONOMY-003` — Vocabulario, aliases y procedencia de subtipos | `PARTIAL` | `WAIT-PREREQ` | MEDIUM | MEDIUM | MEDIUM | HIGH | LOW | Prerequisites: CAP-TAXONOMY-001; dependientes: CAP-TARGET-002. |
 | `CAP-TIME-001` — Preparación inicial | `PARTIAL` | `NORM-BLOCKED` | MEDIUM | MEDIUM | MEDIUM | LOW | LOW | Prerequisites: CAP-ZONE-002, CAP-PRIVACY-001; dependientes: CAP-TIME-002. |
-| `CAP-TIME-002` — Mulligan decreciente | `PARTIAL` | `WAIT-PREREQ` | MEDIUM | MEDIUM | HIGH | HIGH | MEDIUM | Prerequisites: CAP-TIME-001, CAP-SECRET-002; dependientes: CAP-TIME-003. |
+| `CAP-TIME-002` — Mulligan decreciente | `PARTIAL` | `WAIT-PREREQ` | MEDIUM | MEDIUM | HIGH | HIGH | MEDIUM | Prerequisites: CAP-ACTION-004, CAP-TIME-005; dependientes: CAP-TIME-003. |
 | `CAP-TIME-003` — Secuencia y transición de fases | `PARTIAL` | `NORM-BLOCKED` | MEDIUM | MEDIUM | HIGH | LOW | HIGH | Prerequisites: CAP-ACTION-002, CAP-STACK-001; dependientes: CAP-TIME-004, CAP-COMBAT-001. |
 | `CAP-TIME-004` — Prioridad y ventanas de respuesta | `PARTIAL` | `NORM-BLOCKED` | MEDIUM | HIGH | HIGH | LOW | HIGH | Prerequisites: CAP-TIME-003, CAP-ACTION-002; dependientes: CAP-STACK-001, CAP-COMBAT-001. |
 | `CAP-STACK-001` — Pila LIFO | `SUPPORTED` | `CLOSED` | MEDIUM | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-ACTION-003, CAP-TIME-004; dependientes: CAP-EFFECT-001, CAP-TRIGGER-001. |
@@ -191,13 +192,20 @@ Un quick win deja intactos schema version, comandos, eventos, snapshots y respue
 Requieren versión explícita del schema/evento/API afectado, decoder de legado o migración, golden replays de antes y después y nota de compatibilidad:
 
 - `CAP-ZONE-003` y `CAP-ZONE-006`: identidad y evento uniforme de transición, incluida last-known information;
-- `CAP-SECRET-002`: elecciones persistibles y proyección por audiencia;
+- `CAP-ACTION-004`: ciclo de vida mínimo de decisiones pendientes, autorización, CAS y replay;
+- `CAP-SECRET-002`: especializaciones de cartas, cardinalidad, composición, orden y revelación;
 - `CAP-TAXONOMY-001`, `CAP-TARGET-002`, `CAP-KEYWORD-001` y `CAP-IMMUNITY-001`: discriminadores tipados y selectores canónicos;
 - `CAP-TIME-003`, `CAP-TIME-004` y `CAP-TRIGGER-001`: orden observable de fases, prioridad y triggers;
 - `CAP-EFFECT-001`–`003`: AST/composición, captura de valores, atomicidad y visibilidad por paso;
 - `CAP-CATALOG-001`: publicación final de definiciones y procedencia, únicamente tras cerrar sus gates.
 
 El versionado no permite saltarse prerequisites: sólo hace compatible una modificación ya autorizada. Cada cambio debe definir versión escrita, lectura de legado, comportamiento ante versión desconocida, estabilidad de IDs y orden de eventos, y equivalencia de replay/persistencia/API.
+
+### Contrato de planificación de `CAP-ACTION-004`
+
+El alcance se congela en `decision_id`, elector, audiencia, conjunto de opciones opacas, estado pendiente/resuelto, autorización, expiración o invalidación por versión, resolución exactamente una vez, persistencia, snapshot, replay y CAS. Quedan fuera candidatos de cartas, cardinalidad, ordenación, selección compuesta, *simultaneous reveal* y semántica de búsquedas, que continúan en `CAP-SECRET-002` u otras capabilities.
+
+Se asigna riesgo **CRITICAL**, prioridad **P0** y wave **W1**. Sus superficies futuras son modelos, comandos, enumeración/ejecución, aplicación, servicio, persistencia/storage, snapshot y replay; esta reconciliación no crea nada bajo `src/`. Su *corpus impact basis* es 0 entradas directas y 431 entradas potencialmente afectadas de forma indirecta (386 identidades y 45 variantes), sin promoción automática. El análisis de reciprocidad confirma las aristas `CAP-ACTION-002/CAP-PRIVACY-001 → CAP-ACTION-004 → CAP-SECRET-002/CAP-TIME-002` y ningún ciclo nuevo.
 
 ## waves definitivas
 
@@ -239,7 +247,7 @@ El versionado no permite saltarse prerequisites: sólo hace compatible una modif
   determina, congela y paga atómicamente antes de activarla/apilarla, para luego
   resolverla y producir efectos derivados.
 - **Capabilities:** `CAP-ACTION-001/002/003`, `CAP-COST-001`–`006`, el tramo
-  basal de `CAP-EFFECT-001` y la frontera de entrada de `CAP-STACK-001`.
+  basal de `CAP-EFFECT-001` y la frontera de entrada de `CAP-STACK-001`, e introduce `CAP-ACTION-004` como abstracción mínima universal.
 - **Dependencias de entrada:** contratos W0 cerrados y RNG/rollback
   deterministas.
 - **Exclusiones:** nuevas ventanas de prioridad, elecciones ocultas generales,
@@ -269,7 +277,7 @@ El versionado no permite saltarse prerequisites: sólo hace compatible una modif
 - **Capabilities:** `CAP-TIME-001`–`004`, `CAP-STACK-001` y
   `CAP-TRIGGER-001` en el SCC validado; sólo los tramos liberados por
   `CAP-NORM-001`.
-- **Dependencias de entrada:** W1 cerrada; elección persistible/autorizada de W3
+- **Dependencias de entrada:** W1 cerrada; `CAP-ACTION-004` persistible/autorizada de W1
   disponible para el mulligan o, por la arista real, aplazamiento de
   `CAP-TIME-002`; resoluciones normativas de primera prioridad, ventanas y pases.
 - **Exclusiones:** inventar timing para textos ambiguos, reescribir la pila desde
@@ -299,10 +307,9 @@ El versionado no permite saltarse prerequisites: sólo hace compatible una modif
 - **Objetivo:** hacer que cada transición cruce una puerta autoritativa y lleve
   causa, audiencia y LKI sin filtrar información.
 - **Capabilities:** `CAP-ZONE-001`–`006`, `CAP-PRIVACY-001`,
-  `CAP-SECRET-001/002` y las bases de `CAP-SEARCH-001/003`.
+  `CAP-SECRET-001/002` (sobre `CAP-ACTION-004`) y las bases de `CAP-SEARCH-001/003`.
 - **Dependencias de entrada:** W0–W1; acciones autorizadas; stack/trigger de W2
-  para `CAP-ZONE-005`; cuando W2 necesite secretos para mulligan, ambos tramos
-  forman un paquete de integración, no una excepción al grafo.
+  para `CAP-ZONE-005`; el mulligan consume directamente `CAP-ACTION-004`, no la especialización secreta; W3 conserva candidatos de cartas, cardinalidad, ordenación, selección compuesta, *simultaneous reveal* y búsquedas.
 - **Exclusiones:** filtros taxonómicos completos, reglas particulares por carta,
   efectos compuestos que sólo simulen movimientos y revelar información como
   atajo de implementación.
@@ -679,14 +686,17 @@ authorization: BLOCKED
 capability_status: PARTIAL
 gate: WAIT-PREREQ
 blockers:
-  - CAP-TIME-001
-  - CAP-SECRET-002
+  - CAP-ACTION-004
+  - CAP-TIME-005
 ```
 
 La lista `blockers` es la lista exacta de prerequisites no cerrados declarada
-para `CAP-TIME-002`: `CAP-TIME-001` (preparación inicial, `PARTIAL` y
-`NORM-BLOCKED`) y `CAP-SECRET-002` (elección secreta y compuesta, `PARTIAL` y
-`READY`). Por ello, el resultado vigente de readiness es **`N-PHASE-02
+para `CAP-TIME-002`: `CAP-ACTION-004` (decisión pendiente autorizada, `MISSING`
+y `READY`) y `CAP-TIME-005` (lifecycle autoritativo de setup, `MISSING` y
+`WAIT-PREREQ`). La dependencia directa de `CAP-SECRET-002` queda eliminada:
+el mulligan sólo necesita opciones opacas y lifecycle universal, no candidatos
+de cartas, cardinalidad, ordenación, selección compuesta, *simultaneous reveal*
+ni semántica de búsquedas. Por ello, el resultado vigente de readiness es **`N-PHASE-02
 IMPLEMENTATION BLOCKED`**. Mientras `authorization` sea `BLOCKED`, **no existe
 autorización para modificar el runtime**, incluidos dominio, motor,
 persistencia, aplicación, servicio o tests de implementación del mulligan. La
@@ -696,13 +706,8 @@ resultado.
 Los siguientes slices son exclusivamente de planificación y deben ejecutarse
 en este orden antes de volver a evaluar `N-PHASE-02`:
 
-1. **Reconciliación/segmentación de preparación inicial (`CAP-TIME-001`):**
-   separar qué parte del setup vigente está soportada, qué parte necesita
-   reconciliación normativa y cuál es el contrato mínimo que puede cerrarse sin
-   anticipar el mulligan.
-2. **Diseño del contrato universal de decisión pendiente (`CAP-SECRET-002`):**
-   especificar una decisión persistible, revalidable y proyectable por
-   audiencia, sin ligarla a `N-PHASE-02` ni autorizar todavía su implementación.
+1. **Diseño de la abstracción mínima (`CAP-ACTION-004`):** cerrar su contrato universal persistible, revalidable y proyectable por audiencia sin incorporar las especializaciones de `CAP-SECRET-002`.
+2. **Lifecycle autoritativo de setup (`CAP-TIME-005`):** demostrar creación, seguimiento y cierre de las decisiones obligatorias dentro de `SETUP`, sin conceder prioridad inicial ni anticipar `CAP-TIME-002`.
 
 El alcance que sigue es una especificación condicionada para una futura
 reevaluación. Sólo podrá convertirse en trabajo de runtime mediante una nueva

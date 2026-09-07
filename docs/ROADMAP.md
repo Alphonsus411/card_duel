@@ -12,9 +12,14 @@ Para **Phase 2C**, el
 canónica y la [`roadmap de evolución del motor`](PHASE_2C_ENGINE_EVOLUTION_ROADMAP.md)
 es planificación derivada, apoyada por su
 [`matriz de capabilities`](ENGINE_CAPABILITY_MATRIX.csv) y su
-[`mapa de dependencias`](ENGINE_CAPABILITY_DEPENDENCIES.md). Estos enlaces no
-representan implementación ni release: **Phase 2C: `IN PROGRESS`; Phase 3:
-`PENDING`**.
+[`mapa de dependencias`](ENGINE_CAPABILITY_DEPENDENCIES.md). El
+[`resultado de readiness del primer slice`](audits/PHASE_2C_FIRST_SLICE_READINESS_AUDIT_2026-09-07.md)
+y su
+[`trazabilidad`](audits/PHASE_2C_FIRST_SLICE_TRACEABILITY_2026-09-07.md)
+registran el veredicto **`N-PHASE-02 IMPLEMENTATION BLOCKED`**: enlazarlo no
+presenta `N-PHASE-02` como autorizado y no permite modificar el runtime. Estos
+enlaces no representan implementación ni release: versión `0.20.1`, **Phase
+2C: `IN PROGRESS`; Phase 3: `PENDING`**.
 
 ## Entregas completadas
 

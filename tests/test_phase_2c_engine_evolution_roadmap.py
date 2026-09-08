@@ -321,6 +321,65 @@ def test_pending_decision_capability_has_minimal_boundary_and_reciprocal_edges()
         assert "service.py" in document
 
 
+def test_pending_decision_relationship_classification_stays_explicit_and_non_redundant() -> None:
+    dependencies = DEPENDENCIES.read_text(encoding="utf-8")
+    section = dependencies.split("### Tabla específica de relaciones de `CAP-ACTION-004`", 1)[1].split(
+        "El riesgo es", 1
+    )[0]
+    rows = re.findall(
+        r"^\| `(?P<category>prerequisite|dependent|specialization|shared infrastructure|unrelated)` "
+        r"\| (?P<subject>.*?) \| (?P<evidence>.*?) \|$",
+        section,
+        flags=re.MULTILINE,
+    )
+    assert {category for category, _, _ in rows} == {
+        "prerequisite",
+        "dependent",
+        "specialization",
+        "shared infrastructure",
+        "unrelated",
+    }
+
+    classified = "\n".join(f"{category}: {subject}" for category, subject, _ in rows)
+    for capability_id in ("CAP-ACTION-002", "CAP-PRIVACY-001"):
+        assert f"prerequisite: `{capability_id}`" in classified
+    for capability_id in ("CAP-SECRET-002", "CAP-TIME-002"):
+        assert f"dependent: `{capability_id}`" in classified
+    for capability_id in ("CAP-ACTION-001", "CAP-ACTION-003", "CAP-SECRET-001"):
+        assert f"shared infrastructure: `{capability_id}`" in classified
+
+    specialization_rows = "\n".join(
+        f"{subject} {evidence}"
+        for category, subject, evidence in rows
+        if category == "specialization"
+    )
+    for required in (
+        "CAP-SEARCH-001",
+        "CAP-SEARCH-002",
+        "CAP-SEARCH-003",
+        "CAP-SECRET-002",
+        "CAP-ZONE-004",
+        "CAP-TRIGGER-001",
+    ):
+        assert required in specialization_rows
+
+    by_id = {row["capability_id"]: row for row in _matrix_rows()}
+    decision_edges = set(by_id["CAP-ACTION-004"]["prerequisites"].split(";")) | set(
+        by_id["CAP-ACTION-004"]["dependents"].split(";")
+    )
+    assert decision_edges == {
+        "CAP-ACTION-002",
+        "CAP-PRIVACY-001",
+        "CAP-SECRET-002",
+        "CAP-TIME-002",
+    }
+    assert set(by_id["CAP-TIME-002"]["prerequisites"].split(";")) == {
+        "CAP-ACTION-004",
+        "CAP-TIME-005",
+    }
+    assert "prerequisites **independientes**" in section
+
+
 def test_documented_totals_defaults_and_generic_capability_boundary() -> None:
     with SOURCE_INVENTORY.open(encoding="utf-8", newline="") as stream:
         inventory = list(csv.DictReader(stream, strict=True))

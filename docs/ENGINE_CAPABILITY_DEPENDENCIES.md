@@ -172,7 +172,7 @@ flowchart LR
 
 `CAP-ACTION-004` se limita a la infraestructura universal de una decisión pendiente autorizada: `decision_id`, elector, audiencia, conjunto de opciones opacas, estado pendiente/resuelto, autorización, expiración o invalidación por versión, resolución exactamente una vez, persistencia, snapshot, replay y CAS. **Excluye expresamente** candidatos de cartas, cardinalidad, ordenación, selección compuesta, *simultaneous reveal* y semántica de búsquedas; esos contratos permanecen en `CAP-SECRET-002` u otras capabilities especializadas.
 
-### Clasificación específica de relaciones
+### Tabla específica de relaciones de `CAP-ACTION-004`
 
 La categoría indica la relación arquitectónica con `CAP-ACTION-004`, no una nueva
 arista por semejanza de implementación. En particular, compartir rollback,
@@ -203,6 +203,13 @@ a `CAP-TIME-002`, que lo declara como prerequisite independiente de
 conserva un único componente no trivial permitido:
 `CAP-TIME-003 ↔ CAP-TIME-004 ↔ CAP-STACK-001`. Las relaciones clasificadas no
 introducen ningún ciclo ni ninguna arista adicional.
+
+Esta comprobación queda protegida por una prueba documental que exige las cinco
+categorías, las cuatro aristas directas exactas, la independencia de
+`CAP-TIME-005` y la ausencia de aristas redundantes desde la infraestructura
+compartida o las especializaciones. La misma prueba de grafo continúa validando
+la reciprocidad completa de la matriz y el SCC permitido, sin cambiar el
+veredicto **`N-PHASE-02 IMPLEMENTATION BLOCKED`**.
 
 El riesgo es **CRITICAL** y la prioridad **P0/W1** porque duplicar esta infraestructura permitiría divergencias de autorización, expiración, CAS o resolución. Las superficies aquí enumeradas son futuras y no autorizan implementación: `domain/models.py`, `engine/commands.py`, `engine/actions.py`, `engine/game.py`, `application.py`, `service.py`, `persistence/` y `storage/`. El *corpus impact basis* es arquitectónico: impacto directo de **0 entradas** e impacto indirecto potencial sobre las 431 entradas (386 identidades y 45 variantes), sin promoción ni suma automática; el mulligan es una regla universal y `CAP-SECRET-002` mantiene el desglose de cartas especializado.
 

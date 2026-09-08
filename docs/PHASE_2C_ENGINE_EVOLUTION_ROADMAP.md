@@ -247,13 +247,17 @@ una futura estrategia de compactación dejase de garantizar una posición
 canónica para el origen, eso exigiría una nueva versión contractual y una
 migración explícita, no completar silenciosamente el registro con el duplicado.
 
-Son **derivados** y se recalculan desde el registro autoritativo y el estado
-autoritativo: si la decisión sigue siendo válida; las acciones legales
-proyectadas para el elector; las vistas redactadas para cada audiencia; la
-representación de `pending`/`closed` en API; y cualquier índice de decisiones
-abiertas. Son **transitorios** y nunca se persisten como verdad de partida:
-tokens de idempotencia de transporte, request/trace IDs, locks y leases, cachés,
-reintentos, conexiones/sesiones y timestamps o deadlines de wall-clock.
+Los datos no autoritativos se clasifican de forma exhaustiva para impedir que
+una implementación futura los convierta accidentalmente en otra fuente de
+verdad:
+
+| Clase | Datos | Regla de reconstrucción o descarte |
+|---|---|---|
+| Derivada | Validez actual de la decisión; acciones legales proyectadas para el elector; vistas redactadas por `audience`; representación API de `pending`/`closed`; índices de decisiones abiertas. | **DEBE** recalcularse desde el registro autoritativo y el estado autoritativo de la partida. Puede almacenarse sólo como caché descartable, nunca como autoridad ni como requisito para replay. |
+| Transitoria | Tokens de idempotencia de transporte; request/trace IDs; locks y leases; cachés; reintentos; conexiones/sesiones; timestamps y deadlines de wall-clock. | **NO DEBE** persistirse como verdad de partida. Puede perderse o regenerarse sin cambiar la decisión, su cierre ni el replay. |
+
+Por tanto, snapshot y replay serializan o reconstruyen la representación
+autoritativa; no elevan datos derivados o transitorios a campos del dominio.
 
 #### Autoridad, lifecycle y cierre atómico
 
@@ -273,6 +277,19 @@ autorizados, versión desconocida o distinta, partida terminada, decisión ya
 cerrada y CAS perdido. Un reintento posterior al éxito puede recibir el
 resultado terminal ya registrado, pero no vuelve a cerrar ni produce un segundo
 efecto: la mutación ocurre *exactly once*.
+
+La puerta de cierre se evalúa íntegramente en la misma transacción y sin
+fallback. Su resultado contractual mínimo es:
+
+| Precondición autoritativa | Resultado si no se cumple |
+|---|---|
+| `decision_id` identifica un registro conocido y `pending`. | Rechazo sin mutación; un registro ya `closed` no se reabre ni se vuelve a cerrar. |
+| `origin` continúa siendo válido en el estado enlazado. | Rechazo sin mutación. |
+| El solicitante coincide con `authorized_elector`. | Rechazo sin mutación. |
+| El token pertenece a `authorized_opaque_options`. | Rechazo sin mutación. |
+| `state_version` es conocida y coincide con la versión autoritativa esperada. | Rechazo sin fallback y sin mutación. |
+| La partida no ha terminado. | Rechazo sin mutación. |
+| El CAS conserva todas las precondiciones hasta la escritura. | El perdedor se rechaza sin mutación; sólo el ganador escribe atómicamente `closed` y `selected_option`. |
 
 El wall-clock **NUNCA DEBE** cambiar la semántica de partida. Una hora, timeout,
 deadline, desconexión o expiración de lease puede afectar transporte u

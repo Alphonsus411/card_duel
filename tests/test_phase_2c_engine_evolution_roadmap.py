@@ -380,6 +380,56 @@ def test_pending_decision_relationship_classification_stays_explicit_and_non_red
     assert "prerequisites **independientes**" in section
 
 
+def test_pending_decision_contract_freezes_schema_lifecycle_and_invariant_ids() -> None:
+    content = ROADMAP.read_text(encoding="utf-8")
+    contract = content.split("### Contrato de planificación de `CAP-ACTION-004`", 1)[1].split(
+        "## waves definitivas", 1
+    )[0]
+
+    assert "Estado de la capability: `MISSING`" in contract
+    assert "Estado exclusivo de este contrato:\n`READY`" in contract
+
+    authoritative_table = contract.split("| Campo autoritativo |", 1)[1].split(
+        "Los datos no autoritativos", 1
+    )[0]
+    for field in (
+        "decision_id",
+        "semantic_family",
+        "authorized_elector",
+        "audience",
+        "authorized_opaque_options",
+        "state_version",
+        "origin",
+        "status",
+        "selected_option",
+    ):
+        assert f"`{field}`" in authoritative_table
+    assert "secuencia de creación no se almacena como campo independiente" in authoritative_table
+
+    assert "| Derivada |" in contract
+    assert "| Transitoria |" in contract
+    assert "`pending → closed`" in contract
+    assert "No existen estados `expired` ni\n`cancelled`" in contract
+    assert "rechazo sin mutación" in contract
+    assert "wall-clock **NUNCA DEBE** cambiar la semántica de partida" in contract
+    assert "exactamente un `authorized_elector`" in contract
+
+    invariant_ids = re.findall(r"`(CAP-ACTION-004-INV-\d{2})`", contract)
+    assert invariant_ids == [
+        f"CAP-ACTION-004-INV-{number:02d}" for number in range(1, 15)
+    ]
+
+    for exclusion in (
+        "*card candidates*",
+        "cardinalidad compleja",
+        "ordenar candidatos",
+        "selección compuesta",
+        "*simultaneous reveal*",
+        "*search semantics*",
+    ):
+        assert exclusion in contract
+
+
 def test_documented_totals_defaults_and_generic_capability_boundary() -> None:
     with SOURCE_INVENTORY.open(encoding="utf-8", newline="") as stream:
         inventory = list(csv.DictReader(stream, strict=True))

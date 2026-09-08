@@ -252,6 +252,121 @@ simultánea. El primitive coordina **quién puede elegir cuál alternativa opaca
 cuándo queda consumida**; cada capability interpreta el payload y valida su
 semántica.
 
+## Fase 5 — Matriz W0 de impacto y contrato de evolución
+
+### Vocabulario cerrado y alcance
+
+Esta matriz es el gate contractual **W0** previo a implementar el discriminador
+de decisión. Cada superficie usa exactamente una de estas categorías
+autorizadas: **cambio aditivo interno compatible**, **cambio aditivo público
+compatible**, **nueva versión de schema/replay**, **migración explícita**,
+**breaking deliberado** o **sin cambio**. Una implementación posterior deberá
+justificar cualquier desviación mediante una nueva decisión contractual; no
+podrá reclasificarla implícitamente en código.
+
+| Superficie | Categoría W0 | Contrato exigido |
+| --- | --- | --- |
+| `GameState` | cambio aditivo interno compatible | Añadir `pending_decision` como estado autoritativo opcional, inicialmente `None`, sin eliminar ni componer los pending especializados. Su discriminador y payload pertenecen al nuevo formato persistido. |
+| Comandos | cambio aditivo público compatible | Añadir comandos tipados de resolución que porten `decision_id`, opción opaca y `expected_version`; los comandos existentes conservan significado y validación. |
+| Eventos | cambio aditivo público compatible | Añadir eventos explícitos de creación, opción elegida y resolución, con proyección por audiencia; no alterar el significado de eventos históricos. |
+| Snapshot | nueva versión de schema/replay | El primer runtime que serialice el discriminador de decisión deberá emitir una nueva versión de snapshot. Un decoder de snapshot legacy aplica únicamente `pending_decision = None`. |
+| Replay | nueva versión de schema/replay | El primer runtime que registre el discriminador deberá emitir una nueva versión de replay que conserve el ciclo de vida completo y sus observables. |
+| Codec | cambio aditivo interno compatible | Registrar los tipos nuevos bajo el discriminador de la versión nueva y hacer dispatch cerrado; ningún decoder puede adivinar tipos o payloads. |
+| SQLite / stores | migración explícita | Evolucionar metadatos, blobs o columnas mediante migración transaccional identificada; mantener CAS y no reescribir silenciosamente artefactos históricos. |
+| `application` | cambio aditivo público compatible | Aceptar la resolución autenticada con `expected_version`, traducir sólo tokens opacos y devolver un error público uniforme. |
+| `service` | cambio aditivo público compatible | Exponer la operación versionada, aplicar exactamente un CAS y no filtrar candidatos ni payload interno en resultados o errores. |
+| DTO | cambio aditivo público compatible | Añadir una vista de decisión proyectada y campos opcionales compatibles; nunca transportar IDs ocultos, candidatos ni el comando interno. |
+| Proyección privada | cambio aditivo público compatible | Incorporar proyectores separados para elector, adversario, observador público y motor interno; no reutilizar el DTO interno como respuesta externa. |
+| CAS | sin cambio | Se conserva el contrato vigente de `expected_version`; esta fila fija de forma exacta su resultado concurrente, no introduce otra primitive de concurrencia. |
+| Artefactos históricos | sin cambio | Permanecen inmutables y se leen sólo con su decoder declarado; no se actualizan, reinterpretan ni regeneran para aparentar el nuevo ciclo de decisión. |
+
+No se prevé **breaking deliberado** en este slice. La categoría permanece en el
+vocabulario para que una ruptura futura tenga que declararse expresamente, con
+alcance y transición propios, en vez de ocultarse como cambio aditivo.
+
+### Independencia inicial y condición de composición
+
+`PendingSearch` y `PendingMoveReplacement` **permanecen inicialmente
+independientes**. Sólo se les exigen las invariantes universales de identidad de
+decisión, elector autorizado, audiencia, opción opaca, versión de creación,
+transición pendiente→resuelta exactamente una vez, persistencia, replay y CAS.
+No se migrarán a una representación común ni se compondrán entre sí hasta que
+pruebas de equivalencia demuestren, para cada mecanismo, snapshots restaurados
+equivalentes, replay con los mismos eventos/observables/digest y un beneficio
+real medible frente al coste y riesgo de la migración. La semejanza estructural
+o la reducción de tipos no constituyen ese beneficio.
+
+### Decodificación, versiones y rechazo cerrado
+
+Un decoder legacy que lea un formato que no contiene el campo de decisión
+deberá producir exactamente **`pending_decision = None`**. Nunca deberá
+sintetizar, reabrir ni inferir una decisión a partir de comandos, eventos,
+pending especializados u otro estado histórico.
+
+La introducción en runtime del discriminador de decisión exige simultáneamente
+una **nueva versión de snapshot y una nueva versión de replay**. Cada encoder
+declara su versión y cada decoder acepta sólo su conjunto cerrado de versiones.
+Una versión desconocida se rechaza explícitamente, antes de mutar estado, y
+**sin fallback**, downgrade, heurística ni intento de decodificarla como la
+versión más cercana.
+
+El replay de la versión nueva conserva de forma explícita y determinista:
+
+1. la creación de la decisión y su identidad/origen;
+2. la opción opaca elegida;
+3. la resolución y su resultado;
+4. los eventos emitidos en cada transición;
+5. los observables exactos para cada audiencia; y
+6. el digest final verificable.
+
+Reproducir un artefacto anterior usa exclusivamente su semántica y decoder
+históricos: el runtime nuevo no inserta decisiones, eventos u observables
+retroactivos ni reinterpreta el historial anterior.
+
+### CAS exactamente una vez
+
+El contrato se define una sola vez y sin excepciones por capa: si dos clientes
+presentan resoluciones sobre la misma `expected_version`, ambos compiten por el
+mismo CAS. **Uno y sólo uno** puede confirmar la mutación. El otro recibe el
+error público de **stale-version** y su intento no modifica estado, eventos,
+`command_history` ni versión. La comprobación y la escritura forman una única
+operación atómica del store; application y service no simulan éxito, no
+reintentan la decisión con una versión nueva y no anexan historial antes del
+CAS confirmado.
+
+### Tokens, errores y proyección por audiencia
+
+Queda prohibido construir tokens directa o reversiblemente a partir de IDs de
+cartas ocultas, incluso mediante prefijos, índices estables, codificación o hash
+sin secreto. Los tokens son opacos, impredecibles, estables sólo durante el
+contexto mínimo necesario (`match`, decisión, elector/audiencia y versión) y no
+correlacionables entre audiencias. El servidor mantiene el mapeo autoritativo y
+valida contexto, autorización y vigencia antes de traducir un token.
+
+Los fallos públicos de resolución se uniforman para impedir enumeración: opción
+inexistente, token malformado, opción ajena/no autorizada o decisión no visible
+producen la misma clase, código y forma pública. La respuesta no incluye
+candidatos, cardinalidad inferible, payload interno, índices, IDs ocultos ni
+diferencias de mensaje, temporización intencionada o metadatos reveladores. El
+error `stale-version` puede conservar su clase propia porque comunica la
+precondición CAS observada, nunca la existencia o autorización de una opción.
+
+La redacción se implementará como cuatro proyecciones separadas, con tests de
+no interferencia:
+
+| Audiencia | Información máxima autorizada |
+| --- | --- |
+| Elector | Identidad pública de la decisión, lifecycle y sus tokens opacos vigentes; ningún ID oculto embebido en ellos. |
+| Adversario | Sólo existencia/estado y resultado que la regla haga observables; nunca alternativas privadas ni elección anticipada. |
+| Observador público | Únicamente el subconjunto público estable, sin asumir los privilegios de ningún participante. |
+| Motor interno | Identidad, opciones y payload autoritativos completos necesarios para validar y resolver; esta proyección no cruza la frontera pública. |
+
+Logs, trazas, métricas y excepciones se sanean antes de salir de la frontera
+interna. El replay público pasa por una redacción propia por audiencia: no es el
+replay interno serializado con campos opcionales borrados y nunca contiene
+candidatos, tokens de otra audiencia, IDs ocultos, payload de comandos internos
+ni datos que permitan correlacionar decisiones privadas.
+
 ## Veredicto
 
 Hay suficiente conducta común observada para justificar la abstracción mínima

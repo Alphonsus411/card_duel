@@ -33,7 +33,7 @@
 | `service.py` | Carga, ejecuta y guarda con `expected_version`. | Mantener una sola operación de guardado CAS y errores públicos uniformes. | **PROPUESTA** |
 | `persistence/codec.py` | Serializa dataclasses/enums mediante discriminadores cerrados. | Registrar los tipos nuevos y rechazar discriminadores o versiones desconocidos. | **PROPUESTA** |
 | `persistence/snapshot.py` | Escribe schema `2`, checksum y `state_digest`. | Elevar schema al primer número disponible y decodificar schema `2` con ausencia explícita. | **PROPUESTA** |
-| `persistence/replay.py` | Escribe schema `2` y reconstruye desde setup, mulligans y comandos. | Elevar schema junto con snapshot y conservar lifecycle/observables deterministas. | **PROPUESTA** |
+| `persistence/replay.py` | Escribe schema `2` y reconstruye desde setup, mulligans y comandos. | Mantener v2 en W0.1 y elevar a v3 en W1 junto al primer comando/evento de decisión. | **PROPUESTA** |
 | `persistence/migrations.py` | Migra explícitamente schema `1 → 2`; no adivina rutas ausentes. | Añadir migraciones explícitas al nuevo schema, puras e idempotentes a nivel de resultado. | **PROPUESTA** |
 | `storage/base.py` y `storage/sqlite.py` | Persisten el snapshot completo y ya ofrecen CAS. | Reutilizar el CAS; no crear una segunda tabla autoritativa de decisiones en W0. | **PROPUESTA** |
 | `presentation.py` y DTO de servicio | Proyectan estado según actor, pero no este primitive. | Añadir vistas separadas para elector, adversario, público y motor. | **PROPUESTA** |
@@ -95,41 +95,42 @@
 - **PROPUESTA — eventos:** crear eventos tipados de creación y cierre con payload interno completo, más una proyección redactada; no emitir un evento de cierre antes de que la transacción y el CAS puedan confirmarse.
 - **PREGUNTA ABIERTA — publicación del evento:** hay que fijar si el evento de dominio se acumula antes del `save` y sólo se publica fuera de proceso después del CAS, o si no existe bus externo; W0 debe impedir observables fantasma del perdedor CAS.
 
-## F. Snapshot
+## F. Snapshot — W0.2
 
 - **HECHO OBSERVADO — formato:** snapshot usa `SNAPSHOT_SCHEMA_VERSION = "2"`, sobre `{body, sha256}`, JSON canónico, `state_digest`, versión de motor, semántica, reglas, catálogo, estado y contadores.
-- **PROPUESTA — versión:** el primer writer con decisión universal elevará `SNAPSHOT_SCHEMA_VERSION` de `2` a `3`; snapshot y replay deben cambiar en la misma entrega.
-- **CONTRATO APROBADO — lectura legacy:** la migración `2 → 3` añade exactamente la ausencia compatible de decisión universal; no infiere una decisión desde `pending_search`, `pending_move_replacement`, comandos o eventos.
+- **PROPUESTA W0.2 — versión futura concreta:** después de aprobar e implementar en W0.1 la forma acordada de `GameState`, el primer writer de snapshot con ese campo fijará `SNAPSHOT_SCHEMA_VERSION = "3"`. Este cambio de snapshot no obliga a anticipar el cambio de replay: ambos formatos avanzan cuando su contenido runtime lo exige.
+- **CONTRATO APROBADO W0.2 — lectura legacy explícita:** `src/card_duel_engine/persistence/migrations.py` incorporará la entrada `("snapshot", "2")` para la migración snapshot `2 → 3`. La función añadirá al `GameState` serializado la representación canónica de «sin decisiones» correspondiente al campo aprobado (slot `None` o mapa vacío), recalculará `state_digest` sobre el estado ya migrado, establecerá `schema_version = "3"` y conservará el sobre verificable: la frontera validará primero el `sha256` original y reconstruirá su checksum canónico alrededor del body migrado antes de persistirlo. No inferirá una decisión desde `pending_search`, `pending_move_replacement`, comandos o eventos.
 - **CONTRATO APROBADO — fidelidad:** el round-trip debe conservar exactamente identidad, familia, elector, audiencia, opciones, versión, origen, estado y selección, además del digest canónico.
 - **CONTRATO APROBADO — rechazo cerrado:** schema, enum, discriminador o semántica desconocidos se rechazan antes de instalar estado en el motor.
 - **PROPUESTA — fixtures:** conservar fixtures golden de schema `1`, `2` y `3`, incluidos estados `pending` y `closed`, checksum corrupto y discriminadores desconocidos.
+- **PROHIBICIÓN W0.2 — codec:** no añadir `GameState` a las excepciones ad hoc de `compatible_missing` en `persistence/codec.py`. La ausencia legacy se materializa únicamente mediante la migración explícita de schema; el codec seguirá rechazando campos requeridos ausentes tras migrar.
 
 ## G. Replay
 
 - **HECHO OBSERVADO — formato:** replay usa `REPLAY_SCHEMA_VERSION = "2"`, conserva setup, mulligans, inicio, comandos, conteo y digest final; acepta el escape histórico de digest sólo para `0.20.0` y `0.20.1`.
-- **PROPUESTA — versión:** elevar replay a schema `3` y representar la creación/cierre mediante comandos/eventos deterministas suficientes para reconstruir la misma decisión.
+- **CONTRATO APROBADO — calendario de versión:** replay permanece en schema `2` durante W0.1 mientras no exista ningún comando/evento runtime capaz de crear o cerrar una decisión. `REPLAY_SCHEMA_VERSION = "3"` se programa en la misma entrega que el primer comando/evento W1 que pueda crear o cerrar una decisión; sólo entonces se representará el lifecycle mediante comandos/eventos deterministas suficientes para reconstruirlo.
 - **CONTRATO APROBADO — identidad:** `decision_id` no puede depender de UUID aleatorio, wall-clock, orden de diccionario no canónico ni secreto de proceso.
 - **CONTRATO APROBADO — semántica histórica:** un replay schema `1/2` no gana decisiones retroactivas; se ejecuta con su semántica declarada y conserva sus bytes como artefacto histórico.
 - **CONTRATO APROBADO — resultado:** replay nuevo debe reproducir estado, selección, orden observable de eventos y `final_digest`; una versión desconocida falla sin fallback.
-- **PROPUESTA — golden pair:** para cada caso nuevo, guardar un golden pre-W0 legible y otro schema `3`, y comprobar determinismo byte a byte cuando el formato lo garantice y equivalencia semántica mediante digest.
+- **PROPUESTA W1 — migración y goldens:** junto al primer comando/evento creador o cerrador, añadir en `src/card_duel_engine/persistence/migrations.py` la ruta `("replay", "2")` para replay `2 → 3`, fixtures golden v3 de creación y cierre, y validación obligatoria de `final_digest`. Se conservarán sin reescritura los replays golden `0.19.0`, y la excepción de digest seguirá limitada exclusivamente a artefactos `0.20.0`/`0.20.1`; no se ampliará a v3 ni a otras versiones.
 
 ## H. Migraciones
 
 - **HECHO OBSERVADO — mecanismo:** `migrate_document()` copia el body y recorre una tabla explícita; hoy sólo hay rutas `snapshot/replay/manifest 1 → 2`.
-- **PROPUESTA — rutas:** añadir `("snapshot", "2")` y `("replay", "2")` hacia `3`; no cambiar las funciones `1 → 2`, para mantener composición histórica `1 → 2 → 3`.
-- **CONTRATO APROBADO — propiedades:** migración determinista, no destructiva, transaccional en storage, repetible sin cambiar el resultado y con rollback operativo documentado.
+- **PROPUESTA — rutas por wave:** en W0.2 añadir sólo `("snapshot", "2")` hacia `3`; conservar replay schema `2` durante W0.1. Añadir `("replay", "2")` hacia `3` en W1, junto al primer comando/evento capaz de crear o cerrar una decisión. No cambiar las funciones `1 → 2`, para mantener la composición histórica de cada formato cuando alcance v3.
+- **CONTRATO APROBADO — propiedades:** la migración snapshot `2 → 3` será pura respecto de la entrada, determinista e idempotente a nivel de cadena (`migrate_document(..., "3")` aplicado al resultado no cambia bytes canónicos); recalculará el digest después de insertar la ausencia canónica y rechazará versiones desconocidas por ausencia de ruta. La persistencia será transaccional, no destructiva y con rollback operativo documentado; las mismas propiedades se exigirán a replay `2 → 3` cuando se incorpore en W1.
 - **CONTRATO APROBADO — desconocidos:** ausencia de ruta, ciclo o versión no textual produce error; queda prohibido adivinar defaults salvo el `None` legacy aprobado.
 - **PROPUESTA — despliegue:** desplegar reader `1/2/3` antes o junto al writer `3`; no permitir que un binario viejo reescriba snapshots `3`.
 - **PREGUNTA ABIERTA — rollback de despliegue:** debe elegirse entre compatibilidad de writer dual temporal o rollback sólo hacia delante; no hay autoridad en los documentos auditados para writer dual.
 
-## I. Storage/SQLite
+## I. Storage/SQLite — W0.3
 
 - **HECHO OBSERVADO — diseño:** `SQLiteMatchStore` mantiene una fila por partida con `match_id`, `version`, `snapshot` y `updated_at`; la autoridad de dominio está dentro del snapshot.
 - **CONTRATO APROBADO — unidad:** W0 no crea tabla de decisiones ni columna JSON paralela; hacerlo produciría dos autoridades y violaría `CAP-ACTION-004-INV-01`.
-- **PROPUESTA — migración:** si sólo cambia el payload, no hace falta DDL; el reader migra el snapshot en memoria y el siguiente CAS confirmado escribe schema `3`.
+- **CONTRATO APROBADO W0.3 — sin DDL:** no hace falta migración DDL ni tabla de decisiones. SQLite seguirá almacenando una única fila/documento snapshot autoritativo por partida; no se añadirá otra representación persistente.
 - **CONTRATO APROBADO — atomicidad:** una actualización confirmada debe incluir conjuntamente snapshot con decisión cerrada, historial, eventos y nueva `version`.
 - **PROPUESTA — operabilidad:** medir tamaño de snapshot y latencia de carga/guardado antes y después; documentar backup y restauración sobre una copia real de SQLite.
-- **PREGUNTA ABIERTA — persistencia eager:** decidir si los snapshots schema `2` se actualizan mediante job transaccional o sólo al siguiente write; la opción recomendada es lazy migration para evitar una mutación masiva sin necesidad.
+- **PROPUESTA W0.3 — estrategia de persistencia:** planificar únicamente una de estas dos variantes sobre el mismo documento: (a) actualización transaccional del payload completo bajo el CAS existente, o (b) migración perezosa al cargar en memoria y persistencia del schema `3` sólo en el siguiente guardado CAS exitoso. La recomendación es (b), sin job DDL ni escritura lateral. Las pruebas deberán forzar fallo antes del commit para demostrar rollback sin cambio de fila y, después, reaplicar la migración/guardado para demostrar un único resultado canónico, sin doble incremento ni divergencia.
 
 ## J. CAS
 
@@ -200,11 +201,11 @@
 0. **GATE OBLIGATORIO — cardinalidad:** obtener y registrar aprobación explícita de una de las dos formas de C.2; ninguna modificación W0.1 puede preceder este paso.
 1. **PROPUESTA — `domain/enums.py` y `domain/models.py`:** definir discriminadores, registro y validación local conforme a la cardinalidad aprobada, sin integrar especializaciones.
 2. **PROPUESTA — `persistence/codec.py`:** registrar tipos con dispatch cerrado; añadir tests negativos antes de writers.
-3. **PROPUESTA — `persistence/migrations.py`:** implementar rutas `2 → 3` y tests de composición histórica.
-4. **PROPUESTA — `persistence/snapshot.py`:** elevar versión, escribir/restaurar el registro y añadir goldens.
+3. **PROPUESTA W0.2 — `persistence/migrations.py`:** implementar `("snapshot", "2")`, ausencia canónica, recálculo de `state_digest`, idempotencia de cadena y rechazo de desconocidos; no introducir `GameState` en `compatible_missing` de `codec.py`.
+4. **PROPUESTA W0.2 — `persistence/snapshot.py`:** fijar el futuro `SNAPSHOT_SCHEMA_VERSION = "3"`, escribir/restaurar el registro, conservar el sobre verificable y añadir goldens.
 5. **PROPUESTA — `engine/commands.py`:** añadir comando de cierre al conjunto ejecutable y codec.
 6. **PROPUESTA — `engine/game.py`:** creación, revalidación, cierre y rollback; cerrar sólo registra opción.
-7. **PROPUESTA — `persistence/replay.py`:** elevar versión y demostrar reconstrucción determinista.
+7. **PROPUESTA W1 — `persistence/replay.py`:** mantener v2 durante W0.1; elevar a v3 sólo con el primer comando/evento creador o cerrador, añadir migración `("replay", "2")`, goldens y validación de `final_digest` sin ampliar la excepción histórica.
 8. **PROPUESTA — `engine/actions.py` y `engine/options.py`:** paridad entre enumeración y ejecución.
 9. **PROPUESTA — `presentation.py`, `application.py` y `service.py`:** audiencias, autenticación, error uniforme y un único CAS.
 10. **PROPUESTA — `storage/base.py` y `storage/sqlite.py`:** evitar cambios salvo los necesarios para pruebas/observabilidad; preservar el UPDATE CAS actual.

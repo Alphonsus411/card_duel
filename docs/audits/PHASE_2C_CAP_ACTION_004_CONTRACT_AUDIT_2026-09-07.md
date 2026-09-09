@@ -255,8 +255,31 @@ servicio, schema, fixtures ni tests de runtime. La lista anterior es exhaustiva.
 
 ## Real verification results
 
-Resultados finales capturados el 2026-09-09 sobre la rama de trabajo basada en
-`9543806234a1b5af47dc1e40514323b2c5fc4324`:
+Los datos siguientes conservan los resultados capturados el 2026-09-09, pero
+separan la identidad documental de la identidad de ejecución. Una relación de
+ancestría o de contenido no sustituye evidencia que identifique el checkout
+realmente ejecutado.
+
+### Baseline histórico
+
+| Campo | Valor verificable | Alcance probatorio |
+|---|---|---|
+| Baseline de la rama | `9543806234a1b5af47dc1e40514323b2c5fc4324` | Identifica el baseline histórico de la rama de trabajo; no identifica de manera inequívoca el commit probado. |
+| Tree SHA del baseline | `48ef30c62051f3df34e0419a1789a5ccba05c1ec` | Es el árbol verificable del baseline, pero su conocimiento no demuestra que ese árbol fuese el ejecutado. |
+
+### HEAD documental auditado
+
+| Campo | Valor verificable | Alcance probatorio |
+|---|---|---|
+| HEAD documental | `c878265d96c7ed44269cce9ec0b855746b2e62d9` | Identifica el estado documental auditado y el extremo del compare descrito en este informe; por sí solo no identifica el checkout de la ejecución local ni de CI. |
+| Tree SHA del HEAD documental | `a7e7bf694793e42b3d8f42bf90dc608f5bea585e` | Identifica el contenido de ese HEAD, no el árbol efectivamente ejecutado. |
+
+No se atribuyen retroactivamente resultados a
+`c878265d96c7ed44269cce9ec0b855746b2e62d9`: la evidencia conservada no incluye
+un log, artefacto de CI o salida de comando que contenga ese SHA o su tree SHA
+`a7e7bf694793e42b3d8f42bf90dc608f5bea585e`.
+
+### Ejecución local histórica
 
 | Orden | Comando real | Código | Salida capturada |
 |---|---|---:|---|
@@ -265,12 +288,25 @@ Resultados finales capturados el 2026-09-09 sobre la rama de trabajo basada en
 | 3 | `uv sync --extra dev` | `0` | 14 dependencias de desarrollo instaladas, incluido `mypy==2.3.0` (pared: 1 s). |
 | 4 | `uv run python scripts/verify_release.py --profile full` | `0` | `OK: perfil full completado` (pared: 457 s). |
 
-El intento 2 es una limitación inicial del entorno, no un resultado omitido ni
-un fallo del contrato. El resultado oficial del perfil es la repetición 4 tras
-sincronizar las dependencias declaradas. Las comprobaciones documentales de
-estructura, cobertura de requisitos, rutas modificadas y última línea se
-ejecutaron después de incorporar esta tabla y también finalizaron con código
-`0`; se detallan en la matriz de trazabilidad.
+| Identidad de la ejecución | Valor |
+|---|---|
+| SHA exacto ejecutado | **No determinable con la evidencia conservada.** |
+| Tree SHA exacto ejecutado | **No determinable con la evidencia conservada.** |
+
+El intento 2 conserva una limitación inicial del entorno, no un resultado
+omitido ni un fallo del contrato. El resultado histórico del perfil es la
+repetición 4 tras sincronizar las dependencias declaradas. Las comprobaciones
+documentales de estructura, cobertura de requisitos, rutas modificadas y última
+línea se ejecutaron después de incorporar la tabla original y también
+finalizaron con código `0`; se detallan en la matriz de trazabilidad. Estos
+resultados se conservan como ejecución local histórica sin adscribirlos a un
+commit o árbol concreto.
+
+### CI remoto
+
+| Evidencia conservada | Resultado atribuible | Commit o tree SHA atribuible |
+|---|---|---|
+| No consta log, artefacto de CI ni salida remota que incluya una identidad Git. | Ninguno determinable. | Ninguno determinable; en particular, no se atribuye a `c878265d96c7ed44269cce9ec0b855746b2e62d9` ni a `a7e7bf694793e42b3d8f42bf90dc608f5bea585e`. |
 
 ## Remaining blockers
 

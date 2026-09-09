@@ -48,7 +48,11 @@ la tarea. Ninguno de los dos compares incluye rutas bajo
 
 | Requisito | Evidencia | Capability | Invariante | Superficie futura | Test | Estado |
 |---|---|---|---|---|---|---|
-| Baseline: SHA de tarea/input/estado auditado | Control record y audit identity | `CAP-ACTION-004` | — | Git/documentación | `git rev-parse HEAD`; status/diff | `PASS` |
+| Conteo vigente de capabilities | Matriz y roadmap | `CAP-ACTION-004` | — | Planificación documental | Conteo dinámico | `PASS` |
+| Baseline global de tarea | Compare Git desde `task_baseline_sha`; control record | `CAP-ACTION-004` | — | Git/documentación | Test documental | `PASS` |
+| Baseline de la subentrega de informes | Audit record de `report_input_sha` | `CAP-ACTION-004` | — | Git/documentación | Test documental | `PASS` |
+| Diff acumulado | Compare `task_baseline_sha` a `audited_task_head_sha` | `CAP-ACTION-004` | — | Git/documentación | Comprobación Git | `PASS` |
+| Diff report-only | Subentrega documental desde `report_input_sha` a `audited_task_head_sha` | `CAP-ACTION-004` | — | Git/documentación | Comprobación Git | `PASS` |
 | Baseline: versión/fases/status/gate | `pyproject.toml`, `uv.lock`, roadmaps y matriz | `CAP-ACTION-004` | — | Release/roadmap | test documental Phase 2C | `PASS` |
 | Mecanismo `PendingSearch` | Matriz forense; models/stack/options/game/codec | `CAP-SEARCH-001`; `CAP-ACTION-004` | INV-01/03/04/05/08/09/10 | Modelo, engine, snapshot, replay | Auditoría estática + suite existente | `PASS` |
 | Mecanismo `PendingMoveReplacement` | Matriz forense; models/zones/game/codec | `CAP-ZONE-004`; `CAP-ACTION-004` | INV-01/03/04/05/06/09/10 | Modelo, zones, transacción | Auditoría estática + suite existente | `PASS` |
@@ -86,7 +90,7 @@ la tarea. Ninguno de los dos compares incluye rutas bajo
 | Matriz W0 completa | W0 impact matrix | `CAP-ACTION-004` | INV-01–14 | 13 superficies | Revisión de vocabulario | `PASS` |
 | Planificación sin implementación | Implementation planning | `CAP-ACTION-004` | INV-01–14 | W0/W1 futuro | Diff paths | `PASS` |
 | Prohibición de cambios runtime | Files changed; `runtime_authorization: FORBIDDEN` | `CAP-ACTION-004`; `CAP-TIME-002` | INV-14 | `src/`, runtime tests | `git diff --name-only` | `PASS` |
-| Blockers de mulligan inalterados | Remaining blockers/readiness | `CAP-TIME-002`; `CAP-TIME-005` | — | Setup/mulligan futuro | Test documental Phase 2C | `PASS` |
+| Blockers de mulligan inalterados | `CAP-TIME-002`: `PARTIAL / WAIT-PREREQ`; `CAP-TIME-005`: `MISSING / WAIT-PREREQ`; blockers normativos sin resolver | `CAP-TIME-002`; `CAP-TIME-005` | — | Setup/mulligan futuro | Test documental Phase 2C | `PASS` |
 | Resultado de verificaciones reales | Real verification results: 13 tests y perfil full | `CAP-ACTION-004` | — | Documentación | Comandos capturados tras edición | `PASS` |
 | Veredicto final exacto | Última línea del contract audit | `CAP-ACTION-004` | INV-01–14 | Gate documental | Validación shell exacta | `PASS` |
 
@@ -97,5 +101,8 @@ la tarea. Ninguno de los dos compares incluye rutas bajo
 - `PENDING`: sólo se usaría antes de ejecutar el comando real; no quedan filas
   pendientes tras las verificaciones capturadas.
 
-No hay filas `IMPLEMENTED`: `CAP-ACTION-004` continúa `MISSING` y
-`runtime_authorization` continúa `FORBIDDEN`.
+No hay filas `IMPLEMENTED`: `CAP-ACTION-004` continúa `MISSING`, su `gate` y
+su `contract_status` continúan `READY`, y `runtime_authorization` continúa
+`FORBIDDEN`. `CAP-TIME-002` continúa `PARTIAL / WAIT-PREREQ`;
+`CAP-TIME-005` no se cierra y continúa `MISSING / WAIT-PREREQ`; los blockers
+normativos de mulligan permanecen sin resolver.

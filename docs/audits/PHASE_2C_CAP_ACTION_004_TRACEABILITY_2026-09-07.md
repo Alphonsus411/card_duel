@@ -27,6 +27,23 @@ histórica y no intenta referenciar el commit que contiene la corrección actual
 evitando así una autorreferencia imposible. Todas las filas trazan un requisito
 individual y no afirman implementación runtime.
 
+## Alcance de los compares
+
+El diff acumulado de la tarea
+`9543806234a1b5af47dc1e40514323b2c5fc4324 → c878265d96c7ed44269cce9ec0b855746b2e62d9`
+abarca exactamente dependencias (`docs/ENGINE_CAPABILITY_DEPENDENCIES.md`),
+roadmap (`docs/PHASE_2C_ENGINE_EVOLUTION_ROADMAP.md`), ambos informes de
+auditoría (`docs/audits/PHASE_2C_CAP_ACTION_004_CONTRACT_AUDIT_2026-09-07.md` y
+`docs/audits/PHASE_2C_CAP_ACTION_004_TRACEABILITY_2026-09-07.md`) y el test
+documental (`tests/test_phase_2c_engine_evolution_roadmap.py`).
+
+En cambio, el diff específico de la última subentrega documental
+`f80bc858221c8842dbe9ce0542e8a93b2141bfb6 → c878265d96c7ed44269cce9ec0b855746b2e62d9`
+abarca exclusivamente los dos informes de auditoría citados. Este segundo
+conjunto es un **`report-only diff`** y no representa el diff acumulado de toda
+la tarea. Ninguno de los dos compares incluye rutas bajo
+`src/card_duel_engine/`.
+
 ## Requirement traceability matrix
 
 | Requisito | Evidencia | Capability | Invariante | Superficie futura | Test | Estado |

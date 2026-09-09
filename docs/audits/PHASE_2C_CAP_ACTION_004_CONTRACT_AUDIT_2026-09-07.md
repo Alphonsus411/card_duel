@@ -213,6 +213,36 @@ leer el resultado terminal, pero no reabre ni vuelve a ejecutar la decisión.
 La planificación no autoriza cambios actuales bajo `src/`, `tests/` de runtime,
 schema, stores, endpoints ni versión de paquete.
 
+## Diff acumulado de la tarea CAP-ACTION-004
+
+El compare acumulado de la tarea es
+`9543806234a1b5af47dc1e40514323b2c5fc4324 → c878265d96c7ed44269cce9ec0b855746b2e62d9`.
+La verificación de este rango comprende exactamente estos cinco archivos:
+
+- `docs/ENGINE_CAPABILITY_DEPENDENCIES.md` (dependencias);
+- `docs/PHASE_2C_ENGINE_EVOLUTION_ROADMAP.md` (roadmap);
+- `docs/audits/PHASE_2C_CAP_ACTION_004_CONTRACT_AUDIT_2026-09-07.md`
+  (informe de contrato);
+- `docs/audits/PHASE_2C_CAP_ACTION_004_TRACEABILITY_2026-09-07.md`
+  (informe de trazabilidad);
+- `tests/test_phase_2c_engine_evolution_roadmap.py` (test documental).
+
+Este compare no incluye ninguna ruta bajo `src/card_duel_engine/`.
+
+## Diff específico de la última subentrega documental
+
+El compare específico de la última subentrega documental es
+`f80bc858221c8842dbe9ce0542e8a93b2141bfb6 → c878265d96c7ed44269cce9ec0b855746b2e62d9`.
+La verificación de este rango comprende exclusivamente estos dos informes de
+auditoría:
+
+- `docs/audits/PHASE_2C_CAP_ACTION_004_CONTRACT_AUDIT_2026-09-07.md`;
+- `docs/audits/PHASE_2C_CAP_ACTION_004_TRACEABILITY_2026-09-07.md`.
+
+Este segundo conjunto es un **`report-only diff`** y no representa el diff
+acumulado de toda la tarea. Tampoco incluye ninguna ruta bajo
+`src/card_duel_engine/`.
+
 ## Files changed and prohibited runtime scope
 
 | Ruta | Operación | Clasificación |

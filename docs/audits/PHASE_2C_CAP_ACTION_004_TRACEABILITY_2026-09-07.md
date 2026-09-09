@@ -91,7 +91,7 @@ la tarea. Ninguno de los dos compares incluye rutas bajo
 | Planificación sin implementación | Implementation planning | `CAP-ACTION-004` | INV-01–14 | W0/W1 futuro | Diff paths | `PASS` |
 | Prohibición de cambios runtime | Files changed; `runtime_authorization: FORBIDDEN` | `CAP-ACTION-004`; `CAP-TIME-002` | INV-14 | `src/`, runtime tests | `git diff --name-only` | `PASS` |
 | Blockers de mulligan inalterados | `CAP-TIME-002`: `PARTIAL / WAIT-PREREQ`; `CAP-TIME-005`: `MISSING / WAIT-PREREQ`; blockers normativos sin resolver | `CAP-TIME-002`; `CAP-TIME-005` | — | Setup/mulligan futuro | Test documental Phase 2C | `PASS` |
-| Resultado de verificaciones reales | Real verification results: 13 tests y perfil full | `CAP-ACTION-004` | — | Documentación | Comandos capturados tras edición | `PASS` |
+| Resultado de verificaciones reales | Real verification results: 15 tests y perfil full | `CAP-ACTION-004` | — | Documentación | Comandos capturados tras edición | `PASS` |
 | Veredicto final exacto | Última línea del contract audit | `CAP-ACTION-004` | INV-01–14 | Gate documental | Validación shell exacta | `PASS` |
 
 ## Status semantics

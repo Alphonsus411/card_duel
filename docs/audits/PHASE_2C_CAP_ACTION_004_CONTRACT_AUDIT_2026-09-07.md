@@ -255,14 +255,15 @@ servicio, schema, fixtures ni tests de runtime. La lista anterior es exhaustiva.
 
 ## Real verification results
 
-Resultados capturados el 2026-09-08, después de redactar ambos documentos:
+Resultados finales capturados el 2026-09-09 sobre la rama de trabajo basada en
+`9543806234a1b5af47dc1e40514323b2c5fc4324`:
 
 | Orden | Comando real | Código | Salida capturada |
 |---|---|---:|---|
-| 1 | `uv run pytest -q tests/test_phase_2c_engine_evolution_roadmap.py` | `0` | `13 passed in 0.19s` |
-| 2 | `uv run python scripts/verify_release.py --profile full` | `1` | Primer intento detenido en `quality:mypy`: `No module named mypy`. |
-| 3 | `uv sync --extra dev` | `0` | 14 dependencias de desarrollo instaladas, incluido `mypy==2.3.0`. |
-| 4 | `uv run python scripts/verify_release.py --profile full` | `0` | `OK: perfil full completado`. |
+| 1 | `uv run pytest -q tests/test_phase_2c_engine_evolution_roadmap.py` | `0` | 15 collected, 15 passed, 0 failed, 0 skipped; duración pytest `0.22s` (pared: 3 s). |
+| 2 | `uv run python scripts/verify_release.py --profile full` | `1` | Primer intento detenido únicamente en `quality:mypy`: `No module named mypy` (pared: 1 s). |
+| 3 | `uv sync --extra dev` | `0` | 14 dependencias de desarrollo instaladas, incluido `mypy==2.3.0` (pared: 1 s). |
+| 4 | `uv run python scripts/verify_release.py --profile full` | `0` | `OK: perfil full completado` (pared: 457 s). |
 
 El intento 2 es una limitación inicial del entorno, no un resultado omitido ni
 un fallo del contrato. El resultado oficial del perfil es la repetición 4 tras

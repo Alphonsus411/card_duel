@@ -75,7 +75,7 @@ class PersistenceV090Tests(unittest.TestCase):
         engine.new_match({"A": test_deck("CA"), "B": test_deck("CB")}, seed=907)
 
         document = json.loads(dump_snapshot(engine))
-        self.assertEqual(document["body"]["schema_version"], "2")
+        self.assertEqual(document["body"]["schema_version"], "3")
         self.assertEqual(document["body"]["engine_semantics"], "CURRENT")
         self.assertIs(load_snapshot(document).semantics, EngineSemantics.CURRENT)
 

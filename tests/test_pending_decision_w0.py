@@ -1,0 +1,227 @@
+from __future__ import annotations
+
+from dataclasses import FrozenInstanceError, replace
+import hashlib
+import json
+from pathlib import Path
+import sqlite3
+from tempfile import TemporaryDirectory
+from threading import Barrier
+from concurrent.futures import ThreadPoolExecutor
+
+import pytest
+
+from card_duel_engine import GameEngine
+from card_duel_engine.domain import (
+    DecisionAudience,
+    PendingDecision,
+    PendingDecisionStatus,
+)
+from card_duel_engine.domain.errors import InvariantViolation
+from card_duel_engine.persistence import dump_snapshot, load_snapshot, state_digest
+from card_duel_engine.persistence.codec import canonical_json, decode_value, encode_value
+from card_duel_engine.persistence.migrations import migrate_document
+from card_duel_engine.persistence.replay import REPLAY_SCHEMA_VERSION
+from card_duel_engine.storage import InMemoryMatchStore, SQLiteMatchStore, VersionConflict
+
+from fixtures import test_deck
+
+
+ARTIFACTS = Path(__file__).parent / "artifacts" / "pending-decision-w0"
+
+
+def make_engine(seed: int = 901) -> GameEngine:
+    engine = GameEngine()
+    engine.new_match({"A": test_deck("W0-A"), "B": test_deck("W0-B")}, seed=seed)
+    return engine
+
+
+def decision(*, closed: bool = False) -> PendingDecision:
+    return PendingDecision(
+        decision_id="decision:setup:0001",
+        semantic_family="mulligan/v1",
+        authorized_elector="A",
+        audience=DecisionAudience.ELECTOR,
+        authorized_opaque_options=("opt_7xQm2", "opt_B9kL4"),
+        state_version=1,
+        origin=("setup", "mulligan", "0001"),
+        status=(PendingDecisionStatus.CLOSED if closed else PendingDecisionStatus.PENDING),
+        selected_option="opt_B9kL4" if closed else None,
+    )
+
+
+def checksum(body: dict[str, object]) -> str:
+    return hashlib.sha256(canonical_json(body).encode()).hexdigest()
+
+
+def as_v2(engine: GameEngine) -> dict[str, object]:
+    document = json.loads(dump_snapshot(engine))
+    fields = document["body"]["state"]["fields"]
+    fields.pop("pending_decision")
+    document["body"]["schema_version"] = "2"
+    document["body"]["state_digest"] = hashlib.sha256(
+        canonical_json(document["body"]["state"]).encode()
+    ).hexdigest()
+    document["sha256"] = checksum(document["body"])
+    return document
+
+
+def test_model_has_exactly_nine_fields_and_value_equality() -> None:
+    expected = {
+        "decision_id", "semantic_family", "authorized_elector", "audience",
+        "authorized_opaque_options", "state_version", "origin", "status",
+        "selected_option",
+    }
+    assert set(decision().__dataclass_fields__) == expected
+    assert decision() == decision()
+    assert decision() != replace(decision(), state_version=2)
+
+
+def test_model_is_deeply_immutable_at_its_option_and_reference_boundaries() -> None:
+    value = decision()
+    with pytest.raises(FrozenInstanceError):
+        value.status = PendingDecisionStatus.CLOSED  # type: ignore[misc]
+    with pytest.raises(TypeError):
+        value.authorized_opaque_options[0] = "changed"  # type: ignore[index]
+    with pytest.raises(ValueError, match="inmutables"):
+        replace(value, origin=["mutable"])  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize("field", ["decision_id", "semantic_family", "authorized_elector"])
+def test_empty_ids_are_rejected(field: str) -> None:
+    with pytest.raises(ValueError, match="identificadores"):
+        replace(decision(), **{field: " "})
+
+
+def test_options_version_origin_and_status_selection_are_validated() -> None:
+    invalid = (
+        ({"authorized_opaque_options": ("same", "same")}, "únicos"),
+        ({"authorized_opaque_options": ("",)}, "vacías"),
+        ({"state_version": 0}, "positiva"),
+        ({"origin": ()}, "origen"),
+        ({"selected_option": "opt_7xQm2"}, "pendiente"),
+        ({"status": PendingDecisionStatus.CLOSED}, "autorizada"),
+    )
+    for changes, message in invalid:
+        with pytest.raises(ValueError, match=message):
+            replace(decision(), **changes)
+
+
+def test_tokens_remain_opaque_through_codec_round_trip() -> None:
+    encoded = encode_value(decision())
+    serialized = canonical_json(encoded)
+    assert "W0-A" not in serialized
+    assert "card-" not in serialized
+    assert decode_value(json.loads(serialized)) == decision()
+
+
+def test_game_state_rejects_an_unknown_elector() -> None:
+    engine = make_engine()
+    engine.state.pending_decision = replace(decision(), authorized_elector="unknown")
+    with pytest.raises(InvariantViolation, match="elector inexistente"):
+        engine.validate_invariants()
+
+
+@pytest.mark.parametrize("closed", [False, True])
+def test_snapshot_v3_round_trip_with_decision_and_digest(closed: bool) -> None:
+    engine = make_engine()
+    engine.state.pending_decision = decision(closed=closed)
+    payload = dump_snapshot(engine, indent=None)
+    document = json.loads(payload)
+    assert document["body"]["schema_version"] == "3"
+    restored = load_snapshot(payload)
+    assert restored.state.pending_decision == engine.state.pending_decision
+    assert state_digest(restored) == state_digest(engine)
+    assert dump_snapshot(restored, indent=None) == payload
+
+
+def test_snapshot_v2_migrates_to_v3_without_inventing_a_decision() -> None:
+    legacy = as_v2(make_engine())
+    restored = load_snapshot(legacy)
+    assert restored.state.pending_decision is None
+    assert json.loads(dump_snapshot(restored))["body"]["schema_version"] == "3"
+
+
+def test_migration_is_pure_repeatable_and_rejects_unknown_versions() -> None:
+    legacy_body = as_v2(make_engine())["body"]
+    before = json.loads(json.dumps(legacy_body))
+    first = migrate_document("snapshot", legacy_body, "3")
+    second = migrate_document("snapshot", first, "3")
+    assert legacy_body == before
+    assert canonical_json(first) == canonical_json(second)
+    with pytest.raises(ValueError, match="No existe migración"):
+        migrate_document("snapshot", {"schema_version": "99"}, "3")
+
+
+def test_golden_snapshots_cover_v2_and_v3_absent_pending_and_closed() -> None:
+    for name in ("snapshot-v2-none.json", "snapshot-v3-none.json", "snapshot-v3-pending.json", "snapshot-v3-closed.json"):
+        restored = load_snapshot((ARTIFACTS / name).read_text())
+        expected = None if "none" in name else decision(closed="closed" in name)
+        assert restored.state.pending_decision == expected
+
+
+@pytest.mark.parametrize("store_kind", ["memory", "sqlite"])
+def test_stores_load_old_db_and_update_to_v3_with_parity(store_kind: str) -> None:
+    engine = make_engine()
+    legacy = json.dumps(as_v2(engine), sort_keys=True)
+    if store_kind == "memory":
+        store = InMemoryMatchStore()
+        store._records["match"] = (1, legacy)
+    else:
+        store = SQLiteMatchStore(":memory:")
+        with store._connect() as connection:
+            connection.execute("INSERT INTO matches(match_id, version, snapshot) VALUES ('match', 1, ?)", (legacy,))
+    loaded = store.load("match")
+    assert loaded.engine.state.pending_decision is None
+    loaded.engine.state.pending_decision = decision()
+    assert store.save("match", loaded.engine, expected_version=1) == 2
+    assert store.load("match").engine.state.pending_decision == decision()
+
+
+def test_sqlite_invalid_snapshot_rolls_back_and_repeated_startup_keeps_one_table() -> None:
+    with TemporaryDirectory() as directory:
+        path = Path(directory) / "matches.db"
+        store = SQLiteMatchStore(path)
+        store.create("winner", make_engine())
+        with sqlite3.connect(path) as connection:
+            original = connection.execute("SELECT snapshot FROM matches WHERE match_id='winner'").fetchone()[0]
+            with pytest.raises(sqlite3.IntegrityError):
+                with connection:
+                    connection.execute("UPDATE matches SET snapshot = NULL WHERE match_id='winner'")
+            assert connection.execute("SELECT snapshot FROM matches WHERE match_id='winner'").fetchone()[0] == original
+        store.close()
+        SQLiteMatchStore(path).close()
+        with sqlite3.connect(path) as connection:
+            assert [row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")] == ["matches"]
+
+
+def test_two_sqlite_writers_with_same_expected_version_have_one_winner() -> None:
+    with TemporaryDirectory() as directory:
+        path = Path(directory) / "race.db"
+        store = SQLiteMatchStore(path)
+        store.create("race", make_engine())
+        candidates = [store.load("race").engine for _ in range(2)]
+        candidates[0].state.pending_decision = decision()
+        candidates[1].state.pending_decision = decision(closed=True)
+        barrier = Barrier(2)
+
+        def save(candidate: GameEngine) -> str:
+            barrier.wait()
+            try:
+                store.save("race", candidate, expected_version=1)
+                return "won"
+            except VersionConflict:
+                return "lost"
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            outcomes = list(executor.map(save, candidates))
+        assert sorted(outcomes) == ["lost", "won"]
+        winning = store.load("race")
+        assert winning.version == 2
+        assert winning.engine.state.pending_decision in (
+            decision(), decision(closed=True)
+        )
+
+
+def test_replay_remains_v2_until_w1_lifecycle_exists() -> None:
+    assert REPLAY_SCHEMA_VERSION == "2"

@@ -9,6 +9,7 @@ from .enums import (
     ControllerScope,
     CostComponent,
     CostMetric,
+    DecisionAudience,
     EffectDuration,
     EffectKind,
     MatchStatus,
@@ -16,11 +17,66 @@ from .enums import (
     Keyword,
     MoveReason,
     Phase,
+    PendingDecisionStatus,
     RevealExhaustionPolicy,
     TargetMode,
     TriggerKind,
     Zone,
 )
+
+
+@dataclass(frozen=True)
+class PendingDecision:
+    """Registro autoritativo mínimo de una decisión universal.
+
+    W0 sólo define y persiste el registro; ningún comando puede crearlo o
+    cerrarlo hasta que W1 introduzca un lifecycle reproducible.
+    """
+
+    decision_id: str
+    semantic_family: str
+    authorized_elector: str
+    audience: DecisionAudience
+    authorized_opaque_options: tuple[str, ...]
+    state_version: int
+    origin: tuple[str, ...]
+    status: PendingDecisionStatus
+    selected_option: str | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.audience, DecisionAudience):
+            raise ValueError("La audiencia de una decisión no es válida")
+        if not isinstance(self.status, PendingDecisionStatus):
+            raise ValueError("El estado de una decisión no es válido")
+        if not isinstance(self.authorized_opaque_options, tuple) or not isinstance(
+            self.origin, tuple
+        ):
+            raise ValueError("Las opciones y referencias deben ser inmutables")
+        identifiers = (self.decision_id, self.semantic_family, self.authorized_elector)
+        if any(not isinstance(value, str) or not value.strip() for value in identifiers):
+            raise ValueError("Los identificadores de una decisión no pueden estar vacíos")
+        if type(self.state_version) is not int or self.state_version < 1:
+            raise ValueError("La versión de estado de una decisión debe ser positiva")
+        if not self.origin or any(
+            not isinstance(reference, str) or not reference.strip()
+            for reference in self.origin
+        ):
+            raise ValueError("El origen debe contener referencias no vacías")
+        if not self.authorized_opaque_options or any(
+            not isinstance(token, str) or not token.strip()
+            for token in self.authorized_opaque_options
+        ):
+            raise ValueError("Las opciones opacas no pueden estar vacías")
+        if len(self.authorized_opaque_options) != len(
+            set(self.authorized_opaque_options)
+        ):
+            raise ValueError("Los tokens de opción deben ser únicos")
+        if self.status is PendingDecisionStatus.PENDING:
+            if self.selected_option is not None:
+                raise ValueError("Una decisión pendiente no puede tener selección")
+        elif self.status is PendingDecisionStatus.CLOSED:
+            if self.selected_option not in self.authorized_opaque_options:
+                raise ValueError("Una decisión cerrada debe seleccionar una opción autorizada")
 
 
 @dataclass(frozen=True)
@@ -632,6 +688,7 @@ class GameState:
     initial_decks: dict[str, tuple[str, ...]] = field(default_factory=dict)
     command_history: list[Any] = field(default_factory=list)
     setup_mulligans: list[str] = field(default_factory=list)
+    pending_decision: PendingDecision | None = None
 
     @property
     def active_player_id(self) -> str:

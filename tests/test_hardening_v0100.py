@@ -57,12 +57,13 @@ class HardeningV0100Tests(unittest.TestCase):
         )
         return engine
 
-    def test_snapshot_and_replay_schema_one_migrate_to_schema_two(self):
+    def test_snapshot_schema_one_migrates_to_three_and_replay_to_two(self):
         engine = self.make_engine()
 
         snapshot = json.loads(dump_snapshot(engine))
         snapshot["body"]["schema_version"] = "1"
         snapshot["body"].pop("state_digest")
+        snapshot["body"]["state"]["fields"].pop("pending_decision")
         snapshot["sha256"] = checksum(snapshot["body"])
         restored = load_snapshot(snapshot)
         self.assertEqual(state_digest(restored), state_digest(engine))

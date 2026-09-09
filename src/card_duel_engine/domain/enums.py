@@ -50,6 +50,22 @@ class MatchStatus(Enum):
     BLOCKED = auto()
 
 
+class PendingDecisionStatus(Enum):
+    """Estados autoritativos del ciclo de vida de una decisión."""
+
+    PENDING = "pending"
+    CLOSED = "closed"
+
+
+class DecisionAudience(Enum):
+    """Audiencia normativa desde la que se proyectará una decisión en W1."""
+
+    ELECTOR = "elector"
+    OPPONENT = "opponent"
+    SPECTATOR = "spectator"
+    INTERNAL = "internal"
+
+
 class EffectKind(Enum):
     DEAL_WOUNDS = auto()
     HEAL_WOUNDS = auto()

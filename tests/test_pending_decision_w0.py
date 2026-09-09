@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
-from card_duel_engine import GameEngine
+from card_duel_engine import GameEngine, RuleSet
 from card_duel_engine.domain import (
     DecisionAudience,
     PendingDecision,
@@ -140,6 +140,18 @@ def test_snapshot_v2_migrates_to_v3_without_inventing_a_decision() -> None:
     restored = load_snapshot(legacy)
     assert restored.state.pending_decision is None
     assert json.loads(dump_snapshot(restored))["body"]["schema_version"] == "3"
+
+
+def test_019_runtime_digest_includes_pending_decision() -> None:
+    first = GameEngine(RuleSet(version="0.19.0"))
+    second = GameEngine(RuleSet(version="0.19.0"))
+    decks = {"A": test_deck("W0-A"), "B": test_deck("W0-B")}
+    first.new_match(decks, seed=902)
+    second.new_match(decks, seed=902)
+
+    second.state.pending_decision = decision()
+
+    assert state_digest(first) != state_digest(second)
 
 
 def test_migration_is_pure_repeatable_and_rejects_unknown_versions() -> None:

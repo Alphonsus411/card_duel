@@ -6,13 +6,19 @@ from pathlib import Path
 import unittest
 
 from card_duel_engine import GameEngine, RuleSet
-from card_duel_engine.domain import Phase
+from card_duel_engine.domain import (
+    DecisionAudience,
+    PendingDecision,
+    PendingDecisionStatus,
+    Phase,
+)
 from card_duel_engine.domain.errors import IllegalAction
 from card_duel_engine.engine import AdvancePhase, DrainSteps, PassPriority
 from card_duel_engine.engine.game import EngineSemantics
 from card_duel_engine.persistence import (
     dump_replay,
     dump_snapshot,
+    legacy_019_state_digest,
     load_snapshot,
     replay_from_log,
     state_digest,
@@ -87,7 +93,8 @@ class Legacy019ReplayTests(unittest.TestCase):
                     engine = replay_from_log(source)
                     state = engine.state
                     event = state.event_log[-1]
-                    self.assertEqual(state_digest(engine), digest)
+                    self.assertNotEqual(state_digest(engine), digest)
+                    self.assertEqual(legacy_019_state_digest(engine), digest)
                     self.assertEqual(_observables(engine), baseline)
                     self.assertEqual(
                         (
@@ -132,6 +139,36 @@ class Legacy019ReplayTests(unittest.TestCase):
         document["body"]["final_digest"] = "0" * 64
         with self.assertRaisesRegex(ValueError, "diverge"):
             replay_from_log(_rechecksum(document))
+
+    def test_explicit_019_semantics_do_not_enable_historical_digest_fallback(self) -> None:
+        document = json.loads(
+            (ARTIFACTS / "drainage-outside-effects.replay-v2.json").read_text()
+        )
+        document["body"]["engine_semantics"] = "LEGACY_019"
+        with self.assertRaisesRegex(ValueError, "diverge"):
+            replay_from_log(_rechecksum(document))
+
+    def test_runtime_digest_keeps_new_authoritative_fields_on_legacy_engine(self) -> None:
+        source = (ARTIFACTS / "drainage-outside-effects.replay-v2.json").read_text()
+        engine = replay_from_log(source)
+        runtime_without_decision = state_digest(engine)
+        historical_digest = legacy_019_state_digest(engine)
+        pending = PendingDecision(
+            decision_id="decision:legacy:0001",
+            semantic_family="legacy-test/v1",
+            authorized_elector="A",
+            audience=DecisionAudience.ELECTOR,
+            authorized_opaque_options=("accept", "decline"),
+            state_version=1,
+            origin=("test", "legacy", "0001"),
+            status=PendingDecisionStatus.PENDING,
+        )
+
+        engine.state.pending_decision = pending
+
+        self.assertNotEqual(state_digest(engine), runtime_without_decision)
+        self.assertEqual(legacy_019_state_digest(engine), historical_digest)
+        self.assertIs(engine.state.pending_decision, pending)
 
     def test_manual_019_rules_do_not_enable_historical_semantics(self) -> None:
         engine = GameEngine(RuleSet(version="0.19.0"))
@@ -216,7 +253,10 @@ class Legacy019ReplayTests(unittest.TestCase):
                     restored = store.load(name).engine
                     self.assertIs(restored.semantics, EngineSemantics.LEGACY_019)
                     self.assertEqual(_observables(restored), before)
-                    self.assertEqual(state_digest(restored), EXPECTED[name])
+                    self.assertNotEqual(state_digest(restored), EXPECTED[name])
+                    self.assertEqual(
+                        legacy_019_state_digest(restored), EXPECTED[name]
+                    )
 
                     command = PassPriority(engine.state.priority_player_id)
                     engine.execute(command)

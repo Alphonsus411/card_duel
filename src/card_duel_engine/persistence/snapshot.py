@@ -51,12 +51,7 @@ def _digest_encoded_state(encoded_state: Any) -> str:
 
 
 def state_digest(engine: GameEngine) -> str:
-    encoded = _canonical_encoded_state(engine)
-    # Los artefactos 0.19 deben conservar su huella histórica incluso cuando
-    # una regla 0.19 se restaura con la semántica CURRENT explícita.
-    if engine.rules.version == "0.19.0":
-        encoded = _omit_pending_decision(encoded)
-    return _digest_encoded_state(encoded)
+    return _digest_encoded_state(_canonical_encoded_state(engine))
 
 
 def _omit_pending_decision(encoded_state: Any) -> Any:
@@ -69,6 +64,12 @@ def _omit_pending_decision(encoded_state: Any) -> Any:
         transformed["fields"] = dict(encoded_fields)
         transformed["fields"].pop("pending_decision", None)
     return transformed
+
+
+def legacy_019_state_digest(engine: GameEngine) -> str:
+    """Calcula la huella histórica 0.19 sin alterar el estado autoritativo."""
+    encoded = _canonical_encoded_state(engine)
+    return _digest_encoded_state(_omit_pending_decision(encoded))
 
 
 def legacy_state_digest_without_ability_source_profile(engine: GameEngine) -> str:

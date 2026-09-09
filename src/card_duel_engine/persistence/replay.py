@@ -12,7 +12,11 @@ from ..engine.game import EngineSemantics, GameEngine
 from ..rules.config import RuleSet
 from .codec import canonical_json, decode_value, encode_value
 from .migrations import migrate_document
-from .snapshot import legacy_state_digest_without_ability_source_profile, state_digest
+from .snapshot import (
+    legacy_019_state_digest,
+    legacy_state_digest_without_ability_source_profile,
+    state_digest,
+)
 
 REPLAY_SCHEMA_VERSION = "2"
 LEGACY_PROFILE_DIGEST_VERSIONS = frozenset(("0.20.0", "0.20.1"))
@@ -135,7 +139,11 @@ def replay_from_log(
     if verify_digest:
         expected_digest = body["final_digest"]
         digest_matches = state_digest(engine) == expected_digest
-        if not digest_matches and _is_affected_020_version(engine_version):
+        if not digest_matches and _is_historical_019_replay(
+            original_body, engine_version, semantics
+        ):
+            digest_matches = legacy_019_state_digest(engine) == expected_digest
+        elif not digest_matches and _is_affected_020_version(engine_version):
             digest_matches = (
                 legacy_state_digest_without_ability_source_profile(engine)
                 == expected_digest
@@ -143,6 +151,20 @@ def replay_from_log(
         if not digest_matches:
             raise ValueError("La reproducción diverge de la huella final registrada")
     return engine
+
+
+def _is_historical_019_replay(
+    original_body: Mapping[str, Any],
+    engine_version: object,
+    semantics: EngineSemantics,
+) -> bool:
+    """Reconoce sólo documentos 0.19 anteriores a la semántica explícita."""
+    return (
+        original_body.get("schema_version") in {"1", "2"}
+        and "engine_semantics" not in original_body
+        and engine_version == "0.19.0"
+        and semantics is EngineSemantics.LEGACY_019
+    )
 
 
 def _is_affected_020_version(version: object) -> bool:

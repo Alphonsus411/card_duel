@@ -41,6 +41,29 @@
 - **HECHO OBSERVADO — reutilización:** `PendingSearch`, `PendingMoveReplacement`, targets, orden de triggers, orden de replacements y action option IDs muestran fragmentos útiles, pero ninguno satisface el contrato universal completo.
 - **CONTRATO APROBADO — independencia:** los modelos especializados permanecen independientes en la primera implementación; sólo podrán migrarse con equivalencia demostrada de snapshot, eventos, observables y replay.
 
+### C.1. Decisión arquitectónica explícita: autoridad y ubicación
+
+| Alternativa | Ventajas | Costes/riesgos | Decisión W0 |
+|---|---|---|---|
+| `PendingDecision` dentro de `GameState` | Participa en el mismo grafo de dominio que jugadores, pila, historial y eventos; entra en el snapshot, checksum y `state_digest`; se confirma junto al resto del estado mediante el único `save(..., expected_version=...)`. | Aumenta el snapshot y obliga a versionar codec, snapshot y replay. | **ACEPTADA PROVISIONALMENTE** como única autoridad. La cardinalidad concreta queda sometida al gate C.2 antes de W0.1. |
+| Estructura persistente independiente (incluida una tabla SQLite de decisiones) | Permitiría consultas o índices SQL directos y escrituras aisladas. | Divide el agregado entre dos documentos/autoridades; exige transacción, recuperación, migración y CAS coordinados para que snapshot y decisión no diverjan ni queden huérfanos. | **RECHAZADA** en W0. El snapshot completo ya es el documento autoritativo. |
+| Derivar la decisión de la arquitectura existente (`command_history`, `event_log`, pila/replay u option IDs) | Evitaría añadir un campo persistido explícito. | Historial, eventos y replay describen o reconstruyen hechos, y las opciones son proyecciones; convertir cualquiera en autoridad implícita duplica semántica, dificulta revalidación y no ofrece un lifecycle universal inequívoco. | **RECHAZADA** como autoridad. Pueden seguir siendo evidencia, reconstrucción o proyección derivada. |
+| Reutilizar `PendingSearch` o `PendingMoveReplacement` como contenedor universal | Ya están alojados en `GameState` y serializados con él. | Sus contratos son mecánicos y distintos; forzar el primitive universal alteraría snapshots/replays históricos y acoplaría migraciones no autorizadas. | **RECHAZADA**. Ambos modelos quedan sin migración ni integración. |
+
+- **DECISIÓN ARQUITECTÓNICA PROVISIONAL — autoridad única:** `GameState` es el agregado y la única autoridad de `PendingDecision`. `domain/models.py` ya concentra en él los estados pendientes especializados; `persistence/snapshot.py` codifica el `GameState` completo dentro del documento protegido por checksum y `state_digest`; `storage/base.py` persiste ese snapshot como una unidad tanto al crear como al guardar; `storage/sqlite.py` mantiene una sola fila `matches(match_id, version, snapshot, updated_at)` y reemplaza el snapshot sólo mediante `UPDATE` condicionado por versión; finalmente, `MatchService.submit` carga el agregado, rechaza una versión obsoleta antes de ejecutar y entrega la copia resultante al único `store.save` CAS. Esa cadena permite confirmar o rechazar conjuntamente decisión, historial, eventos y estado, sin una segunda autoridad que coordinar.
+- **RECHAZO EXPLÍCITO — tabla SQLite:** no se añadirá una tabla `decisions` ni una columna JSON paralela. Aunque pudiera compartir una transacción SQLite, seguiría creando dos representaciones autoritativas con invariantes de sincronización, permitiría referencias huérfanas y rompería la paridad con `InMemoryMatchStore`; el snapshot completo ya es el documento autoritativo que protege el CAS.
+- **ALCANCE — especializaciones existentes:** `PendingSearch` y `PendingMoveReplacement` permanecen exactamente como están durante W0.1: no se migran, no se adaptan y no se integran en `PendingDecision`. Tampoco se infieren decisiones universales desde esos campos al leer documentos legacy.
+
+### C.2. Gate de aprobación de cardinalidad antes de W0.1
+
+- **BLOQUEO EXPLÍCITO — aprobación humana:** antes de modificar runtime, schema, migraciones o tests de W0.1 debe quedar registrada en este informe (o en una ADR enlazada) la aprobación explícita de **exactamente una** de estas formas:
+  1. `pending_decision: PendingDecision | None`, para permitir como máximo una decisión universal viva en la partida; o
+  2. una colección indexada por `decision_id` (por ejemplo, `dict[str, PendingDecision]` con serialización canónica), si los casos W1 demuestran decisiones simultáneas.
+- **PROHIBICIÓN ESTRUCTURAL:** no se admite `list[PendingDecision]` mutable: no impone unicidad de `decision_id`, hace costosa/ambigua la búsqueda y deja que el orden de inserción se convierta accidentalmente en semántica observable.
+- **GARANTÍAS DE LA OPCIÓN 1:** el slot único hace imposible una colisión entre dos decisiones vivas y no tiene orden interno que pueda variar; crear exige que el slot sea `None`, cerrar opera sobre el mismo `decision_id` y limpiar/reemplazar exige una transición validada dentro del agregado. Así se evitan duplicados y decisiones huérfanas por construcción.
+- **GARANTÍAS DE LA OPCIÓN 2:** la clave del mapa es el `decision_id`; la inserción rechaza una clave ya presente y cada valor debe repetir/coincidir con su clave, por lo que la unicidad es estructural. Toda referencia se valida contra el mapa autoritativo y creación/cierre/eliminación ocurre en la misma mutación de `GameState`, evitando huérfanas. Persistencia, digest, replay, presentación y eventos recorren siempre claves ordenadas canónicamente, nunca el orden mutable de inserción, evitando orden no determinista.
+- **ESTADO ACTUAL DEL GATE:** **PENDIENTE DE APROBACIÓN EXPLÍCITA**. La recomendación provisional es la opción 1 por ser el cambio mínimo compatible con los pending especializados actuales, pero esta recomendación no equivale a aprobación y **W0.1 no puede comenzar** hasta registrar la elección. Una vez aprobada, se eliminará la alternativa no elegida del diseño ejecutable y sus tres garantías (no colisión, no orfandad y orden determinista) pasarán a tests de aceptación.
+
 ## D. Modelo autoritativo
 
 | Campo | Regla | Etiqueta |
@@ -59,13 +82,13 @@
 - **CONTRATO APROBADO — derivados:** validez, acciones legales, vistas redactadas e índices abiertos se recalculan y no se persisten como otra verdad.
 - **CONTRATO APROBADO — transitorios:** request IDs, locks, leases, sesiones, cachés, reintentos, wall-clock y tokens de transporte no forman parte del modelo.
 - **CONTRATO APROBADO — lifecycle:** sólo existe `pending → closed`; no se introducen estados `expired` o `cancelled`. La invalidación ocurre por revalidación/versionado y un rechazo no muta.
-- **PROPUESTA — forma:** introducir una dataclass inmutable `PendingDecision` o nombre equivalente y una colección indexada por `decision_id`; el nombre y si la cardinalidad inicial es una o varias decisiones deben cerrarse antes de código.
+- **PROPUESTA — forma:** introducir una dataclass inmutable `PendingDecision` o nombre equivalente dentro de `GameState`; su campo será exclusivamente una de las dos formas permitidas por C.2 tras aprobación explícita.
 - **PREGUNTA ABIERTA — cardinalidad de infraestructura:** el contrato no fija si `GameState` admite exactamente una decisión universal simultánea o un mapa ordenado de varias; la decisión debe basarse en casos W1 sin absorber selección compuesta.
 
 ## E. Integración con `GameState`
 
 - **HECHO OBSERVADO — estado actual:** `GameState` persiste `pending_search`, `pending_move_replacement`, `pending_triggers`, `event_log`, `command_history` y `setup_mulligans`; no existe `pending_decision`.
-- **PROPUESTA — cambio aditivo:** añadir `pending_decision: PendingDecision | None = None` al final de los campos con default, preservando construcción posicional histórica y sin eliminar campos existentes.
+- **PROPUESTA CONDICIONADA — cambio aditivo:** si se aprueba la opción 1 de C.2, añadir `pending_decision: PendingDecision | None = None` al final de los campos con default, preservando construcción posicional histórica y sin eliminar campos existentes; si se aprueba la opción 2, añadir el mapa indexado y su fábrica vacía en esa posición. No implementar ninguna de las dos antes del gate.
 - **CONTRATO APROBADO — invariantes:** `validate_invariants()` debe comprobar elector existente, tokens únicos/no vacíos conforme a la familia, coherencia `status/selected_option`, origen resoluble, identidad estable y vínculo de versión.
 - **CONTRATO APROBADO — rollback:** creación y cierre se realizan dentro del snapshot transaccional existente de `GameEngine.execute`; cualquier error restaura estado, historial, eventos y contadores.
 - **CONTRATO APROBADO — no duplicación:** ningún handler puede mantener la misma decisión viva simultáneamente en el campo universal y en un pending especializado.
@@ -174,7 +197,8 @@
 
 ## O. Secuencia por archivos
 
-1. **PROPUESTA — `domain/enums.py` y `domain/models.py`:** definir discriminadores, registro y validación local sin integrar especializaciones.
+0. **GATE OBLIGATORIO — cardinalidad:** obtener y registrar aprobación explícita de una de las dos formas de C.2; ninguna modificación W0.1 puede preceder este paso.
+1. **PROPUESTA — `domain/enums.py` y `domain/models.py`:** definir discriminadores, registro y validación local conforme a la cardinalidad aprobada, sin integrar especializaciones.
 2. **PROPUESTA — `persistence/codec.py`:** registrar tipos con dispatch cerrado; añadir tests negativos antes de writers.
 3. **PROPUESTA — `persistence/migrations.py`:** implementar rutas `2 → 3` y tests de composición histórica.
 4. **PROPUESTA — `persistence/snapshot.py`:** elevar versión, escribir/restaurar el registro y añadir goldens.
@@ -209,6 +233,7 @@
 |---|---|---|---|
 | `W0-GATE-BASELINE` | SHA/tree/fecha/versión/rama y fixtures históricos fijados. | Listo. | **HECHO OBSERVADO** |
 | `W0-GATE-CONTRACT` | Campos, exclusiones e invariantes `01`–`14` sin contradicción. | Listo con preguntas de forma no semántica. | **CONTRATO APROBADO** |
+| `W0.1-GATE-CARDINALITY` | Aprobación humana explícita y registrada de slot opcional único o colección indexada; lista mutable prohibida; tests exigidos para unicidad, orfandad y orden. | **Pendiente; bloquea toda implementación W0.1.** | **PREGUNTA ABIERTA** |
 | `W0-GATE-SCHEMA` | Numeración, readers, writers, migraciones y unknown-version tests. | Pendiente de implementación. | **PROPUESTA** |
 | `W0-GATE-PRIVACY` | Proyecciones y no interferencia para cuatro audiencias. | Pendiente de implementación. | **PROPUESTA** |
 | `W0-GATE-CAS` | Carrera real en memoria/SQLite con un único ganador y sin evento fantasma. | Pendiente de implementación. | **PROPUESTA** |

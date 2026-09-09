@@ -11,7 +11,10 @@ CANONICAL_AUDIT = ROOT / "docs" / "FANTASY_TOKENS_BACKEND_GAP_AUDIT.md"
 SOURCE_INVENTORY = ROOT / "docs" / "FANTASY_TOKENS_SOURCE_INVENTORY.csv"
 READINESS_AUDIT = ROOT / "docs" / "audits" / "PHASE_2C_FIRST_SLICE_READINESS_AUDIT_2026-09-07.md"
 TRACEABILITY_AUDIT = ROOT / "docs" / "audits" / "PHASE_2C_FIRST_SLICE_TRACEABILITY_2026-09-07.md"
+CAP_ACTION_CONTRACT_AUDIT = ROOT / "docs" / "audits" / "PHASE_2C_CAP_ACTION_004_CONTRACT_AUDIT_2026-09-07.md"
+CAP_ACTION_TRACEABILITY_AUDIT = ROOT / "docs" / "audits" / "PHASE_2C_CAP_ACTION_004_TRACEABILITY_2026-09-07.md"
 EXPECTED_SLICE_VERDICT = "N-PHASE-02 IMPLEMENTATION BLOCKED"
+TASK_BASELINE_SHA = "9543806234a1b5af47dc1e40514323b2c5fc4324"
 
 
 def _matrix_rows() -> list[dict[str, str]]:
@@ -22,6 +25,33 @@ def _matrix_rows() -> list[dict[str, str]]:
     assert all(None not in row for row in rows), "fila CSV con columnas sobrantes"
     assert all(all(value is not None for value in row.values()) for row in rows)
     return rows
+
+
+def _declared_capability_counts(content: str) -> tuple[int, ...]:
+    """Extract only current capability totals from authoritative roadmap contexts."""
+    executive_summary = content.split("## Executive summary", 1)[1].split(
+        "## estado actual", 1
+    )[0]
+    executive_matches = re.findall(
+        r"\b(?:las|de) (\d+) capabilities\b", executive_summary
+    )
+    heading_matches = re.findall(
+        r"^### Valoración de las (\d+) capabilities\s*$", content, re.MULTILINE
+    )
+    assert len(executive_matches) == 1, (
+        "el Executive Summary debe declarar un único total vigente de capabilities"
+    )
+    assert len(heading_matches) == 1, (
+        "debe existir un único encabezado vigente de valoración de capabilities"
+    )
+    return tuple(map(int, (*executive_matches, *heading_matches)))
+
+
+def _audit_identity(content: str) -> dict[str, str]:
+    """Read the scalar identity fields from an audit's first YAML block."""
+    match = re.search(r"```yaml\n(?P<body>.*?)\n```", content, re.DOTALL)
+    assert match, "falta el bloque YAML de identidad de auditoría"
+    return dict(re.findall(r"^([a-z0-9_]+):\s*(\S+)\s*$", match.group("body"), re.MULTILINE))
 
 
 def _first_slice_section(content: str) -> str:
@@ -126,6 +156,17 @@ def test_master_document_has_exact_required_sections_and_phase_status() -> None:
     assert "Phase 3: `PENDING`" in content
     assert "planificación derivada" in content
     assert "no implementación ni release" in content
+
+
+def test_declared_capability_totals_match_the_current_matrix() -> None:
+    rows = _matrix_rows()
+    declared_counts = _declared_capability_counts(
+        ROADMAP.read_text(encoding="utf-8")
+    )
+
+    assert all(count == len(rows) for count in declared_counts)
+    assert len(set(declared_counts)) == 1
+    assert declared_counts[0] == 64
 
 
 def test_capability_csv_ids_states_references_and_traceability() -> None:
@@ -262,6 +303,34 @@ def test_dated_first_slice_reports_exist_and_have_the_exact_verdict() -> None:
         assert verdicts == [EXPECTED_SLICE_VERDICT]
         assert f"verdict: {EXPECTED_SLICE_VERDICT}" in content
         assert _parse_first_slice(content) == contract
+
+
+def test_cap_action_reports_distinguish_baseline_input_and_audited_head() -> None:
+    expected_semantics = (
+        "`task_baseline_sha` es el inicio de la tarea completa.",
+        "`report_input_sha` es el\n`HEAD` anterior a la última subentrega de informes.",
+        "`audited_task_head_sha` es el\nestado acumulado auditado",
+    )
+    sha_fields = (
+        "task_baseline_sha",
+        "report_input_sha",
+        "audited_task_head_sha",
+    )
+
+    for report in (CAP_ACTION_CONTRACT_AUDIT, CAP_ACTION_TRACEABILITY_AUDIT):
+        content = report.read_text(encoding="utf-8")
+        identity = _audit_identity(content)
+
+        assert identity["status"] == "MISSING"
+        assert identity["gate"] == identity["contract_status"] == "READY"
+        assert identity["runtime_authorization"] == "FORBIDDEN"
+        assert identity["phase_2c"] == "IN_PROGRESS"
+        assert identity["phase_3"] == "PENDING"
+        assert identity["task_baseline_sha"] == TASK_BASELINE_SHA
+        assert all(re.fullmatch(r"[0-9a-f]{40}", identity[field]) for field in sha_fields)
+        assert len({identity[field] for field in sha_fields}) == len(sha_fields)
+        for semantic_statement in expected_semantics:
+            assert semantic_statement in content
 
 
 def test_pending_decision_capability_has_minimal_boundary_and_reciprocal_edges() -> None:
@@ -443,9 +512,17 @@ def test_documented_totals_defaults_and_generic_capability_boundary() -> None:
 
     roadmap = ROADMAP.read_text(encoding="utf-8")
     assert "39/39" in roadmap and "431/431" in roadmap
+    assert "386 identidades" in roadmap and "45 reimpresiones/variantes" in roadmap
     assert "Cualquier presupuesto implícito, especialmente 200, 300 o 400" in roadmap
     assert "cero dispatch por identidad" in roadmap
     assert "reglas particulares por carta" in roadmap
+
+    normative_budget = {row["capability_id"]: row for row in _matrix_rows()}[
+        "CAP-NORM-002"
+    ]
+    assert normative_budget["normative_refs"] == "N-POINTS-01"
+    assert normative_budget["status"] == "BLOCKED"
+    assert normative_budget["gate"] == "NORM-BLOCKED"
 
     # Las cifras disputadas sólo pueden aparecer como bloqueo, nunca como default.
     for row in _matrix_rows():

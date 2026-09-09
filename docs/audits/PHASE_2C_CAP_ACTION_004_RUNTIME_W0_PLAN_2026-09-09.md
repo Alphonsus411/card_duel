@@ -2,7 +2,7 @@
 
 ## A. Estado real
 
-- **HECHO OBSERVADO — baseline:** la revisión auditada es `7ae37497ed6aa5d69fb16ac42a715998e63141b4`, su tree SHA es `642867e95a633148eadcac90c9aebfa681c6b117`, la fecha Git es `2026-09-09T11:38:57+02:00`, la versión es `0.20.1` y la rama local examinada es `work`.
+- **HECHO OBSERVADO — baseline actualizado:** después de restaurar `origin` a `https://github.com/Alphonsus411/card_duel.git` y ejecutar `git fetch --prune origin`, `git remote show origin` resolvió `main` como rama por defecto. `origin/main` es `59c07af59690aafec9f35faf6af1bb8435c41eee`, su tree SHA es `f6c2f022f9f4af3b90d651d4918e9b7425b94d60` y su fecha Git es `2026-09-09T14:14:18+02:00`. El baseline anterior `7ae37497ed6aa5d69fb16ac42a715998e63141b4` se conserva como extremo inicial del compare y la rama local examinada es `work`.
 - **HECHO OBSERVADO — alcance:** este documento es un plan W0; no modifica runtime, schema, datos, API, tests funcionales ni versión.
 - **HECHO OBSERVADO — fase:** Fase 2C sigue `IN_PROGRESS` y Fase 3 sigue `PENDING` en el baseline.
 - **HECHO OBSERVADO — capability objetivo:** `CAP-ACTION-004` está `MISSING`, gate `READY`, riesgo `CRITICAL`, prioridad `P0` y wave propuesta `W1`; `READY` sólo corresponde al contrato, no equivale a implementación.
@@ -272,5 +272,80 @@
 
 - **HECHO OBSERVADO — consistencia:** no aparece evidencia objetiva nueva que cierre las preguntas normativas, cambie el estado de las tres capabilities o active una condición adicional de bloqueo para la planificación W0.
 - **CONTRATO APROBADO — regla de actualización:** cualquier cambio de arista, estado, schema o decisión normativa obliga a reauditar conjuntamente las cuatro fuentes principales y esta evidencia antes de implementar.
+
+## T. Sincronización y contraste con GitHub — 2026-09-09
+
+### T.1 Baseline remoto y compare solicitado
+
+- **HECHO OBSERVADO — remoto:** `origin` tiene como fetch/push URL
+  `https://github.com/Alphonsus411/card_duel.git`; `git fetch --prune origin`
+  terminó correctamente y `git remote show origin` declaró `main` como HEAD.
+- **HECHO OBSERVADO — avance:** el rango
+  `7ae37497ed6aa5d69fb16ac42a715998e63141b4..59c07af59690aafec9f35faf6af1bb8435c41eee`
+  contiene ocho commits (cuatro commits documentales y sus cuatro merges, PR
+  `#270`–`#273`). Cambia únicamente dos documentos: modifica este informe de
+  contrato (`44` inserciones, `8` borrados) y añade este plan W0 (`276`
+  inserciones). No cambia ningún archivo de `src/card_duel_engine/` ni de
+  `tests/`; por tanto no hay nueva implementación ni nueva evidencia funcional
+  en el rango.
+- **CONTRATO APROBADO — efecto:** las ampliaciones de `main` concretan el plan
+  W0 (autoridad/cardinalidad y evolución compatible de schemas) y corrigen la
+  atribución de resultados históricos. No alteran los catorce invariantes, no
+  autorizan runtime y mantienen `CAP-ACTION-004` como `MISSING / READY`.
+
+### T.2 Ramas remotas adicionales
+
+El inventario de `refs/remotes/origin` encontró **275 ramas adicionales a
+`main`**: 261 ya son ancestros de `origin/main` y 14 no están fusionadas. Las
+ramas no fusionadas, que son las únicas candidatas a aportar contenido ausente
+de `main`, quedan enumeradas exhaustivamente:
+
+| Rama no fusionada | Tip SHA | Fecha Git | Relación con `main` |
+|---|---|---|---|
+| `Bella-2.0` | `851bc963692c` | `2026-07-23T09:56:29+02:00` | Sin historia común |
+| `codex/actualiza-allowed_content-y-mejora-validaciones` | `faeaaaa8f1f0` | `2026-08-30T12:21:59+02:00` | Divergente |
+| `codex/actualizar-documentacion-de-fases-y-definiciones` | `b103d0c8b6a9` | `2026-08-30T12:06:13+02:00` | Divergente |
+| `codex/agregar-pruebas-para-targeting-local-cache` | `4aa6cccceeff` | `2026-08-23T08:45:27+02:00` | Divergente |
+| `codex/anadir-anotacion-en-documento-de-deuda` | `402f88ca48da` | `2026-08-29T20:41:06+02:00` | Divergente |
+| `codex/anadir-proyeccion-en-modulo-desacoplado` | `07b45d2e2e29` | `2026-08-30T11:43:02+02:00` | Divergente |
+| `codex/capturar-perfil-de-acciones-legales-con-cprofile` | `6f1f5e9a3e67` | `2026-08-23T09:54:13+02:00` | Divergente |
+| `codex/configurar-remoto-y-verificar-documentos` | `6ff85f5cf488` | `2026-08-30T12:21:27+02:00` | Divergente |
+| `codex/corrige-errores-de-revision-de-codex` | `9c627ed6b94c` | `2026-08-22T16:37:34+02:00` | Divergente |
+| `codex/corrige-errores-en-la-prueba-de-paridad` | `20248530cbea` | `2026-08-23T08:39:57+02:00` | Divergente |
+| `codex/crear-modulo-cardpresentation-y-catalogo` | `a377dfb8c074` | `2026-08-30T11:36:29+02:00` | Divergente |
+| `codex/crear-rama-para-card-duel-engine-0.18.0` | `532cf10560d8` | `2026-08-22T16:52:57+02:00` | Divergente |
+| `codex/crear-tests-para-publiccard-y-cardpresentation` | `fe29a5df56ee` | `2026-08-30T11:52:27+02:00` | Divergente |
+| `codex/fix-issues-from-codex-review-#146` | `e706d3baee4e` | `2026-08-23T09:44:20+02:00` | Divergente |
+
+Ninguna rama no fusionada se acepta como autoridad de diseño: la autoridad es
+el contrato aprobado en `origin/main`. En particular,
+`codex/actualiza-allowed_content-y-mejora-validaciones` y
+`codex/configurar-remoto-y-verificar-documentos` contienen lógica añadida que
+selecciona destinos por IDs concretos de definición de carta; ese dispatch por
+identidad contradice `CAP-ACTION-004-INV-13` y queda expresamente descartado.
+El barrido de los diffs de las otras ramas no fusionadas no encontró propuestas
+de estados `expired`/`cancelled`, una segunda autoridad persistida ni DDL/DML
+destructivo para decisiones. Esto no las promueve: cualquier contenido futuro
+debe volver a contrastarse contra `main` y pasar los gates aprobados.
+
+### T.3 Pull requests y Actions
+
+- **HECHO OBSERVADO — PR:** se intentó literalmente
+  `gh pr list --state merged --search "CAP-ACTION-004 OR Phase 2C"`, pero el
+  cliente local no tenía sesión GitHub y rechazó la consulta. La API pública de
+  GitHub se usó como fallback y sitúa como último relacionado el PR
+  [#273 — docs: aclarar evidencia de verificación CAP-ACTION-004](https://github.com/Alphonsus411/card_duel/pull/273),
+  fusionado el `2026-09-09T12:14:18Z` en el SHA exacto de `origin/main`.
+- **HECHO OBSERVADO — CI de `origin/main`:** la ejecución
+  [tests #34349869544](https://github.com/Alphonsus411/card_duel/actions/runs/34349869544)
+  corresponde exactamente a `59c07af59690aafec9f35faf6af1bb8435c41eee`.
+  La segunda consulta confirmó la ejecución `completed / success` a las
+  `2026-09-09T12:18:03Z`: `runtime (3.11)`, `runtime (3.12)`, `runtime (3.13)` y
+  `full` concluyeron individualmente con `success`. Sólo tras esa conclusión se
+  registra **`CI GREEN` para el SHA exacto de `origin/main`**.
+- **REGLA DE EVIDENCIA:** el SHA del commit que contiene esta actualización
+  documental se registrará y consultará después de crearlo. No heredará el
+  resultado de `origin/main` ni podrá recibir una declaración `CI GREEN` antes
+  de que todos sus jobs relevantes concluyan con `success`.
 
 CAP-ACTION-004 W0 LISTO CON PRERREQUISITOS

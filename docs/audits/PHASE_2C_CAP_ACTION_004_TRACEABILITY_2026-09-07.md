@@ -10,8 +10,9 @@ status: MISSING
 gate: READY
 contract_status: READY
 runtime_authorization: FORBIDDEN
-initial_sha: f80bc858221c8842dbe9ce0542e8a93b2141bfb6
-final_audited_sha: f80bc858221c8842dbe9ce0542e8a93b2141bfb6
+task_baseline_sha: 9543806234a1b5af47dc1e40514323b2c5fc4324
+report_input_sha: f80bc858221c8842dbe9ce0542e8a93b2141bfb6
+audited_task_head_sha: c878265d96c7ed44269cce9ec0b855746b2e62d9
 files:
   modified:
     - docs/audits/PHASE_2C_CAP_ACTION_004_CONTRACT_AUDIT_2026-09-07.md
@@ -19,15 +20,18 @@ files:
     - docs/audits/PHASE_2C_CAP_ACTION_004_TRACEABILITY_2026-09-07.md
 ```
 
-`final_audited_sha` identifica el último árbol fuente auditado antes del commit
-documental; el commit contenedor no se autorrefiere. Todas las filas trazan un
-requisito individual y no afirman implementación runtime.
+`task_baseline_sha` es el inicio de la tarea completa. `report_input_sha` es el
+`HEAD` anterior a la última subentrega de informes. `audited_task_head_sha` es el
+estado acumulado auditado antes de esta microcorrección; constituye evidencia
+histórica y no intenta referenciar el commit que contiene la corrección actual,
+evitando así una autorreferencia imposible. Todas las filas trazan un requisito
+individual y no afirman implementación runtime.
 
 ## Requirement traceability matrix
 
 | Requisito | Evidencia | Capability | Invariante | Superficie futura | Test | Estado |
 |---|---|---|---|---|---|---|
-| Baseline: SHA inicial/final | Control record y audit identity | `CAP-ACTION-004` | — | Git/documentación | `git rev-parse HEAD`; status/diff | `PASS` |
+| Baseline: SHA de tarea/input/estado auditado | Control record y audit identity | `CAP-ACTION-004` | — | Git/documentación | `git rev-parse HEAD`; status/diff | `PASS` |
 | Baseline: versión/fases/status/gate | `pyproject.toml`, `uv.lock`, roadmaps y matriz | `CAP-ACTION-004` | — | Release/roadmap | test documental Phase 2C | `PASS` |
 | Mecanismo `PendingSearch` | Matriz forense; models/stack/options/game/codec | `CAP-SEARCH-001`; `CAP-ACTION-004` | INV-01/03/04/05/08/09/10 | Modelo, engine, snapshot, replay | Auditoría estática + suite existente | `PASS` |
 | Mecanismo `PendingMoveReplacement` | Matriz forense; models/zones/game/codec | `CAP-ZONE-004`; `CAP-ACTION-004` | INV-01/03/04/05/06/09/10 | Modelo, zones, transacción | Auditoría estática + suite existente | `PASS` |

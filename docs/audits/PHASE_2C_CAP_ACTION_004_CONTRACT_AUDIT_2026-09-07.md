@@ -28,15 +28,16 @@ status: MISSING
 gate: READY
 contract_status: READY
 runtime_authorization: FORBIDDEN
-initial_sha: f80bc858221c8842dbe9ce0542e8a93b2141bfb6
-final_audited_sha: f80bc858221c8842dbe9ce0542e8a93b2141bfb6
+task_baseline_sha: 9543806234a1b5af47dc1e40514323b2c5fc4324
+report_input_sha: f80bc858221c8842dbe9ce0542e8a93b2141bfb6
+audited_task_head_sha: c878265d96c7ed44269cce9ec0b855746b2e62d9
 ```
 
-`initial_sha` es el `HEAD` capturado antes de editar. `final_audited_sha` es el
-último SHA de código y documentación fuente auditado antes del commit de esta
-entrega; coincide porque sólo se añaden/modifican los dos informes indicados en
-la sección de cambios. El SHA del commit que contiene el propio documento no se
-autorrefiere para evitar una identidad circular.
+`task_baseline_sha` es el inicio de la tarea completa. `report_input_sha` es el
+`HEAD` anterior a la última subentrega de informes. `audited_task_head_sha` es el
+estado acumulado auditado antes de esta microcorrección; constituye evidencia
+histórica y no intenta referenciar el commit que contiene la corrección actual,
+evitando así una autorreferencia imposible.
 
 Baseline comprobado: `pyproject.toml` y `uv.lock` declaran `0.20.1`; los dos
 roadmaps conservan Phase 2C `IN PROGRESS` y Phase 3 `PENDING`; la matriz declara

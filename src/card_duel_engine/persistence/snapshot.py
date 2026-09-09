@@ -14,7 +14,7 @@ from ..rules.config import RuleSet
 from .codec import canonical_json, decode_value, encode_value
 from .migrations import migrate_document
 
-SNAPSHOT_SCHEMA_VERSION = "2"
+SNAPSHOT_SCHEMA_VERSION = "3"
 
 
 def _body(engine: GameEngine) -> dict[str, Any]:
@@ -51,7 +51,24 @@ def _digest_encoded_state(encoded_state: Any) -> str:
 
 
 def state_digest(engine: GameEngine) -> str:
-    return _digest_encoded_state(_canonical_encoded_state(engine))
+    encoded = _canonical_encoded_state(engine)
+    # Los artefactos 0.19 deben conservar su huella histórica incluso cuando
+    # una regla 0.19 se restaura con la semántica CURRENT explícita.
+    if engine.rules.version == "0.19.0":
+        encoded = _omit_pending_decision(encoded)
+    return _digest_encoded_state(encoded)
+
+
+def _omit_pending_decision(encoded_state: Any) -> Any:
+    """Conserva las huellas de replay emitidas antes del schema snapshot 3."""
+    if not isinstance(encoded_state, dict) or encoded_state.get("$type") != "GameState":
+        return encoded_state
+    transformed = dict(encoded_state)
+    encoded_fields = transformed.get("fields")
+    if isinstance(encoded_fields, dict):
+        transformed["fields"] = dict(encoded_fields)
+        transformed["fields"].pop("pending_decision", None)
+    return transformed
 
 
 def legacy_state_digest_without_ability_source_profile(engine: GameEngine) -> str:
@@ -79,7 +96,9 @@ def legacy_state_digest_without_ability_source_profile(engine: GameEngine) -> st
                 fields.pop("exhaustion_policy", None)
         return transformed
 
-    return _digest_encoded_state(omit_profile(_canonical_encoded_state(engine)))
+    return _digest_encoded_state(
+        omit_profile(_omit_pending_decision(_canonical_encoded_state(engine)))
+    )
 
 
 def dump_snapshot(engine: GameEngine, *, indent: int | None = 2) -> str:

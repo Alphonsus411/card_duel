@@ -1,0 +1,2854 @@
+{
+  "body": {
+    "catalog": {
+      "$tuple": [
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 5,
+            "card_id": "W0-A-000",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 5,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Criatura de prueba 0",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test-fixtures",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 5,
+            "card_id": "W0-A-001",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 5,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Criatura de prueba 1",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test-fixtures",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 5,
+            "card_id": "W0-A-002",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 5,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Criatura de prueba 2",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test-fixtures",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 5,
+            "card_id": "W0-A-003",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 5,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Criatura de prueba 3",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test-fixtures",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 5,
+            "card_id": "W0-A-004",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 5,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Criatura de prueba 4",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test-fixtures",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 5,
+            "card_id": "W0-A-005",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 5,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Criatura de prueba 5",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test-fixtures",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 5,
+            "card_id": "W0-A-006",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 5,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Criatura de prueba 6",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test-fixtures",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 5,
+            "card_id": "W0-A-007",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 5,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Criatura de prueba 7",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test-fixtures",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 5,
+            "card_id": "W0-A-008",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 5,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Criatura de prueba 8",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test-fixtures",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 5,
+            "card_id": "W0-A-009",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 5,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Criatura de prueba 9",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test-fixtures",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 5,
+            "card_id": "W0-A-010",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 5,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Criatura de prueba 10",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test-fixtures",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 5,
+            "card_id": "W0-A-011",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 5,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Criatura de prueba 11",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test-fixtures",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 5,
+            "card_id": "W0-B-000",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 5,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Criatura de prueba 0",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test-fixtures",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 5,
+            "card_id": "W0-B-001",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 5,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Criatura de prueba 1",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test-fixtures",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 5,
+            "card_id": "W0-B-002",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 5,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Criatura de prueba 2",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test-fixtures",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 5,
+            "card_id": "W0-B-003",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 5,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Criatura de prueba 3",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test-fixtures",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 5,
+            "card_id": "W0-B-004",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 5,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Criatura de prueba 4",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test-fixtures",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 5,
+            "card_id": "W0-B-005",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 5,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Criatura de prueba 5",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test-fixtures",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 5,
+            "card_id": "W0-B-006",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 5,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Criatura de prueba 6",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test-fixtures",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 5,
+            "card_id": "W0-B-007",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 5,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Criatura de prueba 7",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test-fixtures",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 5,
+            "card_id": "W0-B-008",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 5,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Criatura de prueba 8",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test-fixtures",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 5,
+            "card_id": "W0-B-009",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 5,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Criatura de prueba 9",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test-fixtures",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 5,
+            "card_id": "W0-B-010",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 5,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Criatura de prueba 10",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test-fixtures",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        },
+        {
+          "$type": "CardDefinition",
+          "fields": {
+            "abilities": {
+              "$tuple": []
+            },
+            "alternative_costs": {
+              "$tuple": []
+            },
+            "base_strength": 5,
+            "card_id": "W0-B-011",
+            "continuous_effects": {
+              "$tuple": []
+            },
+            "cost": 5,
+            "deferred_replacement_choice": false,
+            "dynamic_alternative_costs": {
+              "$tuple": []
+            },
+            "dynamic_cost": null,
+            "effects": {
+              "$tuple": []
+            },
+            "equipment_granted_keywords": {
+              "$frozenset": []
+            },
+            "equipment_strength_bonus": 0,
+            "keywords": {
+              "$frozenset": []
+            },
+            "kind": {
+              "$enum": "CardKind",
+              "name": "CREATURE"
+            },
+            "legendary_effects": {
+              "$tuple": []
+            },
+            "lord_domain": null,
+            "move_replacement": null,
+            "move_replacements": {
+              "$tuple": []
+            },
+            "name": "Criatura de prueba 11",
+            "permanent": true,
+            "player_orders_replacements": false,
+            "rank": {
+              "$enum": "CardRank",
+              "name": "STANDARD"
+            },
+            "revision": 1,
+            "set_id": "test-fixtures",
+            "subtypes": {
+              "$frozenset": []
+            },
+            "transmutable": true,
+            "x_alternative_costs": {
+              "$tuple": []
+            },
+            "x_cost": null
+          }
+        }
+      ]
+    },
+    "engine_semantics": "CURRENT",
+    "engine_version": "0.20.1",
+    "next_instance": 25,
+    "next_stack_item": 1,
+    "rules": {
+      "$type": "RuleSet",
+      "fields": {
+        "hand_limit": 6,
+        "initial_hand_size": 6,
+        "legal_action_enumeration_limit": 1000,
+        "minimum_players": 2,
+        "phase_sequence": {
+          "$tuple": [
+            {
+              "$enum": "Phase",
+              "name": "DRAW"
+            },
+            {
+              "$enum": "Phase",
+              "name": "MAINTENANCE"
+            },
+            {
+              "$enum": "Phase",
+              "name": "EFFECTS"
+            },
+            {
+              "$enum": "Phase",
+              "name": "COMBAT"
+            },
+            {
+              "$enum": "Phase",
+              "name": "LEGENDARY"
+            },
+            {
+              "$enum": "Phase",
+              "name": "DISCARD"
+            }
+          ]
+        },
+        "recycle_discard": true,
+        "ruleset_id": "universal",
+        "steps_per_maintenance": 5,
+        "version": "0.20.1",
+        "wound_limit": 50
+      }
+    },
+    "schema_version": "3",
+    "state": {
+      "$type": "GameState",
+      "fields": {
+        "active_player_index": 0,
+        "cards": {
+          "$mapping": [
+            [
+              "card-000001",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "A",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "W0-A-000",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000001",
+                  "overridden_definition_id": null,
+                  "owner_id": "A",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "DECK"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000002",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "A",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "W0-A-001",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000002",
+                  "overridden_definition_id": null,
+                  "owner_id": "A",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000003",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "A",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "W0-A-002",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000003",
+                  "overridden_definition_id": null,
+                  "owner_id": "A",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000004",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "A",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "W0-A-003",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000004",
+                  "overridden_definition_id": null,
+                  "owner_id": "A",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000005",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "A",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "W0-A-004",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000005",
+                  "overridden_definition_id": null,
+                  "owner_id": "A",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000006",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "A",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "W0-A-005",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000006",
+                  "overridden_definition_id": null,
+                  "owner_id": "A",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "DECK"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000007",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "A",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "W0-A-006",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000007",
+                  "overridden_definition_id": null,
+                  "owner_id": "A",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000008",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "A",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "W0-A-007",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000008",
+                  "overridden_definition_id": null,
+                  "owner_id": "A",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "DECK"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000009",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "A",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "W0-A-008",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000009",
+                  "overridden_definition_id": null,
+                  "owner_id": "A",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "DECK"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000010",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "A",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "W0-A-009",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000010",
+                  "overridden_definition_id": null,
+                  "owner_id": "A",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "DECK"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000011",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "A",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "W0-A-010",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000011",
+                  "overridden_definition_id": null,
+                  "owner_id": "A",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000012",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "A",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "W0-A-011",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000012",
+                  "overridden_definition_id": null,
+                  "owner_id": "A",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000013",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "B",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "W0-B-000",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000013",
+                  "overridden_definition_id": null,
+                  "owner_id": "B",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "DECK"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000014",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "B",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "W0-B-001",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000014",
+                  "overridden_definition_id": null,
+                  "owner_id": "B",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000015",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "B",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "W0-B-002",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000015",
+                  "overridden_definition_id": null,
+                  "owner_id": "B",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "DECK"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000016",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "B",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "W0-B-003",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000016",
+                  "overridden_definition_id": null,
+                  "owner_id": "B",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "DECK"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000017",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "B",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "W0-B-004",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000017",
+                  "overridden_definition_id": null,
+                  "owner_id": "B",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000018",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "B",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "W0-B-005",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000018",
+                  "overridden_definition_id": null,
+                  "owner_id": "B",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "DECK"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000019",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "B",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "W0-B-006",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000019",
+                  "overridden_definition_id": null,
+                  "owner_id": "B",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000020",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "B",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "W0-B-007",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000020",
+                  "overridden_definition_id": null,
+                  "owner_id": "B",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000021",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "B",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "W0-B-008",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000021",
+                  "overridden_definition_id": null,
+                  "owner_id": "B",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "DECK"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000022",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "B",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "W0-B-009",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000022",
+                  "overridden_definition_id": null,
+                  "owner_id": "B",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "DECK"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000023",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "B",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "W0-B-010",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000023",
+                  "overridden_definition_id": null,
+                  "owner_id": "B",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ],
+            [
+              "card-000024",
+              {
+                "$type": "CardInstance",
+                "fields": {
+                  "activated_this_turn": {
+                    "$set": []
+                  },
+                  "attached_to": null,
+                  "controller_id": "B",
+                  "counters": {
+                    "$mapping": []
+                  },
+                  "creature_form_expires_turn_serial": null,
+                  "damage": 0,
+                  "damage_prevention": 0,
+                  "definition_id": "W0-B-011",
+                  "definition_override_expires_turn_serial": null,
+                  "exhausted": false,
+                  "instance_id": "card-000024",
+                  "overridden_definition_id": null,
+                  "owner_id": "B",
+                  "regeneration_blocked_until_state_check": false,
+                  "regeneration_shields": 0,
+                  "replacement_order": {
+                    "$tuple": []
+                  },
+                  "strength_modifier": 0,
+                  "transformed_as_creature": false,
+                  "zone": {
+                    "$enum": "Zone",
+                    "name": "HAND"
+                  }
+                }
+              }
+            ]
+          ]
+        },
+        "combat": null,
+        "command_history": [],
+        "consecutive_passes": 0,
+        "control_changes": [],
+        "event_log": [
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000007",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "A",
+              "sequence": 1
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000011",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "A",
+              "sequence": 2
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000005",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "A",
+              "sequence": 3
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000002",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "A",
+              "sequence": 4
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000003",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "A",
+              "sequence": 5
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000004",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "A",
+              "sequence": 6
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000019",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "B",
+              "sequence": 7
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000023",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "B",
+              "sequence": 8
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000024",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "B",
+              "sequence": 9
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000020",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "B",
+              "sequence": 10
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000014",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "B",
+              "sequence": 11
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000017",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "B",
+              "sequence": 12
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": null,
+              "event_type": "MATCH_STARTED",
+              "payload": {
+                "$mapping": [
+                  [
+                    "seed",
+                    901
+                  ]
+                ]
+              },
+              "player_id": null,
+              "sequence": 13
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": null,
+              "event_type": "PHASE_STARTED",
+              "payload": {
+                "$mapping": [
+                  [
+                    "phase",
+                    "DRAW"
+                  ]
+                ]
+              },
+              "player_id": "A",
+              "sequence": 14
+            }
+          },
+          {
+            "$type": "GameEvent",
+            "fields": {
+              "card_id": "card-000012",
+              "event_type": "CARD_DRAWN",
+              "payload": {
+                "$mapping": []
+              },
+              "player_id": "A",
+              "sequence": 15
+            }
+          }
+        ],
+        "initial_decks": {
+          "$mapping": [
+            [
+              "A",
+              {
+                "$tuple": [
+                  "W0-A-000",
+                  "W0-A-001",
+                  "W0-A-002",
+                  "W0-A-003",
+                  "W0-A-004",
+                  "W0-A-005",
+                  "W0-A-006",
+                  "W0-A-007",
+                  "W0-A-008",
+                  "W0-A-009",
+                  "W0-A-010",
+                  "W0-A-011"
+                ]
+              }
+            ],
+            [
+              "B",
+              {
+                "$tuple": [
+                  "W0-B-000",
+                  "W0-B-001",
+                  "W0-B-002",
+                  "W0-B-003",
+                  "W0-B-004",
+                  "W0-B-005",
+                  "W0-B-006",
+                  "W0-B-007",
+                  "W0-B-008",
+                  "W0-B-009",
+                  "W0-B-010",
+                  "W0-B-011"
+                ]
+              }
+            ]
+          ]
+        },
+        "pending_decision": {
+          "$type": "PendingDecision",
+          "fields": {
+            "audience": {
+              "$enum": "DecisionAudience",
+              "name": "ELECTOR"
+            },
+            "authorized_elector": "A",
+            "authorized_opaque_options": {
+              "$tuple": [
+                "opt_7xQm2",
+                "opt_B9kL4"
+              ]
+            },
+            "decision_id": "decision:setup:0001",
+            "origin": {
+              "$tuple": [
+                "setup",
+                "mulligan",
+                "0001"
+              ]
+            },
+            "selected_option": "opt_B9kL4",
+            "semantic_family": "mulligan/v1",
+            "state_version": 1,
+            "status": {
+              "$enum": "PendingDecisionStatus",
+              "name": "CLOSED"
+            }
+          }
+        },
+        "pending_move_replacement": null,
+        "pending_search": null,
+        "pending_triggers": [],
+        "phase": {
+          "$enum": "Phase",
+          "name": "DRAW"
+        },
+        "phase_priority_complete": false,
+        "phase_suppressions": [],
+        "players": {
+          "$mapping": [
+            [
+              "A",
+              {
+                "$type": "PlayerState",
+                "fields": {
+                  "conceded": false,
+                  "discard_recycling_blocked": false,
+                  "drainage_used_turn_serial": null,
+                  "mulligans_taken": 0,
+                  "player_id": "A",
+                  "steps": 0,
+                  "wound_prevention": 0,
+                  "wounds": 0,
+                  "zones": {
+                    "$mapping": [
+                      [
+                        {
+                          "$enum": "Zone",
+                          "name": "DECK"
+                        },
+                        [
+                          "card-000001",
+                          "card-000009",
+                          "card-000006",
+                          "card-000010",
+                          "card-000008"
+                        ]
+                      ],
+                      [
+                        {
+                          "$enum": "Zone",
+                          "name": "HAND"
+                        },
+                        [
+                          "card-000007",
+                          "card-000011",
+                          "card-000005",
+                          "card-000002",
+                          "card-000003",
+                          "card-000004",
+                          "card-000012"
+                        ]
+                      ],
+                      [
+                        {
+                          "$enum": "Zone",
+                          "name": "BATTLEFIELD"
+                        },
+                        []
+                      ],
+                      [
+                        {
+                          "$enum": "Zone",
+                          "name": "DISCARD"
+                        },
+                        []
+                      ],
+                      [
+                        {
+                          "$enum": "Zone",
+                          "name": "EXILE"
+                        },
+                        []
+                      ],
+                      [
+                        {
+                          "$enum": "Zone",
+                          "name": "REVEAL"
+                        },
+                        []
+                      ]
+                    ]
+                  }
+                }
+              }
+            ],
+            [
+              "B",
+              {
+                "$type": "PlayerState",
+                "fields": {
+                  "conceded": false,
+                  "discard_recycling_blocked": false,
+                  "drainage_used_turn_serial": null,
+                  "mulligans_taken": 0,
+                  "player_id": "B",
+                  "steps": 0,
+                  "wound_prevention": 0,
+                  "wounds": 0,
+                  "zones": {
+                    "$mapping": [
+                      [
+                        {
+                          "$enum": "Zone",
+                          "name": "DECK"
+                        },
+                        [
+                          "card-000021",
+                          "card-000018",
+                          "card-000022",
+                          "card-000016",
+                          "card-000015",
+                          "card-000013"
+                        ]
+                      ],
+                      [
+                        {
+                          "$enum": "Zone",
+                          "name": "HAND"
+                        },
+                        [
+                          "card-000019",
+                          "card-000023",
+                          "card-000024",
+                          "card-000020",
+                          "card-000014",
+                          "card-000017"
+                        ]
+                      ],
+                      [
+                        {
+                          "$enum": "Zone",
+                          "name": "BATTLEFIELD"
+                        },
+                        []
+                      ],
+                      [
+                        {
+                          "$enum": "Zone",
+                          "name": "DISCARD"
+                        },
+                        []
+                      ],
+                      [
+                        {
+                          "$enum": "Zone",
+                          "name": "EXILE"
+                        },
+                        []
+                      ],
+                      [
+                        {
+                          "$enum": "Zone",
+                          "name": "REVEAL"
+                        },
+                        []
+                      ]
+                    ]
+                  }
+                }
+              }
+            ]
+          ]
+        },
+        "priority_player_id": "A",
+        "random_seed": 901,
+        "resolution": [],
+        "ruleset_id": "universal",
+        "ruleset_version": "0.20.1",
+        "setup_mulligans": [],
+        "stack": [],
+        "status": {
+          "$enum": "MatchStatus",
+          "name": "RUNNING"
+        },
+        "text_patches": [],
+        "timed_modifiers": [],
+        "turn_number": 1,
+        "turn_order": {
+          "$tuple": [
+            "A",
+            "B"
+          ]
+        },
+        "turn_serial": 1,
+        "void": [],
+        "winner_ids": {
+          "$tuple": []
+        }
+      }
+    },
+    "state_digest": "93daf8de7adb22a68fc3c138d09f95a5ea3c1f01247727dd516b4ee875f13b28"
+  },
+  "sha256": "05d0dc6ef035cb6f2ae2c6f8499dadaf272c9a3b97818df9b4e42c313066a2fc"
+}

@@ -17,6 +17,21 @@ def _snapshot_1_to_2(body: dict[str, Any]) -> dict[str, Any]:
     return body
 
 
+def _snapshot_2_to_3(body: dict[str, Any]) -> dict[str, Any]:
+    state = body.get("state")
+    if not isinstance(state, dict) or state.get("$type") != "GameState":
+        raise ValueError("El snapshot antiguo no contiene un GameState válido")
+    fields = state.get("fields")
+    if not isinstance(fields, dict) or "pending_decision" in fields:
+        raise ValueError("El GameState de schema 2 no tiene la forma esperada")
+    fields["pending_decision"] = None
+    body["state_digest"] = hashlib.sha256(
+        canonical_json(state).encode("utf-8")
+    ).hexdigest()
+    body["schema_version"] = "3"
+    return body
+
+
 def _replay_1_to_2(body: dict[str, Any]) -> dict[str, Any]:
     commands = decode_value(body["commands"])
     if not isinstance(commands, tuple):
@@ -35,6 +50,7 @@ def _manifest_1_to_2(body: dict[str, Any]) -> dict[str, Any]:
 
 _MIGRATIONS: dict[tuple[str, str], Migration] = {
     ("snapshot", "1"): _snapshot_1_to_2,
+    ("snapshot", "2"): _snapshot_2_to_3,
     ("replay", "1"): _replay_1_to_2,
     ("manifest", "1"): _manifest_1_to_2,
 }

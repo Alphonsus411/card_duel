@@ -62,7 +62,7 @@
 - **PROHIBICIÓN ESTRUCTURAL:** no se admite `list[PendingDecision]` mutable: no impone unicidad de `decision_id`, hace costosa/ambigua la búsqueda y deja que el orden de inserción se convierta accidentalmente en semántica observable.
 - **GARANTÍAS DE LA OPCIÓN 1:** el slot único hace imposible una colisión entre dos decisiones vivas y no tiene orden interno que pueda variar; crear exige que el slot sea `None`, cerrar opera sobre el mismo `decision_id` y limpiar/reemplazar exige una transición validada dentro del agregado. Así se evitan duplicados y decisiones huérfanas por construcción.
 - **GARANTÍAS DE LA OPCIÓN 2:** la clave del mapa es el `decision_id`; la inserción rechaza una clave ya presente y cada valor debe repetir/coincidir con su clave, por lo que la unicidad es estructural. Toda referencia se valida contra el mapa autoritativo y creación/cierre/eliminación ocurre en la misma mutación de `GameState`, evitando huérfanas. Persistencia, digest, replay, presentación y eventos recorren siempre claves ordenadas canónicamente, nunca el orden mutable de inserción, evitando orden no determinista.
-- **ESTADO ACTUAL DEL GATE:** **PENDIENTE DE APROBACIÓN EXPLÍCITA**. La recomendación provisional es la opción 1 por ser el cambio mínimo compatible con los pending especializados actuales, pero esta recomendación no equivale a aprobación y **W0.1 no puede comenzar** hasta registrar la elección. Una vez aprobada, se eliminará la alternativa no elegida del diseño ejecutable y sus tres garantías (no colisión, no orfandad y orden determinista) pasarán a tests de aceptación.
+- **ESTADO DEL GATE (W0.1): CERRADO.** Se adopta la opción 1, `pending_decision: PendingDecision | None`. Los primeros casos W1 sólo requieren una elección bloqueante a la vez; el slot es la mínima cardinalidad que impide por construcción colisiones, decisiones huérfanas y orden accidental. Una futura simultaneidad demostrada exigirá otra decisión arquitectónica y migración explícita, no un mapa anticipado.
 
 ## D. Modelo autoritativo
 
@@ -83,12 +83,12 @@
 - **CONTRATO APROBADO — transitorios:** request IDs, locks, leases, sesiones, cachés, reintentos, wall-clock y tokens de transporte no forman parte del modelo.
 - **CONTRATO APROBADO — lifecycle:** sólo existe `pending → closed`; no se introducen estados `expired` o `cancelled`. La invalidación ocurre por revalidación/versionado y un rechazo no muta.
 - **PROPUESTA — forma:** introducir una dataclass inmutable `PendingDecision` o nombre equivalente dentro de `GameState`; su campo será exclusivamente una de las dos formas permitidas por C.2 tras aprobación explícita.
-- **PREGUNTA ABIERTA — cardinalidad de infraestructura:** el contrato no fija si `GameState` admite exactamente una decisión universal simultánea o un mapa ordenado de varias; la decisión debe basarse en casos W1 sin absorber selección compuesta.
+- **DECISIÓN W0 — cardinalidad de infraestructura:** `GameState` admite como máximo una decisión universal mediante un slot opcional. W1 no incorporará selección compuesta ni decisiones simultáneas.
 
 ## E. Integración con `GameState`
 
 - **HECHO OBSERVADO — estado actual:** `GameState` persiste `pending_search`, `pending_move_replacement`, `pending_triggers`, `event_log`, `command_history` y `setup_mulligans`; no existe `pending_decision`.
-- **PROPUESTA CONDICIONADA — cambio aditivo:** si se aprueba la opción 1 de C.2, añadir `pending_decision: PendingDecision | None = None` al final de los campos con default, preservando construcción posicional histórica y sin eliminar campos existentes; si se aprueba la opción 2, añadir el mapa indexado y su fábrica vacía en esa posición. No implementar ninguna de las dos antes del gate.
+- **DECISIÓN IMPLEMENTADA W0 — cambio aditivo:** añadir `pending_decision: PendingDecision | None = None` al final de los campos con default, preservando construcción posicional histórica y sin eliminar campos existentes.
 - **CONTRATO APROBADO — invariantes:** `validate_invariants()` debe comprobar elector existente, tokens únicos/no vacíos conforme a la familia, coherencia `status/selected_option`, origen resoluble, identidad estable y vínculo de versión.
 - **CONTRATO APROBADO — rollback:** creación y cierre se realizan dentro del snapshot transaccional existente de `GameEngine.execute`; cualquier error restaura estado, historial, eventos y contadores.
 - **CONTRATO APROBADO — no duplicación:** ningún handler puede mantener la misma decisión viva simultáneamente en el campo universal y en un pending especializado.
@@ -228,13 +228,37 @@
 | Promoción prematura de mulligan | Se ignoran setup y dudas normativas. | Mantener `CAP-TIME-002 / CAP-TIME-005` abiertos. | **CONTRATO APROBADO** |
 | Crecimiento del snapshot | Latencia y contención SQLite. | Benchmark de payload/CAS y límites explícitos. | **PROPUESTA** |
 
+## Q. Plan cerrado para el primer slice W1 (sin implementación en W0)
+
+W1 introducirá el primer comando/evento capaz de crear y cerrar el slot único y,
+en esa misma entrega, elevará replay a schema `3`. El orden de implementación y
+sus pruebas de aceptación será:
+
+1. creación determinista y persistible de una decisión `pending`, con origen y
+   tokens opacos reproducibles;
+2. comando de cierre que revalida en una sola transacción decisión, elector,
+   opción, estado terminal y `expected_version`, y que sólo registra `closed` y
+   `selected_option` exactamente una vez;
+3. tests negativos de elector incorrecto, opción inválida, decisión ya cerrada y
+   `expected_version` obsoleta, todos sin mutación;
+4. carrera CAS de dos cierres, con un ganador, un `VersionConflict`, un incremento
+   de versión y ningún evento fantasma del perdedor;
+5. proyecciones separadas para elector, adversario y espectador, con pruebas de
+   no interferencia que impidan revelar tokens o referencias fuera de audiencia;
+6. replay schema `3`, migración `2 → 3` y goldens de creación/cierre que preserven
+   digest y orden observable. Los replays schema `2` de 0.19.0 y 0.20.x seguirán
+   ejecutándose sin decisiones ni eventos retroactivos.
+
+No forman parte de W1 handlers mecánicos especializados, selección compuesta,
+decisiones simultáneas, `expired`, `cancelled` ni una tabla de decisiones.
+
 ## Q. Gates
 
 | Gate | Criterio de entrada/salida | Estado en este plan | Etiqueta |
 |---|---|---|---|
 | `W0-GATE-BASELINE` | SHA/tree/fecha/versión/rama y fixtures históricos fijados. | Listo. | **HECHO OBSERVADO** |
 | `W0-GATE-CONTRACT` | Campos, exclusiones e invariantes `01`–`14` sin contradicción. | Listo con preguntas de forma no semántica. | **CONTRATO APROBADO** |
-| `W0.1-GATE-CARDINALITY` | Aprobación humana explícita y registrada de slot opcional único o colección indexada; lista mutable prohibida; tests exigidos para unicidad, orfandad y orden. | **Pendiente; bloquea toda implementación W0.1.** | **PREGUNTA ABIERTA** |
+| `W0.1-GATE-CARDINALITY` | Slot opcional único; lista mutable prohibida; sin simultaneidad anticipada. | **Cerrado: `pending_decision: PendingDecision | None`.** | **DECISIÓN W0** |
 | `W0-GATE-SCHEMA` | Numeración, readers, writers, migraciones y unknown-version tests. | Pendiente de implementación. | **PROPUESTA** |
 | `W0-GATE-PRIVACY` | Proyecciones y no interferencia para cuatro audiencias. | Pendiente de implementación. | **PROPUESTA** |
 | `W0-GATE-CAS` | Carrera real en memoria/SQLite con un único ganador y sin evento fantasma. | Pendiente de implementación. | **PROPUESTA** |

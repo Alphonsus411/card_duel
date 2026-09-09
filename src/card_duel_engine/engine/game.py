@@ -2236,6 +2236,11 @@ class GameEngine:
             raise InvariantViolation("Los mazos iniciales no coinciden con los jugadores")
         if any(player_id not in state.players for player_id in state.setup_mulligans):
             raise InvariantViolation("El historial de mulligan contiene un jugador inválido")
+        if (
+            state.pending_decision is not None
+            and state.pending_decision.authorized_elector not in state.players
+        ):
+            raise InvariantViolation("La decisión pendiente tiene un elector inexistente")
         if any(not isinstance(command, GameCommand) for command in state.command_history):
             raise InvariantViolation("El historial contiene un comando inválido")
         locations: dict[str, int] = {card_id: 0 for card_id in state.cards}

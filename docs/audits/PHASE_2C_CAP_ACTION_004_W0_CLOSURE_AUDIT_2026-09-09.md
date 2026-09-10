@@ -129,11 +129,22 @@ promueve contenido ambiguo.
 
 W0 no crea otra tabla ni otra autoridad. In-memory y SQLite guardan el snapshot
 completo mediante `save(..., expected_version=...)`; SQLite efectúa un único
-`UPDATE ... WHERE version = expected_version`. Las pruebas existentes cubren
-que dos writers sobre la misma versión producen un ganador, un
-`VersionConflict` y un solo incremento. Esto acredita persistencia W0, pero no
-la carrera de **dos comandos de cierre** ni publicación post-CAS: ambos requieren
-el lifecycle W1 aún inexistente.
+`UPDATE ... WHERE version = expected_version`.
+
+- **CAS de persistencia del snapshot W0 — IMPLEMENTADO Y PROBADO:** en ambos
+  stores, dos escrituras del snapshot completo con el mismo `expected_version`
+  producen exactamente un éxito, un `VersionConflict` y un solo incremento. La
+  instantánea final coincide íntegramente con uno de los dos candidatos —incluidos
+  campos independientes—, por lo que el estado perdedor no se mezcla parcialmente
+  con el ganador.
+- **CAS del cierre público y ausencia de evento fantasma — PENDIENTE DE W1:** W0
+  no tiene comandos de cierre, eventos lifecycle ni publicación
+  application/service. Demostrar la carrera de dos cierres y que el perdedor no
+  publica observables exige ese recorrido W1; no se simula como evidencia W0.
+
+Por ello, el gate global de CAS se clasifica **PARCIAL**: la capa de persistencia
+está acreditada, pero la parte de lifecycle todavía no puede demostrarse sin
+ampliar el alcance.
 
 ## 11. Goldens neutrales
 
@@ -208,7 +219,7 @@ hasta que CI publique `success` para ese mismo SHA.
 | `W0-GATE-DIGEST` | **CERRADO** | Digest autoritativo incluye la decisión; fallback 0.19 queda aislado y estrecho. |
 | `W0-GATE-HISTORY` | **CERRADO** | Snapshots 1/2 migran; fixtures legacy no se reescriben; replay sigue v2. |
 | `W0-GATE-GOLDENS` | **CERRADO** | v2-none y v3-none/pending/closed, sin mecánica W1. |
-| `W0-GATE-CAS` | **PARCIAL** | CAS del documento está probado; cierre concurrente y eventos post-CAS son W1. |
+| `W0-GATE-CAS` | **PARCIAL** | CAS de persistencia del snapshot W0 implementado y probado en InMemory y SQLite, con ganador íntegro; CAS del cierre público y ausencia de evento fantasma pendientes de W1. |
 | `W0-GATE-DOCS` | **CERRADO** | Alcance W0/W1 y compatibilidad quedan diferenciados. |
 | `W0-GATE-QUALITY` | **NO CERRADO** | No constan `runtime (3.11)`, `runtime (3.12)`, `runtime (3.13)` y `full` como `success` para el SHA del commit que contiene esta auditoría. |
 

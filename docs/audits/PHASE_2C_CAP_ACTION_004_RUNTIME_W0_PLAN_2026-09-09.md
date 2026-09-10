@@ -1,5 +1,14 @@
 # Plan runtime W0 de `CAP-ACTION-004` — 2026-09-09
 
+> **Convención temporal (actualizada tras PR #275).** Las secciones A–T son el
+> **BASELINE DOCUMENTAL ANTERIOR**: conservan deliberadamente el diagnóstico y
+> las propuestas redactados antes de que existiera el runtime W0. Cuando una
+> frase de esas secciones dice «no existe», «propuesta» o «futuro», describe
+> ese corte histórico y no el checkout actual. La sección U es la
+> **EVIDENCIA RUNTIME POSTERIOR AL PR #275** y prevalece para determinar qué
+> está implementado, probado o cerrado. No se borra ni se reinterpreta el texto
+> anterior como si hubiese sido escrito después del merge.
+
 ## A. Estado real
 
 - **HECHO OBSERVADO — baseline actualizado:** después de restaurar `origin` a `https://github.com/Alphonsus411/card_duel.git` y ejecutar `git fetch --prune origin`, `git remote show origin` resolvió `main` como rama por defecto. `origin/main` es `59c07af59690aafec9f35faf6af1bb8435c41eee`, su tree SHA es `f6c2f022f9f4af3b90d651d4918e9b7425b94d60` y su fecha Git es `2026-09-09T14:14:18+02:00`. El baseline anterior `7ae37497ed6aa5d69fb16ac42a715998e63141b4` se conserva como extremo inicial del compare y la rama local examinada es `work`.
@@ -32,8 +41,8 @@
 | `application.py` | Autentica actores y traduce option IDs ligados a actor/versión. | Resolver token de transporte sin convertirlo en autoridad ni filtrar el payload. | **PROPUESTA** |
 | `service.py` | Carga, ejecuta y guarda con `expected_version`. | Mantener una sola operación de guardado CAS y errores públicos uniformes. | **PROPUESTA** |
 | `persistence/codec.py` | Serializa dataclasses/enums mediante discriminadores cerrados. | Registrar los tipos nuevos y rechazar discriminadores o versiones desconocidos. | **PROPUESTA** |
-| `persistence/snapshot.py` | Escribe schema `2`, checksum y `state_digest`. | Elevar schema al primer número disponible y decodificar schema `2` con ausencia explícita. | **PROPUESTA** |
-| `persistence/replay.py` | Escribe schema `2` y reconstruye desde setup, mulligans y comandos. | Mantener v2 en W0.1 y elevar a v3 en W1 junto al primer comando/evento de decisión. | **PROPUESTA** |
+| `persistence/snapshot.py` | **BASELINE DOCUMENTAL:** escribía schema `2`, checksum y `state_digest`. **RUNTIME POST-#275:** reader/writer ya operan en snapshot schema `3`. | Migración explícita de snapshots `1/2 → 3`; writer `3`. | **IMPLEMENTADO W0** |
+| `persistence/replay.py` | **BASELINE Y RUNTIME POST-#275:** escribe schema `2` y reconstruye desde setup, mulligans y comandos. | Mantener reader/writer v2 hasta que W1 introduzca el primer comando/evento de decisión. | **IMPLEMENTADO SIN CAMBIO DE SCHEMA** |
 | `persistence/migrations.py` | Migra explícitamente schema `1 → 2`; no adivina rutas ausentes. | Añadir migraciones explícitas al nuevo schema, puras e idempotentes a nivel de resultado. | **PROPUESTA** |
 | `storage/base.py` y `storage/sqlite.py` | Persisten el snapshot completo y ya ofrecen CAS. | Reutilizar el CAS; no crear una segunda tabla autoritativa de decisiones en W0. | **PROPUESTA** |
 | `presentation.py` y DTO de servicio | Proyectan estado según actor, pero no este primitive. | Añadir vistas separadas para elector, adversario, público y motor. | **PROPUESTA** |
@@ -165,18 +174,22 @@
 
 ## M. Matriz de compatibilidad
 
-| Productor | Lector W0 futuro | Resultado exigido | Escritura posterior | Etiqueta |
+La matriz siguiente sustituye la expectativa histórica de esta sección con el
+estado comprobable posterior al PR #275: **snapshot reader/writer schema `3` y
+replay reader/writer schema `2`**. No existe replay schema `3` en W0.
+
+| Productor | Lector runtime W0 | Resultado | Escritura posterior | Estado |
 |---|---|---|---|---|
-| Snapshot schema `1` | Reader `3` | Migra `1 → 2 → 3`; decisión ausente. | Writer `3` sólo tras CAS exitoso. | **PROPUESTA** |
-| Snapshot schema `2` | Reader `3` | Migra `2 → 3`; decisión ausente. | Writer `3` sólo tras CAS exitoso. | **PROPUESTA** |
-| Snapshot schema `3` | Reader `3` | Restaura `pending`/`closed` fielmente. | Writer `3`. | **PROPUESTA** |
-| Snapshot schema `3` | Reader `2` | Incompatible; debe fallar, nunca degradar. | Ninguna. | **CONTRATO APROBADO** |
-| Replay schema `1` | Reader `3` | Migra y reproduce semántica histórica sin decisión. | No reescribe el artefacto. | **PROPUESTA** |
-| Replay schema `2` (`0.20.0/0.20.1`) | Reader `3` | Conserva compatibilidad de digest limitada existente. | No reescribe el artefacto. | **CONTRATO APROBADO** |
-| Replay schema `3` | Reader `3` | Reconstruye lifecycle, observables y digest. | No aplica. | **PROPUESTA** |
+| Snapshot schema `1` | Snapshot reader `3` | Migra `1 → 2 → 3`; `pending_decision = None`. | Snapshot writer `3` sólo al volver a persistir. | **IMPLEMENTADO / PROBADO** |
+| Snapshot schema `2` | Snapshot reader `3` | Migra `2 → 3`; `pending_decision = None` y digest recalculado. | Snapshot writer `3` sólo al volver a persistir. | **IMPLEMENTADO / PROBADO** |
+| Snapshot schema `3` | Snapshot reader `3` | Restaura `pending`/`closed` y valida checksum/digest. | Snapshot writer `3`. | **IMPLEMENTADO / PROBADO** |
+| Snapshot schema `3` | Snapshot reader `2` histórico | Incompatible; debe fallar, nunca degradar. | Ninguna. | **COMPATIBILIDAD INTENCIONAL** |
+| Replay schema `1` | Replay reader `2` | Migra a `2` y reproduce semántica histórica sin lifecycle universal. | Replay writer `2`; no reescribe el artefacto fuente. | **IMPLEMENTADO / PROBADO** |
+| Replay schema `2` (`0.20.0/0.20.1`) | Replay reader `2` | Conserva la excepción histórica limitada de digest. | Replay writer `2`; no reescribe el artefacto fuente. | **IMPLEMENTADO / PROBADO** |
+| Replay schema `3` | No existe en W0 | Fuera de alcance hasta comandos/eventos W1. | Ninguna. | **PENDIENTE W1** |
 | Schema o discriminador desconocido | Cualquier reader | Rechazo sin mutación ni fallback. | Ninguna. | **CONTRATO APROBADO** |
-| In-memory store | Servicio nuevo | Misma semántica CAS que SQLite. | Snapshot schema `3`. | **PROPUESTA** |
-| SQLite existente con payload `2` | Servicio nuevo | Lazy decode/migration; fila intacta hasta write. | Actualización única bajo CAS. | **PROPUESTA** |
+| In-memory store | Runtime W0 | Conserva la semántica CAS existente. | Snapshot schema `3`. | **IMPLEMENTADO / PROBADO** |
+| SQLite existente con payload `2` | Runtime W0 | Decode/migration; fila intacta hasta un `save`. | Actualización única bajo CAS. | **IMPLEMENTADO / PROBADO** |
 
 ## N. Tests
 
@@ -259,24 +272,37 @@ decisiones simultáneas, `expired`, `cancelled` ni una tabla de decisiones.
 | `W0-GATE-BASELINE` | SHA/tree/fecha/versión/rama y fixtures históricos fijados. | Listo. | **HECHO OBSERVADO** |
 | `W0-GATE-CONTRACT` | Campos, exclusiones e invariantes `01`–`14` sin contradicción. | Listo con preguntas de forma no semántica. | **CONTRATO APROBADO** |
 | `W0.1-GATE-CARDINALITY` | Slot opcional único; lista mutable prohibida; sin simultaneidad anticipada. | **Cerrado: `pending_decision: PendingDecision | None`.** | **DECISIÓN W0** |
-| `W0-GATE-SCHEMA` | Numeración, readers, writers, migraciones y unknown-version tests. | Pendiente de implementación. | **PROPUESTA** |
-| `W0-GATE-PRIVACY` | Proyecciones y no interferencia para cuatro audiencias. | Pendiente de implementación. | **PROPUESTA** |
-| `W0-GATE-CAS` | Carrera real en memoria/SQLite con un único ganador y sin evento fantasma. | Pendiente de implementación. | **PROPUESTA** |
-| `W0-GATE-HISTORY` | Goldens schema `1/2/3`, replay/digest y rollback operativo. | Pendiente de implementación. | **PROPUESTA** |
-| `W0-GATE-QUALITY` | Suite completa y perfil full verdes. | Pendiente de la futura entrega runtime. | **PROPUESTA** |
+| `W0-GATE-SCHEMA` | Numeración, readers, writers, migraciones y unknown-version tests. | **CERRADO** — snapshot reader/writer `3`, migraciones `1 → 2 → 3`, codec cerrado y pruebas de versión/discriminador desconocidos; replay permanece deliberadamente reader/writer `2`. | Evidencia local y CI de U.3/U.4. |
+| `W0-GATE-PRIVACY` | Proyecciones y no interferencia para cuatro audiencias. | **PENDIENTE** — W0 aporta audiencia y opciones opacas al modelo, pero las proyecciones por elector/adversario/público y la no interferencia son recorrido W1. | Exclusión W0 confirmada en U.2. |
+| `W0-GATE-CAS` | Persistencia del registro dentro del único snapshot sometido al CAS existente. | **PARCIAL** — el slot se persiste dentro del agregado y conserva el CAS de stores; la carrera de dos cierres y la ausencia de evento fantasma requieren comandos/eventos W1. | Tests de persistencia W0; cierre concurrente fuera de alcance. |
+| `W0-GATE-HISTORY` | Lectura legacy, migración, replay/digest y rechazo de desconocidos. | **CERRADO** — snapshots `1/2` migran a `3`, snapshot `3` round-trip; replay continúa en `2` y los artefactos legacy conservan su semántica sin decisiones retroactivas. | Suite full del SHA común de U.3/U.4. |
+| `W0-GATE-QUALITY` | Suite completa, perfil full y cuatro jobs remotos verdes para el mismo SHA. | **CERRADO** — `uv run pytest -q` (781 passed, 1 skipped, 816 subtests) y `verify_release --profile full` pasaron localmente; `runtime (3.11)`, `runtime (3.12)`, `runtime (3.13)` y `full` concluyeron `success` en CI, todo para `27e0c59eafd086f436f0c9aa4292ba46267d8359`. | Run `34450197883`; detalle en U.3/U.4. |
 | `CAP-ACTION-004 CLOSED` | Recorrido completo público, persistente, replayable, privado y de servicio. | No alcanzado; sigue `MISSING / READY`. | **HECHO OBSERVADO** |
 | `CAP-TIME-002 READY` | `CAP-ACTION-004` y `CAP-TIME-005` cerradas y autorización expresa posterior. | No alcanzado; sigue `PARTIAL / WAIT-PREREQ`. | **HECHO OBSERVADO** |
 
 ## R. Deudas
 
-- **HECHO OBSERVADO — primitive ausente:** todavía no existen modelo, comando, evento, codec, snapshot/replay versionado, migración ni recorrido application/service universal.
+- **BASELINE DOCUMENTAL ANTERIOR — deuda originalmente registrada:** antes del
+  PR #275 no existían modelo, comando, evento, codec, snapshot/replay versionado,
+  migración ni recorrido `application`/`service` universal.
+- **EVIDENCIA RUNTIME POST-#275 — deuda reducida:** ya existen el modelo
+  `PendingDecision`, sus enums/validación, el registro en el codec, el slot
+  opcional de `GameState`, snapshot reader/writer schema `3` y la migración
+  snapshot `2 → 3`. Replay permanece correctamente en schema `2`.
+- **DEUDA VIGENTE FUERA DE W0:** todavía no existen comandos ni eventos
+  universales de creación/cierre, proyecciones por audiencia, ni el recorrido
+  completo por `application.py` y `service.py`; esas superficies, sus pruebas de
+  no interferencia y la carrera CAS de cierre pertenecen a W1. Por ello el
+  primitive no constituye aún una capability cerrada.
 - **HECHO OBSERVADO — setup:** `CAP-TIME-005` carece del lifecycle completo que crea participantes/mazos/manos, mantiene `SETUP`, registra decisiones y prepara la transición sin conceder prioridad.
 - **HECHO OBSERVADO — mulligan:** `CAP-TIME-002` posee contador, restricción a setup, tamaños 5→1, reshuffle determinista, evento y persistencia/replay básicos, pero carece de KEEP/REPLACE público, pending universal, paridad legal, CAS específico, capas completas, privacidad y compatibilidad versionada.
 - **PREGUNTA ABIERTA — orden:** `N-MULLIGAN-01.OPEN-ORDER` continúa abierta.
 - **PREGUNTA ABIERTA — modo:** `N-MULLIGAN-01.OPEN-MODE` continúa abierta.
 - **PREGUNTA ABIERTA — revelación:** `N-MULLIGAN-01.OPEN-REVEAL` continúa abierta.
 - **PREGUNTA ABIERTA — jugador inicial:** `N-MULLIGAN-01.OPEN-STARTER` continúa abierta y la selección/concesión de prioridad permanece separada en `CAP-TIME-001`.
-- **PREGUNTA ABIERTA — forma del registro:** resolver una decisión única frente a colección ordenada sin introducir selección compuesta.
+- **DECISIÓN W0 — forma del registro:** resuelta mediante el slot único
+  `pending_decision: PendingDecision | None`; decisiones simultáneas y selección
+  compuesta continúan fuera de alcance.
 - **PREGUNTA ABIERTA — operación:** cerrar política de rollback/forward y momento de publicación de eventos tras CAS.
 - **CONTRATO APROBADO — efecto de las deudas:** estas preguntas bloquean los tramos afectados y la promoción de capabilities, pero no bloquean preparar schema, compatibilidad, privacidad y pruebas W0 conforme a este plan.
 
@@ -373,3 +399,75 @@ debe volver a contrastarse contra `main` y pasar los gates aprobados.
   de que todos sus jobs relevantes concluyan con `success`.
 
 CAP-ACTION-004 W0 LISTO CON PRERREQUISITOS
+
+## U. Evidencia runtime posterior al PR #275 — 2026-09-10
+
+Esta sección no sustituye ni borra el plan histórico A–T: registra hechos que
+ocurrieron después y evita atribuir pruebas de un SHA a otro.
+
+### U.1 Identidades Git separadas
+
+| Concepto | SHA exacto | Alcance probatorio |
+|---|---|---|
+| Baseline documental anterior | `7ae37497ed6aa5d69fb16ac42a715998e63141b4` | Corte original contra el que se contrastó la documentación; no contiene runtime W0. |
+| Baseline previo al runtime W0 | `a8b3e26acf95bc50e6bda4aa1ccdb0bab05e6932` (primer padre de `2832b94ae61e7aa7c913cdd5207a212fed3de8b8`) | Estado de `main` inmediatamente anterior a incorporar la implementación del PR #275; no se confunde con el baseline documental original. |
+| Commit de implementación | `73e769a8293e9dfbd0018ac3d01e358e254a3036` | Introduce modelo, codec, slot, migración y snapshot schema `3`; no es por sí mismo el merge de `main`. |
+| Merge commit de `main` del PR #275 | `2832b94ae61e7aa7c913cdd5207a212fed3de8b8` | Incorpora `73e769a8293e9dfbd0018ac3d01e358e254a3036` a `main`. |
+| SHA exacto probado localmente | `27e0c59eafd086f436f0c9aa4292ba46267d8359` | Checkout limpio antes de esta edición documental: suite completa y perfil `full`. |
+| SHA exacto probado por CI | `27e0c59eafd086f436f0c9aa4292ba46267d8359` | Run `34450197883`; los cuatro jobs remotos finalizaron en verde. |
+
+El baseline previo se obtiene como primer padre del merge y se registra completo
+para que sea inequívoco. Ninguna prueba de la tabla se atribuye al commit
+documental creado después de ejecutarla.
+
+### U.2 Alcance implementado y alcance diferido
+
+- **IMPLEMENTADO EN W0:** `PendingDecision`, enums cerrados, validación del
+  registro, `GameState.pending_decision`, soporte cerrado del codec, snapshot
+  reader/writer schema `3` y migración legacy a ausencia canónica.
+- **CONSERVADO EN W0:** replay reader/writer schema `2`; no hay comando ni evento
+  universal cuya reproducción justifique elevarlo.
+- **PENDIENTE DE W1:** comandos, eventos, creación/cierre runtime, proyecciones
+  por audiencia, no interferencia y recorrido `application`/`service`, incluida
+  la carrera CAS de dos cierres y la publicación post-CAS.
+
+### U.3 Prueba local del SHA exacto
+
+Tras instalar el extra de desarrollo declarado por el proyecto, sobre
+`27e0c59eafd086f436f0c9aa4292ba46267d8359`:
+
+- `uv run pytest -q`: **781 passed, 1 skipped, 816 subtests passed**.
+- `uv run python scripts/verify_release.py --profile full`: **exit 0**.
+
+Un intento anterior a `uv sync --extra dev` no se usa como evidencia: falló en
+collection por entorno incompleto (`card_duel_engine`/`mypy` ausentes), no por
+una regresión del SHA. La repetición posterior es la evidencia válida.
+
+### U.4 CI del mismo SHA exacto
+
+La ejecución [tests #34450197883](https://github.com/Alphonsus411/card_duel/actions/runs/34450197883)
+corresponde exactamente a
+`27e0c59eafd086f436f0c9aa4292ba46267d8359`. Finalizaron con `success`:
+
+| Job | Resultado | Finalización UTC |
+|---|---|---|
+| `runtime (3.11)` | `success` | `2026-09-10T07:31:22Z` |
+| `runtime (3.12)` | `success` | `2026-09-10T07:31:17Z` |
+| `runtime (3.13)` | `success` | `2026-09-10T07:30:48Z` |
+| `full` | `success` | `2026-09-10T07:33:51Z` |
+
+Por compartir el SHA con U.3, esta ejecución permite cerrar
+`W0-GATE-QUALITY`. No prueba el commit documental posterior.
+
+### U.5 Definiciones de estado no equivalentes
+
+| Término | Definición |
+|---|---|
+| **IMPLEMENTADO** | El código o documento requerido existe en un commit identificable. No implica que se haya ejecutado ni que haya satisfecho un gate. |
+| **PROBADO** | Una verificación concreta pasó sobre un SHA exacto y queda asociada a su comando o job. No implica por sí sola cobertura de todos los criterios del gate o de la capability. |
+| **GATE CERRADO** | Toda la evidencia exigida por ese gate existe y su estado se registra como `CERRADO`; otros gates pueden seguir `PARCIAL`, `PENDIENTE` o `BLOQUEADO`. |
+| **CAPABILITY CLOSED** | El recorrido completo público, persistente, replayable, privado y de servicio satisface contrato, tests y dependencias. Es un estado de capability y no se deduce de que una parte esté implementada/probada o de que uno o varios gates W0 estén cerrados. |
+
+En consecuencia, W0 puede estar **IMPLEMENTADO** y **PROBADO**, y algunos gates
+pueden estar **CERRADOS**, mientras `CAP-ACTION-004` continúa sin alcanzar
+**CAPABILITY CLOSED** por el recorrido W1 pendiente.

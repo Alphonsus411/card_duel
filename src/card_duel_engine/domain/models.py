@@ -55,8 +55,8 @@ class PendingDecision:
         identifiers = (self.decision_id, self.semantic_family, self.authorized_elector)
         if any(not isinstance(value, str) or not value.strip() for value in identifiers):
             raise ValueError("Los identificadores de una decisión no pueden estar vacíos")
-        if type(self.state_version) is not int or self.state_version < 1:
-            raise ValueError("La versión de estado de una decisión debe ser positiva")
+        if type(self.state_version) is not int or self.state_version < 0:
+            raise ValueError("La versión de estado de una decisión debe ser no negativa")
         if not self.origin or any(
             not isinstance(reference, str) or not reference.strip()
             for reference in self.origin

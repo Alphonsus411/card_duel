@@ -145,15 +145,18 @@ def test_required_identifiers_are_rejected(
     [
         pytest.param(True, id="boolean"),
         pytest.param(1.5, id="non-integer"),
-        pytest.param(0, id="zero"),
         pytest.param(-1, id="negative"),
     ],
 )
-def test_state_version_must_be_a_positive_non_boolean_integer(
+def test_state_version_must_be_a_non_negative_non_boolean_integer(
     invalid_version: object,
 ) -> None:
-    with pytest.raises(ValueError, match="positiva"):
+    with pytest.raises(ValueError, match="no negativa"):
         replace(decision(), state_version=invalid_version)
+
+
+def test_state_version_accepts_zero() -> None:
+    assert replace(decision(), state_version=0).state_version == 0
 
 
 @pytest.mark.parametrize(

@@ -49,13 +49,13 @@ def make_engine(seed: int = 901) -> GameEngine:
 
 def decision(*, closed: bool = False) -> PendingDecision:
     return PendingDecision(
-        decision_id="decision:setup:0001",
-        semantic_family="mulligan/v1",
+        decision_id="decision:test-choice:0001",
+        semantic_family="test-choice/v1",
         authorized_elector="A",
         audience=DecisionAudience.ELECTOR,
         authorized_opaque_options=("opt_7xQm2", "opt_B9kL4"),
         state_version=1,
-        origin=("setup", "mulligan", "0001"),
+        origin=("test-choice", "fixture", "0001"),
         status=(PendingDecisionStatus.CLOSED if closed else PendingDecisionStatus.PENDING),
         selected_option="opt_B9kL4" if closed else None,
     )
@@ -428,9 +428,13 @@ def test_migration_is_pure_repeatable_and_rejects_unknown_versions() -> None:
 
 def test_golden_snapshots_cover_v2_and_v3_absent_pending_and_closed() -> None:
     for name in ("snapshot-v2-none.json", "snapshot-v3-none.json", "snapshot-v3-pending.json", "snapshot-v3-closed.json"):
-        restored = load_snapshot((ARTIFACTS / name).read_text())
+        payload = (ARTIFACTS / name).read_text()
+        restored = load_snapshot(payload)
         expected = None if "none" in name else decision(closed="closed" in name)
         assert restored.state.pending_decision == expected
+        if expected is not None:
+            assert "mulligan/v1" not in payload
+            assert "setup/mulligan" not in payload
 
 
 @pytest.mark.parametrize("store_kind", ["memory", "sqlite"])

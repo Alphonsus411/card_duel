@@ -2639,16 +2639,16 @@
                 "opt_B9kL4"
               ]
             },
-            "decision_id": "decision:setup:0001",
+            "decision_id": "decision:test-choice:0001",
             "origin": {
               "$tuple": [
-                "setup",
-                "mulligan",
+                "test-choice",
+                "fixture",
                 "0001"
               ]
             },
             "selected_option": "opt_B9kL4",
-            "semantic_family": "mulligan/v1",
+            "semantic_family": "test-choice/v1",
             "state_version": 1,
             "status": {
               "$enum": "PendingDecisionStatus",
@@ -2848,7 +2848,7 @@
         }
       }
     },
-    "state_digest": "93daf8de7adb22a68fc3c138d09f95a5ea3c1f01247727dd516b4ee875f13b28"
+    "state_digest": "83829b8b8c687db11f50c43a7b535ddeea80ee64c1add24405cc9d2843cc8ebe"
   },
-  "sha256": "05d0dc6ef035cb6f2ae2c6f8499dadaf272c9a3b97818df9b4e42c313066a2fc"
+  "sha256": "0ccaa20a645639a016388c9c931c24011468496dbefdb567b281df27de994778"
 }

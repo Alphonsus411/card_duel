@@ -73,6 +73,10 @@ def test_model_has_exactly_nine_fields_and_value_equality() -> None:
         "selected_option",
     }
     assert set(decision().__dataclass_fields__) == expected
+    assert tuple(PendingDecisionStatus) == (
+        PendingDecisionStatus.PENDING,
+        PendingDecisionStatus.CLOSED,
+    )
     assert decision() == decision()
     assert decision() != replace(decision(), state_version=2)
 
@@ -87,24 +91,123 @@ def test_model_is_deeply_immutable_at_its_option_and_reference_boundaries() -> N
         replace(value, origin=["mutable"])  # type: ignore[arg-type]
 
 
-@pytest.mark.parametrize("field", ["decision_id", "semantic_family", "authorized_elector"])
-def test_empty_ids_are_rejected(field: str) -> None:
+@pytest.mark.parametrize(
+    ("changes", "message"),
+    [
+        pytest.param({"audience": "elector"}, "audiencia", id="audience-not-enum"),
+        pytest.param({"status": "pending"}, "estado", id="status-not-enum"),
+        pytest.param(
+            {"authorized_opaque_options": ["opt_7xQm2"]},
+            "inmutables",
+            id="options-list",
+        ),
+        pytest.param({"origin": ["setup"]}, "inmutables", id="origin-list"),
+    ],
+)
+def test_enum_and_immutable_boundary_types_are_rejected(
+    changes: dict[str, object], message: str
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        replace(decision(), **changes)
+
+
+@pytest.mark.parametrize(
+    "field", ["decision_id", "semantic_family", "authorized_elector"]
+)
+@pytest.mark.parametrize(
+    "invalid_value",
+    [
+        pytest.param(None, id="none"),
+        pytest.param(7, id="integer"),
+        pytest.param(" \t\n", id="blank-string"),
+    ],
+)
+def test_required_identifiers_are_rejected(
+    field: str, invalid_value: object
+) -> None:
     with pytest.raises(ValueError, match="identificadores"):
-        replace(decision(), **{field: " "})
+        replace(decision(), **{field: invalid_value})
 
 
-def test_options_version_origin_and_status_selection_are_validated() -> None:
-    invalid = (
-        ({"authorized_opaque_options": ("same", "same")}, "únicos"),
-        ({"authorized_opaque_options": ("",)}, "vacías"),
-        ({"state_version": 0}, "positiva"),
-        ({"origin": ()}, "origen"),
-        ({"selected_option": "opt_7xQm2"}, "pendiente"),
-        ({"status": PendingDecisionStatus.CLOSED}, "autorizada"),
-    )
-    for changes, message in invalid:
-        with pytest.raises(ValueError, match=message):
-            replace(decision(), **changes)
+@pytest.mark.parametrize(
+    "invalid_version",
+    [
+        pytest.param(True, id="boolean"),
+        pytest.param(1.5, id="non-integer"),
+        pytest.param(0, id="zero"),
+        pytest.param(-1, id="negative"),
+    ],
+)
+def test_state_version_must_be_a_positive_non_boolean_integer(
+    invalid_version: object,
+) -> None:
+    with pytest.raises(ValueError, match="positiva"):
+        replace(decision(), state_version=invalid_version)
+
+
+@pytest.mark.parametrize(
+    "invalid_origin",
+    [
+        pytest.param((), id="empty"),
+        pytest.param(("setup", ""), id="empty-reference"),
+        pytest.param(("setup", 1), id="non-text-reference"),
+    ],
+)
+def test_origin_references_must_be_non_empty_text(
+    invalid_origin: tuple[object, ...],
+) -> None:
+    with pytest.raises(ValueError, match="origen"):
+        replace(decision(), origin=invalid_origin)
+
+
+@pytest.mark.parametrize(
+    ("invalid_options", "message"),
+    [
+        pytest.param((), "vacías", id="empty-options"),
+        pytest.param(("same", "same"), "únicos", id="duplicate-options"),
+        pytest.param(("opt_7xQm2", ""), "vacías", id="empty-token"),
+        pytest.param(("opt_7xQm2", 1), "vacías", id="non-text-token"),
+    ],
+)
+def test_authorized_options_must_be_non_empty_unique_text_tokens(
+    invalid_options: tuple[object, ...], message: str
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        replace(decision(), authorized_opaque_options=invalid_options)
+
+
+@pytest.mark.parametrize(
+    "selected_option",
+    [
+        pytest.param("opt_7xQm2", id="authorized-token"),
+        pytest.param("unknown", id="unauthorized-token"),
+        pytest.param("", id="empty-token"),
+        pytest.param(1, id="non-text-token"),
+    ],
+)
+def test_pending_status_rejects_any_selected_option(
+    selected_option: object,
+) -> None:
+    with pytest.raises(ValueError, match="pendiente"):
+        replace(decision(), selected_option=selected_option)
+
+
+@pytest.mark.parametrize(
+    "selected_option",
+    [
+        pytest.param(None, id="none"),
+        pytest.param("unknown", id="unauthorized-token"),
+    ],
+)
+def test_closed_status_requires_an_authorized_selected_option(
+    selected_option: str | None,
+) -> None:
+    with pytest.raises(ValueError, match="autorizada"):
+        replace(
+            decision(),
+            status=PendingDecisionStatus.CLOSED,
+            selected_option=selected_option,
+        )
 
 
 def test_tokens_remain_opaque_through_codec_round_trip() -> None:

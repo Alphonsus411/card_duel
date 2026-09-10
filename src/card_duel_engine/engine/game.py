@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from enum import Enum, auto
 import random
+import re
 from copy import deepcopy
 from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import replace
@@ -17,12 +18,14 @@ from ..domain.enums import (
     CardKind,
     CardRank,
     ControllerScope,
+    DecisionAudience,
     EffectDuration,
     EffectKind,
     LordDomain,
     Keyword,
     MatchStatus,
     MoveReason,
+    PendingDecisionStatus,
     Phase,
     TargetMode,
     TriggerKind,
@@ -45,10 +48,11 @@ from ..domain.models import (
     ContinuousEffectDefinition,
     EffectDefinition,
     DynamicCostDefinition,
-    MoveReplacementDefinition,
-    PendingMoveReplacement,
     GameEvent,
     GameState,
+    MoveReplacementDefinition,
+    PendingDecision,
+    PendingMoveReplacement,
     PlayerState,
     PhaseSuppression,
     PendingSearch,
@@ -415,6 +419,103 @@ class GameEngine:
         state.setup_mulligans.append(player_id)
         self._draw(player_id, new_size)
         self._emit("MULLIGAN", player_id, payload={"new_hand_size": new_size})
+
+    def _open_pending_decision(
+        self,
+        decision_id: str,
+        semantic_family: str,
+        authorized_elector: str,
+        audience: DecisionAudience,
+        authorized_opaque_options: tuple[str, ...],
+        state_version: int,
+        origin: tuple[str, ...],
+    ) -> None:
+        """Abre el único slot universal sin interpretar su semántica opaca."""
+        state = self._require_state()
+        if state.pending_decision is not None:
+            raise IllegalAction("Ya existe una decisión en el slot autoritativo")
+        if not isinstance(decision_id, str) or not decision_id.strip():
+            raise IllegalAction("El identificador de decisión no es válido")
+        if (
+            not isinstance(semantic_family, str)
+            or not semantic_family.strip()
+            or re.fullmatch(r".+/v[0-9]+", semantic_family) is None
+        ):
+            raise IllegalAction("La familia semántica debe ser opaca y versionada")
+        if (
+            not isinstance(authorized_elector, str)
+            or not authorized_elector.strip()
+            or authorized_elector not in state.players
+        ):
+            raise IllegalAction("El elector autorizado no existe en la partida")
+        if not isinstance(audience, DecisionAudience):
+            raise IllegalAction("La audiencia de la decisión no es válida")
+        if (
+            not isinstance(authorized_opaque_options, tuple)
+            or not authorized_opaque_options
+            or any(
+                not isinstance(token, str) or not token.strip()
+                for token in authorized_opaque_options
+            )
+            or len(authorized_opaque_options) != len(set(authorized_opaque_options))
+        ):
+            raise IllegalAction("Las opciones deben ser tokens opacos, no vacíos y únicos")
+        if type(state_version) is not int or state_version < 0:
+            raise IllegalAction("La versión de estado debe ser un entero no negativo")
+        if (
+            not isinstance(origin, tuple)
+            or not origin
+            or any(
+                not isinstance(reference, str) or not reference.strip()
+                for reference in origin
+            )
+        ):
+            raise IllegalAction("El origen de la decisión no es válido")
+
+        state.pending_decision = PendingDecision(
+            decision_id=decision_id,
+            semantic_family=semantic_family,
+            authorized_elector=authorized_elector,
+            audience=audience,
+            authorized_opaque_options=authorized_opaque_options,
+            state_version=state_version,
+            origin=origin,
+            status=PendingDecisionStatus.PENDING,
+            selected_option=None,
+        )
+
+    def _close_pending_decision(
+        self,
+        decision_id: str,
+        actor: str,
+        selected_option: str,
+        known_state_version: int,
+    ) -> None:
+        """Cierra una decisión una sola vez, sin ejecutar mecánicas adicionales."""
+        state = self._require_state()
+        decision = state.pending_decision
+        if decision is None:
+            raise IllegalAction("No existe una decisión pendiente")
+        if decision.decision_id != decision_id:
+            raise IllegalAction("La identidad de la decisión no coincide")
+        if decision.status is not PendingDecisionStatus.PENDING:
+            raise IllegalAction("La decisión ya no está pendiente")
+        if decision.authorized_elector != actor:
+            raise IllegalAction("El actor no es el elector autorizado")
+        if selected_option not in decision.authorized_opaque_options:
+            raise IllegalAction("La opción no está autorizada")
+        if (
+            type(known_state_version) is not int
+            or known_state_version < 0
+            or decision.state_version != known_state_version
+        ):
+            raise IllegalAction("La versión conocida no coincide con la decisión")
+
+        state.pending_decision = replace(
+            decision,
+            status=PendingDecisionStatus.CLOSED,
+            selected_option=selected_option,
+        )
 
     def execute(self, command: GameCommand) -> None:
         if isinstance(command, ResolveMoveReplacement):

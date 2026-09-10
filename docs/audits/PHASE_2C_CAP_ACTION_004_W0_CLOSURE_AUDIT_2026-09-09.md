@@ -229,3 +229,70 @@ Por aplicación estricta del gate de calidad, el resultado final es:
 
 Incluso si una ejecución posterior cerrase W0 para el SHA del cambio, no se
 deberá declarar **`CAPABILITY CLOSED`**: W1 continúa fuera de alcance.
+
+## 17. Adenda de revalidación local — 2026-09-10
+
+Esta adenda registra una ejecución nueva sobre el checkout limpio con SHA exacto
+`a11a0d1c7071da3db400af60dd68cda5abd8b4d5`. Ese SHA es el objeto realmente
+probado; no se sustituye por el SHA posterior que incorpora esta documentación.
+
+### 17.1 Contadores y cobertura de aceptación
+
+| Comando | Exit | Collected | Passed | Failed | Skipped | Resultado adicional |
+|---|---:|---:|---:|---:|---:|---|
+| `uv sync --locked --extra dev` | 0 | N/A | N/A | N/A | N/A | Lock respetado y extra `dev` instalado. |
+| `uv run pytest -q tests/test_pending_decision_w0.py` | 0 | **58** | **58** | **0** | **0** | 100 % de la selección. |
+| `uv run pytest -q tests/test_replay_legacy_019.py tests/test_replay_legacy_020_profile.py tests/test_persistence_v090.py tests/test_expected_version_contract.py` | 0 | **43** | **43** | **0** | **0** | **159 subtests passed**. |
+| `uv run pytest -q tests/test_phase_2c_engine_evolution_roadmap.py` | 0 | **15** | **15** | **0** | **0** | 100 % de la selección. |
+| `uv run coverage erase && uv run coverage run -m pytest -q` | 0 | **783** | **782** | **0** | **1** | **816 subtests passed**. |
+| `uv run coverage report -m` | 0 | N/A | N/A | N/A | N/A | **91 %** total: 4.590 statements, 314 missed, 1.656 branches y 253 ramas parciales; supera `fail_under = 88` por 3 puntos. |
+
+El porcentaje exacto publicado por `coverage report -m` es **91 %**. No se
+cambió `fail_under`, no se añadieron omisiones, exclusiones ni
+`pragma: no cover`, y la suite instrumentada no tuvo fallos.
+
+### 17.2 Perfil de release completo
+
+`uv run python scripts/verify_release.py --profile full` terminó con exit 0 y
+`OK: perfil full completado`. Sus etapas, en el orden ejecutado por el script,
+quedaron así:
+
+| Etapa | Estado | Evidencia registrada |
+|---|---|---|
+| `metadata` | **PASS** | Versión `0.20.1` coherente en changelog, pyproject, README, lock y validación. |
+| `lockfile` | **PASS** | `uv lock --check`, diff vacío de `uv.lock` y hash sin cambios. |
+| `security` | **PASS** | 114 archivos Python analizados y 225 archivos versionados escaneados. |
+| `quality:mypy` | **PASS** | `Success: no issues found in 44 source files`. |
+| `quality:compileall` | **PASS** | Compilación de `src`, `tests` y `scripts` sin error. |
+| `quality:tests` | **PASS** | Discovery `unittest` completo bajo cobertura de ramas sin error. |
+| `quality:coverage` | **PASS** | **88 %** en el corpus ejecutado internamente por el perfil; satisface el `fail_under = 88` del proyecto. |
+| `rules-sources` | **PASS** | Dos fuentes PDF verificadas. |
+| `simulations` | **PASS** | 300 simulaciones, 54.000 comandos y 84.000 eventos. |
+| `persistence` | **PASS** | 30 round-trips. |
+| `package:build-audit` | **PASS** | Dos builds binariamente idénticos; wheel puro con 48 archivos, sin fixtures, PDF ni cartas de producción. |
+| `package:artifact-coherence` | **PASS** | `card_duel_engine-0.20.1-py3-none-any.whl`, SHA-256 `738cc71dba85cdb37cfa5c85d71ff4f9251b71eceb82dae7e060e5b8395e1b91`. |
+| `package:python-3.11`, `package:install-3.11`, `package:import-3.11` | **PASS** | Instalación aislada e import de versión `0.20.1`. |
+| `package:python-3.12`, `package:install-3.12`, `package:import-3.12` | **PASS** | Instalación aislada e import de versión `0.20.1`. |
+| `package:python-3.13`, `package:install-3.13`, `package:import-3.13` | **PASS** | Instalación aislada e import de versión `0.20.1`. |
+
+Una consulta auxiliar posterior invocó inicialmente
+`verify_rules_sources.verify()` con un argumento incorrecto y recibió
+`RulesSourceError`; no era un control del perfil ni un fallo del repositorio. La
+invocación canónica `uv run python scripts/verify_rules_sources.py` se repitió y
+pasó para ambas fuentes. Se conserva aquí el incidente de operador para que el
+registro no oculte resultados.
+
+### 17.3 Estado actualizado del gate
+
+La evidencia local del SHA `a11a0d1c7071da3db400af60dd68cda5abd8b4d5`
+queda íntegramente verde. Sin embargo, el commit que contiene esta adenda tendrá
+otro SHA y todavía no puede tener, antes de publicarse, resultados remotos
+`runtime (3.11)`, `runtime (3.12)`, `runtime (3.13)` y `full` asociados a ese
+mismo objeto Git. Por la regla de identidad de evidencia aplicada en esta
+auditoría:
+
+> **`W0-GATE-QUALITY`: PENDIENTE de CI para el SHA del commit documental.**
+
+No se clasifica como `BLOQUEADO`: no falló ningún control canónico local. Tampoco
+se declara `CAPABILITY CLOSED`; W1 y el tramo de lifecycle de
+`W0-GATE-CAS` permanecen fuera del alcance de esta revalidación.

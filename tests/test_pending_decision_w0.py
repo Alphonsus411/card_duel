@@ -472,32 +472,47 @@ def test_sqlite_invalid_snapshot_rolls_back_and_repeated_startup_keeps_one_table
             assert [row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")] == ["matches"]
 
 
+def assert_snapshot_cas_race(
+    store: InMemoryMatchStore | SQLiteMatchStore,
+) -> None:
+    store.create("race", make_engine())
+    candidates = [store.load("race").engine for _ in range(2)]
+    candidates[0].state.pending_decision = decision()
+    candidates[0].state.players["A"].wounds = 1
+    candidates[1].state.pending_decision = decision(closed=True)
+    candidates[1].state.players["A"].wounds = 2
+    candidate_snapshots = {
+        dump_snapshot(candidate, indent=None) for candidate in candidates
+    }
+    barrier = Barrier(2)
+
+    def save(candidate: GameEngine) -> int | VersionConflict:
+        barrier.wait()
+        try:
+            return store.save("race", candidate, expected_version=1)
+        except VersionConflict as exc:
+            return exc
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        outcomes = list(executor.map(save, candidates))
+
+    assert sum(outcome == 2 for outcome in outcomes) == 1
+    assert sum(isinstance(outcome, VersionConflict) for outcome in outcomes) == 1
+    winning = store.load("race")
+    assert winning.version == 2
+    assert dump_snapshot(winning.engine, indent=None) in candidate_snapshots
+
+
+def test_two_in_memory_writers_with_same_expected_version_have_one_winner(
+) -> None:
+    assert_snapshot_cas_race(InMemoryMatchStore())
+
+
 def test_two_sqlite_writers_with_same_expected_version_have_one_winner() -> None:
     with TemporaryDirectory() as directory:
         path = Path(directory) / "race.db"
-        store = SQLiteMatchStore(path)
-        store.create("race", make_engine())
-        candidates = [store.load("race").engine for _ in range(2)]
-        candidates[0].state.pending_decision = decision()
-        candidates[1].state.pending_decision = decision(closed=True)
-        barrier = Barrier(2)
-
-        def save(candidate: GameEngine) -> str:
-            barrier.wait()
-            try:
-                store.save("race", candidate, expected_version=1)
-                return "won"
-            except VersionConflict:
-                return "lost"
-
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            outcomes = list(executor.map(save, candidates))
-        assert sorted(outcomes) == ["lost", "won"]
-        winning = store.load("race")
-        assert winning.version == 2
-        assert winning.engine.state.pending_decision in (
-            decision(), decision(closed=True)
-        )
+        with SQLiteMatchStore(path) as store:
+            assert_snapshot_cas_race(store)
 
 
 def test_replay_remains_v2_until_w1_lifecycle_exists() -> None:

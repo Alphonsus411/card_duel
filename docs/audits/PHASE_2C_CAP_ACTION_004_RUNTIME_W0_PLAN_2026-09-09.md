@@ -471,3 +471,24 @@ Por compartir el SHA con U.3, esta ejecución permite cerrar
 En consecuencia, W0 puede estar **IMPLEMENTADO** y **PROBADO**, y algunos gates
 pueden estar **CERRADOS**, mientras `CAP-ACTION-004` continúa sin alcanzar
 **CAPABILITY CLOSED** por el recorrido W1 pendiente.
+
+## V. Revalidación del tip de `main` y CI del PR — 2026-09-10
+
+`git fetch --prune origin` fijó tanto `HEAD` como `origin/main` en
+`4fdd7ee3aafc75f438fc9e4f51703280b7a58de4`. Frente al merge W0
+`2832b94ae61e7aa7c913cdd5207a212fed3de8b8`, la relación fue `0 16`: el tip no
+diverge y contiene 16 commits adicionales de corrección de digest, cobertura de
+validación/migración, neutralización de fixtures, documentación y CAS de stores.
+
+El alcance de esta revalidación sigue limitado a W0. W1.1 —comandos, eventos,
+creación/cierre ejecutable, exactly-once, proyección por audiencia y recorrido
+de servicio— no se integra ni se declara autorizado por anticipado. Replay v3,
+la carrera de dos cierres y la publicación post-CAS también permanecen fuera.
+
+| Gate | Estado antes del CI del SHA del PR | Evidencia requerida |
+|---|---|---|
+| `W0-GATE-QUALITY` | **NO CERRADO** | Identificador y número de workflow para el SHA exacto del PR; `runtime (3.11)`, `runtime (3.12)`, `runtime (3.13)` y `full`, todos `completed / success`. |
+
+Hasta que se cumpla la fila anterior, el veredicto operativo es
+**CAP-ACTION-004 W0 NO CERRADO — REQUIERE CORRECCIÓN**. Los resultados de SHA
+anteriores sólo son contexto histórico y no se reutilizan para cerrar este tip.

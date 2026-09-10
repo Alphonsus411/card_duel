@@ -296,3 +296,58 @@ auditoría:
 No se clasifica como `BLOQUEADO`: no falló ningún control canónico local. Tampoco
 se declara `CAPABILITY CLOSED`; W1 y el tramo de lifecycle de
 `W0-GATE-CAS` permanecen fuera del alcance de esta revalidación.
+
+## 18. Rebase de evidencia sobre `main` — 2026-09-10
+
+Antes de integrar esta actualización se restauró el remoto `origin` del
+checkout y se ejecutó `git fetch --prune origin`. El registro posterior fue:
+
+| Control | Resultado |
+|---|---|
+| `git status` | Rama `work`; árbol limpio. |
+| `git branch --show-current` | `work` |
+| `git rev-parse HEAD` | `4fdd7ee3aafc75f438fc9e4f51703280b7a58de4` |
+| `git rev-parse origin/main` | `4fdd7ee3aafc75f438fc9e4f51703280b7a58de4` |
+| `git rev-list --left-right --count 2832b94...origin/main` | `0 16`: sin divergencia; `main` avanzó 16 commits. |
+
+### 18.1 Diferencia respecto del merge W0 original
+
+El nuevo HEAD no se trata como si fuera `2832b94ae61e7aa7c913cdd5207a212fed3de8b8`.
+Los 16 commits posteriores incorporan, por orden causal: la corrección que
+separa el digest runtime autoritativo del digest histórico 0.19; cobertura
+negativa adicional de `PendingDecision` y de migración snapshot v2; fixtures W0
+sin semántica W1 accidental; reconciliación documental; una prueba de carrera
+CAS común a InMemory y SQLite; y revalidaciones locales/remotas posteriores.
+El tip `4fdd7ee3aafc75f438fc9e4f51703280b7a58de4` es por tanto el baseline real de
+esta actualización y coincide con `origin/main` tras el fetch.
+
+### 18.2 Alcance, cobertura y riesgos conservados
+
+- **W0 incluido:** modelo/codec cerrado, slot autoritativo, snapshot v3,
+  migración explícita, digest, goldens neutrales y CAS del snapshot completo.
+- **Defecto de digest corregido:** `state_digest()` incluye
+  `pending_decision`; sólo la función histórica dedicada puede omitirlo.
+- **Ruta legacy:** el fallback queda limitado a replays originalmente schema
+  1/2, sin `engine_semantics`, versión 0.19.0 y semántica restaurada
+  `LEGACY_019`; snapshots v2 migran a ausencia canónica y replay continúa v2.
+- **Cobertura y tests locales de esta actualización:** tras `uv sync --locked
+  --extra dev`, la selección W0/legacy/persistencia obtuvo 101 passed y 159
+  subtests; la suite instrumentada obtuvo 782 passed, 1 skipped, 816 subtests y
+  91 % (4.590 statements, 314 missed, 1.656 branches, 253 parciales); el perfil
+  `full` terminó con `OK`. Son evidencia del worktree basado en `4fdd7ee...`, no
+  sustituyen el CI requerido para el SHA del commit/PR.
+- **Exclusiones W1:** comandos/eventos universales, creación/cierre ejecutable,
+  exactly-once, proyecciones por audiencia, recorrido application/service,
+  replay v3 y CAS de dos cierres con publicación post-CAS.
+- **Riesgos:** ampliación accidental del fallback, falsa atribución de CI entre
+  SHA, payload/latencia SQLite no medidos y semántica W1 aún no diseñada.
+
+### 18.3 Gate previo al CI del PR
+
+El commit que contiene esta sección tendrá un SHA distinto del baseline. Hasta
+consultar GitHub Actions para el SHA exacto del PR y comprobar individualmente
+`runtime (3.11)`, `runtime (3.12)`, `runtime (3.13)` y `full`, se mantiene:
+
+> **`W0-GATE-QUALITY`: NO CERRADO.**
+>
+> **CAP-ACTION-004 W0 NO CERRADO — REQUIERE CORRECCIÓN**

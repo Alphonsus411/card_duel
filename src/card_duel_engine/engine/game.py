@@ -32,10 +32,17 @@ from ..domain.enums import (
     Zone,
 )
 from ..domain.errors import (
+    DecisionAlreadyClosed,
+    DecisionIdMismatch,
+    DecisionSlotEmpty,
+    DecisionSlotOccupied,
     IllegalAction,
     InvalidDeckDefinition,
     InvariantViolation,
     PaymentError,
+    StaleDecisionVersion,
+    UnauthorizedDecisionElector,
+    UnauthorizedDecisionOption,
 )
 from ..domain.models import (
     AbilitySourceProfile,
@@ -433,7 +440,7 @@ class GameEngine:
         """Abre el único slot universal sin interpretar su semántica opaca."""
         state = self._require_state()
         if state.pending_decision is not None:
-            raise IllegalAction("Ya existe una decisión en el slot autoritativo")
+            raise DecisionSlotOccupied("Ya existe una decisión en el slot autoritativo")
         if not isinstance(decision_id, str) or not decision_id.strip():
             raise IllegalAction("El identificador de decisión no es válido")
         if (
@@ -472,7 +479,8 @@ class GameEngine:
         ):
             raise IllegalAction("El origen de la decisión no es válido")
 
-        state.pending_decision = PendingDecision(
+        candidate = deepcopy(state)
+        candidate.pending_decision = PendingDecision(
             decision_id=decision_id,
             semantic_family=semantic_family,
             authorized_elector=authorized_elector,
@@ -483,6 +491,8 @@ class GameEngine:
             status=PendingDecisionStatus.PENDING,
             selected_option=None,
         )
+        self._validate_invariants(candidate, self.catalog)
+        self.state = candidate
 
     def _close_pending_decision(
         self,
@@ -495,27 +505,32 @@ class GameEngine:
         state = self._require_state()
         decision = state.pending_decision
         if decision is None:
-            raise IllegalAction("No existe una decisión pendiente")
+            raise DecisionSlotEmpty("No existe una decisión pendiente")
         if decision.decision_id != decision_id:
-            raise IllegalAction("La identidad de la decisión no coincide")
+            raise DecisionIdMismatch("La identidad de la decisión no coincide")
         if decision.status is not PendingDecisionStatus.PENDING:
-            raise IllegalAction("La decisión ya no está pendiente")
+            raise DecisionAlreadyClosed("La decisión ya no está pendiente")
         if decision.authorized_elector != actor:
-            raise IllegalAction("El actor no es el elector autorizado")
+            raise UnauthorizedDecisionElector("El actor no es el elector autorizado")
         if selected_option not in decision.authorized_opaque_options:
-            raise IllegalAction("La opción no está autorizada")
+            raise UnauthorizedDecisionOption("La opción no está autorizada")
         if (
             type(known_state_version) is not int
             or known_state_version < 0
             or decision.state_version != known_state_version
         ):
-            raise IllegalAction("La versión conocida no coincide con la decisión")
+            raise StaleDecisionVersion(
+                "La versión conocida no coincide con la decisión"
+            )
 
-        state.pending_decision = replace(
+        candidate = deepcopy(state)
+        candidate.pending_decision = replace(
             decision,
             status=PendingDecisionStatus.CLOSED,
             selected_option=selected_option,
         )
+        self._validate_invariants(candidate, self.catalog)
+        self.state = candidate
 
     def execute(self, command: GameCommand) -> None:
         if isinstance(command, ResolveMoveReplacement):

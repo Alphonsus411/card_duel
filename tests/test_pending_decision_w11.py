@@ -6,7 +6,17 @@ import pytest
 
 from card_duel_engine import GameEngine
 from card_duel_engine.domain import DecisionAudience, PendingDecisionStatus
-from card_duel_engine.domain.errors import IllegalAction
+from card_duel_engine.domain.errors import (
+    DecisionAlreadyClosed,
+    DecisionIdMismatch,
+    DecisionSlotEmpty,
+    DecisionSlotOccupied,
+    IllegalAction,
+    InvariantViolation,
+    StaleDecisionVersion,
+    UnauthorizedDecisionElector,
+    UnauthorizedDecisionOption,
+)
 
 from fixtures import test_deck
 
@@ -109,3 +119,84 @@ def test_slot_cannot_be_reopened_or_closed_twice() -> None:
     engine._close_pending_decision("decision:test:1", "A", "opaque-a", 0)
     with pytest.raises(IllegalAction, match="ya no está pendiente"):
         engine._close_pending_decision("decision:test:1", "A", "opaque-a", 0)
+
+
+@pytest.mark.parametrize(
+    ("arguments", "error_type", "code"),
+    [
+        (("decision:test:1", "A", "opaque-a", 0), DecisionSlotEmpty,
+         "decision_slot_empty"),
+        (("other", "A", "opaque-a", 0), DecisionIdMismatch,
+         "decision_id_mismatch"),
+        (("decision:test:1", "B", "opaque-a", 0), UnauthorizedDecisionElector,
+         "unauthorized_decision_elector"),
+        (("decision:test:1", "A", "other", 0), UnauthorizedDecisionOption,
+         "unauthorized_decision_option"),
+        (("decision:test:1", "A", "opaque-a", 1), StaleDecisionVersion,
+         "stale_decision_version"),
+    ],
+)
+def test_close_errors_have_stable_domain_codes(
+    arguments: tuple[object, ...],
+    error_type: type[IllegalAction],
+    code: str,
+) -> None:
+    engine = make_engine()
+    if error_type is not DecisionSlotEmpty:
+        open_decision(engine)
+
+    with pytest.raises(error_type) as caught:
+        engine._close_pending_decision(*arguments)  # type: ignore[arg-type]
+
+    assert caught.value.code == code  # type: ignore[attr-defined]
+    assert "opaque-a" not in str(caught.value)
+    assert "opaque-b" not in str(caught.value)
+
+
+def test_slot_conflicts_and_terminal_state_have_specific_errors() -> None:
+    engine = make_engine()
+    open_decision(engine)
+    with pytest.raises(DecisionSlotOccupied) as occupied:
+        open_decision(engine)
+    assert occupied.value.code == "decision_slot_occupied"
+
+    engine._close_pending_decision("decision:test:1", "A", "opaque-a", 0)
+    with pytest.raises(DecisionAlreadyClosed) as closed:
+        engine._close_pending_decision("decision:test:1", "A", "opaque-a", 0)
+    assert closed.value.code == "decision_already_closed"
+
+
+@pytest.mark.parametrize("operation", ["open", "close"])
+def test_invariant_failure_does_not_publish_candidate_or_technical_state(
+    monkeypatch: pytest.MonkeyPatch, operation: str
+) -> None:
+    engine = make_engine()
+    if operation == "close":
+        open_decision(engine)
+    state_before = engine.state
+    snapshot_before = deepcopy(engine.state)
+    technical_before = (
+        engine._next_instance,
+        engine._next_stack_item,
+        engine._replacement_replay_choices,
+        engine._replacement_replay_cursor,
+    )
+
+    def reject_candidate(*_args: object) -> None:
+        raise InvariantViolation("La copia candidata no supera las invariantes")
+
+    monkeypatch.setattr(engine, "_validate_invariants", reject_candidate)
+    with pytest.raises(InvariantViolation):
+        if operation == "open":
+            open_decision(engine)
+        else:
+            engine._close_pending_decision("decision:test:1", "A", "opaque-a", 0)
+
+    assert engine.state is state_before
+    assert engine.state == snapshot_before
+    assert technical_before == (
+        engine._next_instance,
+        engine._next_stack_item,
+        engine._replacement_replay_choices,
+        engine._replacement_replay_cursor,
+    )

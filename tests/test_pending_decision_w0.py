@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
+from copy import deepcopy
 from dataclasses import FrozenInstanceError, replace
 import hashlib
 import json
@@ -7,17 +9,26 @@ from pathlib import Path
 import sqlite3
 from tempfile import TemporaryDirectory
 from threading import Barrier
-from concurrent.futures import ThreadPoolExecutor
+from typing import Callable
 
 import pytest
 
 from card_duel_engine import GameEngine, RuleSet
 from card_duel_engine.domain import (
     DecisionAudience,
+    MoveReason,
     PendingDecision,
     PendingDecisionStatus,
+    Zone,
+    ZoneTarget,
 )
 from card_duel_engine.domain.errors import InvariantViolation
+from card_duel_engine.domain.models import (
+    PendingMoveReplacement,
+    PendingSearch,
+    StackItem,
+)
+from card_duel_engine.engine import Concede
 from card_duel_engine.persistence import dump_snapshot, load_snapshot, state_digest
 from card_duel_engine.persistence.codec import canonical_json, decode_value, encode_value
 from card_duel_engine.persistence.migrations import migrate_document
@@ -243,6 +254,153 @@ def test_snapshot_v2_migrates_to_v3_without_inventing_a_decision() -> None:
     restored = load_snapshot(legacy)
     assert restored.state.pending_decision is None
     assert json.loads(dump_snapshot(restored))["body"]["schema_version"] == "3"
+
+
+def test_snapshot_v2_migration_adds_only_pending_decision_and_recalculates_digest(
+) -> None:
+    legacy_body = as_v2(make_engine())["body"]
+    legacy_state = deepcopy(legacy_body["state"])
+
+    migrated = migrate_document("snapshot", legacy_body, "3")
+
+    expected_state = deepcopy(legacy_state)
+    expected_state["fields"]["pending_decision"] = None
+    assert migrated["state"] == expected_state
+    assert migrated["state_digest"] == hashlib.sha256(
+        canonical_json(expected_state).encode("utf-8")
+    ).hexdigest()
+
+
+@pytest.mark.parametrize(
+    ("mutate", "message"),
+    [
+        pytest.param(
+            lambda body: body.pop("state"),
+            "GameState válido",
+            id="missing-state",
+        ),
+        pytest.param(
+            lambda body: body.__setitem__("state", []),
+            "GameState válido",
+            id="state-not-dict",
+        ),
+        pytest.param(
+            lambda body: body["state"].__setitem__("$type", "PlayerState"),
+            "GameState válido",
+            id="wrong-state-discriminator",
+        ),
+        pytest.param(
+            lambda body: body["state"].pop("fields"),
+            "forma esperada",
+            id="missing-fields",
+        ),
+        pytest.param(
+            lambda body: body["state"].__setitem__("fields", []),
+            "forma esperada",
+            id="fields-not-dict",
+        ),
+        pytest.param(
+            lambda body: body["state"]["fields"].__setitem__(
+                "pending_decision", None
+            ),
+            "forma esperada",
+            id="pending-decision-already-present",
+        ),
+    ],
+)
+def test_snapshot_v2_migration_rejects_invalid_shapes_without_mutating_input(
+    mutate: Callable[[dict[str, object]], object], message: str
+) -> None:
+    legacy_body = as_v2(make_engine())["body"]
+    mutate(legacy_body)
+    before = deepcopy(legacy_body)
+
+    with pytest.raises(ValueError, match=message):
+        migrate_document("snapshot", legacy_body, "3")
+
+    assert legacy_body == before
+
+
+def test_snapshot_migration_rejects_unknown_schema_without_mutating_input() -> None:
+    body = {"schema_version": "99", "nested": {"items": [1, 2]}}
+    before = deepcopy(body)
+
+    with pytest.raises(ValueError, match="No existe migración"):
+        migrate_document("snapshot", body, "3")
+
+    assert body == before
+
+
+def test_repeated_migration_of_v3_result_is_equal_and_does_not_mutate_inputs() -> None:
+    legacy_body = as_v2(make_engine())["body"]
+    legacy_before = deepcopy(legacy_body)
+    migrated = migrate_document("snapshot", legacy_body, "3")
+    migrated_before = deepcopy(migrated)
+
+    repeated = migrate_document("snapshot", migrated, "3")
+
+    assert legacy_body == legacy_before
+    assert migrated == migrated_before
+    assert repeated == migrated
+    assert repeated is not migrated
+
+
+@pytest.mark.parametrize("specialized", ["search", "move-replacement"])
+def test_snapshot_v2_migration_does_not_infer_from_specialized_pending_models(
+    specialized: str,
+) -> None:
+    engine = make_engine()
+    if specialized == "search":
+        card_id = engine.state.players["A"].zones[Zone.DECK][0]
+        engine.state.pending_search = PendingSearch(
+            StackItem("migration-search", "A", card_id, ()),
+            0,
+            "A",
+            ZoneTarget("A", Zone.DECK),
+            (card_id,),
+            1,
+            1,
+            Zone.HAND,
+            True,
+            False,
+        )
+    else:
+        card_id = engine.state.players["A"].zones[Zone.DECK][0]
+        engine.state.pending_move_replacement = PendingMoveReplacement(
+            Concede("A"),
+            "A",
+            card_id,
+            MoveReason.DESTROY,
+            (0,),
+            (Zone.EXILE,),
+            "A",
+        )
+    legacy_body = as_v2(engine)["body"]
+    legacy_fields = deepcopy(legacy_body["state"]["fields"])
+
+    migrated = migrate_document("snapshot", legacy_body, "3")
+    migrated_fields = migrated["state"]["fields"]
+
+    assert migrated_fields["pending_decision"] is None
+    assert {
+        key: value
+        for key, value in migrated_fields.items()
+        if key != "pending_decision"
+    } == legacy_fields
+
+
+def test_migrated_digest_and_envelope_checksum_are_validated_by_load_snapshot() -> None:
+    legacy = as_v2(make_engine())
+    migrated_body = migrate_document("snapshot", legacy["body"], "3")
+    migrated_envelope = {"body": migrated_body, "sha256": checksum(migrated_body)}
+
+    restored = load_snapshot(migrated_envelope)
+
+    assert migrated_body["state_digest"] == state_digest(restored)
+    corrupted = deepcopy(migrated_envelope)
+    corrupted["sha256"] = "0" * 64
+    with pytest.raises(ValueError, match="huella de la instantánea"):
+        load_snapshot(corrupted)
 
 
 def test_019_runtime_digest_includes_pending_decision() -> None:

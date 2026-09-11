@@ -30,6 +30,7 @@ from card_duel_engine.persistence.snapshot import (
     load_snapshot,
     state_digest,
 )
+from card_duel_engine.persistence.replay import dump_replay, replay_from_log
 
 from fixtures import test_deck
 
@@ -327,6 +328,47 @@ def test_digest_distinguishes_absence_options_status_and_selected_option() -> No
     assert state_digest(pending_a) != state_digest(pending_b)
     assert state_digest(pending_a) != state_digest(closed_a)
     assert state_digest(closed_a) != state_digest(closed_b)
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement"),
+    [
+        pytest.param("decision_id", "opaque_other", id="decision-id"),
+        pytest.param("semantic_family", "other-choice/v2", id="semantic-family"),
+        pytest.param("authorized_elector", "B", id="authorized-elector"),
+        pytest.param("audience", DecisionAudience.OPPONENT, id="audience"),
+        pytest.param(
+            "authorized_opaque_options",
+            ("opaque_other_a", "opaque_other_b"),
+            id="authorized-options",
+        ),
+        pytest.param("state_version", VERSION + 1, id="state-version"),
+        pytest.param("origin", ("opaque_other_origin",), id="origin"),
+    ],
+)
+def test_digest_includes_each_pending_decision_contract_field(
+    field: str, replacement: object
+) -> None:
+    baseline = make_engine()
+    changed = make_engine()
+    open_decision(baseline)
+    open_decision(changed, **{field: replacement})
+
+    assert state_digest(changed) != state_digest(baseline)
+
+
+def test_replay_v2_cannot_reconstruct_internal_lifecycle_mutation_yet() -> None:
+    engine = make_engine()
+    open_decision(engine)
+
+    payload = dump_replay(engine, indent=None)
+
+    assert json.loads(payload)["body"]["schema_version"] == "2"
+    with pytest.raises(ValueError, match="reproducción diverge"):
+        replay_from_log(payload)
+    restored = replay_from_log(payload, verify_digest=False)
+    assert restored.state is not None
+    assert restored.state.pending_decision is None
 
 
 def test_inv_14_close_preserves_every_game_state_field_except_decision_slot() -> None:

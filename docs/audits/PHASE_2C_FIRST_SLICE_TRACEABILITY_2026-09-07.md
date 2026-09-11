@@ -27,7 +27,7 @@ status: PARTIAL
 gate: WAIT-PREREQ
 prerequisites:
   - capability_id: CAP-ACTION-004
-    status: MISSING
+    status: PARTIAL
     gate: READY
   - capability_id: CAP-TIME-005
     status: MISSING

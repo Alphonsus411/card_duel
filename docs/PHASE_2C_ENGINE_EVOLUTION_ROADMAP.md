@@ -48,7 +48,7 @@ Las columnas `Central.`, `Desbloq.`, `Riesgo`, `Claridad` y `Migración` corresp
 | `CAP-ACTION-001` — Modelo tipado de acciones y comandos | `SUPPORTED` | `CLOSED` | HIGH | MEDIUM | MEDIUM | HIGH | LOW | Prerequisites: ninguno; dependientes: CAP-ACTION-002, CAP-TIME-003, CAP-EFFECT-001. |
 | `CAP-ACTION-002` — Enumeración y revalidación de acciones legales | `SUPPORTED` | `CLOSED` | MEDIUM | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-ACTION-001; dependientes: CAP-TARGET-001, CAP-ACTION-004. |
 | `CAP-ACTION-003` — Transacción, rollback y determinismo | `SUPPORTED` | `CLOSED` | HIGH | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-ACTION-001; dependientes: CAP-COST-002, CAP-ZONE-003, CAP-EFFECT-003. |
-| `CAP-ACTION-004` — Decisión pendiente autorizada | `MISSING` | `READY` (sólo contrato) | HIGH | HIGH | HIGH | HIGH | HIGH | El contrato está listo, pero no existe implementación: la capability permanece `MISSING`. Prerequisites `SUPPORTED`: CAP-ACTION-002, CAP-PRIVACY-001; dependientes: CAP-SECRET-002, CAP-TIME-002; prioridad P0, riesgo CRITICAL, wave W1. |
+| `CAP-ACTION-004` — Decisión pendiente autorizada | `PARTIAL` | `READY` | HIGH | HIGH | HIGH | HIGH | HIGH | W1.1 aporta el subconjunto ejecutable interno `None -> PENDING -> CLOSED`, snapshot/digest y zero mutation; siguen pendientes comando público, application/service, privacidad, CAS, publicación y replay, por lo que no cierra ni desbloquea dependientes. Prerequisites: CAP-ACTION-002, CAP-PRIVACY-001; dependientes: CAP-SECRET-002, CAP-TIME-002; prioridad P0, riesgo CRITICAL, wave W1. |
 | `CAP-COST-001` — Modelo declarativo de costes | `SUPPORTED` | `CLOSED` | HIGH | MEDIUM | MEDIUM | HIGH | LOW | Prerequisites: CAP-ACTION-001; dependientes: CAP-COST-002, CAP-COST-003, CAP-COST-004. |
 | `CAP-COST-002` — Preflight, determinación y pago atómico | `SUPPORTED` | `CLOSED` | MEDIUM | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-COST-001, CAP-ACTION-003; dependientes: CAP-COST-003, CAP-STACK-001. |
 | `CAP-COST-003` — Costes adicionales y compuestos | `SUPPORTED` | `CLOSED` | MEDIUM | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-COST-001, CAP-COST-002; dependientes: CAP-EFFECT-003. |
@@ -814,7 +814,7 @@ status: PARTIAL
 gate: WAIT-PREREQ
 prerequisites:
   - capability_id: CAP-ACTION-004
-    status: MISSING
+    status: PARTIAL
     gate: READY
   - capability_id: CAP-TIME-005
     status: MISSING
@@ -849,7 +849,7 @@ verdict: N-PHASE-02 IMPLEMENTATION BLOCKED
 
 Los dos primeros elementos de `blockers` son la lista exacta de prerequisites
 no cerrados declarada para `CAP-TIME-002`: `CAP-ACTION-004` (decisión pendiente
-autorizada, capability `MISSING` con sólo su contrato `READY`) y `CAP-TIME-005` (lifecycle autoritativo de
+autorizada, capability `PARTIAL` con recorrido público aún pendiente y gate `READY`) y `CAP-TIME-005` (lifecycle autoritativo de
 setup, `MISSING` y `WAIT-PREREQ`). Los cuatro elementos
 `N-MULLIGAN-01.OPEN-*` son blockers normativos granulares del protocolo, no
 prerequisites técnicos. La dependencia directa de `CAP-SECRET-002` queda eliminada:

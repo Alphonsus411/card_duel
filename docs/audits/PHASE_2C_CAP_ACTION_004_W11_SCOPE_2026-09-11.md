@@ -34,6 +34,19 @@ definir antes, de forma conjunta:
 Hasta entonces, `CLOSED` permanece en el agregado como estado terminal
 observable y bloquea cualquier nueva apertura.
 
+## Riesgo conocido de replay e INV-10
+
+Las transiciones W1.1 se realizan por ahora mediante API interna y no agregan un
+comando al historial. Por ello, replay v2 conserva su formato histórico, pero no
+puede reconstruir una apertura o un cierre efectuados por esa vía: la
+verificación de la huella detecta la divergencia y debe rechazar el replay.
+
+Este límite es deliberado. `CAP-ACTION-004-INV-10` **permanece abierto** y su
+cierre corresponde a un slice futuro que incorpore un comando reproducible y su
+contrato de compatibilidad. W1.1 no añade comandos de apertura/cierre, no amplía
+el registro del codec y no introduce excepciones en los perfiles legacy 0.19 o
+0.20 para ocultar la divergencia.
+
 ## Dos versiones con responsabilidades distintas
 
 `PendingDecision.state_version` es el vínculo determinista que declara quien

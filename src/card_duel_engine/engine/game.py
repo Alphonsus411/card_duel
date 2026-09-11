@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..content.registry import CollectionRegistry
-from ..controllers.base import PlayerObservation
+from ..controllers.base import PendingDecisionView, PlayerObservation
 from ..domain.enums import (
     CardKind,
     CardRank,
@@ -771,6 +771,31 @@ class GameEngine:
                 if state.pending_move_replacement is not None
                 and state.pending_move_replacement.chooser_id == player_id
                 else ()
+            ),
+            pending_decision=self._pending_decision_view_for(player_id),
+        )
+
+    def _pending_decision_view_for(
+        self, player_id: str
+    ) -> PendingDecisionView | None:
+        """Reduce el registro autoritativo a los datos internos observables."""
+        state = self._require_state()
+        decision = state.pending_decision
+        if decision is None:
+            return None
+        may_resolve = (
+            decision.status is PendingDecisionStatus.PENDING
+            and decision.audience is not DecisionAudience.INTERNAL
+            and decision.authorized_elector == player_id
+        )
+        return PendingDecisionView(
+            decision_id=decision.decision_id,
+            semantic_family=decision.semantic_family,
+            status=decision.status,
+            state_version=decision.state_version,
+            audience=decision.audience,
+            authorized_opaque_options=(
+                decision.authorized_opaque_options if may_resolve else ()
             ),
         )
 

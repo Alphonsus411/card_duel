@@ -3,8 +3,20 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol, Sequence
 
-from ..domain.enums import Phase
+from ..domain.enums import DecisionAudience, PendingDecisionStatus, Phase
 from ..engine.commands import GameCommand
+
+
+@dataclass(frozen=True)
+class PendingDecisionView:
+    """Proyección interna mínima de una decisión para un observador."""
+
+    decision_id: str
+    semantic_family: str
+    status: PendingDecisionStatus
+    state_version: int
+    audience: DecisionAudience
+    authorized_opaque_options: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -28,6 +40,7 @@ class PlayerObservation:
     replacement_orders: tuple[tuple[str, tuple[int, ...]], ...] = ()
     pending_replacement_card_id: str | None = None
     replacement_destinations: tuple[tuple[int, str], ...] = ()
+    pending_decision: PendingDecisionView | None = None
 
 
 @dataclass(frozen=True)

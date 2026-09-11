@@ -8,7 +8,7 @@ from typing import Protocol, cast
 
 from .catalog import CardCatalog
 from .content.registry import CollectionRegistry
-from .controllers.base import PlayerObservation
+from .controllers.base import PendingDecisionView, PlayerObservation
 from .domain.enums import MatchStatus
 from .domain.errors import InvalidDeckDefinition
 from .domain.models import CardDefinition
@@ -52,6 +52,7 @@ class MatchView:
     status: str
     observation: PlayerObservation
     legal_actions: tuple[GameCommand, ...]
+    pending_decision: PendingDecisionView | None = None
 
 
 class MatchService:
@@ -146,12 +147,14 @@ class MatchService:
             MatchStatus.FINISHED: "finished",
             MatchStatus.BLOCKED: "blocked",
         }[state.status]
+        observation = engine.observe(player_id)
         return MatchView(
-            match_id,
-            version,
-            public_status,
-            engine.observe(player_id),
-            engine.legal_actions(player_id),
+            match_id=match_id,
+            version=version,
+            status=public_status,
+            observation=observation,
+            legal_actions=engine.legal_actions(player_id),
+            pending_decision=observation.pending_decision,
         )
 
     def submit(

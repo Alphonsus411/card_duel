@@ -1,4 +1,13 @@
-from .base import DecisionRequest, PlayerController, PlayerObservation
+from .base import (
+    DecisionRequest,
+    PendingDecisionView,
+    PlayerController,
+    PlayerObservation,
+)
 
-__all__ = ["DecisionRequest", "PlayerController", "PlayerObservation"]
-
+__all__ = [
+    "DecisionRequest",
+    "PendingDecisionView",
+    "PlayerController",
+    "PlayerObservation",
+]

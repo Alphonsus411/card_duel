@@ -713,6 +713,7 @@ def test_match_service_and_player_observation_public_contract_is_unchanged():
         "pending_triggers", "suppressed_phases", "pending_search_item_id",
         "searchable_card_ids", "replacement_orders",
         "pending_replacement_card_id", "replacement_destinations",
+        "pending_decision",
     )
     observation = view.observation
     assert observation.own_hand == engine.observe("A").own_hand

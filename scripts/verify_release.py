@@ -65,10 +65,10 @@ def _quality(runner: CommandRunner) -> dict[str, object]:
     _run([sys.executable, "-m", "mypy", "src/card_duel_engine"], stage="quality:mypy", runner=runner)
     _run([sys.executable, "-m", "compileall", "-q", "src", "tests", "scripts"], stage="quality:compileall", runner=runner)
     _run([sys.executable, "-m", "coverage", "erase"], stage="quality:coverage", runner=runner)
-    _run([sys.executable, "-m", "coverage", "run", "--branch", "-m", "unittest", "discover", "-s", "tests", "-v"], stage="quality:tests", runner=runner)
+    _run([sys.executable, "-m", "coverage", "run", "--branch", "-m", "pytest", "-q"], stage="quality:tests", runner=runner)
     coverage = float(_run([sys.executable, "-m", "coverage", "report", "--format=total"], stage="quality:coverage", runner=runner))
-    if coverage < 86:
-        raise VerificationStageError("quality:coverage", ["coverage", "report"], 1, str(coverage), "Cobertura inferior al 86%")
+    if coverage < 88:
+        raise VerificationStageError("quality:coverage", ["coverage", "report"], 1, str(coverage), "Cobertura inferior al 88%")
     return {"status": "ok", "mypy": True, "compileall": True, "coverage_percent": coverage}
 
 

@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Protocol, TypeVar
 
+from .domain.enums import DecisionAudience, PendingDecisionStatus
 from .domain.errors import IllegalAction
 from .domain.models import CardDefinition
 from .engine.commands import GameCommand
@@ -122,6 +123,34 @@ class PublicLegalAction:
 
 
 @dataclass(frozen=True)
+class PublicDecisionOption:
+    """Referencia opaca a una opción de decisión, sin su token interno."""
+
+    decision_option_id: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {"decision_option_id": self.decision_option_id}
+
+
+@dataclass(frozen=True)
+class PublicPendingDecision:
+    """Metadatos presentables de una decisión y sus referencias públicas."""
+
+    decision_id: str
+    semantic_family: str
+    status: str
+    options: tuple[PublicDecisionOption, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "decision_id": self.decision_id,
+            "semantic_family": self.semantic_family,
+            "status": self.status,
+            "options": [option.to_dict() for option in self.options],
+        }
+
+
+@dataclass(frozen=True)
 class PublicMatchView:
     """DTO de salida R-06 construido exclusivamente desde ``MatchView``."""
 
@@ -130,6 +159,7 @@ class PublicMatchView:
     status: str
     observation: PublicPlayerObservation
     legal_actions: tuple[PublicLegalAction, ...]
+    pending_decision: PublicPendingDecision | None = None
 
     @classmethod
     def from_view(
@@ -137,6 +167,7 @@ class PublicMatchView:
         view: MatchView,
         *,
         option_ids: Iterable[str] | None = None,
+        decision_option_ids: Iterable[str] | None = None,
     ) -> "PublicMatchView":
         identifiers: tuple[str, ...]
         if option_ids is None:
@@ -149,6 +180,37 @@ class PublicMatchView:
             identifiers = tuple(option_ids)
         if len(identifiers) != len(view.legal_actions):
             raise ValueError("Cada acción legal necesita un identificador público")
+
+        decision = view.pending_decision
+        public_decision: PublicPendingDecision | None = None
+        if decision is not None:
+            supplied_decision_ids = tuple(decision_option_ids or ())
+            publish_options = (
+                decision.status is PendingDecisionStatus.PENDING
+                and decision.audience is DecisionAudience.ELECTOR
+                and bool(decision.authorized_opaque_options)
+            )
+            expected_count = (
+                len(decision.authorized_opaque_options) if publish_options else 0
+            )
+            if len(supplied_decision_ids) != expected_count:
+                raise ValueError(
+                    "Cada opción de decisión publicable necesita un identificador"
+                )
+            # OPPONENT y SPECTATOR permanecen deliberadamente sin opciones
+            # resolubles mientras su semántica documental sea ambigua. INTERNAL
+            # y las decisiones cerradas tampoco publican opciones.
+            public_decision = PublicPendingDecision(
+                decision_id=decision.decision_id,
+                semantic_family=decision.semantic_family,
+                status=decision.status.value,
+                options=tuple(
+                    PublicDecisionOption(identifier)
+                    for identifier in supplied_decision_ids
+                ),
+            )
+        elif decision_option_ids is not None and tuple(decision_option_ids):
+            raise ValueError("No hay una decisión para los identificadores recibidos")
         return cls(
             match_id=view.match_id,
             version=view.version,
@@ -160,6 +222,7 @@ class PublicMatchView:
                 PublicLegalAction(option_id, type(action).__name__)
                 for option_id, action in zip(identifiers, view.legal_actions)
             ),
+            pending_decision=public_decision,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -169,6 +232,11 @@ class PublicMatchView:
             "status": self.status,
             "observation": self.observation.to_dict(),
             "legal_actions": [action.to_dict() for action in self.legal_actions],
+            "pending_decision": (
+                self.pending_decision.to_dict()
+                if self.pending_decision is not None
+                else None
+            ),
         }
 
 
@@ -353,6 +421,80 @@ class AuthenticatedMatchApplication:
         )
         return hmac.new(self._option_secret, binding, hashlib.sha256).hexdigest()
 
+    def _decision_option_id(
+        self,
+        match_id: str,
+        player_id: str,
+        version: int,
+        decision_id: str,
+        decision_state_version: int,
+        index: int,
+        opaque_option: str,
+    ) -> str:
+        """Firma campos inequívocos sin incluir el mensaje en el valor público."""
+        fields = (
+            b"decision-option",
+            match_id.encode("utf-8"),
+            player_id.encode("utf-8"),
+            str(version).encode("ascii"),
+            decision_id.encode("utf-8"),
+            str(decision_state_version).encode("ascii"),
+            str(index).encode("ascii"),
+            opaque_option.encode("utf-8"),
+        )
+        # El prefijo de longitud por campo evita colisiones por concatenaciones
+        # ambiguas incluso cuando los valores contienen separadores.
+        binding = b"".join(len(field).to_bytes(8, "big") + field for field in fields)
+        return hmac.new(self._option_secret, binding, hashlib.sha256).hexdigest()
+
+    def _decision_option_ids(self, view: MatchView, player_id: str) -> tuple[str, ...]:
+        decision = view.pending_decision
+        if (
+            decision is None
+            or decision.status is not PendingDecisionStatus.PENDING
+            or decision.audience is not DecisionAudience.ELECTOR
+        ):
+            return ()
+        return tuple(
+            self._decision_option_id(
+                view.match_id,
+                player_id,
+                view.version,
+                decision.decision_id,
+                decision.state_version,
+                index,
+                opaque_option,
+            )
+            for index, opaque_option in enumerate(decision.authorized_opaque_options)
+        )
+
+    def _resolve_decision_option(
+        self, view: MatchView, player_id: str, decision_option_id: str
+    ) -> str | None:
+        """Resuelve solo opciones ELECTOR vigentes usando comparación constante."""
+        if type(decision_option_id) is not str:
+            return None
+        decision = view.pending_decision
+        if (
+            decision is None
+            or decision.status is not PendingDecisionStatus.PENDING
+            or decision.audience is not DecisionAudience.ELECTOR
+        ):
+            return None
+        for index, opaque_option in enumerate(decision.authorized_opaque_options):
+            candidate = self._decision_option_id(
+                view.match_id,
+                player_id,
+                view.version,
+                decision.decision_id,
+                decision.state_version,
+                index,
+                opaque_option,
+            )
+            if hmac.compare_digest(decision_option_id, candidate):
+                return opaque_option
+        return None
+
     def _public_view(self, view: MatchView, player_id: str) -> PublicMatchView:
         return PublicMatchView.from_view(
             view,
@@ -360,6 +502,7 @@ class AuthenticatedMatchApplication:
                 self._option_id(view.match_id, player_id, view.version, index)
                 for index in range(len(view.legal_actions))
             ),
+            decision_option_ids=self._decision_option_ids(view, player_id),
         )
 
     @staticmethod

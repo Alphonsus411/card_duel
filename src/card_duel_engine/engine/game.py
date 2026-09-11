@@ -437,8 +437,15 @@ class GameEngine:
         state_version: int,
         origin: tuple[str, ...],
     ) -> None:
-        """Abre el único slot universal sin interpretar su semántica opaca."""
+        """Abre el único slot universal sin interpretar su semántica opaca.
+
+        ``state_version`` es el vínculo determinista declarado por el llamador;
+        no es ni deriva aquí un contador de persistencia o de dominio.
+        """
         state = self._require_state()
+        # W1.1 sólo admite None -> PENDING. Tanto PENDING como CLOSED ocupan el
+        # slot: conservar CLOSED evita sustituir silenciosamente su identidad e
+        # historia antes de que otro slice defina una operación de consumo.
         if state.pending_decision is not None:
             raise DecisionSlotOccupied("Ya existe una decisión en el slot autoritativo")
         if not isinstance(decision_id, str) or not decision_id.strip():
@@ -501,7 +508,7 @@ class GameEngine:
         selected_option: str,
         known_state_version: int,
     ) -> None:
-        """Cierra una decisión una sola vez, sin ejecutar mecánicas adicionales."""
+        """Aplica sólo PENDING -> CLOSED, sin consumir ni retirar la decisión."""
         state = self._require_state()
         decision = state.pending_decision
         if decision is None:

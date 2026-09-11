@@ -109,16 +109,37 @@ def test_close_rejects_invalid_contract_without_mutation(
     assert engine.state is not None and engine.state.pending_decision is before
 
 
-def test_slot_cannot_be_reopened_or_closed_twice() -> None:
+def test_slot_cannot_be_reopened_while_pending_or_after_close() -> None:
     engine = make_engine()
     with pytest.raises(IllegalAction, match="No existe"):
         engine._close_pending_decision("decision:test:1", "A", "opaque-a", 0)
     open_decision(engine)
     with pytest.raises(IllegalAction, match="Ya existe"):
-        open_decision(engine)
+        open_decision(engine, decision_id="decision:test:2")
+    engine._close_pending_decision("decision:test:1", "A", "opaque-a", 0)
+    closed = engine.state.pending_decision  # type: ignore[union-attr]
+    with pytest.raises(DecisionSlotOccupied):
+        open_decision(engine, decision_id="decision:test:2")
+    assert engine.state is not None and engine.state.pending_decision is closed
+
+
+def test_closed_decision_cannot_be_closed_twice() -> None:
+    engine = make_engine()
+    open_decision(engine)
     engine._close_pending_decision("decision:test:1", "A", "opaque-a", 0)
     with pytest.raises(IllegalAction, match="ya no está pendiente"):
         engine._close_pending_decision("decision:test:1", "A", "opaque-a", 0)
+
+
+def test_state_version_is_the_callers_declared_link_not_an_engine_counter() -> None:
+    engine = make_engine()
+    open_decision(engine, state_version=41)
+
+    engine._close_pending_decision("decision:test:1", "A", "opaque-b", 41)
+
+    assert engine.state is not None
+    assert engine.state.pending_decision is not None
+    assert engine.state.pending_decision.state_version == 41
 
 
 @pytest.mark.parametrize(

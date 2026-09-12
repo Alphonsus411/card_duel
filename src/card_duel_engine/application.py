@@ -547,7 +547,11 @@ class AuthenticatedMatchApplication:
         try:
             return validate_expected_version(value)
         except ValueError:
-            raise InvalidExpectedVersion from None
+            # Salimos del manejador antes de construir el error público. Además
+            # de ocultar el traceback (``from None``), esto evita conservar la
+            # excepción de validación en ``__context__``.
+            pass
+        raise InvalidExpectedVersion from None
 
     @staticmethod
     def _translate(operation: Callable[[], T]) -> T:

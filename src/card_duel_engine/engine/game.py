@@ -493,8 +493,7 @@ class GameEngine:
         ):
             raise IllegalAction("El origen de la decisión no es válido")
 
-        candidate = deepcopy(state)
-        candidate.pending_decision = PendingDecision(
+        opened_decision = PendingDecision(
             decision_id=decision_id,
             semantic_family=semantic_family,
             authorized_elector=authorized_elector,
@@ -505,17 +504,19 @@ class GameEngine:
             status=PendingDecisionStatus.PENDING,
             selected_option=None,
         )
+        candidate = deepcopy(state)
+        candidate.pending_decision = opened_decision
         candidate.history.append(
             DecisionTransitionEntry(
                 DecisionOpened(
                     status=DecisionHistoryStatus.OPENED,
-                    decision_id=decision_id,
-                    semantic_family=semantic_family,
-                    authorized_elector=authorized_elector,
-                    audience=audience,
-                    authorized_opaque_options=authorized_opaque_options,
-                    state_version=state_version,
-                    origin=origin,
+                    decision_id=opened_decision.decision_id,
+                    semantic_family=opened_decision.semantic_family,
+                    authorized_elector=opened_decision.authorized_elector,
+                    audience=opened_decision.audience,
+                    authorized_opaque_options=opened_decision.authorized_opaque_options,
+                    state_version=opened_decision.state_version,
+                    origin=opened_decision.origin,
                 )
             )
         )
@@ -551,20 +552,24 @@ class GameEngine:
                 "La versión conocida no coincide con la decisión"
             )
 
-        candidate = deepcopy(state)
-        candidate.pending_decision = replace(
+        closed_decision = replace(
             decision,
             status=PendingDecisionStatus.CLOSED,
             selected_option=selected_option,
         )
+        candidate = deepcopy(state)
+        candidate.pending_decision = closed_decision
+        closed_option = closed_decision.selected_option
+        if closed_option is None:
+            raise InvariantViolation("Una decisión cerrada debe conservar su opción")
         candidate.history.append(
             DecisionTransitionEntry(
                 DecisionClosed(
                     status=DecisionHistoryStatus.CLOSED,
-                    decision_id=decision_id,
-                    actor=actor,
-                    selected_option=selected_option,
-                    known_state_version=known_state_version,
+                    decision_id=closed_decision.decision_id,
+                    actor=closed_decision.authorized_elector,
+                    selected_option=closed_option,
+                    known_state_version=closed_decision.state_version,
                 )
             )
         )

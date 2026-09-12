@@ -6,7 +6,14 @@ from typing import Any, Mapping
 
 from ..catalog import CardCatalog
 from ..domain.enums import MatchStatus
-from ..domain.models import CardDefinition
+from ..domain.models import (
+    CardDefinition,
+    DecisionClosed,
+    DecisionConsumed,
+    DecisionOpened,
+    DecisionTransitionEntry,
+    ExecutedCommand,
+)
 from ..engine.commands import EXECUTABLE_COMMAND_TYPE_SET
 from ..engine.game import EngineSemantics, GameEngine
 from ..rules.config import RuleSet
@@ -18,7 +25,7 @@ from .snapshot import (
     state_digest,
 )
 
-REPLAY_SCHEMA_VERSION = "2"
+REPLAY_SCHEMA_VERSION = "3"
 LEGACY_PROFILE_DIGEST_VERSIONS = frozenset(("0.20.0", "0.20.1"))
 
 
@@ -47,6 +54,8 @@ def dump_replay(engine: GameEngine, *, indent: int | None = 2) -> str:
         "started": state.status is not MatchStatus.SETUP,
         "commands": encode_value(tuple(state.command_history)),
         "command_count": len(state.command_history),
+        "history": encode_value(tuple(state.history)),
+        "history_count": len(state.history),
         "final_digest": state_digest(engine),
     }
     return json.dumps(
@@ -76,6 +85,7 @@ def replay_from_log(
     turn_order = decode_value(body["turn_order"])
     mulligans = decode_value(body["mulligans"])
     commands = decode_value(body["commands"])
+    history = decode_value(body["history"])
     if not isinstance(rules, RuleSet):
         raise ValueError("Reglas de reproducción no válidas")
     engine_version = body.get("engine_version")
@@ -91,8 +101,29 @@ def replay_from_log(
         type(item) in EXECUTABLE_COMMAND_TYPE_SET for item in commands
     ):
         raise ValueError("Secuencia de comandos no válida")
-    if body.get("command_count") != len(commands):
+    command_count = body.get("command_count")
+    if type(command_count) is not int or command_count != len(commands):
         raise ValueError("El número declarado de comandos no coincide")
+    if not isinstance(history, tuple) or not all(
+        type(entry) in (ExecutedCommand, DecisionTransitionEntry)
+        for entry in history
+    ):
+        raise ValueError("Secuencia total de reproducción no válida")
+    if any(
+        type(entry) is DecisionTransitionEntry
+        and type(entry.transition)
+        not in (DecisionOpened, DecisionClosed, DecisionConsumed)
+        for entry in history
+    ):
+        raise ValueError("Transición de decisión de reproducción no válida")
+    history_count = body.get("history_count")
+    if type(history_count) is not int or history_count != len(history):
+        raise ValueError("El número declarado de entradas no coincide")
+    projected_commands = tuple(
+        entry.command for entry in history if type(entry) is ExecutedCommand
+    )
+    if projected_commands != commands:
+        raise ValueError("La proyección compatible de comandos no coincide")
     by_id = {definition.card_id: definition for definition in definitions}
     catalog = CardCatalog()
     for definition in definitions:
@@ -134,8 +165,33 @@ def replay_from_log(
         engine.mulligan(player_id)
     if body["started"]:
         engine.start_match()
-    for command in commands:
-        engine.execute(command)
+    for entry in history:
+        if isinstance(entry, ExecutedCommand):
+            engine.execute(entry.command)
+        elif isinstance(entry.transition, DecisionOpened):
+            opened = entry.transition
+            engine._open_pending_decision(
+                opened.decision_id,
+                opened.semantic_family,
+                opened.authorized_elector,
+                opened.audience,
+                opened.authorized_opaque_options,
+                opened.state_version,
+                opened.origin,
+            )
+        elif isinstance(entry.transition, DecisionClosed):
+            closed = entry.transition
+            engine._close_pending_decision(
+                closed.decision_id,
+                closed.actor,
+                closed.selected_option,
+                closed.known_state_version,
+            )
+        else:
+            consumed = entry.transition
+            engine._consume_pending_decision(
+                consumed.decision_id, consumed.state_version
+            )
     if verify_digest:
         expected_digest = body["final_digest"]
         digest_matches = state_digest(engine) == expected_digest
@@ -143,7 +199,9 @@ def replay_from_log(
             original_body, engine_version, semantics
         ):
             digest_matches = legacy_019_state_digest(engine) == expected_digest
-        elif not digest_matches and _is_affected_020_version(engine_version):
+        elif not digest_matches and _is_historical_affected_020_replay(
+            original_body, engine_version
+        ):
             digest_matches = (
                 legacy_state_digest_without_ability_source_profile(engine)
                 == expected_digest
@@ -167,6 +225,11 @@ def _is_historical_019_replay(
     )
 
 
-def _is_affected_020_version(version: object) -> bool:
+def _is_historical_affected_020_replay(
+    original_body: Mapping[str, Any], version: object
+) -> bool:
     """Limit the compatibility escape hatch to versions that emitted the digest."""
-    return version in LEGACY_PROFILE_DIGEST_VERSIONS
+    return (
+        original_body.get("schema_version") in {"1", "2"}
+        and version in LEGACY_PROFILE_DIGEST_VERSIONS
+    )

@@ -368,18 +368,16 @@ def test_digest_includes_each_pending_decision_contract_field(
     assert state_digest(changed) != state_digest(baseline)
 
 
-def test_replay_v2_cannot_reconstruct_internal_lifecycle_mutation_yet() -> None:
+def test_replay_v3_reconstructs_internal_lifecycle_mutation() -> None:
     engine = make_engine()
     open_decision(engine)
 
     payload = dump_replay(engine, indent=None)
 
-    assert json.loads(payload)["body"]["schema_version"] == "2"
-    with pytest.raises(ValueError, match="reproducción diverge"):
-        replay_from_log(payload)
-    restored = replay_from_log(payload, verify_digest=False)
+    assert json.loads(payload)["body"]["schema_version"] == "3"
+    restored = replay_from_log(payload)
     assert restored.state is not None
-    assert restored.state.pending_decision is None
+    assert restored.state.pending_decision == engine.state.pending_decision
 
 
 def test_inv_14_close_only_changes_decision_slot_and_appends_typed_history() -> None:

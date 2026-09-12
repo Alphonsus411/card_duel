@@ -518,5 +518,5 @@ def test_two_sqlite_writers_with_same_expected_version_have_one_winner() -> None
             assert_snapshot_cas_race(store)
 
 
-def test_replay_remains_v2_until_w1_lifecycle_exists() -> None:
-    assert REPLAY_SCHEMA_VERSION == "2"
+def test_replay_uses_v3_for_w1_lifecycle() -> None:
+    assert REPLAY_SCHEMA_VERSION == "3"

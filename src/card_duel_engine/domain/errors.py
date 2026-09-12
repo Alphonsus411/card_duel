@@ -46,6 +46,12 @@ class DecisionAlreadyClosed(PendingDecisionError):
     code = "decision_already_closed"
 
 
+class DecisionNotClosed(PendingDecisionError):
+    """La decisión del slot todavía no puede consumirse."""
+
+    code = "decision_not_closed"
+
+
 class DecisionSlotOccupied(PendingDecisionError):
     """El slot autoritativo ya contiene una decisión."""
 

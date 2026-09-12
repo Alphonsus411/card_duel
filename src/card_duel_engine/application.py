@@ -16,7 +16,13 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, Protocol, TypeVar
 
 from .domain.enums import DecisionAudience, PendingDecisionStatus
-from .domain.errors import IllegalAction
+from .domain.errors import (
+    DecisionAlreadyClosed,
+    DecisionSlotEmpty,
+    IllegalAction,
+    UnauthorizedDecisionElector,
+    UnauthorizedDecisionOption,
+)
 from .domain.models import CardDefinition
 from .engine.commands import GameCommand
 from .service import (
@@ -44,6 +50,7 @@ class Capability(Enum):
     CREATE_MATCH = "create_match"
     OBSERVE = "observe"
     SUBMIT_COMMAND = "submit_command"
+    RESOLVE_PENDING_DECISION = "resolve_pending_decision"
     ADMINISTER = "administer"
 
 
@@ -368,9 +375,13 @@ class InMemoryIdentityAuthorization:
         ),
     ) -> None:
         for capability in capabilities:
-            if capability not in (Capability.OBSERVE, Capability.SUBMIT_COMMAND):
+            if capability not in (
+                Capability.OBSERVE,
+                Capability.SUBMIT_COMMAND,
+                Capability.RESOLVE_PENDING_DECISION,
+            ):
                 raise ValueError(
-                    "Una asociación de jugador solo admite observar o enviar"
+                    "Una asociación de jugador solo admite operaciones de jugador"
                 )
             self._players[(self._key(identity), match_id, capability)] = player_id
 
@@ -673,43 +684,40 @@ class AuthenticatedMatchApplication:
         self._match_id(match_id)
         expected_version = self._expected_version(expected_version)
         player_id = self._authorization.player_for(
-            principal, match_id, Capability.SUBMIT_COMMAND
+            principal, match_id, Capability.RESOLVE_PENDING_DECISION
         )
         if player_id is None:
             raise AccessDenied
-        if type(decision_option_id) is not str:
+        view = self._translate(lambda: self._service.view(match_id, player_id))
+        if view.version != expected_version:
+            raise WriteConflict
+        selected_option = self._resolve_decision_option(
+            view, player_id, decision_option_id
+        )
+        if selected_option is None:
             raise OptionRejected
-
-        def resolve_reference(
-            current_match_id: str,
-            current_player_id: str,
-            version: int,
-            decision_id: str,
-            decision_state_version: int,
-            opaque_options: tuple[str, ...],
-        ) -> str | None:
-            for index, opaque_option in enumerate(opaque_options):
-                candidate = self._decision_option_id(
-                    current_match_id,
-                    current_player_id,
-                    version,
-                    decision_id,
-                    decision_state_version,
-                    index,
-                    opaque_option,
-                )
-                if hmac.compare_digest(decision_option_id, candidate):
-                    return opaque_option
-            return None
-
-        resolved = self._translate(
-            lambda: self._service.resolve_pending_decision(
+        try:
+            resolved = self._service.resolve_pending_decision(
                 match_id,
                 player_id,
-                resolve_reference,
+                selected_option,
                 expected_version=expected_version,
             )
-        )
+        except VersionConflict:
+            raise WriteConflict from None
+        except (
+            DecisionAlreadyClosed,
+            DecisionSlotEmpty,
+            UnauthorizedDecisionElector,
+            UnauthorizedDecisionOption,
+        ):
+            raise OptionRejected from None
+        except MatchNotFound:
+            raise ResourceNotFound from None
+        except InvalidStoredSnapshot:
+            raise InternalLoadFailure from None
+        except Exception:
+            raise ApplicationError from None
         return self._public_view(resolved, player_id)
 
     def submit_from(

@@ -2,12 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from ..domain.models import TargetAllocation, ZoneTarget
-
-
-@dataclass(frozen=True)
-class GameCommand:
-    player_id: str
+from ..domain.models import GameCommand, TargetAllocation, ZoneTarget
 
 
 @dataclass(frozen=True)

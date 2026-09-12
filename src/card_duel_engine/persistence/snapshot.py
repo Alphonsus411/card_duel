@@ -55,7 +55,7 @@ def state_digest(engine: GameEngine) -> str:
 
 
 def _omit_pending_decision(encoded_state: Any) -> Any:
-    """Conserva las huellas de replay emitidas antes del schema snapshot 3."""
+    """Conserva huellas emitidas antes de los historiales autoritativos nuevos."""
     if not isinstance(encoded_state, dict) or encoded_state.get("$type") != "GameState":
         return encoded_state
     transformed = dict(encoded_state)
@@ -63,6 +63,7 @@ def _omit_pending_decision(encoded_state: Any) -> Any:
     if isinstance(encoded_fields, dict):
         transformed["fields"] = dict(encoded_fields)
         transformed["fields"].pop("pending_decision", None)
+        transformed["fields"].pop("history", None)
     return transformed
 
 

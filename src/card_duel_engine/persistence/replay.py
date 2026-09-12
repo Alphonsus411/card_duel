@@ -37,6 +37,11 @@ def dump_replay(engine: GameEngine, *, indent: int | None = 2) -> str:
     state = engine.state
     if state is None:
         raise RuntimeError("No hay una partida que reproducir")
+    if not state.history_prefix_complete:
+        raise ValueError(
+            "No se puede generar un replay: el snapshot histórico no conserva "
+            "el prefijo completo del lifecycle de decisiones"
+        )
     body = {
         "schema_version": REPLAY_SCHEMA_VERSION,
         "engine_version": (

@@ -34,6 +34,42 @@ def _snapshot_2_to_3(body: dict[str, Any]) -> dict[str, Any]:
     return body
 
 
+def _snapshot_3_to_4(body: dict[str, Any]) -> dict[str, Any]:
+    """Materializa sólo la historia que un snapshot v3 puede demostrar.
+
+    V3 persistía ``command_history``, pero no el lifecycle de decisiones. Si hay
+    una decisión en el slot, su apertura (y quizá su cierre) no puede inferirse
+    honestamente del estado final: conservamos el estado, marcamos el prefijo
+    incompleto y dejamos que ``dump_replay`` falle de forma cerrada.
+    """
+    state = body.get("state")
+    if not isinstance(state, dict) or state.get("$type") != "GameState":
+        raise ValueError("El snapshot v3 no contiene el GameState esperado")
+    fields = state.get("fields")
+    if not isinstance(fields, dict):
+        raise ValueError("El GameState de schema 3 no tiene la forma esperada")
+    if "history" in fields or "history_prefix_complete" in fields:
+        raise ValueError("El GameState v3 contiene historia nueva de forma ambigua")
+    if "command_history" not in fields or "pending_decision" not in fields:
+        raise ValueError("El GameState de schema 3 no tiene la forma esperada")
+
+    commands = decode_value(fields["command_history"])
+    if not isinstance(commands, list) or not all(
+        type(command) in EXECUTABLE_COMMAND_TYPE_SET for command in commands
+    ):
+        raise ValueError("El historial de comandos v3 no es válido")
+    # No se sintetizan DecisionOpened/Closed/Consumed: no están en v3.
+    fields["history"] = encode_value(
+        [ExecutedCommand(command) for command in commands]
+    )
+    fields["history_prefix_complete"] = fields["pending_decision"] is None
+    body["state_digest"] = hashlib.sha256(
+        canonical_json(state).encode("utf-8")
+    ).hexdigest()
+    body["schema_version"] = "4"
+    return body
+
+
 def _replay_1_to_2(body: dict[str, Any]) -> dict[str, Any]:
     commands = decode_value(body["commands"])
     if not isinstance(commands, tuple):
@@ -70,6 +106,7 @@ def _manifest_1_to_2(body: dict[str, Any]) -> dict[str, Any]:
 _MIGRATIONS: dict[tuple[str, str], Migration] = {
     ("snapshot", "1"): _snapshot_1_to_2,
     ("snapshot", "2"): _snapshot_2_to_3,
+    ("snapshot", "3"): _snapshot_3_to_4,
     ("replay", "1"): _replay_1_to_2,
     ("replay", "2"): _replay_2_to_3,
     ("manifest", "1"): _manifest_1_to_2,

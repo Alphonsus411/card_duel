@@ -35,6 +35,7 @@ from ..domain.enums import (
 from ..domain.errors import (
     DecisionAlreadyClosed,
     DecisionIdMismatch,
+    DecisionNotClosed,
     DecisionSlotEmpty,
     DecisionSlotOccupied,
     IllegalAction,
@@ -578,10 +579,10 @@ class GameEngine:
         decision = state.pending_decision
         if decision is None:
             raise DecisionSlotEmpty("No existe una decisión para consumir")
+        if decision.status is not PendingDecisionStatus.CLOSED:
+            raise DecisionNotClosed("La decisión todavía está pendiente")
         if decision.decision_id != decision_id:
             raise DecisionIdMismatch("La identidad de la decisión no coincide")
-        if decision.status is not PendingDecisionStatus.CLOSED:
-            raise IllegalAction("Sólo puede consumirse una decisión cerrada")
         if (
             type(known_state_version) is not int
             or known_state_version < 0
@@ -592,7 +593,6 @@ class GameEngine:
             )
 
         candidate = deepcopy(state)
-        candidate.pending_decision = None
         candidate.history.append(
             DecisionTransitionEntry(
                 DecisionConsumed(
@@ -602,6 +602,7 @@ class GameEngine:
                 )
             )
         )
+        candidate.pending_decision = None
         self._validate_invariants(candidate, self.catalog)
         self.state = candidate
 

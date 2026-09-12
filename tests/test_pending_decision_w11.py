@@ -5,10 +5,17 @@ from copy import deepcopy
 import pytest
 
 from card_duel_engine import GameEngine
-from card_duel_engine.domain import DecisionAudience, PendingDecisionStatus
+from card_duel_engine.domain import (
+    DecisionAudience,
+    DecisionConsumed,
+    DecisionHistoryStatus,
+    DecisionTransitionEntry,
+    PendingDecisionStatus,
+)
 from card_duel_engine.domain.errors import (
     DecisionAlreadyClosed,
     DecisionIdMismatch,
+    DecisionNotClosed,
     DecisionSlotEmpty,
     DecisionSlotOccupied,
     IllegalAction,
@@ -185,6 +192,101 @@ def test_slot_conflicts_and_terminal_state_have_specific_errors() -> None:
     with pytest.raises(DecisionAlreadyClosed) as closed:
         engine._close_pending_decision("decision:test:1", "A", "opaque-a", 0)
     assert closed.value.code == "decision_already_closed"
+
+
+def test_consume_requires_closed_decision_before_validating_its_identity() -> None:
+    engine = make_engine()
+    open_decision(engine)
+    state_before = engine.state
+
+    with pytest.raises(DecisionNotClosed) as pending:
+        engine._consume_pending_decision("other", 0)
+
+    assert pending.value.code == "decision_not_closed"
+    assert engine.state is state_before
+
+
+@pytest.mark.parametrize(
+    ("prepare", "arguments", "error_type"),
+    [
+        (False, ("decision:test:1", 0), DecisionSlotEmpty),
+        (True, ("other", 0), DecisionIdMismatch),
+        (True, ("decision:test:1", 1), StaleDecisionVersion),
+    ],
+)
+def test_consume_validates_closed_decision_without_releasing_slot(
+    prepare: bool,
+    arguments: tuple[object, ...],
+    error_type: type[IllegalAction],
+) -> None:
+    engine = make_engine()
+    if prepare:
+        open_decision(engine)
+        engine._close_pending_decision("decision:test:1", "A", "opaque-a", 0)
+    state_before = engine.state
+
+    with pytest.raises(error_type):
+        engine._consume_pending_decision(*arguments)  # type: ignore[arg-type]
+
+    assert engine.state is state_before
+
+
+def test_consume_publishes_validated_candidate_records_history_and_reopens_slot(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    engine = make_engine()
+    open_decision(engine)
+    engine._close_pending_decision("decision:test:1", "A", "opaque-b", 0)
+    closed_state = engine.state
+    assert closed_state is not None and closed_state.pending_decision is not None
+    history_before = tuple(closed_state.history)
+    validated_candidates = []
+    validate = engine._validate_invariants
+
+    def observe_candidate(*args: object) -> None:
+        candidate = args[0]
+        assert candidate is not closed_state
+        assert candidate.pending_decision is None  # type: ignore[union-attr]
+        validated_candidates.append(candidate)
+        validate(*args)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(engine, "_validate_invariants", observe_candidate)
+    engine._consume_pending_decision("decision:test:1", 0)
+
+    assert engine.state is validated_candidates[0]
+    assert engine.state.pending_decision is None
+    consumed = engine.state.history[-1]
+    assert isinstance(consumed, DecisionTransitionEntry)
+    assert isinstance(consumed.transition, DecisionConsumed)
+    assert consumed.transition.status is DecisionHistoryStatus.CONSUMED
+    assert consumed.transition.decision_id == "decision:test:1"
+    assert consumed.transition.state_version == 0
+    assert tuple(engine.state.history[:-1]) == history_before
+
+    monkeypatch.setattr(engine, "_validate_invariants", validate)
+    open_decision(engine, decision_id="decision:test:2")
+    assert engine.state.pending_decision is not None
+    assert engine.state.pending_decision.decision_id == "decision:test:2"
+
+
+def test_consume_does_not_publish_candidate_when_invariants_fail(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    engine = make_engine()
+    open_decision(engine)
+    engine._close_pending_decision("decision:test:1", "A", "opaque-a", 0)
+    state_before = engine.state
+    snapshot_before = deepcopy(state_before)
+
+    def reject_candidate(*_args: object) -> None:
+        raise InvariantViolation("La copia candidata no supera las invariantes")
+
+    monkeypatch.setattr(engine, "_validate_invariants", reject_candidate)
+    with pytest.raises(InvariantViolation):
+        engine._consume_pending_decision("decision:test:1", 0)
+
+    assert engine.state is state_before
+    assert engine.state == snapshot_before
 
 
 @pytest.mark.parametrize("operation", ["open", "close"])

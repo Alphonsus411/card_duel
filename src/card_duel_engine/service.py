@@ -4,13 +4,19 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
-from typing import Protocol, cast
+from typing import Protocol, TypeAlias, cast
 
 from .catalog import CardCatalog
 from .content.registry import CollectionRegistry
 from .controllers.base import PendingDecisionView, PlayerObservation
-from .domain.enums import MatchStatus
-from .domain.errors import InvalidDeckDefinition
+from .domain.enums import MatchStatus, PendingDecisionStatus
+from .domain.errors import (
+    DecisionAlreadyClosed,
+    DecisionSlotEmpty,
+    InvalidDeckDefinition,
+    UnauthorizedDecisionElector,
+    UnauthorizedDecisionOption,
+)
 from .domain.models import CardDefinition
 from .engine.commands import EXECUTABLE_COMMAND_TYPE_SET, GameCommand
 from .engine.game import GameEngine
@@ -18,7 +24,15 @@ from .rules.deck import (
     DeckConstructionPolicy,
     validate_deck_group,
 )
-from .storage.base import StoredMatch, validate_expected_version
+from .storage.base import StoredMatch, VersionConflict, validate_expected_version
+
+
+# La aplicación conserva el secreto que convierte una referencia pública en
+# una opción interna. El servicio sólo le entrega el contexto autoritativo ya
+# revalidado; el valor opaco interno nunca cruza la entrada pública.
+DecisionOptionReference: TypeAlias = Callable[
+    [str, str, int, str, int, tuple[str, ...]], str | None
+]
 
 
 class DeckValidationFailure(ValueError):
@@ -181,6 +195,66 @@ class MatchService:
         return self._view_for(
             match_id, version, stored.engine, command.player_id
         )
+
+    def resolve_pending_decision(
+        self,
+        match_id: str,
+        player_id: str,
+        selected_option_reference: DecisionOptionReference,
+        *,
+        expected_version: int,
+    ) -> MatchView:
+        """Cierra mediante CAS una decisión elegida con referencia pública.
+
+        La referencia es un resolutor suministrado por la frontera que acuñó
+        los identificadores públicos. Recibe exclusivamente el contexto vigente
+        necesario para comprobar su vinculación y devuelve el token interno sólo
+        dentro de esta llamada.
+        """
+        expected_version = validate_expected_version(expected_version)
+        stored = self.store.load(match_id)
+        if stored.version != expected_version:
+            raise VersionConflict(
+                f"Versión esperada {expected_version}; actual {stored.version}"
+            )
+
+        state = stored.engine.state
+        if state is None or state.pending_decision is None:
+            raise DecisionSlotEmpty("No existe una decisión pendiente")
+        decision = state.pending_decision
+        if decision.status is not PendingDecisionStatus.PENDING:
+            raise DecisionAlreadyClosed("La decisión ya no está pendiente")
+        if decision.authorized_elector != player_id:
+            raise UnauthorizedDecisionElector(
+                "El actor no es el elector autorizado"
+            )
+
+        selected_option = selected_option_reference(
+            match_id,
+            player_id,
+            stored.version,
+            decision.decision_id,
+            decision.state_version,
+            decision.authorized_opaque_options,
+        )
+        if (
+            type(selected_option) is not str
+            or selected_option not in decision.authorized_opaque_options
+        ):
+            # Un rechazo uniforme evita convertir el error en un oráculo de
+            # enumeración de las opciones internas.
+            raise UnauthorizedDecisionOption("La opción no está autorizada")
+
+        stored.engine._close_pending_decision(
+            decision.decision_id,
+            player_id,
+            selected_option,
+            decision.state_version,
+        )
+        version = self.store.save(
+            match_id, stored.engine, expected_version=expected_version
+        )
+        return self._view_for(match_id, version, stored.engine, player_id)
 
     @staticmethod
     def validate_command(command: object) -> None:

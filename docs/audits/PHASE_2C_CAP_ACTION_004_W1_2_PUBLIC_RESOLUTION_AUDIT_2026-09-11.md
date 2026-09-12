@@ -223,3 +223,92 @@ de alcance recupera vocabulario normativo ya exigido por el roadmap; no amplía
 runtime ni declara cerrado replay. `CAP-ACTION-004` continúa **`PARTIAL / READY`**
 y conserva como pendientes apertura reproducible, consumo de `CLOSED`, replay
 integral, audiencias no electorales y bloqueo por `semantic_family`.
+
+## Y — Reconciliación contractual posterior a CI
+
+### Punto de partida e inspección remota
+
+La reconciliación parte del merge
+`0da36e5d9bc8186937b212b87002d205eb1fc5f1`, cuyo tree es
+`028f2f18b92b0c4d8b6405c78b1be64b9081d12c`. Antes de editar se comprobó que
+el checkout no tiene remotos configurados: no existe `origin/main` que permita
+demostrar un avance remoto sobre esa referencia. En consecuencia, se conservan
+el SHA y tree indicados como baseline histórica, sin presentarlos como el HEAD
+remoto actual.
+
+### Contradicción reconciliada y autoridad técnica
+
+La contradicción estaba localizada en la fila `CAP-ACTION-004` de
+`docs/ENGINE_CAPABILITY_MATRIX.csv`, que había restaurado temporalmente la
+palabra «expiración», y en la aserción literal de
+`tests/test_phase_2c_engine_evolution_roadmap.py` que exigía ese vocabulario.
+Esta mención fue útil como explicación histórica de invalidación, pero podía
+leerse erróneamente como un tercer estado terminal.
+
+La autoridad técnica es `src/card_duel_engine/domain/enums.py`:
+`PendingDecisionStatus` sólo contiene `PENDING` y `CLOSED`. El lifecycle
+autoritativo completo permanece `None -> PENDING -> CLOSED`; la caducidad de una
+referencia de transporte o la invalidación por CAS obsoleto producen rechazo sin
+mutación, nunca `EXPIRED` ni `CANCELLED`.
+
+Se reconciliaron las superficies siguientes después de la baseline:
+
+- `docs/ENGINE_CAPABILITY_MATRIX.csv`, para que la fila distinga invalidación
+  por versión obsoleta de un estado de expiración;
+- `docs/ENGINEERING_BACKLOG.md`;
+- `docs/ENGINE_CAPABILITY_DEPENDENCIES.md`;
+- `docs/UI_INTEGRATION_CONTRACT_0.20.1.md`, donde la caducidad pertenece sólo al
+  transporte;
+- `tests/test_phase_2c_engine_evolution_roadmap.py`, cuya aserción literal ahora
+  congela la ausencia de estados o transiciones de expiración.
+
+No hubo cambios de runtime, no se añadieron estados, y no hubo cambios de
+snapshot, replay ni release. Esta sección tampoco implementa mecánica nueva.
+
+### Evidencia local
+
+Este bloque contiene exclusivamente resultados ejecutados sobre el checkout
+local; no se atribuyen al SHA del PR ni a un eventual SHA de merge.
+
+| Verificación | Resultado local |
+|---|---|
+| Inspección previa de `origin/main` | `WARN`: no hay remoto configurado; no fue posible ejecutar un contraste remoto. |
+| `uv sync --locked --extra dev` | `PASS`: entorno dev sincronizado desde el lock. |
+| `uv run pytest -q tests/test_phase_2c_engine_evolution_roadmap.py` | `PASS`: contrato de roadmap reconciliado. |
+| `uv run python -m mypy src/card_duel_engine` | `PASS`: 44 archivos sin incidencias. |
+| `uv run coverage run --branch -m pytest -q` | `PASS`: 888 pruebas, 816 subtests y 1 omitida. |
+| `uv run coverage report -m` | `PASS`: 91 % total con branch coverage. |
+| `uv run python scripts/verify_release.py --profile full` | `PASS`: perfil full completado. |
+| `git diff --check` | `PASS`: sin errores de whitespace. |
+
+Las búsquedas se ejecutaron sobre todo el repositorio, excluyendo `.git`:
+
+| Búsqueda | Clasificación de las coincidencias restantes |
+|---|---|
+| `rg -n -i 'expir' . --glob '!.git/**'` | Coincidencias **históricas** en auditorías/changelog; **negativas** que niegan estados de `PendingDecision`; **de transporte** para referencias públicas; y de **otras mecánicas** (efectos y modificadores temporales, control, prevención y cleanup). |
+| `rg -n 'EXPIRED' . --glob '!.git/**'` | Sólo coincidencias **negativas** en esta auditoría y **de transporte/negativas** en el contrato de UI; ninguna definición de estado runtime. |
+| `rg -n 'CANCELLED' . --glob '!.git/**'` | Sólo coincidencias **negativas** en esta auditoría y **de transporte/negativas** en el contrato de UI; ninguna definición de estado runtime. |
+
+### Evidencia del SHA del PR
+
+El SHA del PR de esta reconciliación será asignado al publicar el commit. Sus
+resultados remotos deben registrarse aquí o en la plataforma sin reutilizar los
+resultados locales anteriores. En este checkout sin remoto no fue posible
+observar ni atribuir al SHA del PR los cuatro jobs remotos requeridos; por tanto,
+este bloque queda explícitamente pendiente y no emite aceptación.
+
+### Evidencia del SHA de merge
+
+El SHA de merge de esta reconciliación aún no existe. No se le atribuyen los
+resultados locales ni los resultados futuros del SHA del PR. La aceptación sólo
+podrá emitirse después de identificar ese merge y comprobar separadamente que
+las verificaciones y los cuatro jobs remotos finalizaron con éxito.
+
+### Estado contractual y siguiente slice
+
+`CAP-ACTION-004` permanece **`PARTIAL / READY`**. El siguiente slice permitido
+es **`W1.3 — lifecycle reproducible`**, que deberá diseñar la apertura y el
+lifecycle reproducibles; no se implementa en esta reconciliación.
+
+Al no existir evidencia observable de los cuatro jobs remotos ni SHA de merge,
+no se incluye todavía el veredicto de aceptación condicionado.

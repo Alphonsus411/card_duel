@@ -660,6 +660,58 @@ class AuthenticatedMatchApplication:
         )
         return self._public_view(submitted, player_id)
 
+    def resolve_pending_decision(
+        self,
+        identity: ExternalIdentity | None,
+        match_id: str,
+        decision_option_id: str,
+        *,
+        expected_version: int,
+    ) -> PublicMatchView:
+        """Cierra la decisión vigente sin aceptar metadatos autoritativos."""
+        principal = self._identity(identity)
+        self._match_id(match_id)
+        expected_version = self._expected_version(expected_version)
+        player_id = self._authorization.player_for(
+            principal, match_id, Capability.SUBMIT_COMMAND
+        )
+        if player_id is None:
+            raise AccessDenied
+        if type(decision_option_id) is not str:
+            raise OptionRejected
+
+        def resolve_reference(
+            current_match_id: str,
+            current_player_id: str,
+            version: int,
+            decision_id: str,
+            decision_state_version: int,
+            opaque_options: tuple[str, ...],
+        ) -> str | None:
+            for index, opaque_option in enumerate(opaque_options):
+                candidate = self._decision_option_id(
+                    current_match_id,
+                    current_player_id,
+                    version,
+                    decision_id,
+                    decision_state_version,
+                    index,
+                    opaque_option,
+                )
+                if hmac.compare_digest(decision_option_id, candidate):
+                    return opaque_option
+            return None
+
+        resolved = self._translate(
+            lambda: self._service.resolve_pending_decision(
+                match_id,
+                player_id,
+                resolve_reference,
+                expected_version=expected_version,
+            )
+        )
+        return self._public_view(resolved, player_id)
+
     def submit_from(
         self,
         identity: ExternalIdentity | None,

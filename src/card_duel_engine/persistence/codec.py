@@ -151,7 +151,7 @@ def decode_value(value: Any) -> Any:
                 {"failure_destination_zone", "exhaustion_policy"}
             )
         if cls is model_module.GameState:
-            compatible_missing.add("history")
+            compatible_missing.update({"history", "history_prefix_complete"})
         missing_required = (expected - supplied) - compatible_missing
         if missing_required or supplied - expected:
             raise ValueError(

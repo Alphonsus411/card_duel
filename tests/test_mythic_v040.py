@@ -176,7 +176,7 @@ class MythicV040Tests(unittest.TestCase):
         used_serial = engine.state.turn_serial
         self.assertEqual(load_snapshot(snapshot).state.players["A"].drainage_used_turn_serial, used_serial)
         self.assertEqual(replay_from_log(replay).state.players["A"].drainage_used_turn_serial, used_serial)
-        self.assertEqual(SNAPSHOT_SCHEMA_VERSION, "3")
+        self.assertEqual(SNAPSHOT_SCHEMA_VERSION, "4")
         engine.state.turn_serial += 1
         engine.state.priority_player_id = "A"
         engine.execute(DrainSteps("A", 1))

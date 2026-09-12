@@ -4,7 +4,9 @@ import hashlib
 from copy import deepcopy
 from typing import Any, Callable, Mapping
 
-from .codec import canonical_json, decode_value
+from ..domain.models import ExecutedCommand
+from ..engine.commands import EXECUTABLE_COMMAND_TYPE_SET
+from .codec import canonical_json, decode_value, encode_value
 
 Migration = Callable[[dict[str, Any]], dict[str, Any]]
 
@@ -41,6 +43,23 @@ def _replay_1_to_2(body: dict[str, Any]) -> dict[str, Any]:
     return body
 
 
+def _replay_2_to_3(body: dict[str, Any]) -> dict[str, Any]:
+    """Proyecta el historial v2 (sólo comandos) al historial total tipado."""
+    commands = decode_value(body.get("commands"))
+    if not isinstance(commands, tuple) or not all(
+        type(command) in EXECUTABLE_COMMAND_TYPE_SET for command in commands
+    ):
+        raise ValueError("El historial v2 no contiene comandos válidos")
+    command_count = body.get("command_count")
+    if type(command_count) is not int or command_count != len(commands):
+        raise ValueError("El número declarado de comandos v2 no coincide")
+    history = tuple(ExecutedCommand(command) for command in commands)
+    body["history"] = encode_value(history)
+    body["history_count"] = len(history)
+    body["schema_version"] = "3"
+    return body
+
+
 def _manifest_1_to_2(body: dict[str, Any]) -> dict[str, Any]:
     body["metadata"] = {}
     body["dependencies"] = []
@@ -52,6 +71,7 @@ _MIGRATIONS: dict[tuple[str, str], Migration] = {
     ("snapshot", "1"): _snapshot_1_to_2,
     ("snapshot", "2"): _snapshot_2_to_3,
     ("replay", "1"): _replay_1_to_2,
+    ("replay", "2"): _replay_2_to_3,
     ("manifest", "1"): _manifest_1_to_2,
 }
 

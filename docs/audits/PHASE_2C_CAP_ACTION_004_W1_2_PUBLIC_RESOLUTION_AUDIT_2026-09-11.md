@@ -182,3 +182,44 @@ pero no desbloquea `CAP-TIME-002`.** También permanece pendiente
 `CAP-TIME-005`; por tanto, el mulligan no puede consumir esta infraestructura
 como contrato completo hasta cerrar sus demás prerequisites y la semántica
 normativa correspondiente.
+
+## X — Revalidación local de entrega (2026-09-12)
+
+### Identidad de la evidencia
+
+- **SHA local de entrada:** `5e6179076a649caf28d24990e88ace2eddfcfa82`.
+- **Árbol probado:** ese SHA más el ajuste documental de la fila
+  `CAP-ACTION-004` que restaura literalmente «expiración» y las exclusiones del
+  contrato exigidas por el test del roadmap.
+- **SHA del PR:** se registrará por la plataforma al crear el PR; los resultados
+  locales de esta sección no se trasladan a ese SHA.
+- **SHA de merge:** no existe durante esta auditoría y no se le atribuye ninguna
+  evidencia local ni del PR.
+- `git fetch --prune origin` no pudo contrastar `origin/main`: el checkout no
+  tiene ningún remoto configurado. Por tanto, no se afirma que la baseline sea
+  el HEAD remoto ni que haya sido posible rebasar sobre él.
+
+### Comandos y resultados locales
+
+| Comando | Resultado |
+|---|---|
+| `git fetch --prune origin` | `WARN`: no existe el remoto `origin`; contraste/rebase remoto imposible. |
+| `uv sync --locked --extra dev` | `PASS`: lock resuelto e instalación dev completada. |
+| `uv run pytest -q tests/test_pending_decision_w0.py` | `PASS`: 58 pruebas. |
+| `uv run pytest -q tests/test_pending_decision_w1_1.py` | `PASS`: 43 pruebas. |
+| `uv run pytest -q tests/test_pending_decision_w1_2.py` | `PASS`: 27 pruebas. |
+| `uv run pytest -q tests/test_replay_legacy_019.py tests/test_replay_legacy_020_profile.py tests/test_persistence_v090.py tests/test_expected_version_contract.py` | `PASS`: 43 pruebas y 159 subtests. |
+| `uv run pytest -q tests/test_phase_2c_engine_evolution_roadmap.py` | `PASS`: 15 pruebas tras restaurar el contrato documental; la primera ejecución detectó correctamente los términos ausentes. |
+| `uv run python -m mypy src/card_duel_engine` | `PASS`: 44 archivos sin incidencias. |
+| `uv run coverage run --branch -m pytest -q` | `PASS`: 887 pruebas, 816 subtests y 1 omitida. |
+| `uv run coverage report -m` | `PASS`: 91 % total con branch coverage, sobre el mínimo exigido de 88 %. |
+| `uv run python scripts/verify_release.py --profile full` | `PASS`: perfil full completado. |
+| `git diff --check` | `PASS`: sin errores de whitespace. |
+
+### Estado de entrega
+
+La revalidación no modifica versión, tag, release ni despliegue. El único ajuste
+de alcance recupera vocabulario normativo ya exigido por el roadmap; no amplía
+runtime ni declara cerrado replay. `CAP-ACTION-004` continúa **`PARTIAL / READY`**
+y conserva como pendientes apertura reproducible, consumo de `CLOSED`, replay
+integral, audiencias no electorales y bloqueo por `semantic_family`.

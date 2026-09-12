@@ -419,18 +419,31 @@ class AuthenticatedMatchApplication:
         # nunca una carga decodificable ni un GameCommand serializado.
         self._option_secret = secrets.token_bytes(32)
 
+    def _signed_identifier(self, token_type: bytes, *fields: bytes) -> str:
+        """Produce un MAC opaco con encuadre canónico y separación de dominio.
+
+        Cada componente lleva su longitud, incluido el tipo de token. De este
+        modo ninguna combinación de valores o separadores puede representar el
+        mismo mensaje. El identificador público es únicamente el digest: el
+        mensaje autoritativo que se firma nunca se adjunta a él.
+        """
+        components = (token_type, *fields)
+        binding = b"".join(
+            len(component).to_bytes(8, "big") + component
+            for component in components
+        )
+        return hmac.new(self._option_secret, binding, hashlib.sha256).hexdigest()
+
     def _option_id(
         self, match_id: str, player_id: str, version: int, index: int
     ) -> str:
-        binding = b"\0".join(
-            (
-                match_id.encode("utf-8"),
-                player_id.encode("utf-8"),
-                str(version).encode("ascii"),
-                str(index).encode("ascii"),
-            )
+        return self._signed_identifier(
+            b"legal-action",
+            match_id.encode("utf-8"),
+            player_id.encode("utf-8"),
+            str(version).encode("ascii"),
+            str(index).encode("ascii"),
         )
-        return hmac.new(self._option_secret, binding, hashlib.sha256).hexdigest()
 
     def _decision_option_id(
         self,
@@ -443,7 +456,7 @@ class AuthenticatedMatchApplication:
         opaque_option: str,
     ) -> str:
         """Firma campos inequívocos sin incluir el mensaje en el valor público."""
-        fields = (
+        return self._signed_identifier(
             b"decision-option",
             match_id.encode("utf-8"),
             player_id.encode("utf-8"),
@@ -453,10 +466,6 @@ class AuthenticatedMatchApplication:
             str(index).encode("ascii"),
             opaque_option.encode("utf-8"),
         )
-        # El prefijo de longitud por campo evita colisiones por concatenaciones
-        # ambiguas incluso cuando los valores contienen separadores.
-        binding = b"".join(len(field).to_bytes(8, "big") + field for field in fields)
-        return hmac.new(self._option_secret, binding, hashlib.sha256).hexdigest()
 
     def _decision_option_ids(self, view: MatchView, player_id: str) -> tuple[str, ...]:
         decision = view.pending_decision

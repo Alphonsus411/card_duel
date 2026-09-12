@@ -100,7 +100,8 @@ una alternativa legal, será necesario diseñar conjuntamente:
 
 - identificadores opacos por alternativa;
 - una representación pública que no revele estado privado;
-- expiración de las alternativas vinculada a la versión CAS observada;
+- invalidación y rechazo de las alternativas cuando la versión CAS ya no
+  coincide con la observada;
 - resolución exclusivamente contra el conjunto de acciones emitido por el
   servidor;
 - rechazo de comandos internos arbitrarios; y

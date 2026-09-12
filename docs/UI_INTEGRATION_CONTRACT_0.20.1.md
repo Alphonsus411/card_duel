@@ -222,10 +222,11 @@ secreto pertenece a la instancia de aplicación. Mantiene estas propiedades:
   mismo autorización;
 - sólo el servidor puede resolverlo contra el conjunto legal exacto que emitió
   para ese actor, partida y versión;
-- toda opción caduca cuando cambia la versión, haya sido o no elegida, y su uso
-  exige siempre el CAS observado;
-- un identificador inexistente, alterado, reutilizado, ajeno o caducado se
-  rechaza de manera segura y sin indicar qué parte secreta no coincidió.
+- toda opción queda inválida cuando cambia la versión, haya sido o no elegida,
+  y su uso exige siempre el CAS observado;
+- un identificador inexistente, alterado, reutilizado, ajeno o vinculado a una
+  versión que ya no coincide se rechaza de manera segura y sin indicar qué
+  parte secreta no coincidió.
 
 Resolver significa recuperar o reconstruir **en el servidor** la alternativa
 interna ya autorizada y volver a someterla a las comprobaciones autoritativas
@@ -386,6 +387,10 @@ FastAPI, Expo o React Native. Un adaptador futuro deberá preservar identidad,
 campos, CAS, taxonomía de errores y privacidad sin convertir detalles de
 transporte en reglas del juego.
 
+Los tokens, leases o credenciales propios de un transporte pueden caducar,
+pero esa caducidad sólo afecta al transporte: no produce `EXPIRED`,
+`CANCELLED` ni ninguna transición de partida.
+
 ## Matriz de aceptación satisfecha
 
 Fase 1 se considera aceptada porque las pruebas automatizadas de contrato y
@@ -403,10 +408,12 @@ frontera demuestran simultáneamente:
    emitido al miembro exacto de su conjunto legal para la misma partida, actor
    y versión; la UI no puede aportar o reconstruir el comando.
 5. **CAS obligatorio:** toda selección exige la versión observada, llega al CAS
-   de persistencia y una opción expira ante cualquier cambio de versión.
-6. **Rechazo seguro:** identificadores falsos, alterados, caducados, repetidos,
-   de otra partida o de otro actor, así como entradas malformadas, se rechazan
-   sin mutación y mediante errores públicos estables no reveladores.
+   de persistencia y, ante cualquier cambio de versión, la selección se rechaza
+   sin mutación y la opción queda inválida.
+6. **Rechazo seguro:** identificadores falsos, alterados, repetidos, vinculados
+   a una versión obsoleta, de otra partida o de otro actor, así como entradas
+   malformadas, se rechazan sin mutación y mediante errores públicos estables
+   no reveladores.
 7. **Ausencia de filtraciones privadas:** pruebas con estados que sólo difieren
    en manos, mazos o elecciones privadas rivales verifican que vistas,
    catálogo, opciones, IDs y errores no revelan esos datos.

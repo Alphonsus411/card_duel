@@ -211,7 +211,7 @@ compartida o las especializaciones. La misma prueba de grafo continúa validando
 la reciprocidad completa de la matriz y el SCC permitido, sin cambiar el
 veredicto **`N-PHASE-02 IMPLEMENTATION BLOCKED`**.
 
-El riesgo es **CRITICAL** y la prioridad **P0/W1** porque duplicar esta infraestructura permitiría divergencias de autorización, expiración, CAS o resolución. Las superficies aquí enumeradas son futuras y no autorizan implementación: `domain/models.py`, `engine/commands.py`, `engine/actions.py`, `engine/game.py`, `application.py`, `service.py`, `persistence/` y `storage/`. El *corpus impact basis* es arquitectónico: impacto directo de **0 entradas** e impacto indirecto potencial sobre las 431 entradas (386 identidades y 45 variantes), sin promoción ni suma automática; el mulligan es una regla universal y `CAP-SECRET-002` mantiene el desglose de cartas especializado.
+El riesgo es **CRITICAL** y la prioridad **P0/W1** porque duplicar esta infraestructura permitiría divergencias de autorización, invalidación por versión obsoleta, CAS o resolución. Las superficies aquí enumeradas son futuras y no autorizan implementación: `domain/models.py`, `engine/commands.py`, `engine/actions.py`, `engine/game.py`, `application.py`, `service.py`, `persistence/` y `storage/`. El *corpus impact basis* es arquitectónico: impacto directo de **0 entradas** e impacto indirecto potencial sobre las 431 entradas (386 identidades y 45 variantes), sin promoción ni suma automática; el mulligan es una regla universal y `CAP-SECRET-002` mantiene el desglose de cartas especializado.
 
 ## Contratos parciales: reutilización exacta y tramo ausente
 

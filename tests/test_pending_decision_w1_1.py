@@ -12,6 +12,9 @@ import pytest
 from card_duel_engine import GameEngine
 from card_duel_engine.domain import (
     DecisionAudience,
+    DecisionClosed,
+    DecisionOpened,
+    DecisionTransitionEntry,
     PendingDecision,
     PendingDecisionStatus,
 )
@@ -106,10 +109,18 @@ def test_valid_open_is_none_to_pending_with_nine_fields_and_one_authority() -> N
         status=PendingDecisionStatus.PENDING,
         selected_option=None,
     )
-    # El único cambio autoritativo está en el slot de GameState, no en un
-    # atributo paralelo del motor ni en eventos o historial de comandos.
+    # La decisión vive en el slot, mientras su transición tipada se incorpora
+    # a la historia total sin crear una autoridad paralela en el motor.
     assert not hasattr(engine, "pending_decision")
-    state_after_without_slot = replace(engine.state, pending_decision=None)
+    assert len(engine.state.history) == len(state_before.history) + 1
+    opened_entry = engine.state.history[-1]
+    assert isinstance(opened_entry, DecisionTransitionEntry)
+    assert isinstance(opened_entry.transition, DecisionOpened)
+    state_after_without_slot = replace(
+        engine.state,
+        pending_decision=None,
+        history=list(state_before.history),
+    )
     assert state_after_without_slot == state_before
 
 
@@ -371,7 +382,7 @@ def test_replay_v2_cannot_reconstruct_internal_lifecycle_mutation_yet() -> None:
     assert restored.state.pending_decision is None
 
 
-def test_inv_14_close_preserves_every_game_state_field_except_decision_slot() -> None:
+def test_inv_14_close_only_changes_decision_slot_and_appends_typed_history() -> None:
     engine = make_engine()
     open_decision(engine)
     assert engine.state is not None
@@ -380,7 +391,10 @@ def test_inv_14_close_preserves_every_game_state_field_except_decision_slot() ->
     engine._close_pending_decision(DECISION_ID, "A", OPTIONS[0], VERSION)
 
     assert engine.state is not None
-    compared = {field.name for field in fields(engine.state)} - {"pending_decision"}
+    compared = {field.name for field in fields(engine.state)} - {
+        "pending_decision",
+        "history",
+    }
     # Esta lista hace explícita la cobertura de jugadores/vida-heridas, pasos,
     # todas las zonas y cartas, stack, combate, prioridad, fase, turno y logs.
     assert {
@@ -398,6 +412,11 @@ def test_inv_14_close_preserves_every_game_state_field_except_decision_slot() ->
     } <= compared
     for field in compared:
         assert getattr(engine.state, field) == getattr(before, field), field
+    assert engine.state.history[:-1] == before.history
+    closed_entry = engine.state.history[-1]
+    assert isinstance(closed_entry, DecisionTransitionEntry)
+    assert isinstance(closed_entry.transition, DecisionClosed)
+    assert closed_entry.transition.selected_option == OPTIONS[0]
 
 
 def test_lifecycle_operations_are_structurally_card_agnostic() -> None:

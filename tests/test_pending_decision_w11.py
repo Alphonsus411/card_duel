@@ -7,8 +7,10 @@ import pytest
 from card_duel_engine import GameEngine
 from card_duel_engine.domain import (
     DecisionAudience,
+    DecisionClosed,
     DecisionConsumed,
     DecisionHistoryStatus,
+    DecisionOpened,
     DecisionTransitionEntry,
     PendingDecisionStatus,
 )
@@ -72,6 +74,48 @@ def test_open_and_close_replace_the_frozen_authoritative_value() -> None:
     assert tuple(engine.state.event_log) == events_before_close
 
 
+def test_open_and_close_append_typed_history_from_the_candidate_slot() -> None:
+    engine = make_engine()
+    assert engine.state is not None
+    history_before = tuple(engine.state.history)
+
+    open_decision(engine)
+
+    pending = engine.state.pending_decision
+    opened_entry = engine.state.history[-1]
+    assert pending is not None
+    assert isinstance(opened_entry, DecisionTransitionEntry)
+    assert isinstance(opened_entry.transition, DecisionOpened)
+    opened = opened_entry.transition
+    assert opened.status is DecisionHistoryStatus.OPENED
+    for field in (
+        "decision_id",
+        "semantic_family",
+        "authorized_elector",
+        "audience",
+        "authorized_opaque_options",
+        "state_version",
+        "origin",
+    ):
+        assert getattr(opened, field) == getattr(pending, field)
+    assert tuple(engine.state.history[:-1]) == history_before
+
+    engine._close_pending_decision("decision:test:1", "A", "opaque-b", 0)
+
+    closed = engine.state.pending_decision
+    closed_entry = engine.state.history[-1]
+    assert closed is not None
+    assert isinstance(closed_entry, DecisionTransitionEntry)
+    assert isinstance(closed_entry.transition, DecisionClosed)
+    transition = closed_entry.transition
+    assert transition.status is DecisionHistoryStatus.CLOSED
+    assert transition.decision_id == closed.decision_id
+    assert transition.actor == closed.authorized_elector
+    assert transition.selected_option == closed.selected_option == "opaque-b"
+    assert transition.known_state_version == closed.state_version
+    assert engine.state.history[-2] == opened_entry
+
+
 @pytest.mark.parametrize(
     ("changes", "message"),
     [
@@ -110,10 +154,12 @@ def test_close_rejects_invalid_contract_without_mutation(
 ) -> None:
     engine = make_engine()
     open_decision(engine)
-    before = engine.state.pending_decision  # type: ignore[union-attr]
+    state_before = engine.state
+    before = deepcopy(engine.state)
     with pytest.raises(IllegalAction, match=message):
         engine._close_pending_decision(*arguments)  # type: ignore[arg-type]
-    assert engine.state is not None and engine.state.pending_decision is before
+    assert engine.state is state_before
+    assert engine.state == before
 
 
 def test_slot_cannot_be_reopened_while_pending_or_after_close() -> None:

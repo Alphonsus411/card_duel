@@ -19,6 +19,7 @@ from ..domain.enums import (
     CardRank,
     ControllerScope,
     DecisionAudience,
+    DecisionHistoryStatus,
     EffectDuration,
     EffectKind,
     LordDomain,
@@ -53,9 +54,14 @@ from ..domain.models import (
     CompositeCost,
     ControlChange,
     ContinuousEffectDefinition,
+    DecisionClosed,
+    DecisionConsumed,
+    DecisionOpened,
+    DecisionTransitionEntry,
     EffectDefinition,
     DynamicCostDefinition,
     GameEvent,
+    ExecutedCommand,
     GameState,
     MoveReplacementDefinition,
     PendingDecision,
@@ -498,6 +504,20 @@ class GameEngine:
             status=PendingDecisionStatus.PENDING,
             selected_option=None,
         )
+        candidate.history.append(
+            DecisionTransitionEntry(
+                DecisionOpened(
+                    status=DecisionHistoryStatus.OPENED,
+                    decision_id=decision_id,
+                    semantic_family=semantic_family,
+                    authorized_elector=authorized_elector,
+                    audience=audience,
+                    authorized_opaque_options=authorized_opaque_options,
+                    state_version=state_version,
+                    origin=origin,
+                )
+            )
+        )
         self._validate_invariants(candidate, self.catalog)
         self.state = candidate
 
@@ -536,16 +556,73 @@ class GameEngine:
             status=PendingDecisionStatus.CLOSED,
             selected_option=selected_option,
         )
+        candidate.history.append(
+            DecisionTransitionEntry(
+                DecisionClosed(
+                    status=DecisionHistoryStatus.CLOSED,
+                    decision_id=decision_id,
+                    actor=actor,
+                    selected_option=selected_option,
+                    known_state_version=known_state_version,
+                )
+            )
+        )
+        self._validate_invariants(candidate, self.catalog)
+        self.state = candidate
+
+    def _consume_pending_decision(
+        self, decision_id: str, known_state_version: int
+    ) -> None:
+        """Retira una decisión cerrada y registra su identidad determinista."""
+        state = self._require_state()
+        decision = state.pending_decision
+        if decision is None:
+            raise DecisionSlotEmpty("No existe una decisión para consumir")
+        if decision.decision_id != decision_id:
+            raise DecisionIdMismatch("La identidad de la decisión no coincide")
+        if decision.status is not PendingDecisionStatus.CLOSED:
+            raise IllegalAction("Sólo puede consumirse una decisión cerrada")
+        if (
+            type(known_state_version) is not int
+            or known_state_version < 0
+            or decision.state_version != known_state_version
+        ):
+            raise StaleDecisionVersion(
+                "La versión conocida no coincide con la decisión"
+            )
+
+        candidate = deepcopy(state)
+        candidate.pending_decision = None
+        candidate.history.append(
+            DecisionTransitionEntry(
+                DecisionConsumed(
+                    status=DecisionHistoryStatus.CONSUMED,
+                    decision_id=decision_id,
+                    state_version=known_state_version,
+                )
+            )
+        )
         self._validate_invariants(candidate, self.catalog)
         self.state = candidate
 
     def execute(self, command: GameCommand) -> None:
-        if isinstance(command, ResolveMoveReplacement):
-            self._resolve_move_replacement(command)
-            self._require_state().command_history.append(command)
-            return
-        self._execute_transaction(command, ())
-        self._require_state().command_history.append(command)
+        snapshot = deepcopy(self._require_state())
+        next_instance = self._next_instance
+        next_stack_item = self._next_stack_item
+        try:
+            if isinstance(command, ResolveMoveReplacement):
+                self._resolve_move_replacement(command)
+            else:
+                self._execute_transaction(command, ())
+            candidate = self._require_state()
+            candidate.command_history.append(command)
+            candidate.history.append(ExecutedCommand(command))
+            self._validate_invariants(candidate, self.catalog)
+        except Exception:
+            self.state = snapshot
+            self._next_instance = next_instance
+            self._next_stack_item = next_stack_item
+            raise
 
     def _execute_transaction(
         self, command: GameCommand, replay_choices: tuple[int, ...]
@@ -2391,6 +2468,20 @@ class GameEngine:
             raise InvariantViolation("La decisión pendiente tiene un elector inexistente")
         if any(not isinstance(command, GameCommand) for command in state.command_history):
             raise InvariantViolation("El historial contiene un comando inválido")
+        projected_commands = [
+            entry.command
+            for entry in state.history
+            if isinstance(entry, ExecutedCommand)
+        ]
+        if projected_commands != state.command_history:
+            raise InvariantViolation(
+                "La proyección de comandos del historial total no coincide"
+            )
+        if any(
+            not isinstance(entry, (ExecutedCommand, DecisionTransitionEntry))
+            for entry in state.history
+        ):
+            raise InvariantViolation("El historial total contiene una entrada inválida")
         locations: dict[str, int] = {card_id: 0 for card_id in state.cards}
         for player in state.players.values():
             for zone, card_ids in player.zones.items():

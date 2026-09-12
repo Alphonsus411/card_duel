@@ -10,6 +10,7 @@ from .enums import (
     CostComponent,
     CostMetric,
     DecisionAudience,
+    DecisionHistoryStatus,
     EffectDuration,
     EffectKind,
     MatchStatus,
@@ -23,6 +24,69 @@ from .enums import (
     TriggerKind,
     Zone,
 )
+
+
+@dataclass(frozen=True)
+class GameCommand:
+    """Tipo base de los comandos que el motor puede confirmar."""
+
+    player_id: str
+
+
+@dataclass(frozen=True)
+class DecisionOpened:
+    status: DecisionHistoryStatus
+    decision_id: str
+    semantic_family: str
+    authorized_elector: str
+    audience: DecisionAudience
+    authorized_opaque_options: tuple[str, ...]
+    state_version: int
+    origin: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if self.status is not DecisionHistoryStatus.OPENED:
+            raise ValueError("Una apertura debe tener estado OPENED")
+
+
+@dataclass(frozen=True)
+class DecisionClosed:
+    status: DecisionHistoryStatus
+    decision_id: str
+    actor: str
+    selected_option: str
+    known_state_version: int
+
+    def __post_init__(self) -> None:
+        if self.status is not DecisionHistoryStatus.CLOSED:
+            raise ValueError("Un cierre debe tener estado CLOSED")
+
+
+@dataclass(frozen=True)
+class DecisionConsumed:
+    status: DecisionHistoryStatus
+    decision_id: str
+    state_version: int
+
+    def __post_init__(self) -> None:
+        if self.status is not DecisionHistoryStatus.CONSUMED:
+            raise ValueError("Un consumo debe tener estado CONSUMED")
+
+
+DecisionTransition = DecisionOpened | DecisionClosed | DecisionConsumed
+
+
+@dataclass(frozen=True)
+class ExecutedCommand:
+    command: GameCommand
+
+
+@dataclass(frozen=True)
+class DecisionTransitionEntry:
+    transition: DecisionTransition
+
+
+GameHistoryEntry = ExecutedCommand | DecisionTransitionEntry
 
 
 @dataclass(frozen=True)
@@ -635,7 +699,7 @@ class PendingSearch:
 
 @dataclass
 class PendingMoveReplacement:
-    original_command: Any
+    original_command: GameCommand
     chooser_id: str
     card_id: str
     reason: MoveReason
@@ -686,7 +750,11 @@ class GameState:
     event_log: list[GameEvent] = field(default_factory=list)
     random_seed: int = 0
     initial_decks: dict[str, tuple[str, ...]] = field(default_factory=dict)
-    command_history: list[Any] = field(default_factory=list)
+    command_history: list[GameCommand] = field(default_factory=list)
+    # Una sola secuencia preserva por construcción el orden relativo
+    # command A -> OPENED -> CLOSED -> CONSUMED -> command B, sin reloj ni
+    # orden accidental de contenedores independientes.
+    history: list[GameHistoryEntry] = field(default_factory=list)
     setup_mulligans: list[str] = field(default_factory=list)
     pending_decision: PendingDecision | None = None
 

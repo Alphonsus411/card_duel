@@ -57,6 +57,14 @@ class PendingDecisionStatus(Enum):
     CLOSED = "closed"
 
 
+class DecisionHistoryStatus(Enum):
+    """Estados internos que puede registrar el historial de decisiones."""
+
+    OPENED = "opened"
+    CLOSED = "closed"
+    CONSUMED = "consumed"
+
+
 class DecisionAudience(Enum):
     """Audiencia normativa desde la que se proyectará una decisión en W1."""
 

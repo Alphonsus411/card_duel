@@ -2,6 +2,8 @@ import csv
 import re
 from pathlib import Path
 
+from card_duel_engine.domain import PendingDecisionStatus
+
 
 ROOT = Path(__file__).resolve().parents[1]
 ROADMAP = ROOT / "docs" / "PHASE_2C_ENGINE_EVOLUTION_ROADMAP.md"
@@ -361,8 +363,6 @@ def test_pending_decision_capability_has_minimal_boundary_and_reciprocal_edges()
         "opciones opacas",
         "pendiente/resuelto",
         "autorización",
-        "expiración",
-        "invalidación por versión",
         "exactamente una vez",
         "persistencia",
         "snapshot",
@@ -370,6 +370,12 @@ def test_pending_decision_capability_has_minimal_boundary_and_reciprocal_edges()
         "cas",
     ):
         assert required in contract
+    assert re.search(
+        r"\b(?:invalidaci[oó]n|rechazo)\b(?:\W+\w+){0,6}?"
+        r"\W+\bversi[oó]n\b\W+\bobsoleta\b",
+        contract,
+        re.IGNORECASE,
+    )
     for excluded in (
         "candidatos de cartas",
         "cardinalidad",
@@ -388,6 +394,21 @@ def test_pending_decision_capability_has_minimal_boundary_and_reciprocal_edges()
         assert "persistence/" in document
         assert "application.py" in document
         assert "service.py" in document
+
+
+def test_pending_decision_matrix_does_not_add_terminal_or_expiration_states() -> None:
+    decision = next(
+        row for row in _matrix_rows() if row["capability_id"] == "CAP-ACTION-004"
+    )
+    contract = " ".join((decision["description"], decision["notes"]))
+
+    assert not re.search(r"\b(?:expired|cancelled)\b", contract, re.IGNORECASE)
+    assert not re.search(
+        r"(?:\b(?:estado|transici[oó]n)\b[^.;]{0,80}\bexpiraci[oó]n\b|"
+        r"\bexpiraci[oó]n\b[^.;]{0,80}\b(?:estado|transici[oó]n)\b)",
+        contract,
+        re.IGNORECASE,
+    )
 
 
 def test_pending_decision_relationship_classification_stays_explicit_and_non_redundant() -> None:
@@ -477,8 +498,23 @@ def test_pending_decision_contract_freezes_schema_lifecycle_and_invariant_ids() 
 
     assert "| Derivada |" in contract
     assert "| Transitoria |" in contract
-    assert "`pending → closed`" in contract
-    assert "No existen estados `expired` ni\n`cancelled`" in contract
+    lifecycle_match = re.search(
+        r"lifecycle m[ií]nimo es\s+`(?P<lifecycle>[^`]+)`",
+        contract,
+        re.IGNORECASE,
+    )
+    assert lifecycle_match is not None
+    documented_lifecycle = tuple(
+        state.strip() for state in lifecycle_match.group("lifecycle").split("→")
+    )
+    runtime_statuses = tuple(status.value for status in PendingDecisionStatus)
+    assert tuple(status.name for status in PendingDecisionStatus) == ("PENDING", "CLOSED")
+    assert documented_lifecycle == runtime_statuses == ("pending", "closed")
+    assert re.search(
+        r"no existen estados\s+`expired`\s+ni\s+`cancelled`",
+        contract,
+        re.IGNORECASE,
+    )
     assert "rechazo sin mutación" in contract
     assert "wall-clock **NUNCA DEBE** cambiar la semántica de partida" in contract
     assert "exactamente un `authorized_elector`" in contract

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
-from typing import Protocol, TypeAlias, cast
+from typing import Protocol, cast
 
 from .catalog import CardCatalog
 from .content.registry import CollectionRegistry
@@ -25,14 +25,6 @@ from .rules.deck import (
     validate_deck_group,
 )
 from .storage.base import StoredMatch, VersionConflict, validate_expected_version
-
-
-# La aplicación conserva el secreto que convierte una referencia pública en
-# una opción interna. El servicio sólo le entrega el contexto autoritativo ya
-# revalidado; el valor opaco interno nunca cruza la entrada pública.
-DecisionOptionReference: TypeAlias = Callable[
-    [str, str, int, str, int, tuple[str, ...]], str | None
-]
 
 
 class DeckValidationFailure(ValueError):
@@ -200,16 +192,15 @@ class MatchService:
         self,
         match_id: str,
         player_id: str,
-        selected_option_reference: DecisionOptionReference,
+        selected_option: str,
         *,
         expected_version: int,
     ) -> MatchView:
         """Cierra mediante CAS una decisión elegida con referencia pública.
 
-        La referencia es un resolutor suministrado por la frontera que acuñó
-        los identificadores públicos. Recibe exclusivamente el contexto vigente
-        necesario para comprobar su vinculación y devuelve el token interno sólo
-        dentro de esta llamada.
+        La frontera autenticada resuelve previamente la referencia pública desde
+        su ``MatchView`` autorizado. El servicio revalida aquí la opción contra
+        la decisión cargada antes de cerrarla y persistirla mediante CAS.
         """
         expected_version = validate_expected_version(expected_version)
         stored = self.store.load(match_id)
@@ -229,14 +220,6 @@ class MatchService:
                 "El actor no es el elector autorizado"
             )
 
-        selected_option = selected_option_reference(
-            match_id,
-            player_id,
-            stored.version,
-            decision.decision_id,
-            decision.state_version,
-            decision.authorized_opaque_options,
-        )
         if (
             type(selected_option) is not str
             or selected_option not in decision.authorized_opaque_options

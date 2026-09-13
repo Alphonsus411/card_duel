@@ -48,7 +48,7 @@ Las columnas `Central.`, `Desbloq.`, `Riesgo`, `Claridad` y `Migración` corresp
 | `CAP-ACTION-001` — Modelo tipado de acciones y comandos | `SUPPORTED` | `CLOSED` | HIGH | MEDIUM | MEDIUM | HIGH | LOW | Prerequisites: ninguno; dependientes: CAP-ACTION-002, CAP-TIME-003, CAP-EFFECT-001. |
 | `CAP-ACTION-002` — Enumeración y revalidación de acciones legales | `SUPPORTED` | `CLOSED` | MEDIUM | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-ACTION-001; dependientes: CAP-TARGET-001, CAP-ACTION-004. |
 | `CAP-ACTION-003` — Transacción, rollback y determinismo | `SUPPORTED` | `CLOSED` | HIGH | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-ACTION-001; dependientes: CAP-COST-002, CAP-ZONE-003, CAP-EFFECT-003. |
-| `CAP-ACTION-004` — Decisión pendiente autorizada | `PARTIAL` | `READY` | HIGH | HIGH | HIGH | HIGH | HIGH | W1.2 acredita frontera pública autenticada, opciones opacas fail-closed para `ELECTOR`, resolución, CAS concurrente en memoria/SQLite y publicación sólo tras confirmar CAS. Siguen pendientes apertura reproducible, consumo de `CLOSED`, replay integral, audiencias no electorales y bloqueo por familia; no desbloquea `CAP-TIME-002`. Prerequisites: CAP-ACTION-002, CAP-PRIVACY-001; dependientes: CAP-SECRET-002, CAP-TIME-002; prioridad P0, riesgo CRITICAL, wave W1. |
+| `CAP-ACTION-004` — Decisión pendiente autorizada | `PARTIAL` | `READY` | HIGH | HIGH | HIGH | HIGH | HIGH | W1.3 acredita historia total tipada, replay v3, lifecycle interno reproducible `None → PENDING → CLOSED → None`, permanencia de `CLOSED` hasta consumo explícito, snapshot v4 y migraciones fail-closed, preservando CAS y privacidad `ELECTOR` de W1.2. Siguen pendientes apertura pública, bloqueo selectivo por familia, decisiones simultáneas y audiencias adicionales; no inicia W1.4, no declara `SUPPORTED` y no desbloquea `CAP-TIME-002`. Prerequisites: CAP-ACTION-002, CAP-PRIVACY-001; dependientes: CAP-SECRET-002, CAP-TIME-002; prioridad P0, riesgo CRITICAL, wave W1. |
 | `CAP-COST-001` — Modelo declarativo de costes | `SUPPORTED` | `CLOSED` | HIGH | MEDIUM | MEDIUM | HIGH | LOW | Prerequisites: CAP-ACTION-001; dependientes: CAP-COST-002, CAP-COST-003, CAP-COST-004. |
 | `CAP-COST-002` — Preflight, determinación y pago atómico | `SUPPORTED` | `CLOSED` | MEDIUM | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-COST-001, CAP-ACTION-003; dependientes: CAP-COST-003, CAP-STACK-001. |
 | `CAP-COST-003` — Costes adicionales y compuestos | `SUPPORTED` | `CLOSED` | MEDIUM | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-COST-001, CAP-COST-002; dependientes: CAP-EFFECT-003. |
@@ -205,11 +205,10 @@ El versionado no permite saltarse prerequisites: sólo hace compatible una modif
 
 #### Estado y alcance contractual
 
-**Estado de la capability: `MISSING`. Estado exclusivo de este contrato:
-`READY`.** `READY` declara que el núcleo siguiente ya tiene autoridad suficiente
-para guiar una implementación futura; no afirma que exista modelo, comando,
-persistencia, endpoint ni recorrido ejecutable, y no promueve la capability a
-`PARTIAL` o `SUPPORTED`.
+**Estado de la capability: `PARTIAL`. Estado exclusivo de este contrato:
+`READY`.** W1.3 demuestra un subconjunto interno persistente y replayable, pero
+`READY` no equivale a cierre: no autoriza `SUPPORTED`, no inicia W1.4 y no
+promueve sus dependientes.
 
 Se asigna riesgo **CRITICAL**, prioridad **P0** y wave **W1**. Sus superficies
 futuras son modelos, comandos, enumeración/ejecución, aplicación, servicio,
@@ -239,13 +238,11 @@ El registro contiene exclusivamente estos campos autoritativos:
 | `status` | Sólo `pending` o `closed`; `closed` es terminal. |
 | `selected_option` | Ausente mientras está `pending`; al cierre contiene exactamente uno de los tokens opacos autorizados. |
 
-La **secuencia de creación no se almacena como campo independiente**: se deriva
-sin ambigüedad de la posición canónica de `origin`, incorporada también en la
-derivación determinista de `decision_id`. Persistir a la vez `origin` y una
-secuencia duplicada introduciría dos autoridades susceptibles de divergir. Si
-una futura estrategia de compactación dejase de garantizar una posición
-canónica para el origen, eso exigiría una nueva versión contractual y una
-migración explícita, no completar silenciosamente el registro con el duplicado.
+La **secuencia de creación no se almacena como campo independiente**. W1.3 usa
+una sola secuencia `history` cuyos elementos tipados son `ExecutedCommand` o
+`DecisionTransitionEntry` (`OPENED`, `CLOSED`, `CONSUMED`). Así el orden relativo
+total queda fijado por posición, sin relojes ni dos listas que puedan divergir;
+`command_history` es únicamente la proyección compatible de los comandos.
 
 Los datos no autoritativos se clasifican de forma exhaustiva para impedir que
 una implementación futura los convierta accidentalmente en otra fuente de
@@ -261,7 +258,10 @@ autoritativa; no elevan datos derivados o transitorios a campos del dominio.
 
 #### Autoridad, lifecycle y cierre atómico
 
-El lifecycle mínimo es `pending → closed`. No existen estados `expired` ni
+El lifecycle mínimo es `pending → closed` y el lifecycle del slot es
+`None → PENDING → CLOSED → None`. `CLOSED` permanece observable y ocupa el slot
+hasta que una operación interna de consumo, registrada en la misma historia,
+lo retira; no hay borrado implícito al resolver ni al observar. No existen estados `expired` ni
 `cancelled`: no se añadirán sin un caso real demostrado, su regla normativa y
 su efecto reproducible. Una solicitud de cierre **DEBE** presentar
 `decision_id`, `authorized_elector`, un token de `authorized_opaque_options` y

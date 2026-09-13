@@ -157,3 +157,24 @@ pública universal, políticas por familia, decisiones simultáneas ni nuevas
 audiencias. En consecuencia, Phase 2C sigue `IN PROGRESS`, `CAP-ACTION-004`
 sigue `PARTIAL / READY`, la versión sigue `0.20.1`, no se declara `SUPPORTED` y
 no se inicia W1.4.
+
+## 10. Verificación integral de entrega (2026-09-13)
+
+La entrega se volvió a verificar desde `/workspace/card_duel`, partiendo del
+parent limpio `1704ae36c738a51a158dabe8d029b881e62d8943`, sin tag, release ni cambio
+de versión. La sincronización bloqueada, todas las suites focalizadas de W0 a
+W1.3, las regresiones de replay/persistencia/CAS, la prueba documental de Phase
+2C y `mypy` finalizaron correctamente. La suite completa instrumentada obtuvo
+`926 passed, 1 skipped, 816 subtests passed`.
+
+El informe de cobertura con ramas registró **90%**, por encima del mínimo
+contractual de **88%** que aplica `scripts/verify_release.py`; el perfil `full`
+terminó con `OK: perfil full completado`. También pasó `git diff --check`. No
+fue necesario alterar runtime ni relajar digest, checksum, migraciones,
+privacidad o CAS para obtener estos resultados.
+
+Esta comprobación local no sustituye la evidencia CI asociada por SHA: los
+resultados de `runtime Python 3.11`, `runtime Python 3.12`, `runtime Python
+3.13` y `full` deben pertenecer al commit exacto del PR. Si el PR se fusiona,
+el SHA de merge y su propia ejecución CI deben registrarse por separado, sin
+reutilizar los checks del SHA del PR.

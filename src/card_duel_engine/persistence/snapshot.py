@@ -14,7 +14,9 @@ from ..rules.config import RuleSet
 from .codec import canonical_json, decode_value, encode_value
 from .migrations import migrate_document
 
-SNAPSHOT_SCHEMA_VERSION = "3"
+# Schema 4 persists GameState.history as authoritative state so its exact ordering
+# survives snapshot -> restore -> dump_replay.
+SNAPSHOT_SCHEMA_VERSION = "4"
 
 
 def _body(engine: GameEngine) -> dict[str, Any]:
@@ -64,6 +66,7 @@ def _omit_pending_decision(encoded_state: Any) -> Any:
         transformed["fields"] = dict(encoded_fields)
         transformed["fields"].pop("pending_decision", None)
         transformed["fields"].pop("history", None)
+        transformed["fields"].pop("history_prefix_complete", None)
     return transformed
 
 

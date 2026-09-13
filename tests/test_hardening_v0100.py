@@ -64,6 +64,8 @@ class HardeningV0100Tests(unittest.TestCase):
         snapshot["body"]["schema_version"] = "1"
         snapshot["body"].pop("state_digest")
         snapshot["body"]["state"]["fields"].pop("pending_decision")
+        snapshot["body"]["state"]["fields"].pop("history")
+        snapshot["body"]["state"]["fields"].pop("history_prefix_complete")
         snapshot["sha256"] = checksum(snapshot["body"])
         restored = load_snapshot(snapshot)
         self.assertEqual(state_digest(restored), state_digest(engine))

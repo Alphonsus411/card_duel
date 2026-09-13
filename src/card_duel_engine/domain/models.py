@@ -755,6 +755,10 @@ class GameState:
     # command A -> OPENED -> CLOSED -> CONSUMED -> command B, sin reloj ni
     # orden accidental de contenedores independientes.
     history: list[GameHistoryEntry] = field(default_factory=list)
+    # False only for migrated snapshots whose pre-v4 state proves that decision
+    # lifecycle entries are missing.  Such a prefix is valid for restoration but
+    # must never be presented as a complete replay history.
+    history_prefix_complete: bool = True
     setup_mulligans: list[str] = field(default_factory=list)
     pending_decision: PendingDecision | None = None
 

@@ -1,192 +1,349 @@
-"""Carreras CAS del cierre remoto de decisiones pendientes.
-
-La apertura de la decisión es preparación interna del escenario. El cierre, en
-cambio, recorre la frontera pública completa: aplicación autenticada, servicio,
-motor y ``MatchStore.save`` con versión esperada.
-"""
+"""Contrato W1.3 del lifecycle y replay de decisiones agnósticas a cartas."""
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
-from pathlib import Path
-from threading import Barrier, Lock
-from typing import Any
+import json
+from copy import deepcopy
+from typing import Callable
 
 import pytest
 
-from card_duel_engine import (
-    AuthenticatedMatchApplication,
-    Capability,
-    ExternalIdentity,
-    InMemoryIdentityAuthorization,
-    InMemoryMatchStore,
-    MatchService,
-    SQLiteMatchStore,
-    WriteConflict,
-)
+from card_duel_engine import GameEngine
 from card_duel_engine.domain import (
+    DecisionAudience,
     DecisionClosed,
+    DecisionConsumed,
+    DecisionOpened,
     DecisionTransitionEntry,
+    ExecutedCommand,
     PendingDecisionStatus,
 )
-from card_duel_engine.storage import VersionConflict
-
-from test_pending_decision_w1_1 import OPTIONS, make_engine, open_decision
-
-
-Store = InMemoryMatchStore | SQLiteMatchStore
-
-
-@pytest.fixture(
-    params=(
-        pytest.param(lambda _path: InMemoryMatchStore(), id="memory"),
-        pytest.param(lambda path: SQLiteMatchStore(path), id="sqlite"),
-    )
+from card_duel_engine.domain.errors import (
+    DecisionAlreadyClosed,
+    DecisionIdMismatch,
+    DecisionNotClosed,
+    DecisionSlotEmpty,
+    DecisionSlotOccupied,
+    StaleDecisionVersion,
+    UnauthorizedDecisionElector,
+    UnauthorizedDecisionOption,
 )
-def store(request: pytest.FixtureRequest, tmp_path: Path) -> Store:
-    backend = request.param(tmp_path / "pending-decision-w1-3.sqlite")
-    yield backend
-    if isinstance(backend, SQLiteMatchStore):
-        backend.close()
+from card_duel_engine.engine.commands import PassPriority
+from card_duel_engine.persistence.codec import decode_value
+from card_duel_engine.persistence.replay import dump_replay, replay_from_log
+from card_duel_engine.persistence.snapshot import (
+    dump_snapshot,
+    load_snapshot,
+    state_digest,
+)
+
+from test_pending_decision_w1_1 import (
+    DECISION_ID,
+    FAMILY,
+    OPTIONS,
+    ORIGIN,
+    VERSION,
+    make_engine,
+    open_decision,
+)
 
 
-def _application(
-    store: Store,
-) -> tuple[AuthenticatedMatchApplication, ExternalIdentity]:
-    authorization = InMemoryIdentityAuthorization()
-    identity = ExternalIdentity("w1.3-race", "alice")
-    authorization.bind_player(
-        identity,
-        "match",
-        "A",
-        capabilities=(Capability.OBSERVE, Capability.RESOLVE_PENDING_DECISION),
+SECOND = {
+    "decision_id": "opaque_second_D2",
+    "semantic_family": "second-choice/v2",
+    "authorized_elector": "B",
+    "audience": DecisionAudience.OPPONENT,
+    "authorized_opaque_options": ("opaque_second_a", "opaque_second_b"),
+    "state_version": VERSION + 9,
+    "origin": ("opaque_second_origin",),
+}
+
+
+def _close(engine: GameEngine) -> None:
+    engine._close_pending_decision(DECISION_ID, "A", OPTIONS[1], VERSION)
+
+
+def _consume(engine: GameEngine) -> None:
+    engine._consume_pending_decision(DECISION_ID, VERSION)
+
+
+def _observables(engine: GameEngine) -> object:
+    """Copia todo lo que una transición rechazada podría alterar."""
+    assert engine.state is not None
+    state = engine.state
+    return deepcopy(
+        (
+            state.pending_decision,
+            state.history,
+            state.command_history,
+            state.event_log,
+            state.turn_number,
+            engine._next_instance,
+            engine._next_stack_item,
+            engine._replacement_replay_cursor,
+            engine._replacement_replay_choices,
+        )
     )
-    return (
-        AuthenticatedMatchApplication(MatchService(store), authorization),
-        identity,
+
+
+def _assert_rejected_atomically(
+    engine: GameEngine,
+    error: type[BaseException],
+    operation: Callable[[], None],
+) -> None:
+    before = _observables(engine)
+    state_identity = engine.state
+    with pytest.raises(error):
+        operation()
+    assert engine.state is state_identity
+    assert _observables(engine) == before
+
+
+def _transitions(engine: GameEngine) -> tuple[object, ...]:
+    assert engine.state is not None
+    return tuple(
+        entry.transition
+        for entry in engine.state.history
+        if isinstance(entry, DecisionTransitionEntry)
     )
 
 
-@dataclass(frozen=True)
-class SaveAttempt:
-    option: str
-    expected_version: int
-    published_version: int | None
-    error: VersionConflict | None
-    history: tuple[object, ...]
+def _complete_first_lifecycle(engine: GameEngine) -> None:
+    open_decision(engine)
+    _close(engine)
+    _consume(engine)
 
 
-def test_concurrent_close_persists_only_the_cas_winner(store: Store) -> None:
+def _assert_first_contract_in_history(engine: GameEngine) -> None:
+    """Comprueba metadatos opacos incluso cuando el slot ya fue consumido."""
+    transitions = _transitions(engine)
+    opened = transitions[0]
+    assert isinstance(opened, DecisionOpened)
+    assert opened.decision_id == DECISION_ID
+    assert opened.semantic_family == FAMILY
+    assert opened.authorized_elector == "A"
+    assert opened.audience is DecisionAudience.ELECTOR
+    assert opened.authorized_opaque_options == OPTIONS
+    assert opened.state_version == VERSION
+    assert opened.origin == ORIGIN
+    if len(transitions) > 1:
+        closed = transitions[1]
+        assert isinstance(closed, DecisionClosed)
+        assert closed.selected_option == OPTIONS[1]
+
+
+def test_complete_path_none_pending_closed_none_pending() -> None:
+    engine = make_engine()
+    assert engine.state is not None and engine.state.pending_decision is None
+
+    open_decision(engine)
+    assert engine.state.pending_decision is not None
+    assert engine.state.pending_decision.status is PendingDecisionStatus.PENDING
+    _close(engine)
+    assert engine.state.pending_decision.status is PendingDecisionStatus.CLOSED
+    _consume(engine)
+    assert engine.state.pending_decision is None
+    open_decision(engine, **SECOND)
+    assert engine.state.pending_decision is not None
+    assert engine.state.pending_decision.decision_id == SECOND["decision_id"]
+    assert engine.state.pending_decision.status is PendingDecisionStatus.PENDING
+    assert tuple(type(item) for item in _transitions(engine)) == (
+        DecisionOpened,
+        DecisionClosed,
+        DecisionConsumed,
+        DecisionOpened,
+    )
+
+
+def test_open_rejects_pending_slot_atomically() -> None:
     engine = make_engine()
     open_decision(engine)
-    assert store.create("match", engine) == 1
-    application, identity = _application(store)
-
-    # Ambos contendientes reciben referencias HMAC distintas de la misma vista.
-    baseline = application.view(identity, "match")
-    assert baseline.pending_decision is not None
-    option_ids = tuple(
-        option.decision_option_id for option in baseline.pending_decision.options
+    _assert_rejected_atomically(
+        engine,
+        DecisionSlotOccupied,
+        lambda: open_decision(engine, **SECOND),
     )
-    assert len(set(option_ids)) == len(OPTIONS)
-    assert not set(option_ids) & set(OPTIONS)
 
-    original_save = store.save
-    ready_to_save = Barrier(2)
-    attempts: list[SaveAttempt] = []
-    attempts_lock = Lock()
 
-    def synchronized_save(
-        match_id: str, candidate: Any, *, expected_version: int
-    ) -> int:
-        state = candidate.state
-        assert state is not None and state.pending_decision is not None
-        selected_option = state.pending_decision.selected_option
-        assert selected_option is not None
-        candidate_history = tuple(state.history)
+def test_open_rejects_closed_slot_atomically() -> None:
+    engine = make_engine()
+    open_decision(engine)
+    _close(engine)
+    _assert_rejected_atomically(
+        engine,
+        DecisionSlotOccupied,
+        lambda: open_decision(engine, **SECOND),
+    )
 
-        # Al llegar aquí, cada servicio cargó su propia copia en la misma versión
-        # y cada motor ya produjo su transición CLOSED de manera aislada.
-        ready_to_save.wait(timeout=10)
-        try:
-            published_version = original_save(
-                match_id, candidate, expected_version=expected_version
-            )
-        except VersionConflict as error:
-            with attempts_lock:
-                attempts.append(
-                    SaveAttempt(
-                        selected_option,
-                        expected_version,
-                        None,
-                        error,
-                        candidate_history,
-                    )
-                )
-            raise
-        with attempts_lock:
-            attempts.append(
-                SaveAttempt(
-                    selected_option,
-                    expected_version,
-                    published_version,
-                    None,
-                    candidate_history,
-                )
-            )
-        return published_version
 
-    store.save = synchronized_save  # type: ignore[method-assign]
+def test_close_rejects_empty_slot_atomically() -> None:
+    engine = make_engine()
+    _assert_rejected_atomically(engine, DecisionSlotEmpty, lambda: _close(engine))
 
-    def contend(option_index: int) -> tuple[int, object]:
-        try:
-            published = application.resolve_pending_decision(
-                identity,
-                "match",
-                option_ids[option_index],
-                expected_version=baseline.version,
-            )
-            return option_index, published
-        except WriteConflict as error:
-            return option_index, error
 
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        outcomes = list(executor.map(contend, range(len(OPTIONS))))
+def test_close_rejects_second_close_atomically() -> None:
+    engine = make_engine()
+    open_decision(engine)
+    _close(engine)
+    _assert_rejected_atomically(engine, DecisionAlreadyClosed, lambda: _close(engine))
 
-    successful_saves = [attempt for attempt in attempts if attempt.error is None]
-    rejected_saves = [attempt for attempt in attempts if attempt.error is not None]
-    assert len(successful_saves) == 1
-    assert len(rejected_saves) == 1
-    assert isinstance(rejected_saves[0].error, VersionConflict)
-    assert {attempt.expected_version for attempt in attempts} == {baseline.version}
 
-    winner = successful_saves[0]
-    loser = rejected_saves[0]
-    published_views = [
-        value for _, value in outcomes if not isinstance(value, WriteConflict)
-    ]
-    public_conflicts = [
-        value for _, value in outcomes if isinstance(value, WriteConflict)
-    ]
-    assert len(published_views) == 1
-    assert len(public_conflicts) == 1
-    assert published_views[0].version == winner.published_version
+@pytest.mark.parametrize(
+    ("actor", "option", "error"),
+    [
+        pytest.param(
+            "A",
+            "opaque_not_authorized",
+            UnauthorizedDecisionOption,
+            id="option",
+        ),
+        pytest.param("B", OPTIONS[0], UnauthorizedDecisionElector, id="elector"),
+    ],
+)
+def test_close_rejects_unauthorized_input_atomically(
+    actor: str, option: str, error: type[BaseException]
+) -> None:
+    engine = make_engine()
+    open_decision(engine)
+    _assert_rejected_atomically(
+        engine,
+        error,
+        lambda: engine._close_pending_decision(DECISION_ID, actor, option, VERSION),
+    )
 
-    persisted = store.load("match")
-    state = persisted.engine.state
-    assert state is not None and state.pending_decision is not None
-    closed = [
-        entry
-        for entry in state.history
-        if isinstance(entry, DecisionTransitionEntry)
-        and isinstance(entry.transition, DecisionClosed)
-    ]
-    assert len(closed) == 1
-    assert state.pending_decision.status is PendingDecisionStatus.CLOSED
-    assert state.pending_decision.selected_option == winner.option
-    assert state.history == list(winner.history)
-    assert state.history != list(loser.history)
-    assert closed[0].transition.selected_option == winner.option
-    assert closed[0].transition.selected_option != loser.option
-    assert persisted.version == winner.published_version == baseline.version + 1
+
+def test_consume_rejects_pending_slot_atomically() -> None:
+    engine = make_engine()
+    open_decision(engine)
+    _assert_rejected_atomically(engine, DecisionNotClosed, lambda: _consume(engine))
+
+
+def test_consume_rejects_empty_slot_atomically() -> None:
+    engine = make_engine()
+    _assert_rejected_atomically(engine, DecisionSlotEmpty, lambda: _consume(engine))
+
+
+@pytest.mark.parametrize(
+    ("decision_id", "version", "error"),
+    [
+        pytest.param("opaque_wrong", VERSION, DecisionIdMismatch, id="decision-id"),
+        pytest.param(
+            DECISION_ID,
+            VERSION + 1,
+            StaleDecisionVersion,
+            id="stale-version",
+        ),
+    ],
+)
+def test_consume_rejects_wrong_contract_atomically(
+    decision_id: str, version: int, error: type[BaseException]
+) -> None:
+    engine = make_engine()
+    open_decision(engine)
+    _close(engine)
+    _assert_rejected_atomically(
+        engine,
+        error,
+        lambda: engine._consume_pending_decision(decision_id, version),
+    )
+
+
+@pytest.mark.parametrize(
+    "final_stage",
+    ["pending", "closed", "consumed", "second-pending"],
+)
+def test_replay_v3_preserves_every_lifecycle_final_state(final_stage: str) -> None:
+    engine = make_engine()
+    open_decision(engine)
+    if final_stage != "pending":
+        _close(engine)
+    if final_stage in {"consumed", "second-pending"}:
+        _consume(engine)
+    if final_stage == "second-pending":
+        open_decision(engine, **SECOND)
+
+    dumped = dump_replay(engine, indent=None)
+    document = json.loads(dumped)
+    assert document["body"]["schema_version"] == "3"
+    assert engine.state is not None
+    assert document["body"]["history_count"] == len(engine.state.history)
+    replayed = replay_from_log(dumped)
+
+    assert replayed.state == engine.state
+    assert state_digest(replayed) == state_digest(engine)
+    assert dump_replay(replayed, indent=None) == dumped
+    assert replayed.state is not None
+    assert replayed.state.history == engine.state.history
+    assert _transitions(replayed) == _transitions(engine)
+    _assert_first_contract_in_history(replayed)
+
+    decision = replayed.state.pending_decision
+    if final_stage == "consumed":
+        assert decision is None
+    else:
+        assert decision is not None
+        expected = SECOND if final_stage == "second-pending" else {
+            "decision_id": DECISION_ID,
+            "semantic_family": FAMILY,
+            "authorized_elector": "A",
+            "audience": DecisionAudience.ELECTOR,
+            "authorized_opaque_options": OPTIONS,
+            "state_version": VERSION,
+            "origin": ORIGIN,
+        }
+        for field, value in expected.items():
+            assert getattr(decision, field) == value
+        expected_status = (
+            PendingDecisionStatus.CLOSED
+            if final_stage == "closed"
+            else PendingDecisionStatus.PENDING
+        )
+        assert decision.status is expected_status
+        expected_option = OPTIONS[1] if final_stage == "closed" else None
+        assert decision.selected_option == expected_option
+
+
+def test_replay_document_and_engine_preserve_command_transition_interleaving() -> None:
+    engine = make_engine()
+    assert engine.state is not None
+    command_a = PassPriority(engine.state.priority_player_id)
+    engine.execute(command_a)
+    _complete_first_lifecycle(engine)
+    command_b = PassPriority(engine.state.priority_player_id)
+    engine.execute(command_b)
+    expected_types = (
+        ExecutedCommand,
+        DecisionTransitionEntry,
+        DecisionTransitionEntry,
+        DecisionTransitionEntry,
+        ExecutedCommand,
+    )
+    assert tuple(type(entry) for entry in engine.state.history) == expected_types
+
+    dumped = dump_replay(engine, indent=None)
+    persisted_history = decode_value(json.loads(dumped)["body"]["history"])
+    assert persisted_history == tuple(engine.state.history)
+    assert tuple(type(entry) for entry in persisted_history) == expected_types
+    rebuilt = replay_from_log(dumped)
+    assert rebuilt.state is not None
+    assert rebuilt.state.history == engine.state.history
+    assert rebuilt.state.command_history == [command_a, command_b]
+
+
+def test_snapshot_v4_restore_dump_replay_v3_keeps_pre_snapshot_transitions() -> None:
+    engine = make_engine()
+    _complete_first_lifecycle(engine)
+    open_decision(engine, **SECOND)
+    transitions_before = _transitions(engine)
+
+    snapshot = dump_snapshot(engine, indent=None)
+    assert json.loads(snapshot)["body"]["schema_version"] == "4"
+    restored = load_snapshot(snapshot)
+    assert _transitions(restored) == transitions_before
+
+    replay_dump = dump_replay(restored, indent=None)
+    assert json.loads(replay_dump)["body"]["schema_version"] == "3"
+    replayed = replay_from_log(replay_dump)
+    assert replayed.state == restored.state == engine.state
+    assert state_digest(replayed) == state_digest(restored) == state_digest(engine)
+    assert _transitions(replayed) == transitions_before

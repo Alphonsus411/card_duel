@@ -22,6 +22,13 @@ Las entradas requieren priorización y alcance propios antes de implementarse.
 
 ## Mantenimiento técnico
 
+- Tras W1.3, mantener `CAP-ACTION-004` en `PARTIAL / READY`: la historia total
+  tipada, replay v3, snapshot v4 y consumo interno reproducible están
+  acreditados. Quedan aplazados para slices autorizados posteriores la apertura
+  pública, el bloqueo selectivo por `semantic_family`, las decisiones
+  simultáneas y las audiencias adicionales. No iniciar W1.4 ni promover a
+  `SUPPORTED` sin esos contratos y su evidencia.
+
 - Revisar en cada cambio mayor el puente `R-COMPAT-019-REPLAY`. Su alcance se
   limita a reproducir semánticamente los fixtures generados con el commit 0.19
   documentado: no es sólo deserialización v2, no se activa en juego nuevo y no
@@ -122,10 +129,11 @@ comandos existentes.
 
 ## Cierre de compatibilidad 0.20.1 (no es backlog)
 
-La entrega conserva snapshot/replay v2 con semántica explícita, reconstruye de
+La compatibilidad histórica conserva la lectura de snapshot/replay v2 con semántica explícita, reconstruye de
 forma conservadora perfiles ausentes, congela el tipo efectivo de la fuente y
 alinea la enumeración de acciones con su ejecución. La tolerancia de digest se
 limita a 0.20.0 y 0.20.1, se rechaza desde 0.20.2 y las nuevas escrituras usan
-la huella completa. La evidencia se conserva separada por versión. Estas garantías están
+la huella completa. Las escrituras actuales de W1.3 usan replay v3 y snapshot
+v4; sus migraciones preservan replay v1→v2→v3 y snapshot v1→v2→v3→v4. La evidencia se conserva separada por versión. Estas garantías están
 cerradas técnicamente, pero `N-POINTS-01` y `M-LORD-EVENT-01` continúan
 bloqueados.

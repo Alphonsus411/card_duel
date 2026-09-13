@@ -15,6 +15,7 @@ READINESS_AUDIT = ROOT / "docs" / "audits" / "PHASE_2C_FIRST_SLICE_READINESS_AUD
 TRACEABILITY_AUDIT = ROOT / "docs" / "audits" / "PHASE_2C_FIRST_SLICE_TRACEABILITY_2026-09-07.md"
 CAP_ACTION_CONTRACT_AUDIT = ROOT / "docs" / "audits" / "PHASE_2C_CAP_ACTION_004_CONTRACT_AUDIT_2026-09-07.md"
 CAP_ACTION_TRACEABILITY_AUDIT = ROOT / "docs" / "audits" / "PHASE_2C_CAP_ACTION_004_TRACEABILITY_2026-09-07.md"
+CAP_ACTION_W1_3_AUDIT = ROOT / "docs" / "audits" / "PHASE_2C_CAP_ACTION_004_W1_3_REPRODUCIBLE_LIFECYCLE_AUDIT_2026-09-12.md"
 EXPECTED_SLICE_VERDICT = "N-PHASE-02 IMPLEMENTATION BLOCKED"
 TASK_BASELINE_SHA = "9543806234a1b5af47dc1e40514323b2c5fc4324"
 
@@ -476,7 +477,7 @@ def test_pending_decision_contract_freezes_schema_lifecycle_and_invariant_ids() 
         "## waves definitivas", 1
     )[0]
 
-    assert "Estado de la capability: `MISSING`" in contract
+    assert "Estado de la capability: `PARTIAL`" in contract
     assert "Estado exclusivo de este contrato:\n`READY`" in contract
 
     authoritative_table = contract.split("| Campo autoritativo |", 1)[1].split(
@@ -518,6 +519,8 @@ def test_pending_decision_contract_freezes_schema_lifecycle_and_invariant_ids() 
     assert "rechazo sin mutación" in contract
     assert "wall-clock **NUNCA DEBE** cambiar la semántica de partida" in contract
     assert "exactamente un `authorized_elector`" in contract
+    assert "`None → PENDING → CLOSED → None`" in contract
+    assert "una sola secuencia `history`" in contract
 
     invariant_ids = re.findall(r"`(CAP-ACTION-004-INV-\d{2})`", contract)
     assert invariant_ids == [
@@ -533,6 +536,27 @@ def test_pending_decision_contract_freezes_schema_lifecycle_and_invariant_ids() 
         "*search semantics*",
     ):
         assert exclusion in contract
+
+
+def test_w1_3_audit_freezes_reproducible_lifecycle_without_promotion() -> None:
+    audit = CAP_ACTION_W1_3_AUDIT.read_text(encoding="utf-8")
+    for required in (
+        "65ffcd087470c9ab10bd698a506d07a1fd1be44b",
+        "26e206475a7ab9e072075a398c9c8c1d4a6287c1",
+        "replay v3",
+        "snapshot v4",
+        "None → PENDING → CLOSED → None",
+        "PENDING → CLOSED",
+        "PARTIAL / READY",
+        "0.20.1",
+        "W1.4",
+        "bloqueo selectivo por familia",
+        "decisiones simultáneas",
+        "audiencias adicionales",
+    ):
+        assert required in audit
+    assert "Phase 2C" in audit and "IN PROGRESS" in audit
+    assert "no se declara `SUPPORTED`" in audit
 
 
 def test_documented_totals_defaults_and_generic_capability_boundary() -> None:

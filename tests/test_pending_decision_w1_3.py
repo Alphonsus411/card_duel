@@ -4,11 +4,21 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
+from dataclasses import fields
+import inspect
 from typing import Callable
 
 import pytest
 
-from card_duel_engine import GameEngine
+from card_duel_engine import (
+    AuthenticatedMatchApplication,
+    Capability,
+    ExternalIdentity,
+    GameEngine,
+    InMemoryIdentityAuthorization,
+    InMemoryMatchStore,
+    MatchService,
+)
 from card_duel_engine.domain import (
     DecisionAudience,
     DecisionClosed,
@@ -28,7 +38,12 @@ from card_duel_engine.domain.errors import (
     UnauthorizedDecisionElector,
     UnauthorizedDecisionOption,
 )
-from card_duel_engine.engine.commands import PassPriority
+from card_duel_engine.engine.commands import (
+    EXECUTABLE_COMMAND_TYPE_SET,
+    EXECUTABLE_COMMAND_TYPES,
+    Concede,
+    PassPriority,
+)
 from card_duel_engine.persistence.codec import decode_value
 from card_duel_engine.persistence.replay import dump_replay, replay_from_log
 from card_duel_engine.persistence.snapshot import (
@@ -57,6 +72,193 @@ SECOND = {
     "state_version": VERSION + 9,
     "origin": ("opaque_second_origin",),
 }
+
+
+def _public_application(
+    engine: GameEngine,
+) -> tuple[
+    AuthenticatedMatchApplication, dict[str, ExternalIdentity], InMemoryMatchStore
+]:
+    store = InMemoryMatchStore()
+    store.create("match", engine)
+    authorization = InMemoryIdentityAuthorization()
+    identities = {
+        player: ExternalIdentity("w1.3-tests", player) for player in ("A", "B")
+    }
+    for player, identity in identities.items():
+        authorization.bind_player(
+            identity,
+            "match",
+            player,
+            capabilities=(Capability.OBSERVE, Capability.RESOLVE_PENDING_DECISION),
+        )
+    return (
+        AuthenticatedMatchApplication(MatchService(store), authorization),
+        identities,
+        store,
+    )
+
+
+def test_pending_status_is_a_closed_two_value_vocabulary() -> None:
+    assert PendingDecisionStatus.__members__ == {
+        "PENDING": PendingDecisionStatus.PENDING,
+        "CLOSED": PendingDecisionStatus.CLOSED,
+    }
+    assert tuple((status.name, status.value) for status in PendingDecisionStatus) == (
+        ("PENDING", "pending"),
+        ("CLOSED", "closed"),
+    )
+    for forbidden in ("EXPIRED", "CANCELLED", "CONSUMED"):
+        assert not hasattr(PendingDecisionStatus, forbidden)
+
+
+def test_decision_lifecycle_is_not_an_executable_command_or_card_dispatch() -> None:
+    assert EXECUTABLE_COMMAND_TYPE_SET == frozenset(EXECUTABLE_COMMAND_TYPES)
+    assert all(
+        command_type in EXECUTABLE_COMMAND_TYPE_SET
+        for command_type in EXECUTABLE_COMMAND_TYPES
+    )
+
+    forbidden_command_names = {
+        "OpenDecision",
+        "OpenPendingDecision",
+        "CloseDecision",
+        "ClosePendingDecision",
+        "ConsumeDecision",
+        "ConsumePendingDecision",
+    }
+    registered_names = {
+        command_type.__name__ for command_type in EXECUTABLE_COMMAND_TYPES
+    }
+    assert registered_names.isdisjoint(forbidden_command_names)
+
+    # Al no existir comando de lifecycle, tampoco existe una variante despachable
+    # por identidad/nombre de carta, set, expansión o familia semántica.
+    lifecycle_types = tuple(
+        command_type
+        for command_type in EXECUTABLE_COMMAND_TYPES
+        if any(
+            verb in command_type.__name__.lower()
+            for verb in ("open", "close", "consume")
+        )
+        and "decision" in command_type.__name__.lower()
+    )
+    assert lifecycle_types == ()
+    assert not any(fields(command_type) for command_type in lifecycle_types)
+
+
+def test_public_boundaries_cannot_open_arbitrary_decisions() -> None:
+    forbidden_method_names = {
+        "open_decision",
+        "open_pending_decision",
+        "create_decision",
+        "create_pending_decision",
+    }
+    forbidden_opening_parameters = {
+        "decision_id",
+        "semantic_family",
+        "authorized_elector",
+        "audience",
+        "authorized_opaque_options",
+        "origin",
+    }
+    for boundary in (AuthenticatedMatchApplication, MatchService):
+        public_methods = {
+            name: member
+            for name, member in inspect.getmembers(boundary, inspect.isfunction)
+            if not name.startswith("_")
+        }
+        assert forbidden_method_names.isdisjoint(public_methods)
+        assert all(
+            forbidden_opening_parameters.isdisjoint(
+                inspect.signature(method).parameters
+            )
+            for method in public_methods.values()
+        )
+
+    assert tuple(
+        inspect.signature(
+            AuthenticatedMatchApplication.resolve_pending_decision
+        ).parameters
+    ) == ("self", "identity", "match_id", "decision_option_id", "expected_version")
+    assert tuple(
+        inspect.signature(MatchService.resolve_pending_decision).parameters
+    ) == (
+        "self",
+        "match_id",
+        "player_id",
+        "selected_option",
+        "expected_version",
+    )
+
+
+@pytest.mark.parametrize(
+    "audience", [DecisionAudience.OPPONENT, DecisionAudience.SPECTATOR]
+)
+def test_publication_is_fail_closed_for_non_elector_audiences(
+    audience: DecisionAudience,
+) -> None:
+    engine = make_engine()
+    open_decision(engine, audience=audience)
+    application, identities, _ = _public_application(engine)
+
+    for identity in identities.values():
+        public = application.view(identity, "match")
+        assert public.pending_decision is not None
+        assert public.pending_decision.options == ()
+
+
+def test_successful_public_resolution_leaves_the_slot_closed() -> None:
+    engine = make_engine()
+    open_decision(engine)
+    application, identities, store = _public_application(engine)
+    pending = application.view(identities["A"], "match")
+    assert pending.pending_decision is not None
+
+    resolved = application.resolve_pending_decision(
+        identities["A"],
+        "match",
+        pending.pending_decision.options[0].decision_option_id,
+        expected_version=pending.version,
+    )
+
+    assert resolved.pending_decision is not None
+    assert resolved.pending_decision.status == PendingDecisionStatus.CLOSED.value
+    persisted = store.load("match").engine.state
+    assert persisted is not None and persisted.pending_decision is not None
+    assert persisted.pending_decision.status is PendingDecisionStatus.CLOSED
+    observed_again = application.view(identities["A"], "match")
+    assert observed_again.pending_decision is not None
+    assert observed_again.pending_decision.status == PendingDecisionStatus.CLOSED.value
+
+
+def test_pending_slot_does_not_globally_block_existing_commands() -> None:
+    engine = make_engine()
+    assert engine.state is not None
+    actor = engine.state.priority_player_id
+    before = engine.legal_actions(actor)
+    command = PassPriority(actor)
+    assert command in before
+
+    open_decision(engine)
+
+    assert engine.legal_actions(actor) == before
+    engine.execute(command)
+    assert engine.state is not None and engine.state.pending_decision is not None
+    assert engine.state.pending_decision.status is PendingDecisionStatus.PENDING
+
+
+def test_concede_remains_executable_while_a_decision_occupies_the_slot() -> None:
+    engine = make_engine()
+    open_decision(engine)
+    assert Concede("B") in engine.legal_actions("B")
+
+    engine.execute(Concede("B"))
+
+    assert engine.state is not None
+    assert engine.state.winner_ids == ("A",)
+    assert engine.state.pending_decision is not None
+    assert engine.state.pending_decision.status is PendingDecisionStatus.PENDING
 
 
 def _close(engine: GameEngine) -> None:
@@ -282,15 +484,19 @@ def test_replay_v3_preserves_every_lifecycle_final_state(final_stage: str) -> No
         assert decision is None
     else:
         assert decision is not None
-        expected = SECOND if final_stage == "second-pending" else {
-            "decision_id": DECISION_ID,
-            "semantic_family": FAMILY,
-            "authorized_elector": "A",
-            "audience": DecisionAudience.ELECTOR,
-            "authorized_opaque_options": OPTIONS,
-            "state_version": VERSION,
-            "origin": ORIGIN,
-        }
+        expected = (
+            SECOND
+            if final_stage == "second-pending"
+            else {
+                "decision_id": DECISION_ID,
+                "semantic_family": FAMILY,
+                "authorized_elector": "A",
+                "audience": DecisionAudience.ELECTOR,
+                "authorized_opaque_options": OPTIONS,
+                "state_version": VERSION,
+                "origin": ORIGIN,
+            }
+        )
         for field, value in expected.items():
             assert getattr(decision, field) == value
         expected_status = (

@@ -62,6 +62,7 @@ from ..domain.models import (
     DynamicCostDefinition,
     GameEvent,
     ExecutedCommand,
+    HistoryBoundary,
     GameState,
     MoveReplacementDefinition,
     PendingDecision,
@@ -2478,7 +2479,9 @@ class GameEngine:
                 "La proyección de comandos del historial total no coincide"
             )
         if any(
-            not isinstance(entry, (ExecutedCommand, DecisionTransitionEntry))
+            not isinstance(
+                entry, (ExecutedCommand, DecisionTransitionEntry, HistoryBoundary)
+            )
             for entry in state.history
         ):
             raise InvariantViolation("El historial total contiene una entrada inválida")

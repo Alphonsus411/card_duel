@@ -16,6 +16,7 @@ import pytest
 from card_duel_engine import GameEngine, RuleSet
 from card_duel_engine.domain import (
     DecisionAudience,
+    HistoryBoundary,
     MoveReason,
     PendingDecision,
     PendingDecisionStatus,
@@ -245,7 +246,7 @@ def test_snapshot_v3_round_trip_with_decision_and_digest(closed: bool) -> None:
     engine.state.pending_decision = decision(closed=closed)
     payload = dump_snapshot(engine, indent=None)
     document = json.loads(payload)
-    assert document["body"]["schema_version"] == "3"
+    assert document["body"]["schema_version"] == "4"
     restored = load_snapshot(payload)
     assert restored.state.pending_decision == engine.state.pending_decision
     assert state_digest(restored) == state_digest(engine)
@@ -256,7 +257,23 @@ def test_snapshot_v2_migrates_to_v3_without_inventing_a_decision() -> None:
     legacy = as_v2(make_engine())
     restored = load_snapshot(legacy)
     assert restored.state.pending_decision is None
-    assert json.loads(dump_snapshot(restored))["body"]["schema_version"] == "3"
+    assert json.loads(dump_snapshot(restored))["body"]["schema_version"] == "4"
+
+
+@pytest.mark.parametrize("status", ["pending", "closed"])
+def test_legacy_v3_decision_snapshot_marks_unknown_history_boundary(status: str) -> None:
+    payload = (ARTIFACTS / f"snapshot-v3-{status}.json").read_text()
+
+    restored = load_snapshot(payload)
+
+    assert restored.state is not None
+    assert restored.state.pending_decision is not None
+    assert restored.state.history == [
+        HistoryBoundary(
+            source_schema_version="3",
+            pending_decision_was_present=True,
+        )
+    ]
 
 
 def test_snapshot_v2_migration_adds_only_pending_decision_and_recalculates_digest(

@@ -14,7 +14,7 @@ from ..rules.config import RuleSet
 from .codec import canonical_json, decode_value, encode_value
 from .migrations import migrate_document
 
-SNAPSHOT_SCHEMA_VERSION = "3"
+SNAPSHOT_SCHEMA_VERSION = "4"
 
 
 def _body(engine: GameEngine) -> dict[str, Any]:

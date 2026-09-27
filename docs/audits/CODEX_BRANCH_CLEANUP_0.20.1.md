@@ -27,9 +27,9 @@ Se ejecutó `git fetch --prune origin` y se excluyó únicamente una eventual re
 2. Para cada `codex/*` se ejecutó `git merge-base --is-ancestor <tip> origin/main`; sólo exit `0` habilita A. Todo exit distinto de `0` obliga a conservar.
 3. Se ejecutó `git rev-list --left-right --count origin/main...<tip>`: la columna izquierda se registra como `behind_by` y la derecha como `ahead_by`.
 4. Para tips no ancestrales, `git cherry origin/main <tip>` sólo distinguió B (todos los parches equivalentes); nunca habilitó un borrado.
-5. Antes de cada borrado previsto debían releerse por `git ls-remote --heads` el SHA exacto de la rama y el SHA de `main`, exigir coincidencia literal con inventario/base y repetir la prueba de ancestralidad. Esta doble validación se completó para el único intento.
+5. Antes de cada borrado previsto debían releerse por `git ls-remote --heads` el SHA exacto de la rama y el SHA de `main`, exigir coincidencia literal con inventario/base y repetir la prueba de ancestralidad. Esta doble validación se completó para el único intento. Además, la eliminación debe vincularse atómicamente al tip inventariado mediante `git push --force-with-lease=refs/heads/<rama>:<tip-inventariado> origin --delete refs/heads/<rama>`: aunque la rama cambie después de `ls-remote`, el servidor rechazará el borrado en vez de eliminar el tip nuevo. Una revalidación previa no sustituye esta condición; todo reintento debe conservar exactamente el SHA de la columna **Tip SHA** como `<tip-inventariado>`.
 6. La API pública de GitHub se consultó antes de borrar. Toda coincidencia con una PR abierta prevalecería como `KEEP_OPEN_PR`; se observaron 0 PR abiertas y 0 coincidencias.
-7. El primer `git push origin --delete` falló por ausencia de credenciales HTTPS. Se registró `DELETE_FAILED` y se detuvo el lote para no presentar intentos destinados al mismo fallo global como eliminaciones.
+7. El primer intento de `git push origin --delete` falló por ausencia de credenciales HTTPS antes de poder modificar el remoto. Se registró `DELETE_FAILED` y se detuvo el lote para no presentar intentos destinados al mismo fallo global como eliminaciones. Ese comando no debe reutilizarse: cualquier intento posterior debe emplear obligatoriamente el `--force-with-lease` con SHA esperado descrito en el paso 5.
 
 ## Categorías A, B, C, D y E
 
@@ -227,6 +227,8 @@ Se ejecutó `git fetch --prune origin` y se excluyó únicamente una eventual re
 ## Eliminaciones
 
 **Ramas eliminadas: 0.** Por ello no existen ramas eliminadas para enumerar. El único intento queda documentado con nombre, SHA, doble prueba de ancestralidad y resultado:
+
+El intento registrado a continuación usó el borrado sin lease y terminó localmente al solicitar credenciales, por lo que no alcanzó a borrar ni a competir con una actualización remota. No se autoriza repetirlo así. Para esta rama, un reintento autorizado sería `git push --force-with-lease=refs/heads/codex/actualiza-allowed_content-y-mejora-validaciones:a5151b8947dab727e6d5773254a7cce1dde140dd origin --delete refs/heads/codex/actualiza-allowed_content-y-mejora-validaciones`; si el tip remoto ya no coincide con ese SHA inventariado, el borrado debe fallar y la rama debe reclasificarse.
 
 | Rama | SHA | Primera prueba | Tip remoto revalidado | `main` revalidado | Segunda prueba | Resultado |
 |---|---|---:|---|---|---:|---|

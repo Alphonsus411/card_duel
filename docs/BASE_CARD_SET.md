@@ -50,13 +50,15 @@ cobertura exacta entre ambos catálogos y mantiene separadas las dos fuentes.
 ## Revisión de gaps mecánicos
 
 La evaluación completa se registra en
-[`PHASE_2_MECHANICAL_GAPS.md`](PHASE_2_MECHANICAL_GAPS.md). No se encontraron
-gaps mecánicos obligatorios para estas ocho cartas: las seis criaturas sin
-keywords usan estadísticas ordinarias y `BASE-003` y `BASE-007` sólo requieren
-`CAN_CHALLENGE`, una capacidad declarativa general que ya existe. En
-consecuencia, la microcolección no solicita efectos, resolutores, persistencia ni
-ramas de comportamiento nuevas, y prohíbe cualquier solución específica por
-`card_id`.
+[`PHASE_2_MECHANICAL_GAPS.md`](PHASE_2_MECHANICAL_GAPS.md). Existe un gap
+mecánico obligatorio para `BASE-003` y `BASE-007`: aunque ambas definiciones
+declaran `CAN_CHALLENGE`, el motor sólo consulta ese permiso después de exigir
+que la instancia sea un Señor transformado con `lord_domain`. Estas dos cartas
+son criaturas ordinarias, por lo que actualmente no pueden declarar el Desafío
+que anuncia su texto editorial. La microcolección no puede considerarse cerrada
+hasta generalizar el contrato de Desafío o revisar de forma coherente las
+definiciones y presentaciones. Cualquier solución sigue debiendo evitar ramas
+específicas por `card_id`.
 
 ## Limitaciones deliberadas
 

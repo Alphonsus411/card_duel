@@ -1,6 +1,6 @@
 # Gaps mecánicos de la microcolección de fase 2
 
-**Resultado:** **ningún gap requerido por las ocho cartas incluidas**.
+**Resultado:** **un gap requerido para las dos cartas con `CAN_CHALLENGE`**.
 
 Esta evaluación se limita a las ocho candidatas reales publicadas por la
 microcolección `base`: Ember Initiate, Grove Sentinel, Skyline Duelist,
@@ -25,9 +25,14 @@ resolución particular adicional.
 
 ## CURRENT ENGINE LIMITATION
 
-No se encontró una limitación del motor que impida expresar esos
-comportamientos. Por tanto, esta revisión no abre un gap ni propone ampliar el
-vocabulario mecánico.
+El permiso declarado no basta para expresar esos comportamientos.
+`CombatManager._can_initiate_challenge()` comprueba primero que la carta sea una
+criatura lista **y** un Señor criatura. `_is_lord_creature()` requiere a su vez
+una definición con `lord_domain` y una instancia transformada. Como `base-c003`
+y `base-c007` son definiciones `CREATURE`, sin dominio ni transformación, el
+método devuelve `False` antes de consultar `CAN_CHALLENGE`. En consecuencia, el
+motor no enumera `DeclareChallenge` para ninguna de ellas y también rechaza el
+comando si se construye directamente.
 
 Se evitaron deliberadamente capacidades que las ocho cartas no piden: efectos
 al entrar o activados, costes alternativos o variables, objetivos y reparto,
@@ -39,12 +44,12 @@ carta no constituye un gap.
 
 ## IS GENERAL CAPABILITY?
 
-No aplica: no hay una capacidad ausente que generalizar. `CAN_CHALLENGE` ya es
-una capacidad declarativa reutilizable y las estadísticas ordinarias ya forman
-parte de `CardDefinition`. Se descarta expresamente cualquier solución o rama
-de resolución basada en `card_id`: incluso si apareciera una necesidad futura,
-debería modelarse por tipos, efectos, keywords o contratos declarativos
-reutilizables, nunca por la identidad de una carta particular.
+Sí. El gap debe resolverse mediante un contrato declarativo general: por
+ejemplo, definiendo si `CAN_CHALLENGE` autoriza a toda criatura lista o si el
+Desafío debe continuar reservado a Señores y, en ese caso, modelando estas
+cartas de acuerdo con ese requisito. Se descarta expresamente cualquier
+solución o rama de resolución basada en `card_id`; la elegibilidad debe depender
+de tipos, estado, dominios y keywords reutilizables.
 
 ## EVIDENCE
 
@@ -61,17 +66,17 @@ de juego de permanentes, combate y Desafío. Los resolutores existentes cubren
 heridas, curación, Pasos, robo, daño, Fuerza, agotar/enderezar, destruir,
 prevención, transformación en criatura, daño repartido, movimiento, búsqueda y
 barajado de zonas, regeneración, supresión de fases, control, copia,
-transformación de definición y modificación de texto. Ninguno necesita
-expresar algo adicional para estas candidatas: seis son criaturas sin texto
-mecánico y las otras dos sólo consumen el permiso `CAN_CHALLENGE`, que el motor
-ya interpreta. Por eso no se fuerza un efecto, keyword o resolutor nuevo para
-fabricar un gap.
+transformación de definición y modificación de texto. Las seis criaturas sin
+texto mecánico ya están cubiertas. Las otras dos exponen la discrepancia entre
+la presencia serializable de `CAN_CHALLENGE` y el contrato de elegibilidad, que
+limita su interpretación a Señores transformados.
 
 ## PROPOSED FOLLOW-UP
 
-No se propone implementar ningún cambio mecánico en esta fase. Si una fase
-posterior incorpora cartas reales que sí exijan una capacidad nueva, deberá
-abrir un gap sustentado por ese texto y cubrir, como mínimo:
+La Fase 2-A permanece abierta. Antes de cerrarla se debe decidir y documentar el
+contrato general de `CAN_CHALLENGE`, implementar la alternativa elegida y añadir
+pruebas que usen `base-c003` y `base-c007` para verificar tanto la enumeración
+como la ejecución de `DeclareChallenge`. El cambio deberá cubrir, como mínimo:
 
 - pruebas unitarias del contrato declarativo y del resolutor, casos inválidos,
   selección de objetivos y atomicidad;

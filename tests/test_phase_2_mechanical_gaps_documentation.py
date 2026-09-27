@@ -26,6 +26,17 @@ class Phase2MechanicalGapsDocumentationTests(unittest.TestCase):
 
         self.assertEqual(headings, REQUIRED_HEADINGS)
 
+    def test_challenge_gap_is_explicit_and_phase_is_not_claimed_complete(self):
+        gap_text = MECHANICAL_GAPS.read_text(encoding="utf-8")
+        roadmap = (ROOT / "docs" / "FRONTEND_AND_CONTENT_ROADMAP.md").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("un gap requerido", gap_text)
+        self.assertIn("devuelve `False` antes de consultar `CAN_CHALLENGE`", gap_text)
+        self.assertIn("Fase 2-A — IN PROGRESS", roadmap)
+        self.assertNotIn("Fase 2-A — COMPLETE", roadmap)
+
 
 if __name__ == "__main__":
     unittest.main()

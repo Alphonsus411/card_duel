@@ -189,8 +189,8 @@ normativa correspondiente.
 
 - **SHA local de entrada:** `5e6179076a649caf28d24990e88ace2eddfcfa82`.
 - **Árbol probado:** ese SHA más el ajuste documental de la fila
-  `CAP-ACTION-004` que restaura literalmente «expiración» y las exclusiones del
-  contrato exigidas por el test del roadmap.
+  `CAP-ACTION-004` que explicita «rechazo» por versión obsoleta, sin modelarlo
+  como expiración, y conserva las exclusiones exigidas por el test del roadmap.
 - **SHA del PR:** se registrará por la plataforma al crear el PR; los resultados
   locales de esta sección no se trasladan a ese SHA.
 - **SHA de merge:** no existe durante esta auditoría y no se le atribuye ninguna
@@ -209,7 +209,7 @@ normativa correspondiente.
 | `uv run pytest -q tests/test_pending_decision_w1_1.py` | `PASS`: 43 pruebas. |
 | `uv run pytest -q tests/test_pending_decision_w1_2.py` | `PASS`: 27 pruebas. |
 | `uv run pytest -q tests/test_replay_legacy_019.py tests/test_replay_legacy_020_profile.py tests/test_persistence_v090.py tests/test_expected_version_contract.py` | `PASS`: 43 pruebas y 159 subtests. |
-| `uv run pytest -q tests/test_phase_2c_engine_evolution_roadmap.py` | `PASS`: 15 pruebas tras restaurar el contrato documental; la primera ejecución detectó correctamente los términos ausentes. |
+| `uv run pytest -q tests/test_phase_2c_engine_evolution_roadmap.py` | `PASS`: 15 pruebas con el contrato documental de rechazo por versión obsoleta y sin semántica de expiración. |
 | `uv run python -m mypy src/card_duel_engine` | `PASS`: 44 archivos sin incidencias. |
 | `uv run coverage run --branch -m pytest -q` | `PASS`: 887 pruebas, 816 subtests y 1 omitida. |
 | `uv run coverage report -m` | `PASS`: 91 % total con branch coverage, sobre el mínimo exigido de 88 %. |
@@ -219,7 +219,8 @@ normativa correspondiente.
 ### Estado de entrega
 
 La revalidación no modifica versión, tag, release ni despliegue. El único ajuste
-de alcance recupera vocabulario normativo ya exigido por el roadmap; no amplía
-runtime ni declara cerrado replay. `CAP-ACTION-004` continúa **`PARTIAL / READY`**
-y conserva como pendientes apertura reproducible, consumo de `CLOSED`, replay
-integral, audiencias no electorales y bloqueo por `semantic_family`.
+de alcance alinea la comprobación del contrato con el rechazo por versión
+obsoleta y elimina la lectura temporal de expiración; no amplía runtime ni
+declara cerrado replay. `CAP-ACTION-004` continúa **`PARTIAL / READY`** y conserva
+como pendientes apertura reproducible, consumo de `CLOSED`, replay integral,
+audiencias no electorales y bloqueo por `semantic_family`.

@@ -305,7 +305,7 @@ def test_real_snapshot_v3_round_trip_preserves_lifecycle_state(closed: bool) -> 
     payload = dump_snapshot(engine, indent=None)
     restored = load_snapshot(payload)
 
-    assert json.loads(payload)["body"]["schema_version"] == "3"
+    assert json.loads(payload)["body"]["schema_version"] == "4"
     assert restored.state == engine.state
     assert state_digest(restored) == state_digest(engine)
     assert dump_snapshot(restored, indent=None) == payload

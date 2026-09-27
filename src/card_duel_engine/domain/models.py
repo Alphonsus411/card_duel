@@ -86,7 +86,20 @@ class DecisionTransitionEntry:
     transition: DecisionTransition
 
 
-GameHistoryEntry = ExecutedCommand | DecisionTransitionEntry
+@dataclass(frozen=True)
+class HistoryBoundary:
+    """Marks the end of history whose total ordering was not persisted.
+
+    Entries before this marker are only the legacy command projection.  Their
+    ordering relative to decision lifecycle transitions is unknowable; entries
+    after it are the authoritative, totally ordered history.
+    """
+
+    source_schema_version: str
+    pending_decision_was_present: bool
+
+
+GameHistoryEntry = ExecutedCommand | DecisionTransitionEntry | HistoryBoundary
 
 
 @dataclass(frozen=True)

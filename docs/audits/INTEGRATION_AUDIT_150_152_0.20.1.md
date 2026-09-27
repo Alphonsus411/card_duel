@@ -7,8 +7,8 @@
 | Repositorio | `Alphonsus411/card_duel` |
 | SHA base de `origin/main` | `10cb87ff8cb49b27b3e2a5cf3754b96243d747eb` |
 | Rama de auditoría | `work` |
-| SHA de contenido auditado | `05cfc78821b97dd630fb73a4010d34ee11b01dcc` |
-| SHA final previsto | El `HEAD` del commit documental que incorpora esta línea; verificable con `git rev-parse HEAD` sin autorreferencia. |
+| Commit original del informe | `8b5154fa73301c601342942ae6cc3ea5cb8a2c66` |
+| Commit de corrección de procedencia | El `HEAD` que contiene esta corrección; verificable con `git rev-parse HEAD`. |
 | Versión | `0.20.1` |
 | Fecha UTC | `2026-08-28` |
 
@@ -20,12 +20,16 @@ ausencia de la referencia remota impide un `fetch` nuevo y queda declarada como
 limitación de consulta; no se inventó una referencia. No se alteró código de
 producción, reglas, versión, tag ni release.
 
-**Estrategia de identidad del commit.** El campo se dejó inicialmente como
-«se completa tras el commit». La auditoría quedó fijada en el primer commit de
-contenido `05cfc78821b97dd630fb73a4010d34ee11b01dcc`; este segundo commit,
-exclusivamente documental, sustituye la leyenda por ese SHA inmutable. Su SHA
-final queda verificable con `git rev-parse HEAD`. Así se evita la autorreferencia
-imposible y una cadena infinita de reescrituras.
+**Estrategia de identidad del commit.** El informe original está fijado por el
+commit alcanzable `8b5154fa73301c601342942ae6cc3ea5cb8a2c66`, hijo directo de la base
+declarada. El commit siguiente corrige únicamente esta procedencia: elimina la
+referencia errónea a un supuesto commit intermedio y no pretende registrar su
+propio SHA dentro del archivo. La revisión final se identifica con el `HEAD` de
+la rama y se puede comprobar mediante `git rev-parse HEAD`; el informe anterior
+se puede inspeccionar mediante `git show
+8b5154fa73301c601342942ae6cc3ea5cb8a2c66:docs/audits/INTEGRATION_AUDIT_150_152_0.20.1.md`.
+Así, todos los objetos citados existen y la relación entre la base, el informe
+original y su corrección se puede auditar sin autorreferencia.
 
 ## B. PR #150 — rechazo de cartas no registradas
 

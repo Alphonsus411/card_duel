@@ -1,6 +1,6 @@
 # Gaps mecánicos de la microcolección de fase 2
 
-**Resultado:** **ningún gap requerido por las ocho cartas incluidas**.
+**Resultado:** **un gap general de elegibilidad para Desafío**.
 
 Esta evaluación se limita a las ocho candidatas reales publicadas por la
 microcolección `base`: Ember Initiate, Grove Sentinel, Skyline Duelist,
@@ -20,14 +20,17 @@ tiene efectos, habilidades ni keywords.
 Al jugarse, cada carta debe seguir el flujo ordinario de una criatura, conservar
 su coste y Fuerza base y participar en combate conforme a las reglas existentes.
 Skyline Duelist y First Arena Champion deben poder declarar Desafío mediante el
-permiso declarativo `CAN_CHALLENGE`. Ninguna de las ocho cartas requiere una
+permiso declarativo `CAN_CHALLENGE`. Las otras seis no requieren una
 resolución particular adicional.
 
 ## CURRENT ENGINE LIMITATION
 
-No se encontró una limitación del motor que impida expresar esos
-comportamientos. Por tanto, esta revisión no abre un gap ni propone ampliar el
-vocabulario mecánico.
+El motor no permite que una criatura ordinaria inicie un Desafío, aunque tenga
+`CAN_CHALLENGE`. `CombatManager._can_initiate_challenge()` exige primero que la
+carta lista sea una criatura Señor; sólo después consulta el dominio de Señor o
+la keyword. Como `base-c003` y `base-c007` son `CardKind.CREATURE`, no tienen
+`LordDomain` y no se transforman en Señor, sus acciones de Desafío no aparecen
+en la enumeración de acciones legales y una declaración directa es rechazada.
 
 Se evitaron deliberadamente capacidades que las ocho cartas no piden: efectos
 al entrar o activados, costes alternativos o variables, objetivos y reparto,
@@ -39,12 +42,12 @@ carta no constituye un gap.
 
 ## IS GENERAL CAPABILITY?
 
-No aplica: no hay una capacidad ausente que generalizar. `CAN_CHALLENGE` ya es
-una capacidad declarativa reutilizable y las estadísticas ordinarias ya forman
-parte de `CardDefinition`. Se descarta expresamente cualquier solución o rama
-de resolución basada en `card_id`: incluso si apareciera una necesidad futura,
-debería modelarse por tipos, efectos, keywords o contratos declarativos
-reutilizables, nunca por la identidad de una carta particular.
+Sí. La capacidad general ausente es que una criatura lista con
+`CAN_CHALLENGE` pueda iniciar un Desafío sin tener que ser una criatura Señor.
+La elegibilidad debe derivarse del tipo y las keywords efectivos, no de las
+identidades de `base-c003` y `base-c007`. Se descarta expresamente cualquier
+solución o rama de resolución basada en `card_id`: debe modelarse mediante el
+contrato declarativo reutilizable de `CAN_CHALLENGE`.
 
 ## EVIDENCE
 
@@ -61,17 +64,20 @@ de juego de permanentes, combate y Desafío. Los resolutores existentes cubren
 heridas, curación, Pasos, robo, daño, Fuerza, agotar/enderezar, destruir,
 prevención, transformación en criatura, daño repartido, movimiento, búsqueda y
 barajado de zonas, regeneración, supresión de fases, control, copia,
-transformación de definición y modificación de texto. Ninguno necesita
-expresar algo adicional para estas candidatas: seis son criaturas sin texto
-mecánico y las otras dos sólo consumen el permiso `CAN_CHALLENGE`, que el motor
-ya interpreta. Por eso no se fuerza un efecto, keyword o resolutor nuevo para
-fabricar un gap.
+transformación de definición y modificación de texto. Los resolutores no
+necesitan expresar algo adicional para las seis criaturas
+sin texto mecánico. Sin embargo, el flujo de Desafío sólo interpreta
+`CAN_CHALLENGE` después de exigir que el iniciador sea Señor. Esa precondición
+hace inoperante la keyword de las dos criaturas ordinarias y demuestra el gap
+de elegibilidad descrito arriba.
 
 ## PROPOSED FOLLOW-UP
 
-No se propone implementar ningún cambio mecánico en esta fase. Si una fase
-posterior incorpora cartas reales que sí exijan una capacidad nueva, deberá
-abrir un gap sustentado por ese texto y cubrir, como mínimo:
+Se propone ampliar la regla general de elegibilidad de Desafío para que una
+criatura lista pueda iniciarlo cuando tenga efectivamente `CAN_CHALLENGE`, sin
+exigir rango Señor. Debe conservarse la elegibilidad vigente de los Señores de
+Reinos y cualquier comportamiento legado compatible, sin condicionales para
+las dos cartas concretas. El seguimiento debe cubrir, como mínimo:
 
 - pruebas unitarias del contrato declarativo y del resolutor, casos inválidos,
   selección de objetivos y atomicidad;
@@ -82,6 +88,8 @@ abrir un gap sustentado por ese texto y cubrir, como mínimo:
 - determinismo frente a orden de catálogos, objetivos y colecciones, con toda
   aleatoriedad registrada o derivada de una fuente reproducible.
 
-Ese seguimiento deberá seguir excluyendo condicionales por `card_id`. Esta nota
-no reserva una implementación ni convierte las capacidades deliberadamente
-evitadas en trabajo pendiente.
+Ese seguimiento deberá incluir casos de enumeración y declaración directa para
+criaturas ordinarias con y sin `CAN_CHALLENGE`, además de seguir excluyendo
+condicionales por `card_id`. Esta nota documenta el gap; no implementa todavía
+el cambio del motor ni convierte las demás capacidades deliberadamente evitadas
+en trabajo pendiente.

@@ -43,12 +43,17 @@ Fase 3 y requieren una decisión explícita para comenzar.
 La dirección de integración obligatoria es:
 
 ```text
-GameEngine → Application / MatchService → UI Integration Contract → React Native / Expo
+GameEngine → MatchService (interno) → AuthenticatedMatchApplication → UI Integration Contract → React Native / Expo
 ```
 
-El FrontEnd nunca integra directamente con `GameEngine`. La capa de aplicación
-orquesta casos de uso y el contrato de integración publica únicamente datos y
-operaciones aptos para el cliente.
+El FrontEnd nunca integra directamente con `GameEngine` ni con `MatchService`.
+`MatchService` permanece como colaborador interno del servidor: sus parámetros
+como `player_id` y sus instancias de `GameCommand` no forman parte de una API de
+cliente. `AuthenticatedMatchApplication` es la frontera obligatoria para todo
+cliente y transporte; autentica la identidad externa, autoriza su asociación con
+el jugador y convierte las vistas y acciones internas en DTOs públicos seguros.
+El contrato de integración se define sobre esa frontera y publica únicamente
+datos y operaciones aptos para el cliente.
 
 ## 3. Fronteras de responsabilidad
 
@@ -168,10 +173,15 @@ posteriores.
 
 ### Fase 1 — UI Integration Contract
 
-**Objetivo:** diseñar y probar el límite estable entre `MatchService` y clientes.
+**Objetivo:** diseñar y probar el límite estable entre
+`AuthenticatedMatchApplication` y clientes, manteniendo `MatchService` interno.
 
 - Definir snapshots públicos por punto de vista, eventos/resultados y errores.
 - Definir solicitudes de intención sin exponer comandos internos.
+- Exigir identidad autenticada y resolver en el servidor su asociación autorizada
+  con un jugador; ningún cliente puede elegir o enviar un `player_id`.
+- Exponer sólo DTOs públicos seguros; ni las instancias de `GameCommand` ni las
+  vistas internas devueltas por `MatchService` pueden atravesar el contrato.
 - Introducir conceptualmente IDs opacos de alternativas ligados a versión CAS,
   con resolución exclusiva del servidor, sin fijar prematuramente su formato.
 - Especificar rechazo de concurrencia obsoleta, privacidad y compatibilidad.
@@ -276,10 +286,12 @@ mismo backend autoritativo.
 **Objetivo:** llevar el producto validado a operación remota y mantenible cuando
 exista una decisión explícita de producción.
 
-- Seleccionar el transporte y desplegar `Application / MatchService` sin cambiar
-  el contrato semántico probado localmente.
-- Incorporar autenticación, autorización, protección de datos privados,
-  idempotencia, límites, observabilidad y recuperación.
+- Seleccionar el transporte y desplegar `AuthenticatedMatchApplication` con
+  `MatchService` detrás de esa frontera, sin cambiar el contrato semántico
+  probado localmente.
+- Integrar el proveedor de identidad con la autenticación y autorización ya
+  exigidas por el contrato, y añadir protección de datos privados, idempotencia,
+  límites, observabilidad y recuperación.
 - Asegurar concurrencia CAS, persistencia, migraciones, replay y compatibilidad.
 - Definir CI/CD, entornos, secretos, telemetría, soporte y rollback para Android,
   iOS y Web.

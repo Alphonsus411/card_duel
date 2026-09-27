@@ -361,7 +361,7 @@ def test_pending_decision_capability_has_minimal_boundary_and_reciprocal_edges()
         "opciones opacas",
         "pendiente/resuelto",
         "autorización",
-        "expiración",
+        "rechazo",
         "invalidación por versión",
         "exactamente una vez",
         "persistencia",
@@ -370,6 +370,7 @@ def test_pending_decision_capability_has_minimal_boundary_and_reciprocal_edges()
         "cas",
     ):
         assert required in contract
+    assert "expiración" not in contract
     for excluded in (
         "candidatos de cartas",
         "cardinalidad",

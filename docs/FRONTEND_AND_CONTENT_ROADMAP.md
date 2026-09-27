@@ -112,14 +112,15 @@ nunca sustituye la resolución del backend.
 | Fase 1-B | **COMPLETE** |
 | Fase 1-C | **COMPLETE** |
 | Fase 1 | **COMPLETE** |
-| Fase 2-A — COMPLETE | Microcolección base documentada y validada |
+| Fase 2-A — IN PROGRESS | Gap de Desafío pendiente en la microcolección base |
 | Fase 2 — IN PROGRESS | Colección tokenizada en desarrollo |
-| Fase 2-B — NEXT | Siguiente entrega de contenido |
+| Fase 2-B — PENDING | Pendiente del cierre correcto de Fase 2-A |
 | Fase 3 — PENDING | Shell Expo pendiente |
 
-La Fase 1 está completa. La Fase 2 está en progreso: la Fase 2-A ya cerró la
-microcolección base y la Fase 2-B es la siguiente entrega. La Fase 3 permanece
-pendiente. Estos estados no crean frontend ni inicializan Expo.
+La Fase 1 está completa. La Fase 2 está en progreso: la Fase 2-A mantiene
+abierto el gap de Desafío de la microcolección base y la Fase 2-B permanece
+pendiente hasta resolverlo. La Fase 3 también permanece pendiente. Estos estados
+no crean frontend ni inicializan Expo.
 
 ### 4.2 Fase 1-A — COMPLETE
 
@@ -166,19 +167,22 @@ permiten inferir información privada. Un `option_id` inexistente, alterado o de
 otra partida o actor recibe el mismo rechazo seguro; un CAS obsoleto se rechaza
 como conflicto de escritura.
 
-### 4.5 Fase 2-A — COMPLETE
+### 4.5 Fase 2-A — IN PROGRESS
 
 La Fase 2-A publica y documenta la microcolección `base`, revisión 1, formada
 por ocho cartas y por el esquema editorial explícito `BASE-001`…`BASE-008`. El
 inventario canónico, la separación entre autoridad mecánica y datos editoriales
 y las limitaciones deliberadas están en
 [`BASE_CARD_SET.md`](BASE_CARD_SET.md); la evaluación enlazada de capacidades
-confirma que ninguna de las ocho cartas abre un gap mecánico obligatorio.
+identifica un gap mecánico obligatorio: `BASE-003` y `BASE-007` declaran
+`CAN_CHALLENGE`, pero no satisfacen el requisito actual de ser Señores
+transformados.
 
-Este estado se registró únicamente después de superar la matriz completa: suite
-de pruebas con cobertura de ramas, umbral de cobertura, tipado estático y
-construcción de los artefactos distribuibles. El cierre de Fase 2-A no completa
-la Fase 2: **Fase 2-B — NEXT** y **Fase 2 — IN PROGRESS**.
+La publicación del corpus superó sus comprobaciones estructurales, pero eso no
+demuestra el comportamiento anunciado por el texto editorial. Fase 2-A seguirá
+en progreso hasta resolver el contrato general, probar ambas cartas extremo a
+extremo y volver a evaluar el gap. Mientras tanto, **Fase 2-B — PENDING** y
+**Fase 2 — IN PROGRESS**.
 
 ## 5. Modelo de contenido y presentación
 

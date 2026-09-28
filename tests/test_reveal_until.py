@@ -58,6 +58,26 @@ def test_reveal_until_moves_failures_in_top_order_and_match() -> None:
     assert [event.card_id for event in engine.state.event_log if event.event_type == "CARD_REVEALED"] == ["miss-a-i", "miss-b-i", "match-i"]
 
 
+def test_reveal_until_does_not_repeat_failures_moved_to_source_zone() -> None:
+    engine, item, effect = _fixture()
+    same_zone_effect = EffectDefinition(
+        **{
+            **effect.__dict__,
+            "failure_destination_zone": Zone.DECK,
+        }
+    )
+
+    EffectManager(engine).apply(same_zone_effect, item, ZoneTarget("A", Zone.DECK))
+
+    assert engine.state.players["A"].zones[Zone.DECK] == ["miss-a-i", "miss-b-i"]
+    assert engine.state.players["A"].zones[Zone.HAND] == ["match-i"]
+    assert [
+        event.card_id
+        for event in engine.state.event_log
+        if event.event_type == "CARD_REVEALED"
+    ] == ["miss-a-i", "miss-b-i", "match-i"]
+
+
 def test_reveal_until_exhaustion_is_explicit_and_deterministic() -> None:
     left, item, effect = _fixture()
     left.catalog._cards["match"] = CardDefinition("match", "No coincide", CardKind.CREATURE, 0, base_strength=1)

@@ -281,8 +281,11 @@ class EffectManager:
         state = self._context._require_running_state()
         revealed = 0
         matched = False
-        while state.players[target].zones[zone_target.zone]:
-            card_id = state.players[target].zones[zone_target.zone][-1]
+        # Freeze the cards that were in the source when resolution started. A
+        # failure may be sent back to that same zone, so repeatedly reading its
+        # top would otherwise reveal the just-moved card forever.
+        source_cards = tuple(reversed(state.players[target].zones[zone_target.zone]))
+        for card_id in source_cards:
             definition = self._context._definition(card_id)
             is_match = effect.search_filter.matches(definition)
             destination = effect.destination_zone if is_match else effect.failure_destination_zone

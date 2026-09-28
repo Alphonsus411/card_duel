@@ -13,6 +13,7 @@ from card_duel_engine.content import (
     build_mythic_public_card_catalog,
 )
 from card_duel_engine.content.registry import CollectionRegistry
+from card_duel_engine.domain.enums import Zone
 from card_duel_engine.presentation import CardPresentationCatalog
 
 
@@ -29,6 +30,13 @@ def test_mythic_revision_publishes_only_supported_cards() -> None:
     )
     with pytest.raises(FrozenInstanceError):
         MYTHIC_CARD_DEFINITIONS[0].cost = 1  # type: ignore[misc]
+
+
+def test_mythic_entry_searches_are_restricted_to_the_controller_deck() -> None:
+    for card in MYTHIC_CARD_DEFINITIONS:
+        effect = card.abilities[0].effects[0]
+        assert effect.allowed_target_zones == frozenset({Zone.DECK})
+        assert effect.target_controller_zones_only is True
 
 
 def test_mythic_builders_validate_and_join_by_card_id() -> None:

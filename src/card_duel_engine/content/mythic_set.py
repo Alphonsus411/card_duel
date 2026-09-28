@@ -37,6 +37,8 @@ def _entry_search_ability(ability_id: str, kind: CardKind) -> AbilityDefinition:
                 selection_maximum=1,
                 search_filter=CardFilter(kinds=frozenset({kind})),
                 shuffle_after_search=True,
+                allowed_target_zones=frozenset({Zone.DECK}),
+                target_controller_zones_only=True,
             ),
         ),
     )

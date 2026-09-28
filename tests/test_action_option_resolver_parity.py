@@ -198,6 +198,23 @@ def test_zone_target_selections_parity_players_then_all_zones(semantics, effects
         assert actual[:len(zones)] == tuple((ZoneTarget("A", zone),) for zone in zones)
 
 
+@pytest.mark.parametrize("semantics", SEMANTICS)
+def test_zone_target_selections_honor_controller_and_zone_restrictions(semantics):
+    engine = _engine(semantics)
+    effect = EffectDefinition(
+        EffectKind.SEARCH_ZONE,
+        0,
+        TargetMode.CHOSEN_ZONE,
+        destination_zone=Zone.HAND,
+        allowed_target_zones=frozenset({Zone.DECK}),
+        target_controller_zones_only=True,
+    )
+
+    assert engine._options.zone_target_selections((effect,), "A") == (
+        (ZoneTarget("A", Zone.DECK),),
+    )
+
+
 @pytest.mark.parametrize(("total", "parts", "exact"), [
     (1, 1, ((1,),)), (2, 1, ((2,),)), (3, 2, ((1, 2), (2, 1))),
     (5, 3, ((1, 1, 3), (1, 2, 2), (1, 3, 1), (2, 1, 2), (2, 2, 1), (3, 1, 1))),

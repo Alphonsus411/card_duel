@@ -101,19 +101,24 @@ class ActionOptionResolver:
         return tuple(result)
 
     def zone_target_selections(
-        self, effects: tuple[EffectDefinition, ...]
+        self, effects: tuple[EffectDefinition, ...], controller_id: str | None = None
     ) -> tuple[tuple[ZoneTarget, ...], ...]:
         state = self._context._option_state
-        candidates = tuple(
-            ZoneTarget(player_id, zone)
-            for player_id, player in state.players.items()
-            for zone in player.zones
-        )
         targeted = tuple(
             effect for effect in effects if effect.target is TargetMode.CHOSEN_ZONE
         )
         if not targeted:
             return ((),)
+        candidates = tuple(
+            ZoneTarget(player_id, zone)
+            for player_id, player in state.players.items()
+            for zone in player.zones
+            if all(
+                (not effect.target_controller_zones_only or player_id == controller_id)
+                and (not effect.allowed_target_zones or zone in effect.allowed_target_zones)
+                for effect in targeted
+            )
+        )
         minimum = max(effect.minimum_targets for effect in targeted)
         maximum = min(effect.maximum_targets for effect in targeted)
         return tuple(

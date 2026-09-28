@@ -673,7 +673,7 @@ class GameEngine:
         card_targets = self._target_selections(
             item.effects, TargetMode.CHOSEN_PERMANENT, eligible_cards
         )
-        zone_targets = self._zone_target_selections(item.effects)
+        zone_targets = self._zone_target_selections(item.effects, item.controller_id)
         allocations = self._allocation_selections(
             item.effects,
             definition,
@@ -800,7 +800,7 @@ class GameEngine:
             card_targets = self._target_selections(
                 definition.effects, TargetMode.CHOSEN_PERMANENT, eligible_cards
             )
-            zone_targets = self._zone_target_selections(definition.effects)
+            zone_targets = self._zone_target_selections(definition.effects, player_id)
             costs = self._card_cost_options(definition, player_id)
             for cost_index, x_value, cost in costs:
                 allocation_targets = self._allocation_selections(
@@ -860,10 +860,10 @@ class GameEngine:
         return result
 
     def _zone_target_selections(
-        self, effects: tuple[EffectDefinition, ...]
+        self, effects: tuple[EffectDefinition, ...], controller_id: str | None = None
     ) -> tuple[tuple[ZoneTarget, ...], ...]:
         """Conserva la consulta histórica delegándola al resolver de opciones."""
-        return self._options.zone_target_selections(effects)
+        return self._options.zone_target_selections(effects, controller_id)
 
     def _allocation_selections(
         self,
@@ -926,6 +926,7 @@ class GameEngine:
             command.allocations,
             definition,
             x_value=command.x_value or 0,
+            controller_id=command.player_id,
         )
         cost = self._card_cost_for_option(
             definition,
@@ -1054,6 +1055,7 @@ class GameEngine:
         from_ability: bool = False,
         source_card_id: str | None = None,
         x_value: int = 0,
+        controller_id: str | None = None,
     ) -> None:
         state = self._require_running_state()
         player_effects = tuple(
@@ -1107,6 +1109,13 @@ class GameEngine:
             for target in chosen_zone_targets
         ):
             raise IllegalAction("Zona objetivo inexistente")
+        if any(
+            (effect.target_controller_zones_only and target.player_id != controller_id)
+            or (effect.allowed_target_zones and target.zone not in effect.allowed_target_zones)
+            for effect in zone_effects
+            for target in chosen_zone_targets
+        ):
+            raise IllegalAction("La zona objetivo no satisface las restricciones del efecto")
         distributed = tuple(effect for effect in effects if effect.distributed)
         if not distributed and allocations:
             raise IllegalAction("El efecto no requiere reparto")
@@ -1282,7 +1291,7 @@ class GameEngine:
                 card_targets = self._target_selections(
                     ability.effects, TargetMode.CHOSEN_PERMANENT, eligible_cards
                 )
-                zone_targets = self._zone_target_selections(ability.effects)
+                zone_targets = self._zone_target_selections(ability.effects, player_id)
                 allocation_targets = self._allocation_selections(
                     ability.effects,
                     definition,
@@ -1362,6 +1371,7 @@ class GameEngine:
             from_ability=True,
             source_card_id=command.source_card_id,
             x_value=command.x_value or 0,
+            controller_id=command.player_id,
         )
         if ability.x_cost is not None:
             if command.x_value is None:
@@ -1607,6 +1617,7 @@ class GameEngine:
             definition,
             from_ability=item.ability_id is not None,
             source_card_id=item.source_card_id,
+            controller_id=item.controller_id,
         )
         state.pending_triggers[index] = replace(
             item,

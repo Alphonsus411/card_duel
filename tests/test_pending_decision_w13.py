@@ -59,16 +59,36 @@ def test_v3_migration_wraps_only_commands_and_marks_pending_prefix_incomplete() 
         dump_replay(restored)
 
 
-@pytest.mark.parametrize("unexpected", ["history", "history_prefix_complete"])
-def test_v3_migration_rejects_ambiguous_new_history_fields(unexpected: str) -> None:
+def test_v3_migration_rejects_ambiguous_completeness_field() -> None:
     document = json.loads(
         (Path(__file__).parent / "artifacts/pending-decision-w0/snapshot-v3-none.json")
         .read_text(encoding="utf-8")
     )
     body = deepcopy(document["body"])
-    body["state"]["fields"][unexpected] = [] if unexpected == "history" else True
+    body["state"]["fields"]["history_prefix_complete"] = True
     with pytest.raises(ValueError, match="ambigua"):
         migrate_document("snapshot", body, "4")
+
+
+def test_v3_migration_preserves_authoritative_history() -> None:
+    engine = make_engine()
+    open_decision(engine)
+    assert engine.state is not None
+    expected_history = list(engine.state.history)
+
+    document = json.loads(dump_snapshot(engine))
+    document["body"]["schema_version"] = "3"
+    document["body"]["state"]["fields"].pop("history_prefix_complete")
+    document["body"]["state_digest"] = hashlib.sha256(
+        canonical_json(document["body"]["state"]).encode("utf-8")
+    ).hexdigest()
+    document["sha256"] = _checksum(document["body"])
+
+    restored = load_snapshot(document)
+    assert restored.state is not None
+    assert restored.state.history == expected_history
+    assert restored.state.history_prefix_complete is True
+    assert dump_replay(restored)
 
 
 def test_v1_v2_v3_chain_remains_readable() -> None:

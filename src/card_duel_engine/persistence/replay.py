@@ -158,10 +158,9 @@ def _is_historical_019_replay(
     engine_version: object,
     semantics: EngineSemantics,
 ) -> bool:
-    """Reconoce sólo documentos 0.19 anteriores a la semántica explícita."""
+    """Reconoce documentos de esquemas que emitieron la huella histórica 0.19."""
     return (
         original_body.get("schema_version") in {"1", "2"}
-        and "engine_semantics" not in original_body
         and engine_version == "0.19.0"
         and semantics is EngineSemantics.LEGACY_019
     )

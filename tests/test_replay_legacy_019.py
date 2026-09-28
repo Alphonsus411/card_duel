@@ -140,13 +140,22 @@ class Legacy019ReplayTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "diverge"):
             replay_from_log(_rechecksum(document))
 
-    def test_explicit_019_semantics_do_not_enable_historical_digest_fallback(self) -> None:
-        document = json.loads(
-            (ARTIFACTS / "drainage-outside-effects.replay-v2.json").read_text()
-        )
-        document["body"]["engine_semantics"] = "LEGACY_019"
-        with self.assertRaisesRegex(ValueError, "diverge"):
-            replay_from_log(_rechecksum(document))
+    def test_explicit_019_semantics_accept_historical_digest(self) -> None:
+        for schema_version in ("1", "2"):
+            with self.subTest(schema_version=schema_version):
+                document = json.loads(
+                    (ARTIFACTS / "drainage-outside-effects.replay-v2.json").read_text()
+                )
+                document["body"]["schema_version"] = schema_version
+                document["body"]["engine_semantics"] = "LEGACY_019"
+
+                engine = replay_from_log(_rechecksum(document))
+
+                self.assertIs(engine.semantics, EngineSemantics.LEGACY_019)
+                self.assertEqual(
+                    legacy_019_state_digest(engine),
+                    document["body"]["final_digest"],
+                )
 
     def test_runtime_digest_keeps_new_authoritative_fields_on_legacy_engine(self) -> None:
         source = (ARTIFACTS / "drainage-outside-effects.replay-v2.json").read_text()

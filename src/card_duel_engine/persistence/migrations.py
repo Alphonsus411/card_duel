@@ -4,7 +4,7 @@ import hashlib
 from copy import deepcopy
 from typing import Any, Callable, Mapping
 
-from ..domain.models import ExecutedCommand
+from ..domain.models import DecisionTransitionEntry, ExecutedCommand
 from ..engine.commands import EXECUTABLE_COMMAND_TYPE_SET
 from .codec import canonical_json, decode_value, encode_value
 
@@ -48,7 +48,7 @@ def _snapshot_3_to_4(body: dict[str, Any]) -> dict[str, Any]:
     fields = state.get("fields")
     if not isinstance(fields, dict):
         raise ValueError("El GameState de schema 3 no tiene la forma esperada")
-    if "history" in fields or "history_prefix_complete" in fields:
+    if "history_prefix_complete" in fields:
         raise ValueError("El GameState v3 contiene historia nueva de forma ambigua")
     if "command_history" not in fields or "pending_decision" not in fields:
         raise ValueError("El GameState de schema 3 no tiene la forma esperada")
@@ -58,11 +58,29 @@ def _snapshot_3_to_4(body: dict[str, Any]) -> dict[str, Any]:
         type(command) in EXECUTABLE_COMMAND_TYPE_SET for command in commands
     ):
         raise ValueError("El historial de comandos v3 no es válido")
-    # No se sintetizan DecisionOpened/Closed/Consumed: no están en v3.
-    fields["history"] = encode_value(
-        [ExecutedCommand(command) for command in commands]
-    )
-    fields["history_prefix_complete"] = fields["pending_decision"] is None
+    if "history" in fields:
+        # Las últimas versiones que emitieron schema 3 ya incluían el historial
+        # autoritativo al serializar el GameState completo.  Se conserva tal cual
+        # (incluido el lifecycle de decisiones) después de validar que proyecta
+        # exactamente el command_history declarado.
+        history = decode_value(fields["history"])
+        if not isinstance(history, list) or not all(
+            type(entry) in (ExecutedCommand, DecisionTransitionEntry)
+            for entry in history
+        ):
+            raise ValueError("El historial autoritativo v3 no es válido")
+        if [
+            entry.command for entry in history if isinstance(entry, ExecutedCommand)
+        ] != commands:
+            raise ValueError("El historial autoritativo v3 no coincide con sus comandos")
+        fields["history_prefix_complete"] = True
+    else:
+        # Los primeros snapshots v3 no tenían lifecycle: no se sintetizan
+        # DecisionOpened/Closed/Consumed porque no pueden inferirse del estado.
+        fields["history"] = encode_value(
+            [ExecutedCommand(command) for command in commands]
+        )
+        fields["history_prefix_complete"] = fields["pending_decision"] is None
     body["state_digest"] = hashlib.sha256(
         canonical_json(state).encode("utf-8")
     ).hexdigest()

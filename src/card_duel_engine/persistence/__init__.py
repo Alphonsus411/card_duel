@@ -6,6 +6,7 @@ from .snapshot import (
     load_snapshot,
     load_snapshot_file,
     legacy_state_digest_without_ability_source_profile,
+    legacy_state_digest_without_pending_decision,
     save_snapshot_file,
     state_digest,
 )
@@ -18,6 +19,7 @@ __all__ = [
     "load_snapshot",
     "load_snapshot_file",
     "legacy_state_digest_without_ability_source_profile",
+    "legacy_state_digest_without_pending_decision",
     "migrate_document",
     "replay_from_log",
     "save_snapshot_file",

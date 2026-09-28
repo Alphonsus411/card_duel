@@ -12,7 +12,11 @@ from ..engine.game import EngineSemantics, GameEngine
 from ..rules.config import RuleSet
 from .codec import canonical_json, decode_value, encode_value
 from .migrations import migrate_document
-from .snapshot import legacy_state_digest_without_ability_source_profile, state_digest
+from .snapshot import (
+    legacy_state_digest_without_ability_source_profile,
+    legacy_state_digest_without_pending_decision,
+    state_digest,
+)
 
 REPLAY_SCHEMA_VERSION = "2"
 LEGACY_PROFILE_DIGEST_VERSIONS = frozenset(("0.20.0", "0.20.1"))
@@ -135,6 +139,11 @@ def replay_from_log(
     if verify_digest:
         expected_digest = body["final_digest"]
         digest_matches = state_digest(engine) == expected_digest
+        if not digest_matches and _is_affected_020_version(engine_version):
+            digest_matches = (
+                legacy_state_digest_without_pending_decision(engine)
+                == expected_digest
+            )
         if not digest_matches and _is_affected_020_version(engine_version):
             digest_matches = (
                 legacy_state_digest_without_ability_source_profile(engine)

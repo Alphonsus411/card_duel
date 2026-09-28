@@ -11,6 +11,7 @@ from card_duel_engine.domain import Zone
 from card_duel_engine.persistence import (
     dump_replay,
     legacy_state_digest_without_ability_source_profile,
+    legacy_state_digest_without_pending_decision,
     replay_from_log,
     state_digest,
 )
@@ -83,6 +84,26 @@ class Legacy020AbilitySourceProfileReplayTests(unittest.TestCase):
                 self.assertNotEqual(
                     legacy_state_digest_without_ability_source_profile(engine), baseline
                 )
+
+    def test_pre_pending_decision_digest_keeps_ability_source_profile(self):
+        engine = replay_from_log((ARTIFACTS / REPLAYS[0]).read_text())
+        pending_only_digest = legacy_state_digest_without_pending_decision(engine)
+        self.assertNotEqual(pending_only_digest, state_digest(engine))
+        self.assertNotEqual(
+            pending_only_digest,
+            legacy_state_digest_without_ability_source_profile(engine),
+        )
+
+        document = json.loads(dump_replay(engine))
+        document["body"]["final_digest"] = pending_only_digest
+
+        replayed = replay_from_log(_rechecksum(document))
+
+        self.assertIsNotNone(replayed.state.stack[-1].ability_source_profile)
+        self.assertEqual(
+            legacy_state_digest_without_pending_decision(replayed),
+            pending_only_digest,
+        )
 
     def test_versions_outside_the_historical_window_do_not_receive_fallback(self):
         for version in ("0.20.1+unknown", "0.20.2", "0.20.10"):

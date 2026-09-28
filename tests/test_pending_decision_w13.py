@@ -59,14 +59,33 @@ def test_v3_migration_wraps_only_commands_and_marks_pending_prefix_incomplete() 
         dump_replay(restored)
 
 
-@pytest.mark.parametrize("unexpected", ["history", "history_prefix_complete"])
-def test_v3_migration_rejects_ambiguous_new_history_fields(unexpected: str) -> None:
+def test_v3_migration_preserves_history_emitted_by_w1_3_writers() -> None:
+    engine = make_engine()
+    open_decision(engine)
+    engine._close_pending_decision("decision:test:1", "A", "opaque-b", 0)
+    document = json.loads(dump_snapshot(engine))
+    body = document["body"]
+    body["schema_version"] = "3"
+    body["state"]["fields"].pop("history_prefix_complete")
+    body["state_digest"] = _checksum(body["state"])
+    historical = {"body": body, "sha256": _checksum(body)}
+
+    restored = load_snapshot(historical)
+
+    assert restored.state is not None and engine.state is not None
+    assert restored.state.history == engine.state.history
+    assert restored.state.history_prefix_complete is True
+    replayed = replay_from_log(dump_replay(restored))
+    assert replayed.state == restored.state
+
+
+def test_v3_migration_rejects_v4_history_completeness_marker() -> None:
     document = json.loads(
         (Path(__file__).parent / "artifacts/pending-decision-w0/snapshot-v3-none.json")
         .read_text(encoding="utf-8")
     )
     body = deepcopy(document["body"])
-    body["state"]["fields"][unexpected] = [] if unexpected == "history" else True
+    body["state"]["fields"]["history_prefix_complete"] = True
     with pytest.raises(ValueError, match="ambigua"):
         migrate_document("snapshot", body, "4")
 

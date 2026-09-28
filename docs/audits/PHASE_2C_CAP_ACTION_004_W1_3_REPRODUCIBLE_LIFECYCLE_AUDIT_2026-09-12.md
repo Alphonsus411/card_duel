@@ -90,9 +90,13 @@ cada comando como `ExecutedCommand`. Es suficiente porque un replay v2 nunca
 declaró lifecycle de decisión. No se inventan aperturas, cierres o consumos.
 
 Adoptar el campo persistente `GameState.history` hace **técnicamente necesario
-snapshot v4**: snapshot v3 no tenía ese campo ni `history_prefix_complete` y no
-puede afirmar el mismo schema después de cambiar el agregado/digest. Las
-migraciones quedan encadenadas snapshot v1→v2→v3→v4.
+snapshot v4**: los snapshots v3 originales no tenían ese campo y ningún v3
+tenía `history_prefix_complete`. Durante los commits W1.3 `0b1d402`–`f4dbad5`
+hubo, no obstante, escritores que todavía declaraban v3 y ya serializaban
+`history`. La migración reconoce ambas formas históricas: preserva y valida la
+historia autoritativa del v3 W1.3, y sólo sintetiza comandos para el v3 original.
+Las migraciones quedan encadenadas snapshot v1→v2→v3→v4 sin excluir los
+snapshots emitidos durante W1.3.
 
 Para un snapshot v3 sin decisión en el slot, v4 materializa como historia la
 proyección tipada de `command_history` y marca completo el prefijo. Si el

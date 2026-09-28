@@ -139,6 +139,8 @@ class EffectDefinition:
     search_filter: CardFilter | None = None
     shuffle_after_search: bool = True
     reveal_search_selection: bool = True
+    allowed_target_zones: frozenset[Zone] = frozenset()
+    target_controller_zones_only: bool = False
     transform_definition_id: str | None = None
     text_patch: TextPatchDefinition | None = None
     x_multiplier: int = 0
@@ -186,6 +188,8 @@ class EffectDefinition:
             raise ValueError("El tipo de efecto necesita un objetivo de permanente")
         if self.kind in zone_effects and self.target is not TargetMode.CHOSEN_ZONE:
             raise ValueError("El tipo de efecto necesita una zona objetivo")
+        if (self.allowed_target_zones or self.target_controller_zones_only) and self.kind not in zone_effects:
+            raise ValueError("Las restricciones de zona sólo aplican a efectos de zona")
         if self.kind is EffectKind.DEAL_HARM and self.target is not TargetMode.CHOSEN_ENTITY:
             raise ValueError("El daño repartido necesita objetivos de entidad")
         if self.kind is EffectKind.DEAL_HARM and not self.distributed:

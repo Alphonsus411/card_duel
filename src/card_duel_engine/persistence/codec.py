@@ -144,6 +144,10 @@ def decode_value(value: Any) -> Any:
         compatible_missing = (
             {"ability_source_profile"} if cls is model_module.StackItem else set()
         )
+        if cls is model_module.EffectDefinition:
+            compatible_missing.update(
+                {"allowed_target_zones", "target_controller_zones_only"}
+            )
         if cls is model_module.AbilitySourceProfile:
             compatible_missing.add("nature_is_certain")
         missing_required = (expected - supplied) - compatible_missing

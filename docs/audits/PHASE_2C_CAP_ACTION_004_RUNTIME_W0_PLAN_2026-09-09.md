@@ -28,9 +28,9 @@
 | `domain/enums.py` | No hay discriminadores universales de familia, estado o audiencia. | Añadir enums cerrados y versionados sólo si el codec preserva rechazo de desconocidos. | **PROPUESTA** |
 | `engine/commands.py` | Existen comandos especializados y el historial acepta un conjunto cerrado. | Añadir un comando tipado de cierre con `decision_id`, token opaco y `expected_version` en la frontera apropiada. | **PROPUESTA** |
 | `engine/actions.py` y `engine/options.py` | Enumeran/revalidan acciones y producen opciones remotas opacas, no decisiones persistidas. | Exponer sólo al elector una opción legal para cerrar la decisión vigente. | **PROPUESTA** |
-| `engine/game.py` | Ejecuta con copia/rollback y valida invariantes; no posee lifecycle universal. | Crear/cerrar la decisión dentro de la transacción de dominio, sin ejecutar la mecánica especializada al cerrarla. | **PROPUESTA** |
+| `engine/game.py` | Ejecuta con copia/rollback y valida invariantes; no posee lifecycle universal ni conoce la versión de storage. | Recibir un contexto de ejecución con la versión candidata, crear/cerrar dentro de la transacción de dominio y no ejecutar la mecánica especializada al cerrar. | **PROPUESTA** |
 | `application.py` | Autentica actores y traduce option IDs ligados a actor/versión. | Resolver token de transporte sin convertirlo en autoridad ni filtrar el payload. | **PROPUESTA** |
-| `service.py` | Carga, ejecuta y guarda con `expected_version`. | Mantener una sola operación de guardado CAS y errores públicos uniformes. | **PROPUESTA** |
+| `service.py` | Carga, ejecuta y guarda con `expected_version`; hoy la versión nueva sólo existe al guardar. | Derivar `candidate_version = expected_version + 1`, pasarla al motor y exigir que el único guardado CAS confirme exactamente esa versión. | **PROPUESTA** |
 | `persistence/codec.py` | Serializa dataclasses/enums mediante discriminadores cerrados. | Registrar los tipos nuevos y rechazar discriminadores o versiones desconocidos. | **PROPUESTA** |
 | `persistence/snapshot.py` | Escribe schema `2`, checksum y `state_digest`. | Elevar schema al primer número disponible y decodificar schema `2` con ausencia explícita. | **PROPUESTA** |
 | `persistence/replay.py` | Escribe schema `2` y reconstruye desde setup, mulligans y comandos. | Elevar schema junto con snapshot y conservar lifecycle/observables deterministas. | **PROPUESTA** |
@@ -68,6 +68,9 @@
 - **PROPUESTA — cambio aditivo:** añadir `pending_decision: PendingDecision | None = None` al final de los campos con default, preservando construcción posicional histórica y sin eliminar campos existentes.
 - **CONTRATO APROBADO — invariantes:** `validate_invariants()` debe comprobar elector existente, tokens únicos/no vacíos conforme a la familia, coherencia `status/selected_option`, origen resoluble, identidad estable y vínculo de versión.
 - **CONTRATO APROBADO — rollback:** creación y cierre se realizan dentro del snapshot transaccional existente de `GameEngine.execute`; cualquier error restaura estado, historial, eventos y contadores.
+- **CONTRATO APROBADO — versión de creación:** el servicio que carga la versión `N` calcula de forma comprobada `candidate_version = N + 1` y llama `GameEngine.execute(command, execution_context=ExecutionContext(commit_version=candidate_version))`. Toda decisión creada por ese comando fija `state_version` a `candidate_version`, nunca a `N`; el contexto es efímero y no convierte al motor en lector de storage.
+- **CONTRATO APROBADO — confirmación:** `commit_version` es candidata hasta que `store.save(..., expected_version=N, new_version=candidate_version)` confirma mediante el mismo CAS tanto la fila en `N + 1` como el snapshot que contiene la decisión. El store debe rechazar cualquier `new_version != expected_version + 1`; el valor retornado debe ser exactamente `candidate_version`. Si ejecución o CAS falla, se descarta la copia completa y la decisión candidata jamás se publica ni pasa a ser autoritativa.
+- **CONTRATO APROBADO — entradas sin storage:** una ejecución capaz de crear decisiones debe recibir `ExecutionContext.commit_version`; su ausencia es un error previo a mutar. Tests unitarios y simulaciones deben suministrar una versión explícita, y no se permite inferirla desde historial, contadores o `GameState`.
 - **CONTRATO APROBADO — no duplicación:** ningún handler puede mantener la misma decisión viva simultáneamente en el campo universal y en un pending especializado.
 - **PROPUESTA — eventos:** crear eventos tipados de creación y cierre con payload interno completo, más una proyección redactada; no emitir un evento de cierre antes de que la transacción y el CAS puedan confirmarse.
 - **PREGUNTA ABIERTA — publicación del evento:** hay que fijar si el evento de dominio se acumula antes del `save` y sólo se publica fuera de proceso después del CAS, o si no existe bus externo; W0 debe impedir observables fantasma del perdedor CAS.
@@ -84,10 +87,12 @@
 ## G. Replay
 
 - **HECHO OBSERVADO — formato:** replay usa `REPLAY_SCHEMA_VERSION = "2"`, conserva setup, mulligans, inicio, comandos, conteo y digest final; acepta el escape histórico de digest sólo para `0.20.0` y `0.20.1`.
-- **PROPUESTA — versión:** elevar replay a schema `3` y representar la creación/cierre mediante comandos/eventos deterministas suficientes para reconstruir la misma decisión.
+- **PROPUESTA — versión:** elevar replay a schema `3` y sustituir la lista desnuda de comandos por entradas ordenadas `{command, commit_version}` (o representación tipada equivalente). El writer toma `commit_version` del resultado CAS confirmado asociado a cada comando, no del estado actual al exportar.
 - **CONTRATO APROBADO — identidad:** `decision_id` no puede depender de UUID aleatorio, wall-clock, orden de diccionario no canónico ni secreto de proceso.
 - **CONTRATO APROBADO — semántica histórica:** un replay schema `1/2` no gana decisiones retroactivas; se ejecuta con su semántica declarada y conserva sus bytes como artefacto histórico.
 - **CONTRATO APROBADO — resultado:** replay nuevo debe reproducir estado, selección, orden observable de eventos y `final_digest`; una versión desconocida falla sin fallback.
+- **CONTRATO APROBADO — inyección en replay:** al reproducir schema `3`, cada entrada ejecuta su comando con `ExecutionContext(commit_version=entrada.commit_version)`, exactamente por la misma ruta del motor que el servicio. Las versiones deben ser enteros positivos, estrictamente consecutivos desde la versión inicial declarada del match y coherentes con el número/orden de comandos; huecos, duplicados o regresiones se rechazan antes de ejecutar. Así la decisión reconstruida conserva el mismo `state_version` confirmado sin consultar SQLite ni inventar `N + 1` durante replay.
+- **CONTRATO APROBADO — legacy:** las migraciones de replay `1/2 → 3` no fabrican versiones para comandos históricos y los reproducen por la ruta legacy que no puede crear una decisión universal. Si un comando legacy llegara a requerir el nuevo primitive, el replay falla cerrado en vez de asignarle una versión sintética.
 - **PROPUESTA — golden pair:** para cada caso nuevo, guardar un golden pre-W0 legible y otro schema `3`, y comprobar determinismo byte a byte cuando el formato lo garantice y equivalencia semántica mediante digest.
 
 ## H. Migraciones
@@ -104,18 +109,20 @@
 - **HECHO OBSERVADO — diseño:** `SQLiteMatchStore` mantiene una fila por partida con `match_id`, `version`, `snapshot` y `updated_at`; la autoridad de dominio está dentro del snapshot.
 - **CONTRATO APROBADO — unidad:** W0 no crea tabla de decisiones ni columna JSON paralela; hacerlo produciría dos autoridades y violaría `CAP-ACTION-004-INV-01`.
 - **PROPUESTA — migración:** si sólo cambia el payload, no hace falta DDL; el reader migra el snapshot en memoria y el siguiente CAS confirmado escribe schema `3`.
-- **CONTRATO APROBADO — atomicidad:** una actualización confirmada debe incluir conjuntamente snapshot con decisión cerrada, historial, eventos y nueva `version`.
+- **CONTRATO APROBADO — atomicidad:** una actualización confirmada debe incluir conjuntamente snapshot con decisión creada o cerrada, historial, eventos y nueva `version`; `save` recibe la versión candidata y valida `new_version == expected_version + 1` antes del write.
 - **PROPUESTA — operabilidad:** medir tamaño de snapshot y latencia de carga/guardado antes y después; documentar backup y restauración sobre una copia real de SQLite.
 - **PREGUNTA ABIERTA — persistencia eager:** decidir si los snapshots schema `2` se actualizan mediante job transaccional o sólo al siguiente write; la opción recomendada es lazy migration para evitar una mutación masiva sin necesidad.
 
 ## J. CAS
 
 - **HECHO OBSERVADO — contrato vigente:** stores validan `expected_version` como entero positivo; SQLite usa `BEGIN IMMEDIATE` y `UPDATE ... WHERE match_id = ? AND version = ?`.
+- **CONTRATO APROBADO — protocolo de creación:** para una carga en `N`, el servicio valida `expected_version == N`, calcula una sola vez `N + 1`, la entrega como `commit_version` a la copia del motor y luego invoca `save(expected_version=N, new_version=N+1)`. SQLite escribe `version=N+1` y ese snapshot en el mismo `UPDATE ... WHERE version=N`; memoria debe ofrecer la misma semántica. No hay pre-reserva ni segundo write.
 - **CONTRATO APROBADO — cierre único:** dos cierres con la misma versión compiten por un único CAS; sólo uno persiste `closed`, selección, eventos, historial y versión incrementada.
 - **CONTRATO APROBADO — perdedor:** el perdedor recibe `stale-version`/`VersionConflict` y no reintenta automáticamente con la versión nueva ni simula éxito.
 - **CONTRATO APROBADO — reintento:** una petición posterior puede leer el estado terminal, pero no reabrir, repetir efectos ni añadir otro cierre.
 - **PROPUESTA — servicio:** ejecutar sobre la copia cargada y publicar cualquier observable externo únicamente después de `store.save`; el fallo de CAS descarta la copia candidata.
 - **PROPUESTA — prueba crítica:** barrera de dos clientes sobre SQLite, misma decisión/token/versión, exactamente un éxito, una versión final incrementada una vez y un solo evento de cierre.
+- **PROPUESTA — prueba crítica de creación:** dos clientes parten de `N` con comandos que crean una decisión: ambas copias llevan provisionalmente `state_version=N+1`, exactamente un CAS persiste; la copia perdedora se descarta, al recargar sólo existe la decisión ganadora ligada a `N+1`, y replay reproduce ese mismo vínculo.
 
 ## K. Privacidad
 
@@ -161,12 +168,12 @@
 | Modelo | Campos, inmutabilidad, tokens únicos, coherencia de estado, origen y elector. | Todos pasan. | **PROPUESTA** |
 | Invariantes | Una prueba/property por cada `CAP-ACTION-004-INV-01`–`14`. | 14/14 cubiertos nominalmente. | **CONTRATO APROBADO** |
 | Snapshot | Round-trip `pending/closed`, schema `1/2/3`, checksum/digest corruptos, unknown version. | Sin pérdida ni fallback. | **PROPUESTA** |
-| Replay | Golden legacy/nuevo, identidad estable, eventos ordenados, digest final, ejecución repetida. | Resultado determinista. | **PROPUESTA** |
+| Replay | Golden legacy/nuevo, entradas `{command, commit_version}`, versiones consecutivas, identidad estable, eventos ordenados, digest final y ejecución repetida. | Mismo `state_version` confirmado; secuencias inválidas fallan cerradas. | **PROPUESTA** |
 | Migración | `1 → 2 → 3`, `2 → 3`, input no mutado, doble aplicación equivalente, ruta ausente. | Todos pasan. | **PROPUESTA** |
 | Autorización | Elector correcto/incorrecto, partida/decisión cruzadas, opción ajena/malformada. | Rechazos sin mutación. | **PROPUESTA** |
 | Privacidad | Vistas de cuatro audiencias, logs/excepciones, no interferencia. | Cero fuga. | **PROPUESTA** |
-| CAS | Dos clientes en memoria y SQLite; mismo y distinto token. | Un cierre y un incremento. | **PROPUESTA** |
-| Servicio | Error uniforme, no auto-retry, no publicación antes de CAS. | Paridad entre stores. | **PROPUESTA** |
+| CAS | Dos clientes en memoria y SQLite; carreras de creación y cierre, mismo y distinto token. | Un snapshot en `N+1`; decisión ligada a `N+1`. | **PROPUESTA** |
+| Servicio | Propagación `N → N+1`, rechazo de candidato incoherente, error uniforme, no auto-retry y no publicación antes de CAS. | Paridad entre stores. | **PROPUESTA** |
 | Regresión | Suite completa, test documental de roadmap y perfil full. | Sin regresiones. | **CONTRATO APROBADO** |
 
 - **PROPUESTA — comandos de aceptación:** ejecutar `uv run pytest -q tests/test_phase_2c_engine_evolution_roadmap.py`, tests focalizados nuevos, `uv run pytest -q` y `uv run python scripts/verify_release.py --profile full`.
@@ -179,11 +186,11 @@
 3. **PROPUESTA — `persistence/migrations.py`:** implementar rutas `2 → 3` y tests de composición histórica.
 4. **PROPUESTA — `persistence/snapshot.py`:** elevar versión, escribir/restaurar el registro y añadir goldens.
 5. **PROPUESTA — `engine/commands.py`:** añadir comando de cierre al conjunto ejecutable y codec.
-6. **PROPUESTA — `engine/game.py`:** creación, revalidación, cierre y rollback; cerrar sólo registra opción.
-7. **PROPUESTA — `persistence/replay.py`:** elevar versión y demostrar reconstrucción determinista.
+6. **PROPUESTA — `engine/game.py`:** añadir `ExecutionContext.commit_version`, exigirlo al crear, y cubrir creación, revalidación, cierre y rollback; cerrar sólo registra opción.
+7. **PROPUESTA — `persistence/replay.py`:** elevar versión, persistir una versión confirmada por comando e inyectarla al motor para demostrar reconstrucción determinista.
 8. **PROPUESTA — `engine/actions.py` y `engine/options.py`:** paridad entre enumeración y ejecución.
-9. **PROPUESTA — `presentation.py`, `application.py` y `service.py`:** audiencias, autenticación, error uniforme y un único CAS.
-10. **PROPUESTA — `storage/base.py` y `storage/sqlite.py`:** evitar cambios salvo los necesarios para pruebas/observabilidad; preservar el UPDATE CAS actual.
+9. **PROPUESTA — `presentation.py`, `application.py` y `service.py`:** audiencias, autenticación, error uniforme, cálculo único de `N+1` y un único CAS.
+10. **PROPUESTA — `storage/base.py` y `storage/sqlite.py`:** aceptar/validar la versión candidata, preservar el único `UPDATE` CAS y devolver exactamente la versión confirmada.
 11. **PROPUESTA — `tests/`:** propiedades, goldens, privacidad, carreras y paridad de stores.
 12. **PROPUESTA — `docs/`:** actualizar matriz, dependencias, roadmap y auditoría sólo después de evidencia; no promover por intención.
 
@@ -197,6 +204,7 @@
 | ABA o ID inestable | Cierre de otra decisión tras replay/reconexión. | Derivación canónica y tests golden. | **CONTRATO APROBADO** |
 | Fuga por opciones/errores | Revelación de mano, candidatos o cardinalidad. | Tokens opacos, proyección y no interferencia. | **CONTRATO APROBADO** |
 | Evento fantasma tras CAS perdido | Cliente observa un cierre no persistido. | Publicación post-CAS y copia candidata descartable. | **PROPUESTA** |
+| Decisión ligada a `N` o a versión no confirmada | Nace obsoleta o replay reconstruye otro vínculo. | Contexto `N+1`, validación en store, persistencia en el mismo CAS y versión por entrada de replay. | **CONTRATO APROBADO** |
 | Migración irreversible | Partidas ilegibles o rollback imposible. | Reader previo, backup, lazy migration y fixtures. | **PROPUESTA** |
 | Inferencia legacy | Reapertura o reinterpretación histórica. | Default `None`, sin heurísticas. | **CONTRATO APROBADO** |
 | Acoplar mecánica al cierre | Efectos dobles o atomicidad falsa. | Cierre sólo registra opción; continuación separada. | **CONTRATO APROBADO** |

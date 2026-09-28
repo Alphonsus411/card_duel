@@ -39,14 +39,16 @@ roadmaps, blockers y futuras resoluciones.
 | `N-MULLIGAN-01.OPEN-ORDER` | `OPEN/BLOCKED` | No consta quién decide primero ni cómo se determina el orden de decisión. |
 | `N-MULLIGAN-01.OPEN-MODE` | `OPEN/BLOCKED` | No consta si las decisiones son alternadas o simultáneas. |
 | `N-MULLIGAN-01.OPEN-REVEAL` | `OPEN/BLOCKED` | No consta cuándo una decisión pasa a ser públicamente observable. |
-| `N-MULLIGAN-01.OPEN-STARTER` | `OPEN/BLOCKED` | No consta si la identidad del jugador inicial debe preservarse durante todo el protocolo ni frente a sus decisiones. |
 | `N-MULLIGAN-01.OPEN-3PLUS` | `OPEN/BLOCKED` | No consta la conducta del protocolo con tres o más participantes. |
 
 `N-MULLIGAN-01` no cambia la autoridad, el estado ni el significado de
 `N-PHASE-02`: sólo registra por separado los datos cuantitativos expresos y los
 vacíos protocolarios. Tampoco autoriza a inferir orden, simultaneidad,
-visibilidad, preservación del jugador inicial o semántica multijugador a partir
-de una estructura de datos, una prueba o una conveniencia de implementación.
+visibilidad o semántica multijugador a partir de una estructura de datos, una
+prueba o una conveniencia de implementación. La identidad inicial elegida
+aleatoriamente por `N-PHASE-01` se conserva durante el mulligan: `N-PHASE-02`
+sólo modifica el tamaño de la mano y no autoriza a cambiar ni volver a elegir
+quién comienza.
 
 ## Hallazgos negativos controlados
 

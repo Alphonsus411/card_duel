@@ -691,13 +691,12 @@ blockers:
   - N-MULLIGAN-01.OPEN-ORDER
   - N-MULLIGAN-01.OPEN-MODE
   - N-MULLIGAN-01.OPEN-REVEAL
-  - N-MULLIGAN-01.OPEN-STARTER
 ```
 
 Los dos primeros elementos de `blockers` son la lista exacta de prerequisites
 no cerrados declarada para `CAP-TIME-002`: `CAP-ACTION-004` (decisión pendiente
 autorizada, `MISSING` y `READY`) y `CAP-TIME-005` (lifecycle autoritativo de
-setup, `MISSING` y `WAIT-PREREQ`). Los cuatro elementos
+setup, `MISSING` y `WAIT-PREREQ`). Los tres elementos
 `N-MULLIGAN-01.OPEN-*` son blockers normativos granulares del protocolo, no
 prerequisites técnicos. La dependencia directa de `CAP-SECRET-002` queda eliminada:
 el mulligan sólo necesita opciones opacas y lifecycle universal, no candidatos
@@ -717,7 +716,7 @@ en este orden antes de volver a evaluar `N-PHASE-02`:
 
 El alcance que sigue es una especificación condicionada para una futura
 reevaluación. Sólo podrá convertirse en trabajo de runtime mediante una nueva
-decisión documental que registre los dos prerequisites técnicos y los cuatro
+decisión documental que registre los dos prerequisites técnicos y los tres
 blockers normativos como `CLOSED`, cambie el gate a `READY` y cambie
 expresamente `authorization` a `AUTHORIZED`.
 
@@ -752,9 +751,10 @@ expresamente `authorization` a `AUTHORIZED`.
    orden ni contenido de las cartas de otra mano o mazo. Cada jugador recibe
    únicamente su proyección privada autorizada.
 8. El setup termina una sola vez y de forma determinista cuando todas las
-   elecciones exigidas han concluido. `N-MULLIGAN-01.OPEN-STARTER` bloquea toda
-   conducta que conserve, cambie o vuelva a determinar el jugador inicial: no
-   se escogerá ninguna como default técnico.
+   elecciones exigidas han concluido. La identidad inicial elegida
+   aleatoriamente conforme a `N-PHASE-01` se conserva sin mutación durante el
+   mulligan: `N-PHASE-02` sólo cambia el tamaño de la mano y no autoriza a
+   cambiar ni volver a determinar quién comienza.
 
 #### Superficies probablemente afectadas
 

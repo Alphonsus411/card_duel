@@ -369,11 +369,20 @@ SQL ni autoriza modificar `src/card_duel_engine/persistence/` o
 `src/card_duel_engine/storage/`.** Esas implementaciones sólo se abrirán en una
 entrega posterior con schema, migración y rollback aprobados.
 
-### Primer slice posterior a la aprobación — `N-PHASE-02` — mulligan decreciente persistible
+### Slice candidato condicionado — `N-PHASE-02` — mulligan decreciente persistible
 
-Una vez aprobado este roadmap, el primer slice de implementación será
-**`N-PHASE-02` — mulligan decreciente persistible**, acotado a cerrar
-`CAP-TIME-002` sin arrastrar el resto de W2. La autorización procede
+**`N-PHASE-02` — mulligan decreciente persistible** es un slice candidato,
+acotado a cerrar `CAP-TIME-002` sin arrastrar el resto de W2, pero la aprobación
+de este roadmap **no autoriza iniciarlo ni lo convierte automáticamente en el
+primer slice**. Antes de iniciarlo, `CAP-TIME-001` y `CAP-SECRET-002` deberán
+estar `CLOSED`, o deberán incluirse explícitamente junto con `CAP-TIME-002` en
+el mismo SCC, con contrato y pruebas de integración comunes. Mientras
+`CAP-TIME-001` siga `NORM-BLOCKED`, no puede formar parte de ese SCC ni comenzar
+este trabajo; primero hace falta la resolución normativa trazable que libere su
+gate. Si cualquiera de esas condiciones falta, `CAP-TIME-002` conserva
+`WAIT-PREREQ` y se elige otro slice elegible conforme al orden de ejecución.
+
+Una vez satisfechos esos prerequisites, la autorización funcional procede
 exclusivamente de la regla Base vigente descrita en la ficha de contención
 `N-PHASE-01`–`02`, `N-PHASE-04`–`05`, `N-PHASE-07`, `N-PHASE-09`–`10`: el slice
 no interpreta el silencio Mítico ni convierte una decisión de arquitectura en
@@ -457,9 +466,13 @@ La promoción requiere evidencia automatizada de todos estos casos:
   desconocidas;
 - CAS con rechazo sin mutación del perdedor y aplicación exactamente una vez
   del comando ganador; y
-- compatibilidad con partidas y artefactos históricos que ya comenzaron
-  **después del setup**: se cargan y continúan con su semántica anterior sin
-  fabricar estado de mulligan, reabrir el setup ni reinterpretar su replay.
+- compatibilidad con partidas y artefactos históricos tanto guardados **durante
+  el setup** como iniciados después de él. Los snapshots en `SETUP` y los
+  replays históricos con `started=false` y su historial de mulligans se
+  restauran y continúan con la semántica de su versión, sin exigir campos del
+  protocolo nuevo, repetir o perder elecciones ni reinterpretar sus eventos;
+  los artefactos posteriores al setup tampoco fabrican estado de mulligan ni
+  reabren el setup.
 
 Estas pruebas cubren como mínimo `INV-2C-001`–`004`, `INV-2C-010`,
 `INV-2C-013`–`018` y `INV-2C-022`, con todas las superficies obligatorias que
@@ -467,13 +480,17 @@ les asigna el catálogo. Los fixtures históricos permanecen inmutables.
 
 #### Criterio de aceptación del slice
 
-`N-PHASE-02` se acepta sólo cuando `CAP-TIME-002` pueda pasar de `MISSING` a
-`SUPPORTED` en **todo el recorrido técnico** —modelo, comando, enumeración,
-validación, transición autoritativa, observación, codec, snapshot, replay,
-aplicación, servicio y CAS— y todas las pruebas anteriores estén verdes. La
-promoción no es válida si exige modificar otra regla, resolver una exclusión o
-introducir un default normativo; en cualquiera de esos casos el slice permanece
-incompleto o bloqueado en el punto exacto para el que falte evidencia.
+`N-PHASE-02` se acepta sólo cuando sus prerequisites estén `CLOSED` o hayan
+cerrado con él dentro del SCC integrado permitido por la regla de waves, y
+`CAP-TIME-002` pueda pasar de `MISSING` a `SUPPORTED` en **todo el recorrido
+técnico** —modelo, comando, enumeración, validación, transición autoritativa,
+observación, codec, snapshot, replay, aplicación, servicio y CAS— con todas las
+pruebas anteriores verdes. No se permite promover `CAP-TIME-002` aisladamente
+mientras `CAP-TIME-001` o `CAP-SECRET-002` sigan parciales, bloqueados o fuera
+del SCC. La promoción tampoco es válida si exige modificar otra regla, resolver
+una exclusión o introducir un default normativo; en cualquiera de esos casos el
+slice permanece incompleto o bloqueado en el punto exacto para el que falte
+evidencia.
 
 ### W1 — Acciones y costes atómicos
 

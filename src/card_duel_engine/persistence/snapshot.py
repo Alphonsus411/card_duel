@@ -71,6 +71,13 @@ def _omit_pending_decision(encoded_state: Any) -> Any:
     return transformed
 
 
+def legacy_state_digest_without_pending_decision(engine: GameEngine) -> str:
+    """Calcula la huella de replay anterior al slot ``pending_decision``."""
+    return _digest_encoded_state(
+        _omit_pending_decision(_canonical_encoded_state(engine))
+    )
+
+
 def legacy_state_digest_without_ability_source_profile(engine: GameEngine) -> str:
     """Calcula la huella emitida por 0.20.x antes de AbilitySourceProfile.
 

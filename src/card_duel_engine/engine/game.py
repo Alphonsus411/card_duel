@@ -783,9 +783,17 @@ class GameEngine:
         decision = state.pending_decision
         if decision is None:
             return None
+        is_visible = (
+            decision.audience is DecisionAudience.ELECTOR
+            and decision.authorized_elector == player_id
+        ) or (
+            decision.audience is DecisionAudience.OPPONENT
+            and decision.authorized_elector != player_id
+        )
+        if not is_visible:
+            return None
         may_resolve = (
             decision.status is PendingDecisionStatus.PENDING
-            and decision.audience is not DecisionAudience.INTERNAL
             and decision.authorized_elector == player_id
         )
         return PendingDecisionView(

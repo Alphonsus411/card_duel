@@ -783,11 +783,15 @@ class GameEngine:
         decision = state.pending_decision
         if decision is None:
             return None
-        may_resolve = (
-            decision.status is PendingDecisionStatus.PENDING
-            and decision.audience is not DecisionAudience.INTERNAL
-            and decision.authorized_elector == player_id
-        )
+        # Audience filtering applies to the decision metadata as a whole, not
+        # merely to its resolvable options.  At present player observations
+        # support only the ELECTOR audience; the other audience kinds remain
+        # private until their observer semantics are explicitly modelled.
+        if (
+            decision.audience is not DecisionAudience.ELECTOR
+            or decision.authorized_elector != player_id
+        ):
+            return None
         return PendingDecisionView(
             decision_id=decision.decision_id,
             semantic_family=decision.semantic_family,
@@ -795,7 +799,9 @@ class GameEngine:
             state_version=decision.state_version,
             audience=decision.audience,
             authorized_opaque_options=(
-                decision.authorized_opaque_options if may_resolve else ()
+                decision.authorized_opaque_options
+                if decision.status is PendingDecisionStatus.PENDING
+                else ()
             ),
         )
 

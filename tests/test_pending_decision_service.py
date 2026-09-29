@@ -11,7 +11,12 @@ from card_duel_engine import (
     MatchService,
     VersionConflict,
 )
-from card_duel_engine.domain import DecisionAudience, PendingDecisionStatus
+from card_duel_engine.domain import (
+    DecisionAudience,
+    MatchStatus,
+    PendingDecisionStatus,
+)
+from card_duel_engine.domain.errors import IllegalAction, StaleDecisionVersion
 
 from fixtures import test_deck
 
@@ -25,7 +30,7 @@ def prepared_service() -> tuple[MatchService, InMemoryMatchStore]:
         "A",
         DecisionAudience.ELECTOR,
         ("internal-a", "internal-b"),
-        19,
+        1,
         ("test",),
     )
     store = InMemoryMatchStore()
@@ -73,6 +78,42 @@ def test_service_validates_and_compares_cas_before_resolving() -> None:
         )
     resolver.assert_not_called()
     store.save.assert_not_called()
+
+
+def test_service_rejects_decision_left_pending_after_state_version_changes() -> None:
+    service, store = prepared_service()
+    intervening = store.load("match")
+    assert store.save("match", intervening.engine, expected_version=1) == 2
+    resolver = Mock()
+
+    with pytest.raises(StaleDecisionVersion):
+        service.resolve_pending_decision(
+            "match", "A", resolver, expected_version=2
+        )
+
+    resolver.assert_not_called()
+    saved = store.load("match").engine.state
+    assert saved is not None and saved.pending_decision is not None
+    assert saved.pending_decision.status is PendingDecisionStatus.PENDING
+
+
+def test_service_rejects_decision_left_pending_after_match_finishes() -> None:
+    service, store = prepared_service()
+    finished = store.load("match")
+    assert finished.engine.state is not None
+    finished.engine.state.status = MatchStatus.FINISHED
+    assert store.save("match", finished.engine, expected_version=1) == 2
+    resolver = Mock()
+
+    with pytest.raises(IllegalAction, match="terminada"):
+        service.resolve_pending_decision(
+            "match", "A", resolver, expected_version=2
+        )
+
+    resolver.assert_not_called()
+    saved = store.load("match").engine.state
+    assert saved is not None and saved.pending_decision is not None
+    assert saved.pending_decision.status is PendingDecisionStatus.PENDING
 
 
 def test_application_resolves_only_the_current_public_reference() -> None:

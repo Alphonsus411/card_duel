@@ -13,7 +13,9 @@ from .domain.enums import MatchStatus, PendingDecisionStatus
 from .domain.errors import (
     DecisionAlreadyClosed,
     DecisionSlotEmpty,
+    IllegalAction,
     InvalidDeckDefinition,
+    StaleDecisionVersion,
     UnauthorizedDecisionElector,
     UnauthorizedDecisionOption,
 )
@@ -224,6 +226,16 @@ class MatchService:
         decision = state.pending_decision
         if decision.status is not PendingDecisionStatus.PENDING:
             raise DecisionAlreadyClosed("La decisión ya no está pendiente")
+        if state.status is MatchStatus.FINISHED:
+            raise IllegalAction("Una partida terminada no admite decisiones")
+        # ``state_version`` vincula la decisión con el estado autoritativo en
+        # el que su origen fue validado.  No basta con devolver ese mismo valor
+        # al motor: cualquier escritura posterior del match invalida el origen,
+        # aunque haya dejado accidentalmente ocupado el slot de la decisión.
+        if decision.state_version != stored.version:
+            raise StaleDecisionVersion(
+                "La decisión no pertenece a la versión autoritativa vigente"
+            )
         if decision.authorized_elector != player_id:
             raise UnauthorizedDecisionElector(
                 "El actor no es el elector autorizado"
@@ -249,7 +261,7 @@ class MatchService:
             decision.decision_id,
             player_id,
             selected_option,
-            decision.state_version,
+            stored.version,
         )
         version = self.store.save(
             match_id, stored.engine, expected_version=expected_version

@@ -183,11 +183,18 @@ class PublicMatchView:
 
         decision = view.pending_decision
         public_decision: PublicPendingDecision | None = None
-        if decision is not None:
+        # MatchView normally arrives pre-filtered by the engine.  Keep the
+        # remote DTO defensive as well: unsupported/private audiences must not
+        # disclose even the existence or semantic family of their decisions.
+        publish_decision = (
+            decision is not None
+            and decision.audience is DecisionAudience.ELECTOR
+        )
+        if publish_decision:
+            assert decision is not None
             supplied_decision_ids = tuple(decision_option_ids or ())
             publish_options = (
                 decision.status is PendingDecisionStatus.PENDING
-                and decision.audience is DecisionAudience.ELECTOR
                 and bool(decision.authorized_opaque_options)
             )
             expected_count = (
@@ -210,7 +217,7 @@ class PublicMatchView:
                 ),
             )
         elif decision_option_ids is not None and tuple(decision_option_ids):
-            raise ValueError("No hay una decisión para los identificadores recibidos")
+            raise ValueError("No hay una decisión publicable para los identificadores")
         return cls(
             match_id=view.match_id,
             version=view.version,

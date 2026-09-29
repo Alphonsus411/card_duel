@@ -1,8 +1,13 @@
-from dataclasses import FrozenInstanceError, fields
+from dataclasses import FrozenInstanceError, fields, replace
 
 import pytest
 
-from card_duel_engine import GameEngine, InMemoryMatchStore, MatchService
+from card_duel_engine import (
+    GameEngine,
+    InMemoryMatchStore,
+    MatchService,
+    PublicMatchView,
+)
 from card_duel_engine.controllers import PendingDecisionView
 from card_duel_engine.domain import DecisionAudience, PendingDecisionStatus
 
@@ -53,8 +58,7 @@ def test_only_pending_elector_receives_resolvable_internal_options() -> None:
     opponent_view = engine.observe("B").pending_decision
     assert elector_view is not None
     assert elector_view.authorized_opaque_options == ("opaque-a", "opaque-b")
-    assert opponent_view is not None
-    assert opponent_view.authorized_opaque_options == ()
+    assert opponent_view is None
 
     engine._close_pending_decision("decision:view:1", "A", "opaque-a", 7)
     closed_view = engine.observe("A").pending_decision
@@ -68,9 +72,37 @@ def test_internal_audience_fails_closed_even_for_elector() -> None:
         audience=DecisionAudience.INTERNAL
     ).observe("A").pending_decision
 
-    assert view is not None
-    assert view.audience is DecisionAudience.INTERNAL
-    assert view.authorized_opaque_options == ()
+    assert view is None
+
+
+def test_public_dto_suppresses_private_audience_metadata_defensively() -> None:
+    engine = engine_with_decision(audience=DecisionAudience.INTERNAL)
+    # Construct the internal service DTO explicitly to exercise the public
+    # boundary even if a future caller bypasses the engine's observer filter.
+    internal = engine.state.pending_decision
+    assert internal is not None
+    store = InMemoryMatchStore()
+    store.create("private-decision", engine)
+    view = MatchService(store).view("private-decision", "A")
+    leaked_view = replace(
+        view,
+        pending_decision=PendingDecisionView(
+            decision_id=internal.decision_id,
+            semantic_family=internal.semantic_family,
+            status=internal.status,
+            state_version=internal.state_version,
+            audience=internal.audience,
+            authorized_opaque_options=(),
+        ),
+    )
+
+    public = PublicMatchView.from_view(
+        leaked_view,
+        option_ids=(f"option-{index}" for index in range(len(view.legal_actions))),
+    )
+
+    assert public.pending_decision is None
+    assert public.to_dict()["pending_decision"] is None
 
 
 def test_match_view_propagates_observers_projection_and_none_compatibly() -> None:
@@ -80,9 +112,8 @@ def test_match_view_propagates_observers_projection_and_none_compatibly() -> Non
 
     view = MatchService(store).view("decision-view", "B")
 
-    assert isinstance(view.pending_decision, PendingDecisionView)
+    assert view.pending_decision is None
     assert view.pending_decision is view.observation.pending_decision
-    assert view.pending_decision.authorized_opaque_options == ()
 
     clean_engine = GameEngine()
     clean_engine.new_match(

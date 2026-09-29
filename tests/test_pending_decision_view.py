@@ -3,7 +3,6 @@ from dataclasses import FrozenInstanceError, fields
 import pytest
 
 from card_duel_engine import GameEngine, InMemoryMatchStore, MatchService
-from card_duel_engine.controllers import PendingDecisionView
 from card_duel_engine.domain import DecisionAudience, PendingDecisionStatus
 
 from fixtures import test_deck
@@ -53,8 +52,7 @@ def test_only_pending_elector_receives_resolvable_internal_options() -> None:
     opponent_view = engine.observe("B").pending_decision
     assert elector_view is not None
     assert elector_view.authorized_opaque_options == ("opaque-a", "opaque-b")
-    assert opponent_view is not None
-    assert opponent_view.authorized_opaque_options == ()
+    assert opponent_view is None
 
     engine._close_pending_decision("decision:view:1", "A", "opaque-a", 7)
     closed_view = engine.observe("A").pending_decision
@@ -68,9 +66,31 @@ def test_internal_audience_fails_closed_even_for_elector() -> None:
         audience=DecisionAudience.INTERNAL
     ).observe("A").pending_decision
 
-    assert view is not None
-    assert view.audience is DecisionAudience.INTERNAL
-    assert view.authorized_opaque_options == ()
+    assert view is None
+
+
+@pytest.mark.parametrize(
+    ("audience", "visible_player_id"),
+    [
+        (DecisionAudience.ELECTOR, "A"),
+        (DecisionAudience.OPPONENT, "B"),
+    ],
+)
+def test_decision_existence_is_projected_only_to_its_audience(
+    audience: DecisionAudience, visible_player_id: str
+) -> None:
+    engine = engine_with_decision(audience=audience)
+    hidden_player_id = "B" if visible_player_id == "A" else "A"
+
+    assert engine.observe(visible_player_id).pending_decision is not None
+    assert engine.observe(hidden_player_id).pending_decision is None
+
+
+def test_spectator_audience_is_hidden_from_player_observations() -> None:
+    engine = engine_with_decision(audience=DecisionAudience.SPECTATOR)
+
+    assert engine.observe("A").pending_decision is None
+    assert engine.observe("B").pending_decision is None
 
 
 def test_match_view_propagates_observers_projection_and_none_compatibly() -> None:
@@ -80,9 +100,8 @@ def test_match_view_propagates_observers_projection_and_none_compatibly() -> Non
 
     view = MatchService(store).view("decision-view", "B")
 
-    assert isinstance(view.pending_decision, PendingDecisionView)
+    assert view.pending_decision is None
     assert view.pending_decision is view.observation.pending_decision
-    assert view.pending_decision.authorized_opaque_options == ()
 
     clean_engine = GameEngine()
     clean_engine.new_match(

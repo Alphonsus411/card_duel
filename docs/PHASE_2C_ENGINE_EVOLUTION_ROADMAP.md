@@ -375,12 +375,13 @@ entrega posterior con schema, migración y rollback aprobados.
 acotado a cerrar `CAP-TIME-002` sin arrastrar el resto de W2, pero la aprobación
 de este roadmap **no autoriza iniciarlo ni lo convierte automáticamente en el
 primer slice**. Antes de iniciarlo, `CAP-TIME-001` y `CAP-SECRET-002` deberán
-estar `CLOSED`, o deberán incluirse explícitamente junto con `CAP-TIME-002` en
-el mismo SCC, con contrato y pruebas de integración comunes. Mientras
-`CAP-TIME-001` siga `NORM-BLOCKED`, no puede formar parte de ese SCC ni comenzar
-este trabajo; primero hace falta la resolución normativa trazable que libere su
-gate. Si cualquiera de esas condiciones falta, `CAP-TIME-002` conserva
-`WAIT-PREREQ` y se elige otro slice elegible conforme al orden de ejecución.
+estar `CLOSED`. La excepción general para integrar un SCC no aplica aquí: el
+grafo canónico sólo contiene aristas de entrada desde ambas capabilities hacia
+`CAP-TIME-002`, sin ningún camino de retorno que forme un ciclo. Mientras
+`CAP-TIME-001` siga `NORM-BLOCKED`, primero hace falta la resolución normativa
+trazable que libere su gate y permita cerrarlo. Si cualquiera de los dos
+prerequisites no está `CLOSED`, `CAP-TIME-002` conserva `WAIT-PREREQ` y se elige
+otro slice elegible conforme al orden de ejecución.
 
 Una vez satisfechos esos prerequisites, la autorización funcional procede
 exclusivamente de la regla Base vigente descrita en la ficha de contención
@@ -480,14 +481,14 @@ les asigna el catálogo. Los fixtures históricos permanecen inmutables.
 
 #### Criterio de aceptación del slice
 
-`N-PHASE-02` se acepta sólo cuando sus prerequisites estén `CLOSED` o hayan
-cerrado con él dentro del SCC integrado permitido por la regla de waves, y
+`N-PHASE-02` se acepta sólo cuando `CAP-TIME-001` y `CAP-SECRET-002` estén
+`CLOSED`, y
 `CAP-TIME-002` pueda pasar de `MISSING` a `SUPPORTED` en **todo el recorrido
 técnico** —modelo, comando, enumeración, validación, transición autoritativa,
 observación, codec, snapshot, replay, aplicación, servicio y CAS— con todas las
 pruebas anteriores verdes. No se permite promover `CAP-TIME-002` aisladamente
-mientras `CAP-TIME-001` o `CAP-SECRET-002` sigan parciales, bloqueados o fuera
-del SCC. La promoción tampoco es válida si exige modificar otra regla, resolver
+mientras `CAP-TIME-001` o `CAP-SECRET-002` sigan parciales o bloqueados. La
+promoción tampoco es válida si exige modificar otra regla, resolver
 una exclusión o introducir un default normativo; en cualquiera de esos casos el
 slice permanece incompleto o bloqueado en el punto exacto para el que falte
 evidencia.

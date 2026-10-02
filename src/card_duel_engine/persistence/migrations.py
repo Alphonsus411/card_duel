@@ -2,13 +2,75 @@ from __future__ import annotations
 
 import hashlib
 from copy import deepcopy
+from dataclasses import replace
 from typing import Any, Callable, Mapping
 
-from ..domain.models import DecisionTransitionEntry, ExecutedCommand
+from ..domain.enums import PendingDecisionStatus
+from ..domain.models import (
+    DecisionClosed,
+    DecisionConsumed,
+    DecisionOpened,
+    DecisionTransitionEntry,
+    ExecutedCommand,
+    PendingDecision,
+)
 from ..engine.commands import EXECUTABLE_COMMAND_TYPE_SET
 from .codec import canonical_json, decode_value, encode_value
 
 Migration = Callable[[dict[str, Any]], dict[str, Any]]
+
+
+def _history_reconstructs_pending_decision(
+    history: list[ExecutedCommand | DecisionTransitionEntry],
+    pending_decision: PendingDecision | None,
+) -> bool:
+    """Comprueba que el lifecycle preservado demuestra el slot final."""
+    reconstructed: PendingDecision | None = None
+    for entry in history:
+        if isinstance(entry, ExecutedCommand):
+            continue
+        transition = entry.transition
+        if isinstance(transition, DecisionOpened):
+            if reconstructed is not None:
+                return False
+            reconstructed = PendingDecision(
+                decision_id=transition.decision_id,
+                semantic_family=transition.semantic_family,
+                authorized_elector=transition.authorized_elector,
+                audience=transition.audience,
+                authorized_opaque_options=transition.authorized_opaque_options,
+                state_version=transition.state_version,
+                origin=transition.origin,
+                status=PendingDecisionStatus.PENDING,
+            )
+        elif isinstance(transition, DecisionClosed):
+            if (
+                reconstructed is None
+                or reconstructed.status is not PendingDecisionStatus.PENDING
+                or transition.decision_id != reconstructed.decision_id
+                or transition.actor != reconstructed.authorized_elector
+                or transition.selected_option
+                not in reconstructed.authorized_opaque_options
+                or transition.known_state_version != reconstructed.state_version
+            ):
+                return False
+            reconstructed = replace(
+                reconstructed,
+                status=PendingDecisionStatus.CLOSED,
+                selected_option=transition.selected_option,
+            )
+        elif isinstance(transition, DecisionConsumed):
+            if (
+                reconstructed is None
+                or reconstructed.status is not PendingDecisionStatus.CLOSED
+                or transition.decision_id != reconstructed.decision_id
+                or transition.state_version != reconstructed.state_version
+            ):
+                return False
+            reconstructed = None
+        else:
+            return False
+    return reconstructed == pending_decision
 
 
 def _snapshot_1_to_2(body: dict[str, Any]) -> dict[str, Any]:
@@ -70,9 +132,17 @@ def _snapshot_3_to_4(body: dict[str, Any]) -> dict[str, Any]:
         ]
         if projected_commands != commands:
             raise ValueError("La proyección de comandos del historial v3 no coincide")
-        # Los escritores W1.3 emitieron una historia autoritativa, antes de que
-        # history_prefix_complete se incorporase al agregado en schema v4.
-        fields["history_prefix_complete"] = True
+        pending_decision = decode_value(fields["pending_decision"])
+        if pending_decision is not None and not isinstance(
+            pending_decision, PendingDecision
+        ):
+            raise ValueError("La decisión pendiente v3 no es válida")
+        # Algunos escritores interinos volvieron a serializar una historia
+        # sintetizada (sólo comandos). La presencia del campo no demuestra que
+        # incluya el lifecycle necesario para reconstruir el slot pendiente.
+        fields["history_prefix_complete"] = _history_reconstructs_pending_decision(
+            history, pending_decision
+        )
     else:
         # No se sintetizan DecisionOpened/Closed/Consumed: no están en esta forma.
         fields["history"] = encode_value(

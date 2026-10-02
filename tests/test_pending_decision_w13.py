@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from card_duel_engine.domain import ExecutedCommand
-from card_duel_engine.persistence.codec import canonical_json
+from card_duel_engine.persistence.codec import canonical_json, decode_value, encode_value
 from card_duel_engine.persistence.migrations import migrate_document
 from card_duel_engine.persistence.replay import dump_replay, replay_from_log
 from card_duel_engine.persistence.snapshot import dump_snapshot, load_snapshot, state_digest
@@ -77,6 +77,28 @@ def test_v3_migration_preserves_history_emitted_by_w1_3_writers() -> None:
     assert restored.state.history_prefix_complete is True
     replayed = replay_from_log(dump_replay(restored))
     assert replayed.state == restored.state
+
+
+def test_v3_reserialized_synthetic_history_keeps_pending_prefix_incomplete() -> None:
+    document = json.loads(
+        (Path(__file__).parent / "artifacts/pending-decision-w0/snapshot-v3-pending.json")
+        .read_text(encoding="utf-8")
+    )
+    body = document["body"]
+    commands = decode_value(body["state"]["fields"]["command_history"])
+    assert isinstance(commands, list)
+    body["state"]["fields"]["history"] = encode_value(
+        [ExecutedCommand(command) for command in commands]
+    )
+    body["state_digest"] = _checksum(body["state"])
+    historical = {"body": body, "sha256": _checksum(body)}
+
+    restored = load_snapshot(historical)
+
+    assert restored.state is not None
+    assert restored.state.history_prefix_complete is False
+    with pytest.raises(ValueError, match="prefijo completo"):
+        dump_replay(restored)
 
 
 def test_v3_migration_rejects_v4_history_completeness_marker() -> None:

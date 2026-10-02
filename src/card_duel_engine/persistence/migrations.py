@@ -51,6 +51,33 @@ def _snapshot_3_to_4(body: dict[str, Any]) -> dict[str, Any]:
     if existing_history is not None:
         if not isinstance(existing_history, list):
             raise ValueError("El historial de schema 3 no es válido")
+        commands = fields.get("command_history")
+        if not isinstance(commands, list):
+            raise ValueError("El snapshot schema 3 no contiene command_history válido")
+        projected_history = [
+            {"$type": "ExecutedCommand", "fields": {"command": command}}
+            for command in commands
+        ]
+        # A short-lived schema-3 writer persisted decode_value's command-only
+        # compatibility projection as ``history``.  It is byte-for-byte
+        # indistinguishable from a genuinely authoritative command-only history,
+        # so equality must be treated conservatively: decision transitions may
+        # still have occurred outside this projection.
+        pending_decision_was_present = fields.get("pending_decision") is not None
+        if (
+            existing_history == projected_history
+            and pending_decision_was_present
+            and not commands_are_complete
+        ):
+            existing_history.append(
+                {
+                    "$type": "HistoryBoundary",
+                    "fields": {
+                        "source_schema_version": "3",
+                        "pending_decision_was_present": pending_decision_was_present,
+                    },
+                }
+            )
         body["state_digest"] = hashlib.sha256(
             canonical_json(state).encode("utf-8")
         ).hexdigest()

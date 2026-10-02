@@ -276,6 +276,31 @@ def test_legacy_v3_decision_snapshot_marks_unknown_history_boundary(status: str)
     ]
 
 
+@pytest.mark.parametrize("status", ["pending", "closed"])
+def test_resaved_v3_command_projection_marks_unknown_history_boundary(
+    status: str,
+) -> None:
+    legacy = json.loads(
+        (ARTIFACTS / f"snapshot-v3-{status}.json").read_text()
+    )
+    fields = legacy["body"]["state"]["fields"]
+    fields["history"] = [
+        {"$type": "ExecutedCommand", "fields": {"command": command}}
+        for command in fields["command_history"]
+    ]
+    legacy["body"]["state_digest"] = hashlib.sha256(
+        canonical_json(legacy["body"]["state"]).encode("utf-8")
+    ).hexdigest()
+    legacy["sha256"] = checksum(legacy["body"])
+
+    restored = load_snapshot(legacy)
+
+    assert restored.state.history[-1] == HistoryBoundary(
+        source_schema_version="3",
+        pending_decision_was_present=True,
+    )
+
+
 def test_snapshot_v2_migration_adds_only_pending_decision_and_recalculates_digest(
 ) -> None:
     legacy_body = as_v2(make_engine())["body"]

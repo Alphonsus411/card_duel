@@ -49,11 +49,13 @@ GameEngine → MatchService (interno) → AuthenticatedMatchApplication → UI I
 El FrontEnd nunca integra directamente con `GameEngine` ni con `MatchService`.
 `MatchService` permanece como colaborador interno del servidor: sus parámetros
 como `player_id` y sus instancias de `GameCommand` no forman parte de una API de
-cliente. `AuthenticatedMatchApplication` es la frontera obligatoria para todo
-cliente y transporte; autentica la identidad externa, autoriza su asociación con
-el jugador y convierte las vistas y acciones internas en DTOs públicos seguros.
-El contrato de integración se define sobre esa frontera y publica únicamente
-datos y operaciones aptos para el cliente.
+cliente. `AuthenticatedMatchApplication` es la frontera de aplicación obligatoria
+para todo cliente: el transporte, integrado con un proveedor de identidad de
+confianza, debe autenticar primero las credenciales y entregarle una
+`ExternalIdentity` ya autenticada. La aplicación valida la forma de esa identidad,
+autoriza su asociación con el jugador y convierte las vistas y acciones internas
+en DTOs públicos seguros. El contrato de integración se define sobre esa frontera
+y publica únicamente datos y operaciones aptos para el cliente.
 
 ## 3. Fronteras de responsabilidad
 
@@ -87,10 +89,14 @@ accesibilidad y navegación, pero no estado autoritativo de partida.
 ### 3.5 Transport
 
 Traslada solicitudes y respuestas entre cliente y servidor, preservando
-identidad de partida, versión, orden, autenticación y errores. No interpreta ni
-duplica las reglas. El transporte remoto es eventual: el contrato debe poder
-probarse primero con un adaptador local sin confundir ese adaptador con el
-backend.
+identidad de partida, versión, orden, autenticación y errores. En operación
+remota, el transporte y su proveedor de identidad autentican las credenciales
+antes de construir la `ExternalIdentity` que recibe
+`AuthenticatedMatchApplication`; la aplicación no autentica credenciales, sino
+que autoriza la identidad ya autenticada contra el jugador. El transporte no
+interpreta ni duplica las reglas. El transporte remoto es eventual: el contrato
+debe poder probarse primero con un adaptador local sin confundir ese adaptador
+con el backend.
 
 ### 3.6 Autoridad y prohibiciones del cliente
 
@@ -178,8 +184,10 @@ posteriores.
 
 - Definir snapshots públicos por punto de vista, eventos/resultados y errores.
 - Definir solicitudes de intención sin exponer comandos internos.
-- Exigir identidad autenticada y resolver en el servidor su asociación autorizada
-  con un jugador; ningún cliente puede elegir o enviar un `player_id`.
+- Exigir una `ExternalIdentity` cuyas credenciales ya hayan sido autenticadas por
+  el transporte o proveedor de identidad, y resolver en la aplicación su
+  asociación autorizada con un jugador; ningún cliente puede elegir o enviar un
+  `player_id`.
 - Exponer sólo DTOs públicos seguros; ni las instancias de `GameCommand` ni las
   vistas internas devueltas por `MatchService` pueden atravesar el contrato.
 - Introducir conceptualmente IDs opacos de alternativas ligados a versión CAS,
@@ -289,9 +297,11 @@ exista una decisión explícita de producción.
 - Seleccionar el transporte y desplegar `AuthenticatedMatchApplication` con
   `MatchService` detrás de esa frontera, sin cambiar el contrato semántico
   probado localmente.
-- Integrar el proveedor de identidad con la autenticación y autorización ya
-  exigidas por el contrato, y añadir protección de datos privados, idempotencia,
-  límites, observabilidad y recuperación.
+- Integrar el transporte con un proveedor de identidad que autentique las
+  credenciales antes de invocar `AuthenticatedMatchApplication` y construya la
+  `ExternalIdentity` sólo a partir de ese resultado verificado; la aplicación
+  realizará después la autorización de identidad a jugador. Añadir protección de
+  datos privados, idempotencia, límites, observabilidad y recuperación.
 - Asegurar concurrencia CAS, persistencia, migraciones, replay y compatibilidad.
 - Definir CI/CD, entornos, secretos, telemetría, soporte y rollback para Android,
   iOS y Web.

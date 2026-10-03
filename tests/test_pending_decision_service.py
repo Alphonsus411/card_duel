@@ -16,7 +16,7 @@ from card_duel_engine.domain import (
     MatchStatus,
     PendingDecisionStatus,
 )
-from card_duel_engine.domain.errors import IllegalAction, StaleDecisionVersion
+from card_duel_engine.domain.errors import IllegalAction
 
 from fixtures import test_deck
 
@@ -30,7 +30,7 @@ def prepared_service() -> tuple[MatchService, InMemoryMatchStore]:
         "A",
         DecisionAudience.ELECTOR,
         ("internal-a", "internal-b"),
-        1,
+        19,
         ("test",),
     )
     store = InMemoryMatchStore()
@@ -80,21 +80,28 @@ def test_service_validates_and_compares_cas_before_resolving() -> None:
     store.save.assert_not_called()
 
 
-def test_service_rejects_decision_left_pending_after_state_version_changes() -> None:
+def test_storage_writes_do_not_change_the_decision_version_namespace() -> None:
     service, store = prepared_service()
     intervening = store.load("match")
     assert store.save("match", intervening.engine, expected_version=1) == 2
-    resolver = Mock()
+    resolver = Mock(return_value="internal-a")
 
-    with pytest.raises(StaleDecisionVersion):
-        service.resolve_pending_decision(
-            "match", "A", resolver, expected_version=2
-        )
+    view = service.resolve_pending_decision(
+        "match", "A", resolver, expected_version=2
+    )
 
-    resolver.assert_not_called()
+    assert view.version == 3
+    resolver.assert_called_once_with(
+        "match",
+        "A",
+        2,
+        "decision:service:1",
+        19,
+        ("internal-a", "internal-b"),
+    )
     saved = store.load("match").engine.state
     assert saved is not None and saved.pending_decision is not None
-    assert saved.pending_decision.status is PendingDecisionStatus.PENDING
+    assert saved.pending_decision.status is PendingDecisionStatus.CLOSED
 
 
 def test_service_rejects_decision_left_pending_after_match_finishes() -> None:

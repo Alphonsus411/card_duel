@@ -1,7 +1,8 @@
 # Plan fundacional: `CAP-DAMAGE-002` — prevención por causa `COMBAT`
 
-**Fecha:** 2026-10-24  
-**Estado:** plan de implementación; no cambia la clasificación de la capability  
+**Fecha:** 2026-10-24
+
+**Estado:** plan de implementación; no cambia la clasificación de la capability
 **Prioridad de roadmap:** P0 / W1, después de las integraciones ya cerradas
 
 ## Decisión de alcance

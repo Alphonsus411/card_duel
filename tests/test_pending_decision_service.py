@@ -16,7 +16,12 @@ from card_duel_engine import (
     WriteConflict,
     VersionConflict,
 )
-from card_duel_engine.domain import DecisionAudience, PendingDecisionStatus
+from card_duel_engine.domain import (
+    DecisionAudience,
+    MatchStatus,
+    PendingDecisionStatus,
+)
+from card_duel_engine.domain.errors import IllegalAction
 
 from fixtures import test_deck
 
@@ -76,6 +81,39 @@ def test_service_validates_and_compares_cas_before_resolving() -> None:
             "match", "A", "internal-a", expected_version=1
         )
     store.save.assert_not_called()
+
+
+def test_storage_writes_do_not_change_the_decision_version_namespace() -> None:
+    service, store = prepared_service()
+    intervening = store.load("match")
+    assert store.save("match", intervening.engine, expected_version=1) == 2
+
+    view = service.resolve_pending_decision(
+        "match", "A", "internal-a", expected_version=2
+    )
+
+    assert view.version == 3
+    saved = store.load("match").engine.state
+    assert saved is not None and saved.pending_decision is not None
+    assert saved.pending_decision.status is PendingDecisionStatus.CLOSED
+    assert saved.pending_decision.selected_option == "internal-a"
+
+
+def test_service_rejects_decision_left_pending_after_match_finishes() -> None:
+    service, store = prepared_service()
+    finished = store.load("match")
+    assert finished.engine.state is not None
+    finished.engine.state.status = MatchStatus.FINISHED
+    assert store.save("match", finished.engine, expected_version=1) == 2
+
+    with pytest.raises(IllegalAction, match="terminada"):
+        service.resolve_pending_decision(
+            "match", "A", "internal-a", expected_version=2
+        )
+
+    saved = store.load("match").engine.state
+    assert saved is not None and saved.pending_decision is not None
+    assert saved.pending_decision.status is PendingDecisionStatus.PENDING
 
 
 def test_application_resolves_only_the_current_public_reference() -> None:

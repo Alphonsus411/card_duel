@@ -13,6 +13,7 @@ from .domain.enums import MatchStatus, PendingDecisionStatus
 from .domain.errors import (
     DecisionAlreadyClosed,
     DecisionSlotEmpty,
+    IllegalAction,
     InvalidDeckDefinition,
     UnauthorizedDecisionElector,
     UnauthorizedDecisionOption,
@@ -215,6 +216,8 @@ class MatchService:
         decision = state.pending_decision
         if decision.status is not PendingDecisionStatus.PENDING:
             raise DecisionAlreadyClosed("La decisión ya no está pendiente")
+        if state.status is MatchStatus.FINISHED:
+            raise IllegalAction("Una partida terminada no admite decisiones")
         if decision.authorized_elector != player_id:
             raise UnauthorizedDecisionElector(
                 "El actor no es el elector autorizado"

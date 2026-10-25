@@ -1,8 +1,8 @@
 # CAP-TAXONOMY-001 T0 — contrato de dimensiones canónicas
 
 **Fecha:** 2026-10-25
-**Estado:** T0 completada; habilita únicamente T1 (inventario de representación)
-**Capability:** `CAP-TAXONOMY-001` permanece `PARTIAL / READY`
+**Estado:** T0–T6 completadas; incremento de dimensiones actuales cerrado
+**Capability:** `CAP-TAXONOMY-001` permanece `PARTIAL / CLOSED`
 
 ## Propósito del incremento
 
@@ -55,7 +55,7 @@ no aparece en la fuente.
 | T5 — Verificación | Matriz de positivo, negativo, legado, snapshot y replay. | Determinismo y rechazo cerrado acreditados. |
 | T6 — Cierre | Nota de compatibilidad y matrices. | Sigue `PARTIAL` mientras persistan brechas documentadas. |
 
-T2–T6 no quedan autorizadas por T0: antes de cada una se revisará que no exija
+T2–T6 se ejecutaron como incrementos separados tras comprobar que no exigían
 resolver una ambigüedad normativa ni ampliar el corpus.
 
 ## Casos de aceptación de T0

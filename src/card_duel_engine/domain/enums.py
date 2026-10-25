@@ -50,6 +50,12 @@ class MatchStatus(Enum):
     BLOCKED = auto()
 
 
+class DamageCause(Enum):
+    """Causas de daño que este incremento puede expresar explícitamente."""
+
+    COMBAT = auto()
+
+
 class PendingDecisionStatus(Enum):
     """Estados autoritativos del ciclo de vida de una decisión."""
 

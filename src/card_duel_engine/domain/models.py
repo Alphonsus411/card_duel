@@ -9,6 +9,7 @@ from .enums import (
     ControllerScope,
     CostComponent,
     CostMetric,
+    DamageCause,
     DecisionAudience,
     DecisionHistoryStatus,
     EffectDuration,
@@ -601,6 +602,25 @@ class PlayerState:
     conceded: bool = False
     wound_prevention: int = 0
     drainage_used_turn_serial: int | None = None
+
+
+@dataclass(frozen=True)
+class DamagePreventionReservation:
+    """Reserva mínima y cerrada para una prevención con causa explícita.
+
+    P2 no la incorpora todavía a ``GameState``: hacerlo alteraría la forma
+    persistida antes de que P3 introduzca su versión y migración. El valor sirve
+    como contrato puro para la futura puerta de resolución.
+    """
+
+    cause: DamageCause
+    amount: int
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.cause, DamageCause):
+            raise ValueError("La causa de prevención no es válida")
+        if type(self.amount) is not int or self.amount <= 0:
+            raise ValueError("La reserva de prevención debe ser positiva")
 
 
 @dataclass(frozen=True)

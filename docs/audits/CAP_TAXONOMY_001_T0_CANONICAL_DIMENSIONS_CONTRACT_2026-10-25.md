@@ -21,7 +21,9 @@ no aparece en la fuente.
 
 1. **Dimensiones independientes.** `CardKind`, `CardRank`, `LordDomain`,
    `subtypes` e identidad por `definition_id` representan ejes distintos. La
-   coincidencia de una palabra no autoriza a moverla entre ejes.
+   coincidencia de una palabra no autoriza a moverla entre ejes. En el baseline,
+   `lord_domain` identifica un Señor tanto con `CardKind.LORD` como con la forma
+   ya acreditada `CardKind.CREATURE + lord_domain`; T0 no colapsa esas formas.
 2. **Identidad no es taxonomía.** `definition_id` conserva catálogo,
    persistencia, límites de copias y presentación; no se amplía como dispatch
    de reglas ni como sustituto de un selector taxonómico.
@@ -61,7 +63,7 @@ resolver una ambigüedad normativa ni ampliar el corpus.
 | ID | Dado | Cuando | Entonces |
 | --- | --- | --- | --- |
 | T0-A1 | Una Criatura Legendaria. | Se clasifica. | Tipo `CREATURE` y rango `LEGENDARY`, sin crear un tipo compuesto. |
-| T0-A2 | Un Señor de Reinos. | Se clasifica. | Tipo `LORD` y dominio `REALMS`, sin convertir el dominio en subtipo. |
+| T0-A2 | Un Señor de Reinos. | Se clasifica. | Conserva su `CardKind` acreditado y dominio `REALMS`, sin convertir el dominio en subtipo ni inferir un tipo único. |
 | T0-A3 | Dos grafías `Pixy` y `Pixie`. | Se filtran o proyectan. | Siguen literales y distintas; no hay alias implícito. |
 | T0-A4 | Una carta llamada expresamente. | Se selecciona por identidad. | Usa identidad, no una familia taxonómica deducida. |
 | T0-A5 | Un Token Legendario sin tipo original. | Se migra o representa. | No se inventa `CardKind`, subtipo ni dominio. |

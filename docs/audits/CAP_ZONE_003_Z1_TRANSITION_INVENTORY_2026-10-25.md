@@ -1,7 +1,7 @@
 # CAP-ZONE-003 — Z1: inventario de transiciones y caracterización
 
-**Fecha:** 2026-10-25  
-**Estado de la fase:** completada  
+**Fecha:** 2026-10-25
+**Estado de la fase:** completada
 **Capability:** `CAP-ZONE-003` sigue `PARTIAL / READY`
 
 ## Alcance de Z1

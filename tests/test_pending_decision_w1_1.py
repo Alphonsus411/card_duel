@@ -307,7 +307,7 @@ def test_close_is_exactly_once_and_second_attempt_is_atomic() -> None:
 
 
 @pytest.mark.parametrize("closed", [False, True], ids=["pending", "closed"])
-def test_real_snapshot_v4_round_trip_preserves_lifecycle_state(closed: bool) -> None:
+def test_real_snapshot_v5_round_trip_preserves_lifecycle_state(closed: bool) -> None:
     engine = make_engine()
     open_decision(engine)
     if closed:
@@ -316,7 +316,7 @@ def test_real_snapshot_v4_round_trip_preserves_lifecycle_state(closed: bool) -> 
     payload = dump_snapshot(engine, indent=None)
     restored = load_snapshot(payload)
 
-    assert json.loads(payload)["body"]["schema_version"] == "4"
+    assert json.loads(payload)["body"]["schema_version"] == "5"
     assert restored.state == engine.state
     assert state_digest(restored) == state_digest(engine)
     assert dump_snapshot(restored, indent=None) == payload
@@ -368,13 +368,13 @@ def test_digest_includes_each_pending_decision_contract_field(
     assert state_digest(changed) != state_digest(baseline)
 
 
-def test_replay_v3_reconstructs_internal_lifecycle_mutation() -> None:
+def test_replay_v4_reconstructs_internal_lifecycle_mutation() -> None:
     engine = make_engine()
     open_decision(engine)
 
     payload = dump_replay(engine, indent=None)
 
-    assert json.loads(payload)["body"]["schema_version"] == "3"
+    assert json.loads(payload)["body"]["schema_version"] == "4"
     restored = replay_from_log(payload)
     assert restored.state is not None
     assert restored.state.pending_decision == engine.state.pending_decision

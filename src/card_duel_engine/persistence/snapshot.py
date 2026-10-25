@@ -14,9 +14,8 @@ from ..rules.config import RuleSet
 from .codec import canonical_json, decode_value, encode_value
 from .migrations import migrate_document
 
-# Schema 4 persists GameState.history as authoritative state so its exact ordering
-# survives snapshot -> restore -> dump_replay.
-SNAPSHOT_SCHEMA_VERSION = "4"
+# Schema 5 adds explicit legacy prevention profiles and typed reservations.
+SNAPSHOT_SCHEMA_VERSION = "5"
 
 
 def _body(engine: GameEngine) -> dict[str, Any]:
@@ -73,7 +72,38 @@ def _omit_pending_decision(encoded_state: Any) -> Any:
 def legacy_019_state_digest(engine: GameEngine) -> str:
     """Calcula la huella histórica 0.19 sin alterar el estado autoritativo."""
     encoded = _canonical_encoded_state(engine)
-    return _digest_encoded_state(_omit_pending_decision(encoded))
+    return _digest_encoded_state(
+        _omit_damage_prevention_profiles(_omit_pending_decision(encoded))
+    )
+
+
+def _omit_damage_prevention_profiles(encoded_state: Any) -> Any:
+    """Elimina sólo los campos que no existían antes del schema v5."""
+
+    def omit_profiles(value: Any) -> Any:
+        if isinstance(value, list):
+            return [omit_profiles(item) for item in value]
+        if not isinstance(value, dict):
+            return value
+        transformed = {key: omit_profiles(item) for key, item in value.items()}
+        if transformed.get("$type") in {"CardInstance", "PlayerState"}:
+            fields = transformed.get("fields")
+            if isinstance(fields, dict):
+                fields.pop("damage_prevention_profile", None)
+                fields.pop("damage_prevention_reservations", None)
+                fields.pop("wound_prevention_profile", None)
+                fields.pop("wound_prevention_reservations", None)
+        return transformed
+
+    return omit_profiles(encoded_state)
+
+
+def legacy_state_digest_without_damage_prevention_profiles(engine: GameEngine) -> str:
+    """Calcula la huella de replay v3 antes de perfiles de prevención v5."""
+
+    return _digest_encoded_state(
+        _omit_damage_prevention_profiles(_canonical_encoded_state(engine))
+    )
 
 
 def legacy_state_digest_without_ability_source_profile(engine: GameEngine) -> str:
@@ -102,7 +132,11 @@ def legacy_state_digest_without_ability_source_profile(engine: GameEngine) -> st
         return transformed
 
     return _digest_encoded_state(
-        omit_profile(_omit_pending_decision(_canonical_encoded_state(engine)))
+        omit_profile(
+            _omit_damage_prevention_profiles(
+                _omit_pending_decision(_canonical_encoded_state(engine))
+            )
+        )
     )
 
 

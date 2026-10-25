@@ -70,6 +70,69 @@ def _snapshot_3_to_4(body: dict[str, Any]) -> dict[str, Any]:
     return body
 
 
+def _add_legacy_prevention_profile(
+    encoded_mapping: Any,
+    *,
+    type_name: str,
+    legacy_amount_field: str,
+    profile_field: str,
+    reservations_field: str,
+) -> None:
+    if not isinstance(encoded_mapping, dict) or set(encoded_mapping) != {"$mapping"}:
+        raise ValueError("El snapshot v4 no contiene un mapeo de prevención válido")
+    entries = encoded_mapping["$mapping"]
+    if not isinstance(entries, list):
+        raise ValueError("El snapshot v4 contiene entradas de prevención inválidas")
+    for entry in entries:
+        if not isinstance(entry, list) or len(entry) != 2:
+            raise ValueError("El snapshot v4 contiene una entrada de prevención inválida")
+        value = entry[1]
+        if not isinstance(value, dict) or value.get("$type") != type_name:
+            raise ValueError("El snapshot v4 contiene un estado de prevención inválido")
+        fields = value.get("fields")
+        if not isinstance(fields, dict):
+            raise ValueError("El snapshot v4 contiene campos de prevención inválidos")
+        if profile_field in fields or reservations_field in fields:
+            raise ValueError("El snapshot v4 mezcla perfiles de prevención incompatibles")
+        if type(fields.get(legacy_amount_field)) is not int:
+            raise ValueError("El snapshot v4 no contiene una reserva escalar válida")
+        fields[profile_field] = {
+            "$enum": "DamagePreventionProfile",
+            "name": "LEGACY_UNTYPED",
+        }
+        fields[reservations_field] = {"$tuple": []}
+
+
+def _snapshot_4_to_5(body: dict[str, Any]) -> dict[str, Any]:
+    """Hace explícito el perfil de reservas escalares sin reclasificarlas."""
+
+    state = body.get("state")
+    if not isinstance(state, dict) or state.get("$type") != "GameState":
+        raise ValueError("El snapshot v4 no contiene el GameState esperado")
+    fields = state.get("fields")
+    if not isinstance(fields, dict):
+        raise ValueError("El GameState de schema 4 no tiene la forma esperada")
+    _add_legacy_prevention_profile(
+        fields.get("cards"),
+        type_name="CardInstance",
+        legacy_amount_field="damage_prevention",
+        profile_field="damage_prevention_profile",
+        reservations_field="damage_prevention_reservations",
+    )
+    _add_legacy_prevention_profile(
+        fields.get("players"),
+        type_name="PlayerState",
+        legacy_amount_field="wound_prevention",
+        profile_field="wound_prevention_profile",
+        reservations_field="wound_prevention_reservations",
+    )
+    body["state_digest"] = hashlib.sha256(
+        canonical_json(state).encode("utf-8")
+    ).hexdigest()
+    body["schema_version"] = "5"
+    return body
+
+
 def _replay_1_to_2(body: dict[str, Any]) -> dict[str, Any]:
     commands = decode_value(body["commands"])
     if not isinstance(commands, tuple):
@@ -96,6 +159,13 @@ def _replay_2_to_3(body: dict[str, Any]) -> dict[str, Any]:
     return body
 
 
+def _replay_3_to_4(body: dict[str, Any]) -> dict[str, Any]:
+    """Versiona el digest que incorpora perfiles de prevención persistibles."""
+
+    body["schema_version"] = "4"
+    return body
+
+
 def _manifest_1_to_2(body: dict[str, Any]) -> dict[str, Any]:
     body["metadata"] = {}
     body["dependencies"] = []
@@ -107,8 +177,10 @@ _MIGRATIONS: dict[tuple[str, str], Migration] = {
     ("snapshot", "1"): _snapshot_1_to_2,
     ("snapshot", "2"): _snapshot_2_to_3,
     ("snapshot", "3"): _snapshot_3_to_4,
+    ("snapshot", "4"): _snapshot_4_to_5,
     ("replay", "1"): _replay_1_to_2,
     ("replay", "2"): _replay_2_to_3,
+    ("replay", "3"): _replay_3_to_4,
     ("manifest", "1"): _manifest_1_to_2,
 }
 

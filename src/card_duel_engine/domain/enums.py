@@ -56,6 +56,12 @@ class DamageCause(Enum):
     COMBAT = auto()
 
 
+class DamagePreventionProfile(Enum):
+    """Perfil explícito de las reservas escalares heredadas."""
+
+    LEGACY_UNTYPED = "legacy-untyped"
+
+
 class PendingDecisionStatus(Enum):
     """Estados autoritativos del ciclo de vida de una decisión."""
 

@@ -10,6 +10,7 @@ from .enums import (
     CostComponent,
     CostMetric,
     DamageCause,
+    DamagePreventionProfile,
     DecisionAudience,
     DecisionHistoryStatus,
     EffectDuration,
@@ -570,6 +571,8 @@ class CardInstance:
     counters: dict[str, int] = field(default_factory=dict)
     attached_to: str | None = None
     damage_prevention: int = 0
+    damage_prevention_profile: DamagePreventionProfile = DamagePreventionProfile.LEGACY_UNTYPED
+    damage_prevention_reservations: tuple[DamagePreventionReservation, ...] = ()
     activated_this_turn: set[str] = field(default_factory=set)
     transformed_as_creature: bool = False
     creature_form_expires_turn_serial: int | None = None
@@ -601,6 +604,8 @@ class PlayerState:
     discard_recycling_blocked: bool = False
     conceded: bool = False
     wound_prevention: int = 0
+    wound_prevention_profile: DamagePreventionProfile = DamagePreventionProfile.LEGACY_UNTYPED
+    wound_prevention_reservations: tuple[DamagePreventionReservation, ...] = ()
     drainage_used_turn_serial: int | None = None
 
 

@@ -454,7 +454,7 @@ def test_consume_rejects_wrong_contract_atomically(
     "final_stage",
     ["pending", "closed", "consumed", "second-pending"],
 )
-def test_replay_v3_preserves_every_lifecycle_final_state(final_stage: str) -> None:
+def test_replay_v4_preserves_every_lifecycle_final_state(final_stage: str) -> None:
     engine = make_engine()
     open_decision(engine)
     if final_stage != "pending":
@@ -466,7 +466,7 @@ def test_replay_v3_preserves_every_lifecycle_final_state(final_stage: str) -> No
 
     dumped = dump_replay(engine, indent=None)
     document = json.loads(dumped)
-    assert document["body"]["schema_version"] == "3"
+    assert document["body"]["schema_version"] == "4"
     assert engine.state is not None
     assert document["body"]["history_count"] == len(engine.state.history)
     replayed = replay_from_log(dumped)
@@ -536,19 +536,19 @@ def test_replay_document_and_engine_preserve_command_transition_interleaving() -
     assert rebuilt.state.command_history == [command_a, command_b]
 
 
-def test_snapshot_v4_restore_dump_replay_v3_keeps_pre_snapshot_transitions() -> None:
+def test_snapshot_v5_restore_dump_replay_v4_keeps_pre_snapshot_transitions() -> None:
     engine = make_engine()
     _complete_first_lifecycle(engine)
     open_decision(engine, **SECOND)
     transitions_before = _transitions(engine)
 
     snapshot = dump_snapshot(engine, indent=None)
-    assert json.loads(snapshot)["body"]["schema_version"] == "4"
+    assert json.loads(snapshot)["body"]["schema_version"] == "5"
     restored = load_snapshot(snapshot)
     assert _transitions(restored) == transitions_before
 
     replay_dump = dump_replay(restored, indent=None)
-    assert json.loads(replay_dump)["body"]["schema_version"] == "3"
+    assert json.loads(replay_dump)["body"]["schema_version"] == "4"
     replayed = replay_from_log(replay_dump)
     assert replayed.state == restored.state == engine.state
     assert state_digest(replayed) == state_digest(restored) == state_digest(engine)

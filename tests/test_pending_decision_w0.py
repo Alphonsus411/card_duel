@@ -71,6 +71,12 @@ def as_v2(engine: GameEngine) -> dict[str, object]:
     fields.pop("pending_decision")
     fields.pop("history")
     fields.pop("history_prefix_complete")
+    for _, card in fields["cards"]["$mapping"]:
+        card["fields"].pop("damage_prevention_profile")
+        card["fields"].pop("damage_prevention_reservations")
+    for _, player in fields["players"]["$mapping"]:
+        player["fields"].pop("wound_prevention_profile")
+        player["fields"].pop("wound_prevention_reservations")
     document["body"]["schema_version"] = "2"
     document["body"]["state_digest"] = hashlib.sha256(
         canonical_json(document["body"]["state"]).encode()
@@ -242,23 +248,23 @@ def test_game_state_rejects_an_unknown_elector() -> None:
 
 
 @pytest.mark.parametrize("closed", [False, True])
-def test_snapshot_v4_round_trip_with_decision_and_digest(closed: bool) -> None:
+def test_snapshot_v5_round_trip_with_decision_and_digest(closed: bool) -> None:
     engine = make_engine()
     engine.state.pending_decision = decision(closed=closed)
     payload = dump_snapshot(engine, indent=None)
     document = json.loads(payload)
-    assert document["body"]["schema_version"] == "4"
+    assert document["body"]["schema_version"] == "5"
     restored = load_snapshot(payload)
     assert restored.state.pending_decision == engine.state.pending_decision
     assert state_digest(restored) == state_digest(engine)
     assert dump_snapshot(restored, indent=None) == payload
 
 
-def test_snapshot_v2_migrates_to_v4_without_inventing_a_decision() -> None:
+def test_snapshot_v2_migrates_to_v5_without_inventing_a_decision() -> None:
     legacy = as_v2(make_engine())
     restored = load_snapshot(legacy)
     assert restored.state.pending_decision is None
-    assert json.loads(dump_snapshot(restored))["body"]["schema_version"] == "4"
+    assert json.loads(dump_snapshot(restored))["body"]["schema_version"] == "5"
 
 
 def test_snapshot_v2_migration_adds_only_pending_decision_and_recalculates_digest(
@@ -396,7 +402,7 @@ def test_snapshot_v2_migration_does_not_infer_from_specialized_pending_models(
 
 def test_migrated_digest_and_envelope_checksum_are_validated_by_load_snapshot() -> None:
     legacy = as_v2(make_engine())
-    migrated_body = migrate_document("snapshot", legacy["body"], "4")
+    migrated_body = migrate_document("snapshot", legacy["body"], "5")
     migrated_envelope = {"body": migrated_body, "sha256": checksum(migrated_body)}
 
     restored = load_snapshot(migrated_envelope)
@@ -520,5 +526,5 @@ def test_two_sqlite_writers_with_same_expected_version_have_one_winner() -> None
             assert_snapshot_cas_race(store)
 
 
-def test_replay_uses_v3_for_w1_lifecycle() -> None:
-    assert REPLAY_SCHEMA_VERSION == "3"
+def test_replay_uses_v4_for_w1_lifecycle() -> None:
+    assert REPLAY_SCHEMA_VERSION == "4"

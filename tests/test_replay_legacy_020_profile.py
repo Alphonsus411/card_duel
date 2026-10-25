@@ -94,4 +94,4 @@ class Legacy020AbilitySourceProfileReplayTests(unittest.TestCase):
                     replay_from_log(_rechecksum(document))
 
     def test_replay_schema_is_v3(self):
-        self.assertEqual(REPLAY_SCHEMA_VERSION, "3")
+        self.assertEqual(REPLAY_SCHEMA_VERSION, "4")

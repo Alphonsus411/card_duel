@@ -66,6 +66,12 @@ class HardeningV0100Tests(unittest.TestCase):
         snapshot["body"]["state"]["fields"].pop("pending_decision")
         snapshot["body"]["state"]["fields"].pop("history")
         snapshot["body"]["state"]["fields"].pop("history_prefix_complete")
+        for _, player in snapshot["body"]["state"]["fields"]["players"]["$mapping"]:
+            player["fields"].pop("wound_prevention_profile")
+            player["fields"].pop("wound_prevention_reservations")
+        for _, card in snapshot["body"]["state"]["fields"]["cards"]["$mapping"]:
+            card["fields"].pop("damage_prevention_profile")
+            card["fields"].pop("damage_prevention_reservations")
         snapshot["sha256"] = checksum(snapshot["body"])
         restored = load_snapshot(snapshot)
         self.assertEqual(state_digest(restored), state_digest(engine))

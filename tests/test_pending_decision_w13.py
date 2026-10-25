@@ -16,21 +16,21 @@ from card_duel_engine.persistence.snapshot import dump_snapshot, load_snapshot, 
 from test_pending_decision_w11 import make_engine, open_decision
 
 
-GOLDEN = Path(__file__).parent / "artifacts/pending-decision-w1.3/snapshot-v4-lifecycle.json"
+GOLDEN_V4 = Path(__file__).parent / "artifacts/pending-decision-w1.3/snapshot-v4-lifecycle.json"
 
 
 def _checksum(body: dict[str, object]) -> str:
     return hashlib.sha256(canonical_json(body).encode("utf-8")).hexdigest()
 
 
-def test_v4_snapshot_preserves_lifecycle_and_replays_to_the_same_state() -> None:
+def test_v4_golden_migrates_to_current_snapshot_and_preserves_lifecycle() -> None:
     engine = make_engine()
     open_decision(engine)
     engine._close_pending_decision("decision:test:1", "A", "opaque-b", 0)
     snapshot = dump_snapshot(engine)
 
-    assert snapshot == GOLDEN.read_text(encoding="utf-8")
-    restored = load_snapshot(snapshot)
+    restored = load_snapshot(GOLDEN_V4.read_text(encoding="utf-8"))
+    assert snapshot == dump_snapshot(restored)
     assert restored.state is not None and engine.state is not None
     assert restored.state.history == engine.state.history
 

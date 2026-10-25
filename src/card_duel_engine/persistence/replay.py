@@ -21,11 +21,12 @@ from .codec import canonical_json, decode_value, encode_value
 from .migrations import migrate_document
 from .snapshot import (
     legacy_019_state_digest,
+    legacy_state_digest_without_damage_prevention_profiles,
     legacy_state_digest_without_ability_source_profile,
     state_digest,
 )
 
-REPLAY_SCHEMA_VERSION = "3"
+REPLAY_SCHEMA_VERSION = "4"
 LEGACY_PROFILE_DIGEST_VERSIONS = frozenset(("0.20.0", "0.20.1"))
 
 
@@ -211,6 +212,13 @@ def replay_from_log(
                 legacy_state_digest_without_ability_source_profile(engine)
                 == expected_digest
             )
+        elif not digest_matches and _is_prevention_profile_legacy_replay(
+            original_body, engine_version
+        ):
+            digest_matches = (
+                legacy_state_digest_without_damage_prevention_profiles(engine)
+                == expected_digest
+            )
         if not digest_matches:
             raise ValueError("La reproducción diverge de la huella final registrada")
     return engine
@@ -236,5 +244,16 @@ def _is_historical_affected_020_replay(
     """Limit the compatibility escape hatch to versions that emitted the digest."""
     return (
         original_body.get("schema_version") in {"1", "2"}
+        and version in LEGACY_PROFILE_DIGEST_VERSIONS
+    )
+
+
+def _is_prevention_profile_legacy_replay(
+    original_body: Mapping[str, Any], version: object
+) -> bool:
+    """Reconoce únicamente replay v3 emitido antes del schema de prevención."""
+
+    return (
+        original_body.get("schema_version") == "3"
         and version in LEGACY_PROFILE_DIGEST_VERSIONS
     )

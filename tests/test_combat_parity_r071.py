@@ -44,15 +44,15 @@ class MinimalCombatContext:
     def _current_strength(self, card_id: str) -> int:
         return self.engine._current_strength(card_id)
 
-    def _deal_damage(
+    def _deal_combat_damage(
         self, card_id: str, amount: int, source_card_id: str | None = None
     ) -> None:
-        self.engine._deal_damage(card_id, amount, source_card_id)
+        self.engine._deal_combat_damage(card_id, amount, source_card_id)
 
-    def _deal_wounds(
+    def _deal_combat_wounds(
         self, player_id: str, amount: int, source_card_id: str | None = None
     ) -> None:
-        self.engine._deal_wounds(player_id, amount, source_card_id)
+        self.engine._deal_combat_wounds(player_id, amount, source_card_id)
 
     def _run_state_based_actions(self) -> None:
         self.engine._run_state_based_actions()

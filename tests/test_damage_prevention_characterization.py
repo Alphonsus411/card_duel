@@ -6,6 +6,7 @@ from card_duel_engine import GameEngine
 from card_duel_engine.catalog import CardCatalog
 from card_duel_engine.domain.enums import (
     CardKind,
+    DamageCause,
     EffectKind,
     MatchStatus,
     Phase,
@@ -21,6 +22,7 @@ from card_duel_engine.domain.models import (
     PlayerState,
     StackItem,
 )
+from card_duel_engine.engine.damage_prevention import reserve_damage_prevention
 from card_duel_engine.persistence import dump_snapshot, load_snapshot, state_digest
 
 
@@ -118,6 +120,88 @@ class DamagePreventionCharacterizationTests(unittest.TestCase):
                 self.assertEqual(state.cards[source_id].damage, 4)
                 self.assertEqual(state.cards[creature_id].damage_prevention, 0)
                 self.assertEqual(state.cards[creature_id].damage, 3)
+
+    def test_normal_combat_and_challenge_consume_the_same_typed_reservation(self) -> None:
+        for is_challenge in (False, True):
+            with self.subTest(is_challenge=is_challenge):
+                engine, source_id, creature_id = self.make_engine()
+                state = engine._require_running_state()
+                state.cards[source_id].definition_id = "creature"
+                state.cards[source_id].damage_prevention_reservations = (
+                    reserve_damage_prevention(DamageCause.COMBAT, 1),
+                )
+                state.cards[creature_id].damage_prevention_reservations = (
+                    reserve_damage_prevention(DamageCause.COMBAT, 2),
+                )
+                state.combat = CombatState(
+                    attacking_player_id="A",
+                    defending_player_id="B",
+                    attackers=(source_id,),
+                    blockers={source_id: (creature_id,)},
+                    blockers_declared=True,
+                    is_challenge=is_challenge,
+                )
+                state.phase_priority_complete = True
+
+                engine._combat._resolve_combat("A")
+
+                self.assertEqual(state.cards[source_id].damage, 4)
+                self.assertEqual(state.cards[source_id].damage_prevention_reservations, ())
+                self.assertEqual(state.cards[creature_id].damage, 3)
+                self.assertEqual(state.cards[creature_id].damage_prevention_reservations, ())
+
+    def test_combat_wounds_consume_only_the_combat_reservation(self) -> None:
+        engine, source_id, _ = self.make_engine()
+        state = engine._require_running_state()
+        state.cards[source_id].definition_id = "creature"
+        state.players["B"].wound_prevention_reservations = (
+            reserve_damage_prevention(DamageCause.COMBAT, 3),
+        )
+        state.combat = CombatState(
+            attacking_player_id="A",
+            defending_player_id="B",
+            attackers=(source_id,),
+            blockers_declared=True,
+        )
+        state.phase_priority_complete = True
+
+        engine._combat._resolve_combat("A")
+
+        self.assertEqual(state.players["B"].wounds, 2)
+        self.assertEqual(state.players["B"].wound_prevention_reservations, ())
+
+    def test_combat_preserves_legacy_prevention_precedence_before_typed(self) -> None:
+        engine, _, creature_id = self.make_engine()
+        state = engine._require_running_state()
+        state.cards[creature_id].damage_prevention = 2
+        state.cards[creature_id].damage_prevention_reservations = (
+            reserve_damage_prevention(DamageCause.COMBAT, 3),
+        )
+
+        engine._deal_combat_damage(creature_id, 4)
+
+        self.assertEqual(state.cards[creature_id].damage, 0)
+        self.assertEqual(state.cards[creature_id].damage_prevention, 0)
+        self.assertEqual(
+            state.cards[creature_id].damage_prevention_reservations,
+            (reserve_damage_prevention(DamageCause.COMBAT, 1),),
+        )
+
+    def test_non_combat_damage_leaves_typed_combat_reservations_intact(self) -> None:
+        engine, _, creature_id = self.make_engine()
+        state = engine._require_running_state()
+        card_reservation = reserve_damage_prevention(DamageCause.COMBAT, 2)
+        wound_reservation = reserve_damage_prevention(DamageCause.COMBAT, 3)
+        state.cards[creature_id].damage_prevention_reservations = (card_reservation,)
+        state.players["A"].wound_prevention_reservations = (wound_reservation,)
+
+        engine._deal_damage(creature_id, 2)
+        engine._deal_wounds("A", 3)
+
+        self.assertEqual(state.cards[creature_id].damage, 2)
+        self.assertEqual(state.cards[creature_id].damage_prevention_reservations, (card_reservation,))
+        self.assertEqual(state.players["A"].wounds, 3)
+        self.assertEqual(state.players["A"].wound_prevention_reservations, (wound_reservation,))
 
     def test_cleanup_and_battlefield_exit_clear_current_scalar_reserves(self) -> None:
         engine, _, creature_id = self.make_engine()

@@ -20,6 +20,7 @@ from ..domain.enums import (
     ControllerScope,
     DecisionAudience,
     DecisionHistoryStatus,
+    DamageCause,
     EffectDuration,
     EffectKind,
     LordDomain,
@@ -59,6 +60,7 @@ from ..domain.models import (
     DecisionConsumed,
     DecisionOpened,
     DecisionTransitionEntry,
+    DamagePreventionReservation,
     EffectDefinition,
     DynamicCostDefinition,
     GameEvent,
@@ -80,6 +82,7 @@ from ..domain.models import (
 from ..rules.config import RuleSet
 from ..rules.resolvers import apply_text_patch, resolve_dynamic_cost, resolve_x_cost
 from .combat import CombatContext, CombatManager
+from .damage_prevention import resolve_damage_prevention
 from .actions import (
     LegalActionContext,
     LegalActionEnumerator,
@@ -1899,6 +1902,24 @@ class GameEngine:
         if dealt:
             self._emit("WOUNDS_ADDED", player_id, source_card_id, {"amount": dealt})
 
+    def _deal_combat_wounds(
+        self, player_id: str, amount: int, source_card_id: str | None = None
+    ) -> None:
+        """Aplica heridas de combate con causa explícita y reservas compatibles."""
+        player = self._require_running_state().players[player_id]
+        legacy_prevented = min(player.wound_prevention, amount)
+        player.wound_prevention -= legacy_prevented
+        typed_prevented, dealt, reservations = self._resolve_combat_prevention(
+            player.wound_prevention_reservations, amount - legacy_prevented
+        )
+        player.wound_prevention_reservations = reservations
+        player.wounds += dealt
+        prevented = legacy_prevented + typed_prevented
+        if prevented:
+            self._emit("WOUNDS_PREVENTED", player_id, source_card_id, {"amount": prevented})
+        if dealt:
+            self._emit("WOUNDS_ADDED", player_id, source_card_id, {"amount": dealt})
+
     def _deal_damage(
         self,
         card_id: str,
@@ -1919,6 +1940,47 @@ class GameEngine:
         if dealt:
             self._emit("DAMAGE_DEALT", card_id=card_id,
                        payload={"amount": dealt, "source": source_card_id})
+
+    def _deal_combat_damage(
+        self, card_id: str, amount: int, source_card_id: str | None = None
+    ) -> None:
+        """Aplica daño de combate sin inferir la causa desde el contexto."""
+        instance = self._require_running_state().cards[card_id]
+        legacy_prevented = min(instance.damage_prevention, amount)
+        instance.damage_prevention -= legacy_prevented
+        typed_prevented, dealt, reservations = self._resolve_combat_prevention(
+            instance.damage_prevention_reservations, amount - legacy_prevented
+        )
+        instance.damage_prevention_reservations = reservations
+        instance.damage += dealt
+        prevented = legacy_prevented + typed_prevented
+        if prevented:
+            self._emit("DAMAGE_PREVENTED", card_id=card_id, payload={"amount": prevented})
+        if dealt:
+            self._emit("DAMAGE_DEALT", card_id=card_id,
+                       payload={"amount": dealt, "source": source_card_id})
+
+    @staticmethod
+    def _resolve_combat_prevention(
+        reservations: tuple[DamagePreventionReservation, ...], amount: int
+    ) -> tuple[int, int, tuple[DamagePreventionReservation, ...]]:
+        """Consume sólo reservas ``COMBAT`` y conserva el orden del resto."""
+        remaining_damage = amount
+        prevented = 0
+        remaining_reservations: list[DamagePreventionReservation] = []
+        for reservation in reservations:
+            resolution = resolve_damage_prevention(
+                reservation, DamageCause.COMBAT, remaining_damage
+            )
+            remaining_damage = resolution.remaining_damage
+            prevented += resolution.prevented_amount
+            if resolution.remaining_reservation:
+                remaining_reservations.append(
+                    DamagePreventionReservation(
+                        reservation.cause, resolution.remaining_reservation
+                    )
+                )
+        return prevented, remaining_damage, tuple(remaining_reservations)
 
     def _destroy_permanent(
         self,

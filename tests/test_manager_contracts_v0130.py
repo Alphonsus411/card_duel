@@ -41,8 +41,8 @@ class MinimalCombatContext:
     def _is_lord_creature(self, card_id: str) -> bool: return False
     def _is_creature(self, card_id: str) -> bool: return False
     def _current_strength(self, card_id: str) -> int: return 0
-    def _deal_damage(self, card_id: str, amount: int, source_card_id: str | None = None) -> None: raise AssertionError
-    def _deal_wounds(self, player_id: str, amount: int, source_card_id: str | None = None) -> None: raise AssertionError
+    def _deal_combat_damage(self, card_id: str, amount: int, source_card_id: str | None = None) -> None: raise AssertionError
+    def _deal_combat_wounds(self, player_id: str, amount: int, source_card_id: str | None = None) -> None: raise AssertionError
     def _run_state_based_actions(self) -> None: raise AssertionError
     def _emit(self, event_type: str, player_id: str | None = None, card_id: str | None = None, payload: dict[str, object] | None = None) -> None: raise AssertionError
 

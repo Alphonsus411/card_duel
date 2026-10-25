@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-10-25
 **Estado:** T0–T6 completadas; incremento de dimensiones actuales cerrado
-**Capability:** `CAP-TAXONOMY-001` permanece `PARTIAL / CLOSED`
+**Capability:** `CAP-TAXONOMY-001` permanece `PARTIAL / READY`
 
 ## Propósito del incremento
 

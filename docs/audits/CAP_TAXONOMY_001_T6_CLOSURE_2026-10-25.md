@@ -1,15 +1,15 @@
 # CAP-TAXONOMY-001 T6 — cierre documental y compatibilidad
 
 **Fecha:** 2026-10-25
-**Estado:** incremento T0–T6 cerrado; capability global `PARTIAL / CLOSED`
+**Estado:** incremento T0–T6 cerrado; capability global `PARTIAL / READY`
 
 ## Resultado de la entrega
 
-El incremento cierra el gate de las dimensiones ya representadas por
-`CardDefinition`: `CardKind`, `CardRank`, `LordDomain`, `subtypes` e identidad
-por `definition_id`. El cierre permite a los dependientes asumir estas
-dimensiones como contrato técnico existente; no autoriza a completar su
-semántica normativa ni a ingerir el corpus pendiente.
+El incremento cierra su documentación y caracterización de las dimensiones ya
+representadas por `CardDefinition`: `CardKind`, `CardRank`, `LordDomain`,
+`subtypes` e identidad por `definition_id`. No cierra el gate de la capability:
+sus dependientes siguen esperando el contrato completo y no pueden asumir que
+las brechas normativas o de corpus estén resueltas.
 
 | Superficie | Contrato cerrado | Compatibilidad |
 | --- | --- | --- |
@@ -32,9 +32,10 @@ semántica normativa ni a ingerir el corpus pendiente.
 
 ## Estado y límites
 
-`CLOSED` corresponde al gate de este incremento: sus dependientes ya no deben
-duplicar ni reinventar sus dimensiones básicas. `PARTIAL` sigue describiendo la
-capability global y prohíbe presentarla como taxonomía completa.
+El cierre de este incremento no equivale a `CLOSED` en la columna Gate del
+roadmap: esa etiqueta se reserva para una capability ya `SUPPORTED`. La
+capability permanece `PARTIAL / READY` y prohíbe presentarla como taxonomía
+completa o desbloquear sus dependientes por esta entrega.
 
 Permanecen fuera de alcance y requieren trabajo independiente:
 

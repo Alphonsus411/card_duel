@@ -158,10 +158,14 @@ el cambio para rediseñar combate, añadir triggers ni modificar prioridades.
 | Snapshot/replay nuevo | Conserva tipo, saldo, digest y resolución tras restaurar/reproducir. |
 | Esquema o causa desconocidos | Rechazo cerrado y sin mutación parcial. |
 
-La suite debe incluir paridad entre ejecución directa, snapshot restaurado y
-replay para cada familia positiva. Las pruebas de propiedades existentes pueden
-ampliarse sólo si generan causas desde el conjunto cerrado actual; no deben
-simular futuras causas con strings libres.
+La suite debe incluir paridad entre ejecución directa y snapshot restaurado para
+cada familia positiva. El replay cubre compatibilidad de documentos heredados y
+persistencia de la versión actual; la paridad positiva de una reserva
+``COMBAT`` queda aplazada hasta que una fase posterior autorice un productor
+reproducible (comando o efecto). No se admite simular ese productor mediante
+una mutación interna ni añadirlo en P5. Las pruebas de propiedades existentes
+pueden ampliarse sólo si generan causas desde el conjunto cerrado actual; no
+deben simular futuras causas con strings libres.
 
 ### P6 — Evidencia y comunicación
 

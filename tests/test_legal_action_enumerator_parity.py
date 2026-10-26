@@ -60,6 +60,7 @@ from card_duel_engine.engine import (
 )
 from card_duel_engine.engine.actions import LegalActionEnumerator
 from card_duel_engine.persistence.codec import encode_value
+from card_duel_engine.persistence.snapshot import state_digest
 from card_duel_engine.service import MatchService
 from card_duel_engine.storage.base import InMemoryMatchStore
 
@@ -645,6 +646,35 @@ def test_player_actions_do_not_leak_opponent_private_card_ids():
         and action.chosen_card_ids == (card_ids["b_public"],)
         for action in actions
     )
+
+
+def test_hidden_opponent_deck_order_does_not_interfere_with_player_projection():
+    """Una diferencia sólo oculta no cambia la salida de un no destinatario.
+
+    Caracteriza la base de no interferencia de CAP-SECRET-001 / S3.  No añade
+    una mirada de zona: protege las rutas de observación y proyección existentes
+    mientras todavía no haya una capability que pueda emitir un grant privado.
+    """
+    engine, _ = _engine_with_identifiable_private_zones()
+    altered = deepcopy(engine)
+    hidden_deck = altered.state.players["B"].zones[Zone.DECK]
+    assert len(hidden_deck) >= 2
+    hidden_deck[0], hidden_deck[1] = hidden_deck[1], hidden_deck[0]
+
+    assert state_digest(engine) != state_digest(altered)
+    assert engine.observe("A") == altered.observe("A")
+    assert engine.legal_actions("A") == altered.legal_actions("A")
+
+    option_ids = tuple(
+        f"option-{index}" for index, _ in enumerate(engine.legal_actions("A"))
+    )
+    assert PublicMatchView.from_view(
+        MatchService._view_for("private-order", 1, engine, "A"),
+        option_ids=option_ids,
+    ).to_dict() == PublicMatchView.from_view(
+        MatchService._view_for("private-order", 1, altered, "A"),
+        option_ids=option_ids,
+    ).to_dict()
 
 
 def test_only_pending_search_chooser_receives_eligible_card_ids():

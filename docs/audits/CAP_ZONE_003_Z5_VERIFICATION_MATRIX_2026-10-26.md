@@ -1,7 +1,7 @@
 # CAP-ZONE-003 — Z5: matriz de verificación
 
-**Fecha:** 2026-10-26  
-**Estado de la fase:** completada  
+**Fecha:** 2026-10-26
+**Estado de la fase:** completada
 **Capability:** `CAP-ZONE-003` permanece `PARTIAL / READY`.
 
 ## Matriz acreditada

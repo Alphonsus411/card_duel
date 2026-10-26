@@ -66,6 +66,8 @@ class HardeningV0100Tests(unittest.TestCase):
         snapshot["body"]["state"]["fields"].pop("pending_decision")
         snapshot["body"]["state"]["fields"].pop("history")
         snapshot["body"]["state"]["fields"].pop("history_prefix_complete")
+        snapshot["body"]["state"]["fields"].pop("zone_transition_history")
+        snapshot["body"]["state"]["fields"].pop("zone_transition_prefix_complete")
         for _, player in snapshot["body"]["state"]["fields"]["players"]["$mapping"]:
             player["fields"].pop("wound_prevention_profile")
             player["fields"].pop("wound_prevention_reservations")

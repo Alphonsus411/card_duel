@@ -71,6 +71,8 @@ def as_v2(engine: GameEngine) -> dict[str, object]:
     fields.pop("pending_decision")
     fields.pop("history")
     fields.pop("history_prefix_complete")
+    fields.pop("zone_transition_history")
+    fields.pop("zone_transition_prefix_complete")
     for _, card in fields["cards"]["$mapping"]:
         card["fields"].pop("damage_prevention_profile")
         card["fields"].pop("damage_prevention_reservations")
@@ -253,7 +255,7 @@ def test_snapshot_v5_round_trip_with_decision_and_digest(closed: bool) -> None:
     engine.state.pending_decision = decision(closed=closed)
     payload = dump_snapshot(engine, indent=None)
     document = json.loads(payload)
-    assert document["body"]["schema_version"] == "5"
+    assert document["body"]["schema_version"] == "6"
     restored = load_snapshot(payload)
     assert restored.state.pending_decision == engine.state.pending_decision
     assert state_digest(restored) == state_digest(engine)
@@ -264,7 +266,7 @@ def test_snapshot_v2_migrates_to_v5_without_inventing_a_decision() -> None:
     legacy = as_v2(make_engine())
     restored = load_snapshot(legacy)
     assert restored.state.pending_decision is None
-    assert json.loads(dump_snapshot(restored))["body"]["schema_version"] == "5"
+    assert json.loads(dump_snapshot(restored))["body"]["schema_version"] == "6"
 
 
 def test_snapshot_v2_migration_adds_only_pending_decision_and_recalculates_digest(
@@ -402,7 +404,7 @@ def test_snapshot_v2_migration_does_not_infer_from_specialized_pending_models(
 
 def test_migrated_digest_and_envelope_checksum_are_validated_by_load_snapshot() -> None:
     legacy = as_v2(make_engine())
-    migrated_body = migrate_document("snapshot", legacy["body"], "5")
+    migrated_body = migrate_document("snapshot", legacy["body"], "6")
     migrated_envelope = {"body": migrated_body, "sha256": checksum(migrated_body)}
 
     restored = load_snapshot(migrated_envelope)

@@ -92,6 +92,91 @@ GameHistoryEntry = ExecutedCommand | DecisionTransitionEntry
 
 
 @dataclass(frozen=True)
+class TransitionPriorState:
+    """Estado mínimo conservado antes de una transición de zona.
+
+    No es last-known information general: sólo expresa la colocación y los
+    vínculos que la puerta debe capturar antes de limpiar una instancia.
+    """
+
+    zone: Zone
+    container_player_id: str | None
+    controller_id: str
+    attached_to: str | None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.zone, Zone):
+            raise ValueError("La zona anterior no es válida")
+        if self.container_player_id is not None and (
+            not isinstance(self.container_player_id, str)
+            or not self.container_player_id.strip()
+        ):
+            raise ValueError("El contenedor anterior no es válido")
+        if not isinstance(self.controller_id, str) or not self.controller_id.strip():
+            raise ValueError("El controlador anterior no es válido")
+        if self.attached_to is not None and (
+            not isinstance(self.attached_to, str) or not self.attached_to.strip()
+        ):
+            raise ValueError("El anexo anterior no es válido")
+
+
+@dataclass(frozen=True)
+class ZoneTransition:
+    """Evidencia causal interna de una transición efectiva de zona.
+
+    Z3 sólo vuelve persistible el modelo. Z4 será la única fase autorizada para
+    emitir estas entradas desde la puerta de movimiento.
+    """
+
+    sequence: int
+    card_id: str
+    origin_zone: Zone
+    origin_player_id: str | None
+    requested_destination: Zone
+    requested_player_id: str | None
+    effective_destination: Zone
+    effective_player_id: str | None
+    reason: MoveReason
+    batch_id: str
+    audience: DecisionAudience
+    prior_state: TransitionPriorState
+
+    def __post_init__(self) -> None:
+        if type(self.sequence) is not int or self.sequence < 1:
+            raise ValueError("La secuencia de transición debe ser positiva")
+        if not isinstance(self.card_id, str) or not self.card_id.strip():
+            raise ValueError("La carta de transición no es válida")
+        for zone in (
+            self.origin_zone,
+            self.requested_destination,
+            self.effective_destination,
+        ):
+            if not isinstance(zone, Zone):
+                raise ValueError("La zona de transición no es válida")
+        for player_id in (
+            self.origin_player_id,
+            self.requested_player_id,
+            self.effective_player_id,
+        ):
+            if player_id is not None and (
+                not isinstance(player_id, str) or not player_id.strip()
+            ):
+                raise ValueError("El contenedor de transición no es válido")
+        if not isinstance(self.reason, MoveReason):
+            raise ValueError("La causa de transición no es válida")
+        if not isinstance(self.batch_id, str) or not self.batch_id.strip():
+            raise ValueError("El lote de transición no es válido")
+        if self.audience is not DecisionAudience.INTERNAL:
+            raise ValueError("La transición causal sólo admite audiencia interna")
+        if not isinstance(self.prior_state, TransitionPriorState):
+            raise ValueError("El estado anterior de transición no es válido")
+        if self.prior_state.zone is not self.origin_zone:
+            raise ValueError("La zona previa no coincide con el origen")
+        if self.prior_state.container_player_id != self.origin_player_id:
+            raise ValueError("El contenedor previo no coincide con el origen")
+
+
+@dataclass(frozen=True)
 class PendingDecision:
     """Registro autoritativo mínimo de una decisión universal.
 
@@ -784,6 +869,10 @@ class GameState:
     # lifecycle entries are missing.  Such a prefix is valid for restoration but
     # must never be presented as a complete replay history.
     history_prefix_complete: bool = True
+    # Hasta Z4 ningún motor emite entradas causales. La migración desde snapshots
+    # anteriores declara ese prefijo desconocido en vez de inventar transiciones.
+    zone_transition_history: list[ZoneTransition] = field(default_factory=list)
+    zone_transition_prefix_complete: bool = False
     setup_mulligans: list[str] = field(default_factory=list)
     pending_decision: PendingDecision | None = None
 

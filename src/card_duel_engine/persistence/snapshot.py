@@ -14,8 +14,8 @@ from ..rules.config import RuleSet
 from .codec import canonical_json, decode_value, encode_value
 from .migrations import migrate_document
 
-# Schema 5 adds explicit legacy prevention profiles and typed reservations.
-SNAPSHOT_SCHEMA_VERSION = "5"
+# Schema 6 adds the causal zone-transition container without inventing legacy history.
+SNAPSHOT_SCHEMA_VERSION = "6"
 
 
 def _body(engine: GameEngine) -> dict[str, Any]:
@@ -66,6 +66,8 @@ def _omit_pending_decision(encoded_state: Any) -> Any:
         transformed["fields"].pop("pending_decision", None)
         transformed["fields"].pop("history", None)
         transformed["fields"].pop("history_prefix_complete", None)
+        transformed["fields"].pop("zone_transition_history", None)
+        transformed["fields"].pop("zone_transition_prefix_complete", None)
     return transformed
 
 
@@ -102,7 +104,9 @@ def legacy_state_digest_without_damage_prevention_profiles(engine: GameEngine) -
     """Calcula la huella de replay v3 antes de perfiles de prevención v5."""
 
     return _digest_encoded_state(
-        _omit_damage_prevention_profiles(_canonical_encoded_state(engine))
+        _omit_damage_prevention_profiles(
+            _omit_pending_decision(_canonical_encoded_state(engine))
+        )
     )
 
 

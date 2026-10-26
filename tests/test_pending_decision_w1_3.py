@@ -543,7 +543,7 @@ def test_snapshot_v5_restore_dump_replay_v4_keeps_pre_snapshot_transitions() -> 
     transitions_before = _transitions(engine)
 
     snapshot = dump_snapshot(engine, indent=None)
-    assert json.loads(snapshot)["body"]["schema_version"] == "5"
+    assert json.loads(snapshot)["body"]["schema_version"] == "6"
     restored = load_snapshot(snapshot)
     assert _transitions(restored) == transitions_before
 

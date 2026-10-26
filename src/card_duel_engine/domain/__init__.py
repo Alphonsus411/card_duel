@@ -51,9 +51,11 @@ from .models import (
     PendingMoveReplacement,
     TargetAllocation,
     TimedModifier,
+    TransitionPriorState,
     TextPatchDefinition,
     XCostDefinition,
     ZoneTarget,
+    ZoneTransition,
 )
 
 __all__ = [
@@ -105,9 +107,11 @@ __all__ = [
     "TargetMode",
     "TargetAllocation",
     "TimedModifier",
+    "TransitionPriorState",
     "TextPatchDefinition",
     "XCostDefinition",
     "TriggerKind",
     "Zone",
     "ZoneTarget",
+    "ZoneTransition",
 ]

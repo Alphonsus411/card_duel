@@ -57,7 +57,7 @@ class DamagePreventionPersistenceTests(unittest.TestCase):
         restored = load_snapshot(payload)
         restored_state = restored._require_state()
 
-        self.assertEqual(document["body"]["schema_version"], "5")
+        self.assertEqual(document["body"]["schema_version"], "6")
         self.assertEqual(restored_state, state)
         self.assertEqual(state_digest(restored), state_digest(engine))
         self.assertEqual(
@@ -76,6 +76,8 @@ class DamagePreventionPersistenceTests(unittest.TestCase):
         state.cards[card_id].damage_prevention = 3
         document = json.loads(dump_snapshot(engine, indent=None))
         fields = document["body"]["state"]["fields"]
+        fields.pop("zone_transition_history")
+        fields.pop("zone_transition_prefix_complete")
         for _, player in fields["players"]["$mapping"]:
             player["fields"].pop("wound_prevention_profile")
             player["fields"].pop("wound_prevention_reservations")

@@ -151,7 +151,14 @@ def decode_value(value: Any) -> Any:
                 {"failure_destination_zone", "exhaustion_policy"}
             )
         if cls is model_module.GameState:
-            compatible_missing.update({"history", "history_prefix_complete"})
+            compatible_missing.update(
+                {
+                    "history",
+                    "history_prefix_complete",
+                    "zone_transition_history",
+                    "zone_transition_prefix_complete",
+                }
+            )
         missing_required = (expected - supplied) - compatible_missing
         if missing_required or supplied - expected:
             raise ValueError(
@@ -166,6 +173,9 @@ def decode_value(value: Any) -> Any:
                 model_module.ExecutedCommand(command)
                 for command in decoded.get("command_history", [])
             ]
+        if cls is model_module.GameState and "zone_transition_history" not in decoded:
+            decoded["zone_transition_history"] = []
+            decoded["zone_transition_prefix_complete"] = False
         hints = _type_hints(cls)
         invalid = [
             name

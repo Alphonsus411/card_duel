@@ -58,7 +58,7 @@ def test_snapshot_and_replay_preserve_accredited_lord_forms_without_schema_chang
     snapshot = dump_snapshot(engine, indent=None)
     replay = dump_replay(engine, indent=None)
 
-    assert json.loads(snapshot)["body"]["schema_version"] == "5"
+    assert json.loads(snapshot)["body"]["schema_version"] == "6"
     assert json.loads(replay)["body"]["schema_version"] == "4"
 
     _assert_accredited_lord_dimensions(load_snapshot(snapshot))

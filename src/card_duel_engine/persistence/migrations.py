@@ -133,6 +133,29 @@ def _snapshot_4_to_5(body: dict[str, Any]) -> dict[str, Any]:
     return body
 
 
+def _snapshot_5_to_6(body: dict[str, Any]) -> dict[str, Any]:
+    """Declara explícitamente que v5 no acredita historia causal de zonas."""
+
+    state = body.get("state")
+    if not isinstance(state, dict) or state.get("$type") != "GameState":
+        raise ValueError("El snapshot v5 no contiene el GameState esperado")
+    fields = state.get("fields")
+    if not isinstance(fields, dict):
+        raise ValueError("El GameState de schema 5 no tiene la forma esperada")
+    if (
+        "zone_transition_history" in fields
+        or "zone_transition_prefix_complete" in fields
+    ):
+        raise ValueError("El GameState v5 mezcla historia causal incompatible")
+    fields["zone_transition_history"] = []
+    fields["zone_transition_prefix_complete"] = False
+    body["state_digest"] = hashlib.sha256(
+        canonical_json(state).encode("utf-8")
+    ).hexdigest()
+    body["schema_version"] = "6"
+    return body
+
+
 def _replay_1_to_2(body: dict[str, Any]) -> dict[str, Any]:
     commands = decode_value(body["commands"])
     if not isinstance(commands, tuple):
@@ -178,6 +201,7 @@ _MIGRATIONS: dict[tuple[str, str], Migration] = {
     ("snapshot", "2"): _snapshot_2_to_3,
     ("snapshot", "3"): _snapshot_3_to_4,
     ("snapshot", "4"): _snapshot_4_to_5,
+    ("snapshot", "5"): _snapshot_5_to_6,
     ("replay", "1"): _replay_1_to_2,
     ("replay", "2"): _replay_2_to_3,
     ("replay", "3"): _replay_3_to_4,

@@ -24,10 +24,10 @@ Las entradas requieren priorización y alcance propios antes de implementarse.
 
 - Tras W1.3, mantener `CAP-ACTION-004` en `PARTIAL / READY`: la historia total
   tipada, replay v3, snapshot v4 y consumo interno reproducible están
-  acreditados. Quedan aplazados para slices autorizados posteriores la apertura
-  pública, el bloqueo selectivo por `semantic_family`, las decisiones
-  simultáneas y las audiencias adicionales. No iniciar W1.4 ni promover a
-  `SUPPORTED` sin esos contratos y su evidencia.
+  acreditados. W1.4A autoriza documentar el contrato de bloqueo selectivo por
+  `semantic_family`; la apertura pública, el runtime de bloqueo, las decisiones
+  simultáneas y las audiencias adicionales siguen aplazadas. No promover a
+  `SUPPORTED` ni desbloquear dependientes sin sus contratos y evidencia.
 
 - Revisar en cada cambio mayor el puente `R-COMPAT-019-REPLAY`. Su alcance se
   limita a reproducir semánticamente los fixtures generados con el commit 0.19

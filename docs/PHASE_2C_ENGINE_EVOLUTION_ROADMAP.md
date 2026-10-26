@@ -48,7 +48,7 @@ Las columnas `Central.`, `Desbloq.`, `Riesgo`, `Claridad` y `Migración` corresp
 | `CAP-ACTION-001` — Modelo tipado de acciones y comandos | `SUPPORTED` | `CLOSED` | HIGH | MEDIUM | MEDIUM | HIGH | LOW | Prerequisites: ninguno; dependientes: CAP-ACTION-002, CAP-TIME-003, CAP-EFFECT-001. |
 | `CAP-ACTION-002` — Enumeración y revalidación de acciones legales | `SUPPORTED` | `CLOSED` | MEDIUM | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-ACTION-001; dependientes: CAP-TARGET-001, CAP-ACTION-004. |
 | `CAP-ACTION-003` — Transacción, rollback y determinismo | `SUPPORTED` | `CLOSED` | HIGH | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-ACTION-001; dependientes: CAP-COST-002, CAP-ZONE-003, CAP-EFFECT-003. |
-| `CAP-ACTION-004` — Decisión pendiente autorizada | `PARTIAL` | `READY` | HIGH | HIGH | HIGH | HIGH | HIGH | W1.3 acredita historia total tipada, replay v3, lifecycle interno reproducible `None → PENDING → CLOSED → None`, permanencia de `CLOSED` hasta consumo explícito, snapshot v4 y migraciones fail-closed, preservando CAS y privacidad `ELECTOR` de W1.2. Siguen pendientes apertura pública, bloqueo selectivo por familia, decisiones simultáneas y audiencias adicionales; no inicia W1.4, no declara `SUPPORTED` y no desbloquea `CAP-TIME-002`. Prerequisites: CAP-ACTION-002, CAP-PRIVACY-001; dependientes: CAP-SECRET-002, CAP-TIME-002; prioridad P0, riesgo CRITICAL, wave W1. |
+| `CAP-ACTION-004` — Decisión pendiente autorizada | `PARTIAL` | `READY` | HIGH | HIGH | HIGH | HIGH | HIGH | W1.3 acredita historia total tipada, replay v3, lifecycle interno reproducible `None → PENDING → CLOSED → None`, permanencia de `CLOSED` hasta consumo explícito, snapshot v4 y migraciones fail-closed, preservando CAS y privacidad `ELECTOR` de W1.2. W1.4A autoriza únicamente el carril documental para precisar bloqueo selectivo por familia; siguen pendientes apertura pública, runtime de bloqueo, decisiones simultáneas y audiencias adicionales. No declara `SUPPORTED` ni desbloquea `CAP-TIME-002`. Prerequisites: CAP-ACTION-002, CAP-PRIVACY-001; dependientes: CAP-SECRET-002, CAP-TIME-002; prioridad P0, riesgo CRITICAL, wave W1. |
 | `CAP-COST-001` — Modelo declarativo de costes | `SUPPORTED` | `CLOSED` | HIGH | MEDIUM | MEDIUM | HIGH | LOW | Prerequisites: CAP-ACTION-001; dependientes: CAP-COST-002, CAP-COST-003, CAP-COST-004. |
 | `CAP-COST-002` — Preflight, determinación y pago atómico | `SUPPORTED` | `CLOSED` | MEDIUM | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-COST-001, CAP-ACTION-003; dependientes: CAP-COST-003, CAP-STACK-001. |
 | `CAP-COST-003` — Costes adicionales y compuestos | `SUPPORTED` | `CLOSED` | MEDIUM | MEDIUM | HIGH | HIGH | LOW | Prerequisites: CAP-COST-001, CAP-COST-002; dependientes: CAP-EFFECT-003. |
@@ -207,8 +207,9 @@ El versionado no permite saltarse prerequisites: sólo hace compatible una modif
 
 **Estado de la capability: `PARTIAL`. Estado exclusivo de este contrato:
 `READY`.** W1.3 demuestra un subconjunto interno persistente y replayable, pero
-`READY` no equivale a cierre: no autoriza `SUPPORTED`, no inicia W1.4 y no
-promueve sus dependientes.
+`READY` no equivale a cierre: no autoriza `SUPPORTED` ni promueve sus
+dependientes. W1.4A queda autorizado exclusivamente como carril documental;
+el runtime de W1.4 requiere un contrato posterior y sus pruebas.
 
 Se asigna riesgo **CRITICAL**, prioridad **P0** y wave **W1**. Sus superficies
 futuras son modelos, comandos, enumeración/ejecución, aplicación, servicio,

@@ -3,9 +3,16 @@ from __future__ import annotations
 import random
 from dataclasses import replace
 from typing import Protocol
-from ..domain.enums import MatchStatus, MoveReason, Zone
+from ..domain.enums import DecisionAudience, MatchStatus, MoveReason, Zone
 from ..domain.errors import IllegalAction, InvariantViolation
-from ..domain.models import CardDefinition, GameState, MoveReplacementDefinition, PendingMoveReplacement
+from ..domain.models import (
+    CardDefinition,
+    GameState,
+    MoveReplacementDefinition,
+    PendingMoveReplacement,
+    TransitionPriorState,
+    ZoneTransition,
+)
 from ..rules.config import RuleSet
 from .commands import SetReplacementOrder
 
@@ -64,6 +71,50 @@ class ZoneManager:
             card_id = player.zones[Zone.DECK][-1]
             self._move_card(card_id, Zone.HAND, player_id)
             self._context._emit("CARD_DRAWN", player_id, card_id)
+
+    @staticmethod
+    def _container_player_id(state: GameState, card_id: str) -> str | None:
+        """Captura el contenedor actual antes de alterar las zonas."""
+        for player_id, player in state.players.items():
+            if any(card_id in cards for cards in player.zones.values()):
+                return player_id
+        return None
+
+    @staticmethod
+    def _effective_player_id(destination: Zone, destination_player: str) -> str | None:
+        return None if destination in {Zone.RESOLUTION, Zone.VOID} else destination_player
+
+    @staticmethod
+    def _append_transition(
+        state: GameState,
+        *,
+        card_id: str,
+        origin_zone: Zone,
+        origin_player_id: str | None,
+        requested_destination: Zone,
+        requested_player_id: str,
+        effective_destination: Zone,
+        effective_player_id: str | None,
+        reason: MoveReason,
+        prior_state: TransitionPriorState,
+    ) -> None:
+        sequence = len(state.zone_transition_history) + 1
+        state.zone_transition_history.append(
+            ZoneTransition(
+                sequence=sequence,
+                card_id=card_id,
+                origin_zone=origin_zone,
+                origin_player_id=origin_player_id,
+                requested_destination=requested_destination,
+                requested_player_id=requested_player_id,
+                effective_destination=effective_destination,
+                effective_player_id=effective_player_id,
+                reason=reason,
+                batch_id=f"zone-batch-{sequence:06d}",
+                audience=DecisionAudience.INTERNAL,
+                prior_state=prior_state,
+            )
+        )
 
     @staticmethod
     def _replacement_definitions(
@@ -125,6 +176,16 @@ class ZoneManager:
     ) -> Zone:
         state = self._context._require_state()
         instance = state.cards[card_id]
+        origin_zone = instance.zone
+        origin_player_id = self._container_player_id(state, card_id)
+        requested_destination = destination
+        requested_player_id = destination_player
+        prior_state = TransitionPriorState(
+            zone=origin_zone,
+            container_player_id=origin_player_id,
+            controller_id=instance.controller_id,
+            attached_to=instance.attached_to,
+        )
         definition = self._context._definition(card_id)
         all_replacements = self._replacement_definitions(definition)
         applicable = tuple(
@@ -197,6 +258,20 @@ class ZoneManager:
                             "reason": reason.name,
                             "destination": Zone.BATTLEFIELD.name,
                         },
+                    )
+                    self._append_transition(
+                        state,
+                        card_id=card_id,
+                        origin_zone=origin_zone,
+                        origin_player_id=origin_player_id,
+                        requested_destination=requested_destination,
+                        requested_player_id=requested_player_id,
+                        effective_destination=Zone.BATTLEFIELD,
+                        effective_player_id=self._effective_player_id(
+                            Zone.BATTLEFIELD, instance.controller_id
+                        ),
+                        reason=reason,
+                        prior_state=prior_state,
                     )
                     return Zone.BATTLEFIELD
                 destination = replacement.destination
@@ -272,4 +347,18 @@ class ZoneManager:
             state.control_changes = [
                 change for change in state.control_changes if change.card_id != card_id
             ]
+        self._append_transition(
+            state,
+            card_id=card_id,
+            origin_zone=origin_zone,
+            origin_player_id=origin_player_id,
+            requested_destination=requested_destination,
+            requested_player_id=requested_player_id,
+            effective_destination=destination,
+            effective_player_id=self._effective_player_id(
+                destination, destination_player
+            ),
+            reason=reason,
+            prior_state=prior_state,
+        )
         return destination

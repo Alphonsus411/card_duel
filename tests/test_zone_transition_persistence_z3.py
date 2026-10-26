@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import replace
 
 import pytest
 
@@ -55,7 +56,9 @@ def _transition(engine: GameEngine) -> ZoneTransition:
 
 def test_schema_six_round_trips_internal_causal_record_without_public_event() -> None:
     engine = _engine()
-    transition = _transition(engine)
+    transition = replace(
+        _transition(engine), sequence=len(engine.state.zone_transition_history) + 1
+    )
     events_before = tuple(engine.state.event_log)
     engine.state.zone_transition_history.append(transition)
     engine.state.zone_transition_prefix_complete = True
@@ -64,7 +67,8 @@ def test_schema_six_round_trips_internal_causal_record_without_public_event() ->
     restored = load_snapshot(snapshot)
 
     assert json.loads(snapshot)["body"]["schema_version"] == "6"
-    assert restored.state.zone_transition_history == [transition]
+    assert restored.state.zone_transition_history[-1] == transition
+    assert len(restored.state.zone_transition_history) == transition.sequence
     assert restored.state.zone_transition_prefix_complete is True
     assert state_digest(restored) == state_digest(engine)
     assert tuple(restored.state.event_log) == events_before

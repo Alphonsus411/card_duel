@@ -10,8 +10,8 @@ import pytest
 from card_duel_engine.domain import ExecutedCommand
 from card_duel_engine.persistence.codec import canonical_json
 from card_duel_engine.persistence.migrations import migrate_document
-from card_duel_engine.persistence.replay import dump_replay, replay_from_log
-from card_duel_engine.persistence.snapshot import dump_snapshot, load_snapshot, state_digest
+from card_duel_engine.persistence.replay import dump_replay
+from card_duel_engine.persistence.snapshot import load_snapshot
 
 from test_pending_decision_w11 import make_engine, open_decision
 
@@ -27,18 +27,13 @@ def test_v4_golden_migrates_to_current_snapshot_and_preserves_lifecycle() -> Non
     engine = make_engine()
     open_decision(engine)
     engine._close_pending_decision("decision:test:1", "A", "opaque-b", 0)
-    snapshot = dump_snapshot(engine)
-
     restored = load_snapshot(GOLDEN_V4.read_text(encoding="utf-8"))
-    assert snapshot == dump_snapshot(restored)
     assert restored.state is not None and engine.state is not None
     assert restored.state.history == engine.state.history
-
-    replayed = replay_from_log(dump_replay(restored))
-    assert replayed.state is not None
-    assert replayed.state.history == restored.state.history
-    assert state_digest(replayed) == state_digest(restored)
-    assert replayed.state == restored.state
+    assert restored.state.zone_transition_history == []
+    assert restored.state.zone_transition_prefix_complete is False
+    with pytest.raises(ValueError, match="prefijo causal"):
+        dump_replay(restored)
 
 
 def test_v3_migration_wraps_only_commands_and_marks_pending_prefix_incomplete() -> None:
@@ -80,3 +75,4 @@ def test_v1_v2_v3_chain_remains_readable() -> None:
         restored = load_snapshot((Path(__file__).parent / relative).read_text())
         assert restored.state is not None
         assert restored.state.history_prefix_complete is True
+        assert restored.state.zone_transition_prefix_complete is False

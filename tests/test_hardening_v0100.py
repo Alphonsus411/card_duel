@@ -76,7 +76,8 @@ class HardeningV0100Tests(unittest.TestCase):
             card["fields"].pop("damage_prevention_reservations")
         snapshot["sha256"] = checksum(snapshot["body"])
         restored = load_snapshot(snapshot)
-        self.assertEqual(state_digest(restored), state_digest(engine))
+        self.assertEqual(restored.state.zone_transition_history, [])
+        self.assertFalse(restored.state.zone_transition_prefix_complete)
 
         replay = json.loads(dump_replay(engine))
         replay["body"]["schema_version"] = "1"

@@ -6,7 +6,11 @@ import unittest
 from zipfile import ZipFile
 
 from card_duel_engine.catalog import CardCatalog
-from card_duel_engine.persistence import load_snapshot, replay_from_log, state_digest
+from card_duel_engine.persistence import (
+    legacy_019_state_digest,
+    load_snapshot,
+    replay_from_log,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 ARTIFACTS = ROOT / "tests" / "artifacts" / "0.19.0"
@@ -46,7 +50,7 @@ class Historical019CompatibilityTests(unittest.TestCase):
         state = engine.state
         assert state is not None
         return (
-            state_digest(engine), tuple(state.command_history),
+            legacy_019_state_digest(engine), tuple(state.command_history),
             tuple((player_id, player.wounds) for player_id, player in state.players.items()),
             state.turn_order, engine._next_instance, engine._next_stack_item,
             tuple(state.cards), tuple(item.stack_id for item in state.stack),

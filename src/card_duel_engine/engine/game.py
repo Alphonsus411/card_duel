@@ -77,6 +77,7 @@ from ..domain.models import (
     TargetAllocation,
     TextPatchDefinition,
     ZoneTarget,
+    ZoneTransition,
     XCostDefinition,
 )
 from ..rules.config import RuleSet
@@ -324,6 +325,7 @@ class GameEngine:
             random_seed=seed,
             initial_decks=initial_decks,
             status=MatchStatus.SETUP,
+            zone_transition_prefix_complete=True,
         )
 
         # Las operaciones de arranque siguen exactamente los mismos caminos del
@@ -2536,6 +2538,26 @@ class GameEngine:
             raise InvariantViolation("La decisión pendiente tiene un elector inexistente")
         if any(not isinstance(command, GameCommand) for command in state.command_history):
             raise InvariantViolation("El historial contiene un comando inválido")
+        transitions = state.zone_transition_history
+        if any(not isinstance(transition, ZoneTransition) for transition in transitions):
+            raise InvariantViolation("El historial causal contiene una entrada inválida")
+        if [transition.sequence for transition in transitions] != list(
+            range(1, len(transitions) + 1)
+        ):
+            raise InvariantViolation("La secuencia causal de zona no es continua")
+        if any(
+            transition.card_id not in state.cards
+            or (
+                transition.origin_player_id is not None
+                and transition.origin_player_id not in state.players
+            )
+            or (
+                transition.effective_player_id is not None
+                and transition.effective_player_id not in state.players
+            )
+            for transition in transitions
+        ):
+            raise InvariantViolation("El historial causal referencia una entidad inválida")
         projected_commands = [
             entry.command
             for entry in state.history

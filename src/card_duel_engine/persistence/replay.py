@@ -43,6 +43,11 @@ def dump_replay(engine: GameEngine, *, indent: int | None = 2) -> str:
             "No se puede generar un replay: el snapshot histórico no conserva "
             "el prefijo completo del lifecycle de decisiones"
         )
+    if not state.zone_transition_prefix_complete:
+        raise ValueError(
+            "No se puede generar un replay: el snapshot histórico no conserva "
+            "el prefijo causal de transiciones de zona"
+        )
     body = {
         "schema_version": REPLAY_SCHEMA_VERSION,
         "engine_version": (

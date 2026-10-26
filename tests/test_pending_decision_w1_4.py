@@ -1,4 +1,6 @@
-"""W1.4B: bloqueo selectivo mínimo de la familia de prueba autorizada."""
+"""W1.4B/C: bloqueo selectivo y su revalidación autoritativa."""
+
+import pytest
 
 from card_duel_engine import (
     AuthenticatedMatchApplication,
@@ -9,8 +11,15 @@ from card_duel_engine import (
     MatchService,
 )
 from card_duel_engine.domain import PendingDecisionStatus
-from card_duel_engine.engine.commands import Concede
-from card_duel_engine.persistence import dump_replay, dump_snapshot, load_snapshot, replay_from_log
+from card_duel_engine.domain.errors import IllegalAction
+from card_duel_engine.engine.commands import Concede, PassPriority
+from card_duel_engine.persistence import (
+    dump_replay,
+    dump_snapshot,
+    load_snapshot,
+    replay_from_log,
+    state_digest,
+)
 
 from test_pending_decision_w1_1 import OPTIONS, make_engine, open_decision
 
@@ -85,3 +94,36 @@ def test_blocking_does_not_prevent_the_elector_from_resolving_through_applicatio
 
     assert after.pending_decision is not None
     assert after.pending_decision.status == PendingDecisionStatus.CLOSED.value
+
+
+def test_direct_command_cannot_bypass_the_selective_pending_decision_block():
+    engine = make_engine()
+    open_decision(engine)
+    assert engine.state is not None
+    actor = engine.state.priority_player_id
+    assert actor is not None
+    before = state_digest(engine)
+
+    with pytest.raises(IllegalAction, match="bloquea comandos"):
+        engine.execute(PassPriority(actor))
+
+    assert state_digest(engine) == before
+
+
+def test_service_submission_cannot_bypass_the_selective_pending_decision_block():
+    engine = make_engine()
+    open_decision(engine)
+    assert engine.state is not None
+    actor = engine.state.priority_player_id
+    assert actor is not None
+    store = InMemoryMatchStore()
+    assert store.create("w14c", engine) == 1
+    service = MatchService(store)
+    before = state_digest(store.load("w14c").engine)
+
+    with pytest.raises(IllegalAction, match="bloquea comandos"):
+        service.submit("w14c", PassPriority(actor), expected_version=1)
+
+    stored = store.load("w14c")
+    assert stored.version == 1
+    assert state_digest(stored.engine) == before

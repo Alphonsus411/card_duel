@@ -95,6 +95,22 @@ class LegalActionContext(Protocol):
     def _combat_action_enumerator(self) -> CombatActionEnumerator: ...
 
 
+def blocks_non_concede_for_pending_decision(state: GameState) -> bool:
+    """Indica si W1.4 debe detener comandos ordinarios para ``state``.
+
+    La política vive junto a la enumeración y se reutiliza en la frontera de
+    ejecución. Así, la lista de acciones y el motor no pueden divergir cuando
+    un cliente envía un comando sin haberlo obtenido de ``legal_actions``.
+    """
+
+    decision = state.pending_decision
+    return (
+        decision is not None
+        and decision.semantic_family == "test-choice/v1"
+        and decision.status is PendingDecisionStatus.PENDING
+    )
+
+
 class LegalActionEnumerator:
     """Enumera comandos disponibles sin validar ni ejecutar ninguno."""
 
@@ -116,12 +132,7 @@ class LegalActionEnumerator:
         # La resolución permanece en su frontera autenticada; `Concede` nunca
         # queda bloqueado. Las demás familias conservan exactamente su política
         # previa hasta que cuenten con un contrato propio.
-        decision = state.pending_decision
-        if (
-            decision is not None
-            and decision.semantic_family == "test-choice/v1"
-            and decision.status is PendingDecisionStatus.PENDING
-        ):
+        if blocks_non_concede_for_pending_decision(state):
             return (Concede(player_id),)
         actions: list[GameCommand] = []
         player = state.players[player_id]

@@ -88,6 +88,7 @@ from .actions import (
     LegalActionContext,
     LegalActionEnumerator,
     _LegalActionQueryContext,
+    blocks_non_concede_for_pending_decision,
 )
 from .effects import EffectContext, EffectManager
 from .options import ActionOptionContext, ActionOptionResolver
@@ -617,7 +618,18 @@ class GameEngine:
         self.state = candidate
 
     def execute(self, command: GameCommand) -> None:
-        snapshot = deepcopy(self._require_state())
+        state = self._require_state()
+        # W1.4C: la enumeración por sí sola no es una frontera de autoridad.
+        # Un cliente puede construir un comando directamente, por lo que la
+        # misma política selectiva se revalida antes de tomar cualquier ruta
+        # transaccional. La concesión conserva su excepción explícita.
+        if blocks_non_concede_for_pending_decision(state) and not isinstance(
+            command, Concede
+        ):
+            raise IllegalAction(
+                "La decisión pendiente bloquea comandos excepto la concesión"
+            )
+        snapshot = deepcopy(state)
         next_instance = self._next_instance
         next_stack_item = self._next_stack_item
         try:

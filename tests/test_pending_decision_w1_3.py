@@ -240,7 +240,9 @@ def test_pending_slot_does_not_globally_block_existing_commands() -> None:
     command = PassPriority(actor)
     assert command in before
 
-    open_decision(engine)
+    # W1.4B reserva `test-choice/v1` como única familia de prueba bloqueante;
+    # una familia no registrada conserva el contrato histórico de W1.3.
+    open_decision(engine, semantic_family="second-choice/v2")
 
     assert engine.legal_actions(actor) == before
     engine.execute(command)

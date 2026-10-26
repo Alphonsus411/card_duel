@@ -3,7 +3,14 @@ from __future__ import annotations
 from itertools import combinations, islice, permutations
 from typing import Protocol
 
-from ..domain.enums import CardKind, Keyword, MatchStatus, Phase, Zone
+from ..domain.enums import (
+    CardKind,
+    Keyword,
+    MatchStatus,
+    PendingDecisionStatus,
+    Phase,
+    Zone,
+)
 from ..domain.errors import IllegalAction
 from ..domain.models import (
     CardDefinition,
@@ -105,6 +112,17 @@ class LegalActionEnumerator:
             raise IllegalAction("La partida no está en ejecución")
         if player_id not in state.players:
             return ()
+        # W1.4B acredita únicamente la familia de prueba versionada por W1.4A.1.
+        # La resolución permanece en su frontera autenticada; `Concede` nunca
+        # queda bloqueado. Las demás familias conservan exactamente su política
+        # previa hasta que cuenten con un contrato propio.
+        decision = state.pending_decision
+        if (
+            decision is not None
+            and decision.semantic_family == "test-choice/v1"
+            and decision.status is PendingDecisionStatus.PENDING
+        ):
+            return (Concede(player_id),)
         actions: list[GameCommand] = []
         player = state.players[player_id]
 

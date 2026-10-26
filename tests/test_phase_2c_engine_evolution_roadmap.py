@@ -17,6 +17,7 @@ CAP_ACTION_CONTRACT_AUDIT = ROOT / "docs" / "audits" / "PHASE_2C_CAP_ACTION_004_
 CAP_ACTION_TRACEABILITY_AUDIT = ROOT / "docs" / "audits" / "PHASE_2C_CAP_ACTION_004_TRACEABILITY_2026-09-07.md"
 CAP_ACTION_W1_3_AUDIT = ROOT / "docs" / "audits" / "PHASE_2C_CAP_ACTION_004_W1_3_REPRODUCIBLE_LIFECYCLE_AUDIT_2026-09-12.md"
 CAP_ACTION_W1_4A_AUTHORIZATION = ROOT / "docs" / "audits" / "CAP_ACTION_004_W1_4A_AUTHORIZATION_2026-10-26.md"
+CAP_ACTION_W1_4A1_FAMILY_POLICY = ROOT / "docs" / "audits" / "CAP_ACTION_004_W1_4A1_FAMILY_POLICY_2026-10-26.md"
 EXPECTED_SLICE_VERDICT = "N-PHASE-02 IMPLEMENTATION BLOCKED"
 TASK_BASELINE_SHA = "9543806234a1b5af47dc1e40514323b2c5fc4324"
 
@@ -573,6 +574,26 @@ def test_w1_4a_authorization_is_documentary_and_preserves_capability_boundary() 
         assert required in authorization
     assert "no promociona la capability a\n`SUPPORTED`" in authorization
     assert "no autoriza aún cambios en `src/`" in authorization
+
+
+def test_w1_4a1_limits_selective_blocking_to_one_test_family() -> None:
+    policy = CAP_ACTION_W1_4A1_FAMILY_POLICY.read_text(encoding="utf-8")
+    for required in (
+        "`test-choice/v1`",
+        "sólo `Concede(player_id)`",
+        "`authorized_elector`",
+        "igualdad exacta con `semantic_family`",
+        "Familias no registradas",
+        "sin cambio de runtime",
+    ):
+        assert required in policy
+    for forbidden in (
+        "card_id",
+        "apertura pública",
+        "decisiones simultáneas",
+        "audiencias nuevas",
+    ):
+        assert forbidden in policy
 
 
 def test_documented_totals_defaults_and_generic_capability_boundary() -> None:
